@@ -1304,21 +1304,41 @@ El dueÃ±o reportÃ³ que el escÃ¡ner funcionaba mal: los nombres en lÃ­nea llegaba
 
 **Nota:** `DescargarFoto` y sus tests en `:domain` se conservan (cÃ³digo muerto a propÃ³sito, sin wiring en `:app`).
 
-## 0.29.2 · Tops de empleado y cliente en Inicio
+## 0.29.2 Â· Tops de empleado y cliente en Inicio
 
-Dos listas Top 3 en el resumen general de Inicio (ventana fija de 30 días, como el Top 3 actual; no siguen al selector de período): **Empleado** (vendedores con mayor importe vendido, por el nombre congelado de la venta) y **Cliente** (clientes con mayor importe comprado, solo por transferencia: el efectivo no registra cliente; se distingue por nombre + CI). Solo ventas válidas; empate ? alfabético; ocultas si no hay datos. Cálculos puros `Estadisticas.topEmpleados/topClientes` sobre la misma lista que ya carga `ObtenerResumenGeneral` (nuevo `TopPersona` + campos en `ResumenGeneral`); tarjetas con medalla y el importe con seminegrita. Tests en `TopsInicioTest`; fixture y capturas de `InicioCapturas` re-grabadas. (MANUAL_USUARIO.md §5.4)
+Dos listas Top 3 en el resumen general de Inicio (ventana fija de 30 dÃ­as, como el Top 3 actual; no siguen al selector de perÃ­odo): **Empleado** (vendedores con mayor importe vendido, por el nombre congelado de la venta) y **Cliente** (clientes con mayor importe comprado, solo por transferencia: el efectivo no registra cliente; se distingue por nombre + CI). Solo ventas vÃ¡lidas; empate â†’ alfabÃ©tico; ocultas si no hay datos. CÃ¡lculos puros `Estadisticas.topEmpleados/topClientes` sobre la misma lista que ya carga `ObtenerResumenGeneral` (nuevo `TopPersona` + campos en `ResumenGeneral`); tarjetas con medalla y el importe con seminegrita. Tests en `TopsInicioTest`; fixture y capturas de `InicioCapturas` re-grabadas. (MANUAL_USUARIO.md Â§5.4)
 
-## 0.29.3 · Escáner solo-nombre sin fecha + Top Empleados visible
+## 0.29.3 Â· EscÃ¡ner solo-nombre sin fecha + Top Empleados visible
 
-1. **Escáner simplificado** (a petición del dueño: del número escaneado solo se extrae el nombre; la fecha sale del escáner): `BuscarProductoEnLinea` devuelve el nombre limpio cortado a 80 (el resto se descarta); se eliminan `NombreEnLinea.dividir` y `ProductoEnLinea.descripcion`. En la app salen `descripcion`/`caducidad` del estado del escáner, el campo de fecha del resultado y el botón Guardar para producto existente (la tarjeta queda informativa); el formulario abre solo con código + nombre. `Route.ProductoForm` pierde los params `descripcion`/`caducidad` (el formulario conserva su propio campo de fecha). Tests reescritos (`EscanerViewModelTest`, `ProductoFormTest`, capturas `08i` re-grabada) y `MANUAL_USUARIO.md` §2 actualizado.
-2. **Top Empleados no salía (bug):** `VentaRepositoryImpl.entre`/`deTurno` no rellenaban `vendedor` (solo lo hacía `obtener`), así que `ObtenerResumenGeneral` recibía las ventas con vendedor vacío y `topEmpleados` las filtraba todas. Nueva consulta por lote `VentaDao.vendedoresDe(ids)` + helper `conVendedores` (test `VendedoresVentaTest`); de paso, las exportaciones con columna Vendedor vuelven a mostrarlo.
+1. **EscÃ¡ner simplificado** (a peticiÃ³n del dueÃ±o: del nÃºmero escaneado solo se extrae el nombre; la fecha sale del escÃ¡ner): `BuscarProductoEnLinea` devuelve el nombre limpio cortado a 80 (el resto se descarta); se eliminan `NombreEnLinea.dividir` y `ProductoEnLinea.descripcion`. En la app salen `descripcion`/`caducidad` del estado del escÃ¡ner, el campo de fecha del resultado y el botÃ³n Guardar para producto existente (la tarjeta queda informativa); el formulario abre solo con cÃ³digo + nombre. `Route.ProductoForm` pierde los params `descripcion`/`caducidad` (el formulario conserva su propio campo de fecha). Tests reescritos (`EscanerViewModelTest`, `ProductoFormTest`, capturas `08i` re-grabada) y `MANUAL_USUARIO.md` Â§2 actualizado.
+2. **Top Empleados no salÃ­a (bug):** `VentaRepositoryImpl.entre`/`deTurno` no rellenaban `vendedor` (solo lo hacÃ­a `obtener`), asÃ­ que `ObtenerResumenGeneral` recibÃ­a las ventas con vendedor vacÃ­o y `topEmpleados` las filtraba todas. Nueva consulta por lote `VentaDao.vendedoresDe(ids)` + helper `conVendedores` (test `VendedoresVentaTest`); de paso, las exportaciones con columna Vendedor vuelven a mostrarlo.
 
-## 0.30.0 · Sin código de barras (QR solo para vinculación)
+## 0.30.0 Â· Sin cÃ³digo de barras (QR solo para vinculaciÃ³n)
 
-A petición del dueño se elimina el código de barras del producto de todo el proyecto; la cámara queda solo para el QR de vinculación y la foto del producto.
+A peticiÃ³n del dueÃ±o se elimina el cÃ³digo de barras del producto de todo el proyecto; la cÃ¡mara queda solo para el QR de vinculaciÃ³n y la foto del producto.
 
-1. **Dominio:** fuera `Producto.codigo`, `InventarioRepository.porCodigo`, `ConsultarCodigo`, `BuscarProductoEnLinea`, `DescargarFoto`, `FuenteProductos`/`ProductoEnLinea`/`CodigoBarras`/`SimbologiaCodigo`/`ResultadoBusquedaEnLinea`, `PoliticaConsultaEnLinea` y `consultasEnLinea` de `Preferencias` (con su `guardar` y el consentimiento de Ajustes y onboarding). La búsqueda del Inventario y los preajustes filtran por nombre/descripción/categoría.
-2. **Datos:** fuera `codigo` de la entidad, el DAO, los mappers, `ProductoDto` y el respaldo (lector tolerante: los respaldos viejos con `codigo`/`consultasEnLinea` se importan igual); fuera `FuentesRed`/`ScannerDtos` y su test (con él desaparece el fallo Windows de `EscanerRedTest`). Migración 10?11 (recrear tabla sin `codigo`, test `Migracion1011Test`); User-Agent `SPVI/0.27 (Android)`.
-3. **App:** borrado `app/.../escaner/`; nuevo lector mínimo `vinculacion/qr/` (`QrVinculacionScreen` + VM + `CamaraEscaner` solo-QR). Sin botón Escanear en Inicio ni hoja Escanear/Escribir en Inventario (FAB único +); sin campo código en el formulario; sin fila de internet en Ajustes.
-4. **Registros:** la ficha de venta muestra el unitario debajo (`lineasVenta`: «2 × Pan» + «10.00 CUP c/u», test `RegistrosTest`).
-5. Docs actualizados (`README`, `MANUAL_USUARIO` §2, `FORMATOS`, `SECURITY`, Ayuda) y capturas re-grabadas.
+1. **Dominio:** fuera `Producto.codigo`, `InventarioRepository.porCodigo`, `ConsultarCodigo`, `BuscarProductoEnLinea`, `DescargarFoto`, `FuenteProductos`/`ProductoEnLinea`/`CodigoBarras`/`SimbologiaCodigo`/`ResultadoBusquedaEnLinea`, `PoliticaConsultaEnLinea` y `consultasEnLinea` de `Preferencias` (con su `guardar` y el consentimiento de Ajustes y onboarding). La bÃºsqueda del Inventario y los preajustes filtran por nombre/descripciÃ³n/categorÃ­a.
+2. **Datos:** fuera `codigo` de la entidad, el DAO, los mappers, `ProductoDto` y el respaldo (lector tolerante: los respaldos viejos con `codigo`/`consultasEnLinea` se importan igual); fuera `FuentesRed`/`ScannerDtos` y su test (con Ã©l desaparece el fallo Windows de `EscanerRedTest`). MigraciÃ³n 10â†’11 (recrear tabla sin `codigo`, test `Migracion1011Test`); User-Agent `SPVI/0.27 (Android)`.
+3. **App:** borrado `app/.../escaner/`; nuevo lector mÃ­nimo `vinculacion/qr/` (`QrVinculacionScreen` + VM + `CamaraEscaner` solo-QR). Sin botÃ³n Escanear en Inicio ni hoja Escanear/Escribir en Inventario (FAB Ãºnico +); sin campo cÃ³digo en el formulario; sin fila de internet en Ajustes.
+4. **Registros:** la ficha de venta muestra el unitario debajo (`lineasVenta`: Â«2 Ã— PanÂ» + Â«10.00 CUP c/uÂ», test `RegistrosTest`).
+5. Docs actualizados (`README`, `MANUAL_USUARIO` Â§2, `FORMATOS`, `SECURITY`, Ayuda) y capturas re-grabadas.
+
+
+## 0.30.0 â€” VerificaciÃ³n real (F0 del plan de correcciones, 2026-10-07)
+
+Primera vez que el repositorio se verifica solo: GitHub Actions ejecuta Gradle real en cada push
+(`.github/workflows/ci.yml`, cinco trabajos independientes). Corridas en verde:
+[37656256703](https://github.com/rmdvcd/SPVI/actions/runs/37656256703) y
+[37657849682](https://github.com/rmdvcd/SPVI/actions/runs/37657849682); las cifras coinciden entre corridas.
+
+- **825 tests JVM, 0 fallos** â€” y los 3 archivos de tests instrumentados que no compilaban (`RepositoriosRoomTest`,
+  `ConfiguracionInicialInstrumentedTest`, `RespaldoRoomTest`) vuelven a compilar.
+- **Lint: 0 errores, 95 avisos** con el baseline vacÃ­o (se decidiÃ³ no tapar los avisos con el baseline).
+- **R8 sin clases ausentes**: APK release sin firmar 45,4 MB, APK debug 58,7 MB.
+- **Permisos** del manifiesto fusionado dentro de la lista autorizada y **API mÃ­nima 26**: 3423 clases, 0 llamadas
+  no permitidas.
+- `gradlew` y los guiones de `tools/` estaban guardados sin permiso de ejecuciÃ³n (modo 644): el primer intento de CI
+  muriÃ³ con Â«Permission deniedÂ» (exit 126). Corregido.
+- VersiÃ³n a **0.30.0 (`versionCode` 51)**. El historial de verificaciones ya no vive en el README: vive en
+  [VERIFICACION.md](VERIFICACION.md).
+- **Pendiente (T0.6):** instalar el APK en un telÃ©fono real y probar dos telÃ©fonos (principal + secundaria).
