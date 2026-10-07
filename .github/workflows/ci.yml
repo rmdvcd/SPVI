@@ -52,6 +52,9 @@ jobs:
       - name: Resumen del fallo
         if: failure()
         run: bash tools/verificacion/resumen_fallos.sh /tmp/salida.log
+      - name: Resultado legible (tests)
+        if: success()
+        run: python3 tools/verificacion/resumen_ok.py tests
       - name: Informes de test (solo si falla)
         if: failure()
         uses: actions/upload-artifact@v4
@@ -85,6 +88,9 @@ jobs:
       - name: Resumen del fallo
         if: failure()
         run: bash tools/verificacion/resumen_fallos.sh /tmp/salida.log
+      - name: Resultado legible (lint)
+        if: success()
+        run: python3 tools/verificacion/resumen_ok.py lint
       - name: Informe de lint
         if: always()
         uses: actions/upload-artifact@v4
@@ -115,7 +121,10 @@ jobs:
       - name: assembleRelease + assembleDebug
         run: |
           set -o pipefail
-          ./gradlew :app:assembleRelease :app:assembleDebug --continue --stacktrace --console=plain 2>&1 | tee /tmp/salida.log
+          # -Pkotlin.compiler.execution.strategy=in-process: el demonio de Kotlin se cayó al arrancar en este trabajo
+          # («the daemon has terminated unexpectedly on startup»); compilando dentro del demonio de Gradle no hay carrera.
+          ./gradlew :app:assembleRelease :app:assembleDebug --continue --stacktrace --console=plain \
+            -Pkotlin.compiler.execution.strategy=in-process "-Dorg.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8" 2>&1 | tee /tmp/salida.log
       - name: Resumen del fallo
         if: failure()
         run: bash tools/verificacion/resumen_fallos.sh /tmp/salida.log
@@ -131,6 +140,9 @@ jobs:
       - name: Resumen del fallo (R8)
         if: failure()
         run: bash tools/verificacion/resumen_fallos.sh /tmp/salida.log
+      - name: Resultado legible (APK)
+        if: success()
+        run: python3 tools/verificacion/resumen_ok.py apk
       - name: APK debug y APK release sin firmar
         if: always()
         uses: actions/upload-artifact@v4
@@ -199,3 +211,6 @@ jobs:
       - name: Resumen del fallo (API mínima)
         if: failure()
         run: bash tools/verificacion/resumen_fallos.sh /tmp/salida.log
+      - name: Resultado legible (API mínima)
+        if: success()
+        run: python3 tools/verificacion/resumen_ok.py api-min /tmp/salida.log
