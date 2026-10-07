@@ -63,6 +63,12 @@ Un solo test: `./gradlew :domain:test --tests "cu.spvi.domain.Version025Test"`. 
 - Base de datos v10 (`MIGRACION_9_10`, esquema `data/schemas/…/10.json`); respaldo DTO v4 (importa v3); archivo `.spvi` v4 (lee v3). Un cambio de esquema exige migración + esquema exportado + test.
 - La firma de release debe ser **siempre la misma** (el `deviceId` de la licencia depende de ella).
 
-## Lo que nunca se ha ejecutado (verifícalo tú)
+## Qué se ha ejecutado y qué no
 
-Gradle real, lint, R8/ProGuard en release, Roborazzi, el APK en un teléfono y la prueba con dos teléfonos (principal + secundaria). Sigue `docs/OPENCODE_DESKTOP.md` §3–§6.
+Desde el **2026-10-07** el CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) ejecuta Gradle real en cada push:
+`spviTests` (825 tests JVM), `:app:lintDebug`, `:app:assembleRelease` (R8, con control de clases ausentes),
+`spviPermisos` y `tools/verificacion/api_minima.py`. El estado y los números están en
+[docs/VERIFICACION.md](docs/VERIFICACION.md).
+
+El CI **no** ejecuta (y por tanto no verifica en cada push): Roborazzi (capturas), los 136 tests instrumentados, el
+APK en un teléfono ni la prueba con dos teléfonos (principal + secundaria). Sigue `docs/OPENCODE_DESKTOP.md` §3–§6.
