@@ -25,6 +25,8 @@ import cu.spvi.domain.usecase.ObservarInventario
 import cu.spvi.domain.usecase.ObtenerFichaProducto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -122,25 +124,28 @@ class InventarioViewModelTest {
     }
 
     /**
-     * 0.30.0 (F1): escribir rápido no dispara una consulta por tecla. Ocho pulsaciones seguidas no cambian la
-     * tabla hasta que pasa el retardo, y entonces aparece una sola vez el resultado de la palabra completa.
+     * 0.30.0 (F1): escribir rápido no dispara una consulta por tecla.
+     *
+     * Se cuentan las **reconsultas de verdad** (cada re-suscripción a `ObservarInventario` emite «Cargando»): el
+     * estado de la pantalla cambia con cada tecla —el campo de texto no se retrasa—, pero la consulta a Room no.
+     * Ocho pulsaciones seguidas = una sola consulta, y con el resultado de la palabra completa.
      */
     @Test fun elBuscadorAgrupaLasPulsaciones() = runTest {
         cargar()
         val vm = vm()
         vm.debounceBusqueda = 250 // el retardo real de la app
-        val resultados = mutableListOf<List<Long>>()
+        var consultas = 0
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            vm.state.collect { resultados += it.items.map { i -> i.producto.id } }
+            vm.state.map { it.vista }.distinctUntilChanged().collect { v -> if (v is EstadoCarga.Cargando) consultas++ }
         }
-        val antesDeEscribir = resultados.size
+        val antesDeEscribir = consultas
         listOf("r", "re", "ref", "refr", "refre", "refres", "refresc", "refresco").forEach { vm.buscar(it) }
         runCurrent()
-        assertEquals("las 8 pulsaciones aún no han disparado ninguna consulta", antesDeEscribir, resultados.size)
+        assertEquals("mientras se escribe, ninguna consulta nueva", antesDeEscribir, consultas)
         advanceTimeBy(300)
         runCurrent()
+        assertEquals("las 8 pulsaciones producen una sola consulta", antesDeEscribir + 1, consultas)
         assertEquals(listOf(1L), vm.state.value.items.map { it.producto.id })
-        assertEquals("una sola consulta para las 8 pulsaciones", antesDeEscribir + 1, resultados.size)
     }
 
     @Test fun seleccionSobreviveALaBusquedaYMarcarTodoAlterna() = runTest {
