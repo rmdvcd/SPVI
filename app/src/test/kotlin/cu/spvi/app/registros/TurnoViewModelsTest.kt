@@ -185,8 +185,8 @@ class TurnoViewModelsTest {
         val cotizar = cu.spvi.domain.usecase.CotizarVenta(productos, cu.spvi.app.PreciosRepo(), insumos, cu.spvi.app.ServRepo())
         return VentaViewModel(
             androidx.lifecycle.SavedStateHandle(), ObservarPermisoVenta(turnos), productos,
-            cu.spvi.domain.usecase.ObservarElaborados(insumos, productos), insumos,
-            cu.spvi.domain.usecase.ObservarServicios(cu.spvi.app.ServRepo(), insumos), perfil, AbrirTurno(turnos, UsuarioActual(perfil), reloj), cotizar,
+            cu.spvi.domain.usecase.ObservarElaborados(insumos, productos, Dispatchers.Unconfined), insumos,
+            cu.spvi.domain.usecase.ObservarServicios(cu.spvi.app.ServRepo(), insumos, Dispatchers.Unconfined), perfil, AbrirTurno(turnos, UsuarioActual(perfil), reloj), cotizar,
             cu.spvi.domain.usecase.RegistrarVenta(cotizar, turnos, cu.spvi.app.VentaRepo(), perfil, reloj),
             cu.spvi.domain.usecase.ExtraerNumeroTransaccion(), cu.spvi.app.common.EntradaCompartida(),
             sesion = cu.spvi.domain.service.SesionVenta(), secundaria = cu.spvi.app.SecundariaRepoFake(),

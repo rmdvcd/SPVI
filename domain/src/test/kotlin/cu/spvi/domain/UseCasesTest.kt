@@ -39,6 +39,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlinx.coroutines.Dispatchers
 
 class UseCasesTest {
     private val clock = FixedClock()
@@ -122,7 +123,7 @@ class UseCasesTest {
     @Test fun `alertas reaccionan a los niveles configurados`() = runBlocking {
         productos.put(producto(1, cantidad = 8))
         val prefs = FakePreferencias()
-        val alertas = ObservarAlertas(productos, insumos, prefs, clock)
+        val alertas = ObservarAlertas(productos, insumos, prefs, clock, Dispatchers.Unconfined)
         assertEquals(0, alertas().first().stockBajo)
         prefs.guardarNiveles(prefs.state.value.niveles.copy(productoBajo = 10))
         assertEquals(1, alertas().first().stockBajo)

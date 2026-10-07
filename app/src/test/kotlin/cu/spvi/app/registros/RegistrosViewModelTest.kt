@@ -59,8 +59,10 @@ class RegistrosViewModelTest {
     @After fun despues() = Dispatchers.resetMain()
 
     private fun TestScope.vm(): RegistrosViewModel {
-        val vm = RegistrosViewModel(ObservarRegistro(repo, insumos, reloj), ventas, ExportarTablas(exportador), archivos, reloj, saved)
+        val vm = RegistrosViewModel(ObservarRegistro(repo, insumos, reloj, Dispatchers.Unconfined), ventas, ExportarTablas(exportador), archivos, reloj, saved)
         vm.zona = ZoneId.of("America/Havana")
+        // 0.30.0 (F1): retardo del buscador a 0 para no depender del reloj virtual.
+        vm.debounceBusqueda = 0
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.eventos.collect { eventos += it } }
         return vm

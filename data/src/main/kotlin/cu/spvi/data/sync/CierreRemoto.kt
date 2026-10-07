@@ -3,7 +3,7 @@ package cu.spvi.data.sync
 import cu.spvi.core.result.AppResult
 import cu.spvi.core.result.runCatchingCancelable
 import cu.spvi.core.time.Clock
-import cu.spvi.data.di.IoDispatcher
+import cu.spvi.domain.di.IoDispatcher
 import cu.spvi.domain.repository.TurnoRepository
 import cu.spvi.domain.service.SesionVenta
 import javax.inject.Inject

@@ -3,7 +3,7 @@ package cu.spvi.data.network
 import android.content.Context
 import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
-import cu.spvi.data.di.IoDispatcher
+import cu.spvi.domain.di.IoDispatcher
 import cu.spvi.data.sync.ApkLocal
 import cu.spvi.domain.model.InfoActualizacion
 import cu.spvi.domain.model.InfoApp

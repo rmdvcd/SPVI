@@ -18,6 +18,7 @@ import cu.spvi.domain.usecase.RangoDePreset
 import cu.spvi.domain.usecase.ResolverPeriodo
 import java.time.Instant
 import java.time.ZoneId
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -32,8 +33,9 @@ class InicioUseCasesTest {
     private val turnos = FakeTurnos()
     private val ventas = FakeVentas(productos, turnos)
     private val resolver = ResolverPeriodo(PeriodoPorDefecto(turnos, clock), RangoDePreset(clock))
-    private val graficos = ObtenerGraficosPeriodo(ventas, turnos, clock)
-    private val resumen = ObtenerResumenGeneral(ventas, productos, FakeInsumos(), FakeServicios(), clock)
+    // 0.30.0 (F1): los casos de uso sacan el trabajo del hilo de UI; en tests, Unconfined lo mantiene determinista.
+    private val graficos = ObtenerGraficosPeriodo(ventas, turnos, clock, Dispatchers.Unconfined)
+    private val resumen = ObtenerResumenGeneral(ventas, productos, FakeInsumos(), FakeServicios(), clock, Dispatchers.Unconfined)
 
     private fun venta(turno: Long, fecha: Instant, pid: Long, cant: Long, precio: Long, costo: Long, metodo: MetodoPago = MetodoPago.EFECTIVO) =
         Venta(

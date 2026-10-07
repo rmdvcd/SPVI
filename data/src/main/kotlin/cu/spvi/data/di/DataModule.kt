@@ -1,5 +1,6 @@
 package cu.spvi.data.di
 
+import cu.spvi.domain.di.IoDispatcher
 import cu.spvi.domain.repository.ServicioRepository
 import android.content.Context
 import cu.spvi.core.time.Clock
@@ -31,14 +32,9 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Qualifier
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class IoDispatcher
 
 @Module
 @InstallIn(SingletonComponent::class)

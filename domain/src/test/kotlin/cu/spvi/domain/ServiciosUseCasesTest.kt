@@ -17,6 +17,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlinx.coroutines.Dispatchers
 
 /** 0.21.9 (P59): casos de uso de Servicios que no tenían prueba propia (ficha, borrado en bloque, disponibles, guardar). */
 class ServiciosUseCasesTest {
@@ -47,7 +48,7 @@ class ServiciosUseCasesTest {
         servicios.crear(servicio(1), listOf(RecetaLinea(1, Cantidad.enteras(2))))
         servicios.crear(servicio(2), emptyList())
         servicios.eliminar(2)
-        val obs = ObservarServicios(servicios, insumos)
+        val obs = ObservarServicios(servicios, insumos, Dispatchers.Unconfined)
         val d = obs.disponibles().first()
         assertEquals(setOf(1L), d.keys)
         assertEquals(2L, d.getValue(1).alcanza)

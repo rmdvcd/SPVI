@@ -13,7 +13,7 @@ import android.os.Environment
 import android.os.SystemClock
 import android.provider.MediaStore
 import android.provider.Settings
-import cu.spvi.data.di.IoDispatcher
+import cu.spvi.domain.di.IoDispatcher
 import cu.spvi.data.local.SecureDataStore
 import cu.spvi.domain.model.InfoRegistroPrueba
 import cu.spvi.domain.repository.PruebaRepository

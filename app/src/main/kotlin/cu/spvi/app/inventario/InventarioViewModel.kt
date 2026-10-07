@@ -49,6 +49,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -125,13 +126,24 @@ class InventarioViewModel @Inject constructor(
         ),
     )
     private val intento = MutableStateFlow(0)
+
+    /** Retardo del buscador (0.30.0, F1). Los tests lo bajan a 0 para no depender del reloj virtual. */
+    internal var debounceBusqueda: Long = 250
     private val seleccion = MutableStateFlow<Set<Long>>(if (modoVenta != null) SeleccionVenta.parse(saved.get<String>(KEY_SELECCION)) else emptySet())
     private val local = MutableStateFlow(InventarioUiState(modoVenta = modoVenta))
     private val eventosCh = Channel<EventoInventario>(Channel.BUFFERED)
     val eventos: Flow<EventoInventario> = eventosCh.receiveAsFlow()
 
+    /**
+     * 0.30.0 (F1): el filtro que alimenta la consulta. Lo que no es texto (alertas, tipo, «quitar filtros») pasa al
+     * instante; el texto espera [debounceBusqueda] para que escribir «refresco» no dispare una consulta por tecla
+     * (8 pulsaciones = 1 consulta). El filtro que ve la pantalla (`state.filtro`) sigue siendo inmediato: el campo
+     * de texto no se retrasa. Con el texto vacío el retardo es 0, así que abrir la pantalla no espera nada.
+     */
+    private val filtroConsultado: Flow<FiltroInventario> = filtro.debounce { f -> if (f.texto.isEmpty()) 0L else debounceBusqueda }
+
     private val vista: StateFlow<EstadoCarga<VistaInventario>> = intento.flatMapLatest {
-        observarInventario(filtro)
+        observarInventario(filtroConsultado)
             .map<VistaInventario, EstadoCarga<VistaInventario>> { if (it.total == 0) EstadoCarga.Vacio(it) else EstadoCarga.Exito(it) }
             .onStart { emit(EstadoCarga.Cargando) }
             .catch { emit(EstadoCarga.Error(TextosInventario.ERROR_CARGA)) }

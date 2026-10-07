@@ -37,6 +37,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -102,6 +103,9 @@ class RegistrosViewModel @Inject constructor(
     /** Zona para fechas y días del filtro (tests: fija). */
     internal var zona: ZoneId = ZoneId.systemDefault()
 
+    /** Retardo del buscador (0.30.0, F1). Los tests lo bajan a 0 para no depender del reloj virtual. */
+    internal var debounceBusqueda: Long = 250
+
     /**
      * P18 (A12): la pestaña, la búsqueda y los filtros sobreviven a que el sistema cierre el proceso
      * ([SavedStateHandle]). Solo se guarda esto (texto corto, fechas e importes del filtro); nunca filas ni datos de la tabla.
@@ -125,6 +129,9 @@ class RegistrosViewModel @Inject constructor(
     private val vista: StateFlow<Pair<TipoRegistro?, EstadoCarga<VistaRegistro>>> =
         combine(local, intento) { l, i -> Consulta(l.tipo, l.filtro, i) }
             .distinctUntilChanged()
+            // 0.30.0 (F1): escribir en el buscador no dispara una consulta por tecla (8 pulsaciones = 1);
+            // pestañas, tipo y «Reintentar» (texto vacío) no esperan. El texto que ve la pantalla es inmediato.
+            .debounce { c -> if (c.filtro.texto.isEmpty()) 0L else debounceBusqueda }
             .flatMapLatest { c ->
                 val tipo = c.tipo ?: return@flatMapLatest flowOf<Pair<TipoRegistro?, EstadoCarga<VistaRegistro>>>(null to EstadoCarga.Idle)
                 val sinFiltro = c.filtro.texto.isBlank() && c.filtro.activos == 0

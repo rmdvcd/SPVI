@@ -17,8 +17,11 @@ import cu.spvi.domain.repository.PreferenciasRepository
 import cu.spvi.domain.repository.ProductoRepository
 import cu.spvi.domain.service.InsumosFiltro
 import cu.spvi.domain.service.Stock
+import cu.spvi.domain.di.IoDispatcher
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -47,23 +50,27 @@ class ObservarElaboracion @Inject constructor(
     private val insumos: InsumoRepository,
     private val productos: ProductoRepository,
     private val preferencias: PreferenciasRepository,
+    @IoDispatcher private val io: CoroutineDispatcher,
 ) {
+    /** 0.30.0 (F1): cruza insumos × recetas y filtra la lista completa; fuera del hilo del colector. */
     operator fun invoke(filtro: Flow<FiltroInsumos>): Flow<VistaInsumos> =
         combine(insumos.observarTodos(), recetasActivas(productos), preferencias.preferencias, filtro) { xs, rs, pref, f ->
             InsumosFiltro.aplicar(xs, InsumosFiltro.usos(rs.mapNotNull { it.second }), f, pref.niveles)
-        }
+        }.flowOn(io)
 }
 
 /** Sección Elaborados: cada Elaborado con su receta, costo y «Alcanza para N» (más recientes primero). */
 class ObservarElaborados @Inject constructor(
     private val insumos: InsumoRepository,
     private val productos: ProductoRepository,
+    @IoDispatcher private val io: CoroutineDispatcher,
 ) {
+    /** 0.30.0 (F1): «Alcanza para N» recorre todas las recetas por cada cambio de insumos; fuera del hilo del colector. */
     operator fun invoke(): Flow<List<ElaboradoDisponible>> =
         combine(recetasActivas(productos), insumos.observarTodos()) { rs, xs ->
             val mapa = xs.associateBy { it.id }
             rs.map { (p, r) -> InsumosFiltro.disponible(p, r, mapa) }
-        }
+        }.flowOn(io)
 }
 
 /** Ficha al tocar un insumo: datos, nivel y en qué Elaborados se usa (y cuánto por unidad). */

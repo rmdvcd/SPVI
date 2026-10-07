@@ -55,7 +55,7 @@ class ModificarVentaTest {
     private fun vm(): ModificarVentaViewModel {
         val cotizar = CotizarVenta(productos, PreciosRepo(), insumos, servicios)
         return ModificarVentaViewModel(
-            productos, ObservarElaborados(insumos, productos), insumos, ObservarServicios(servicios, insumos),
+            productos, ObservarElaborados(insumos, productos, Dispatchers.Unconfined), insumos, ObservarServicios(servicios, insumos, Dispatchers.Unconfined),
             ModificarVenta(cotizar, ventas, turnos, perfil, UsuarioActual(perfil), reloj, SecundariaRepoFake()),
         )
     }
@@ -75,6 +75,8 @@ class ModificarVentaTest {
     @Test fun anadirLineaConPrecioActualYConservarElDeEntonces() = runTest {
         val v = original()
         val vm = vm()
+        // 0.30.0 (F1): retardo del buscador a 0 para no depender del reloj virtual.
+        vm.debounceBusqueda = 0
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
         vm.iniciar(v)
         assertFalse(vm.state.value.cambiada)

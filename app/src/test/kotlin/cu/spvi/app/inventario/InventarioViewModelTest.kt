@@ -29,6 +29,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -57,7 +59,7 @@ class InventarioViewModelTest {
     private fun TestScope.vm(alerta: String? = null): InventarioViewModel {
         val vm = InventarioViewModel(
             saved = SavedStateHandle(if (alerta != null) mapOf("alerta" to alerta) else emptyMap()),
-            observarInventario = ObservarInventario(productos, insumosInv, prefs, reloj),
+            observarInventario = ObservarInventario(productos, insumosInv, prefs, reloj, Dispatchers.Unconfined),
             productosRepo = productos,
             obtenerFicha = ObtenerFichaProducto(productos, InsRepo(), prefs, reloj),
             eliminarProductos = EliminarProductos(productos),
@@ -72,6 +74,8 @@ class InventarioViewModelTest {
             clock = reloj,
             limpiarFotos = LimpiarFotos(productos, FakeFotos(), cu.spvi.app.ServRepo()),
         )
+        // 0.30.0 (F1): en la app el buscador espera 250 ms; los tests no quieren depender del reloj virtual.
+        vm.debounceBusqueda = 0
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.eventos.collect { eventos += it } }
         return vm
@@ -115,6 +119,28 @@ class InventarioViewModelTest {
         vm.buscar("zzz")
         assertTrue(vm.state.value.vista is EstadoCarga.Exito) // hay productos: "Sin resultados", no "vacío"
         assertTrue(vm.state.value.items.isEmpty())
+    }
+
+    /**
+     * 0.30.0 (F1): escribir rápido no dispara una consulta por tecla. Ocho pulsaciones seguidas no cambian la
+     * tabla hasta que pasa el retardo, y entonces aparece una sola vez el resultado de la palabra completa.
+     */
+    @Test fun elBuscadorAgrupaLasPulsaciones() = runTest {
+        cargar()
+        val vm = vm()
+        vm.debounceBusqueda = 250 // el retardo real de la app
+        val resultados = mutableListOf<List<Long>>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            vm.state.collect { resultados += it.items.map { i -> i.producto.id } }
+        }
+        val antesDeEscribir = resultados.size
+        listOf("r", "re", "ref", "refr", "refre", "refres", "refresc", "refresco").forEach { vm.buscar(it) }
+        runCurrent()
+        assertEquals("las 8 pulsaciones aún no han disparado ninguna consulta", antesDeEscribir, resultados.size)
+        advanceTimeBy(300)
+        runCurrent()
+        assertEquals(listOf(1L), vm.state.value.items.map { it.producto.id })
+        assertEquals("una sola consulta para las 8 pulsaciones", antesDeEscribir + 1, resultados.size)
     }
 
     @Test fun seleccionSobreviveALaBusquedaYMarcarTodoAlterna() = runTest {

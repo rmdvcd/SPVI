@@ -9,7 +9,7 @@ import cu.spvi.core.time.Clock
 import cu.spvi.data.db.SpviDatabase
 import cu.spvi.data.db.entity.PerfilEntity
 import cu.spvi.data.db.tx
-import cu.spvi.data.di.IoDispatcher
+import cu.spvi.domain.di.IoDispatcher
 import cu.spvi.data.dto.EmpleadoRespaldoDto
 import cu.spvi.data.dto.RespaldoDto
 import cu.spvi.data.dto.LicenciaRespaldoDto

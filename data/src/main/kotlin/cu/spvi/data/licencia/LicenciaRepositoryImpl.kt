@@ -5,7 +5,7 @@ import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
 import cu.spvi.core.result.appCatching
 import cu.spvi.core.time.Clock
-import cu.spvi.data.di.IoDispatcher
+import cu.spvi.domain.di.IoDispatcher
 import cu.spvi.domain.model.AutorizacionMigracion
 import cu.spvi.domain.model.Licencia
 import cu.spvi.domain.repository.LicenciaRepository

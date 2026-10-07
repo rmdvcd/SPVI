@@ -21,8 +21,11 @@ import cu.spvi.domain.service.InventarioFiltro
 import cu.spvi.domain.service.Recetas
 import cu.spvi.domain.validation.Validadores
 import cu.spvi.core.result.toResult
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.combine
+import cu.spvi.domain.di.IoDispatcher
 import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 
@@ -67,11 +70,13 @@ object ServiciosFiltro {
 class ObservarServicios @Inject constructor(
     private val servicios: ServicioRepository,
     private val insumos: InsumoRepository,
+    @IoDispatcher private val io: CoroutineDispatcher,
 ) {
+    /** 0.30.0 (F1): cruza servicios × insumos y filtra la lista completa; fuera del hilo del colector. */
     operator fun invoke(filtro: Flow<FiltroServicios>): Flow<VistaServicios> =
         combine(servicios.observarTodos(), servicios.observarInsumos(), insumos.observarTodos(), filtro) { ss, rs, xs, f ->
             ServiciosFiltro.aplicar(ss, rs, xs.associateBy { it.id }, f)
-        }
+        }.flowOn(io)
 
     /** Todos los activos (para la venta: importe, tope por insumos y costo). */
     fun disponibles(): Flow<Map<Long, ServicioDisponible>> =

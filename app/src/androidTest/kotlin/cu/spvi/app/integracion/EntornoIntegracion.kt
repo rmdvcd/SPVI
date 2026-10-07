@@ -105,9 +105,9 @@ class EntornoIntegracion(licencia: LicenseState = LicenseState.Trial(5)) {
         saved = SavedStateHandle(mapOf(VentaViewModel.KEY_TIPO to tipo)),
         observarPermiso = ObservarPermisoVenta(turnos),
         productosRepo = productos,
-        observarElaborados = cu.spvi.domain.usecase.ObservarElaborados(insumos, productos),
+        observarElaborados = cu.spvi.domain.usecase.ObservarElaborados(insumos, productos, Dispatchers.Unconfined),
         insumosRepo = insumos,
-        observarServicios = cu.spvi.domain.usecase.ObservarServicios(servicios, insumos),
+        observarServicios = cu.spvi.domain.usecase.ObservarServicios(servicios, insumos, Dispatchers.Unconfined),
         perfilRepo = perfil,
         abrirTurno = AbrirTurno(turnos, usuario, clock),
         cotizar = cotizar,
@@ -124,10 +124,11 @@ class EntornoIntegracion(licencia: LicenseState = LicenseState.Trial(5)) {
     val secundaria = cu.spvi.app.SecundariaRepoFake()
 
     fun inicioVm() = InicioViewModel(
-        SavedStateHandle(), licencia, ObservarAlertas(productos, insumos, prefs, clock), perfil,
+        SavedStateHandle(), licencia, ObservarAlertas(productos, insumos, prefs, clock, Dispatchers.Unconfined), perfil,
         precios, turnos, productos,
         ResolverPeriodo(PeriodoPorDefecto(turnos, clock), RangoDePreset(clock)),
-        ObtenerGraficosPeriodo(ventas, turnos, clock), ObtenerResumenGeneral(ventas, productos, insumos, servicios, clock),
+        ObtenerGraficosPeriodo(ventas, turnos, clock, Dispatchers.Unconfined),
+        ObtenerResumenGeneral(ventas, productos, insumos, servicios, clock, Dispatchers.Unconfined),
         AbrirTurno(turnos, usuario, clock), CerrarTurno(turnos, usuario, clock), clock,
         secundaria,
     )
