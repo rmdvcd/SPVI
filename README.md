@@ -4,7 +4,7 @@ App Android nativa para pequeños negocios: vender en turnos, controlar inventar
 
 | | |
 |---|---|
-| Versión | **0.27.1** (`versionCode 50`) |
+| Versión | **0.30.0** (`versionCode 51`) |
 | Paquete | `cu.spvi.app` (debug: `cu.spvi.app.debug`) |
 | minSdk / targetSdk / compileSdk | 26 / 35 / 35 |
 | Base de datos | Room **v10** cifrada con SQLCipher (respaldo `RespaldoDto` v4; archivo `.spvi` v4) |
@@ -80,7 +80,7 @@ Versiones principales (`gradle/libs.versions.toml`): Kotlin 2.0.21, AGP 8.7.3, C
 ./gradlew spviCheck               # antes de entregar: spviTests + lintDebug + assembleDebug + spviPermisos
 ```
 
-`spviPermisos` lee el manifiesto **fusionado** de debug y de release, y falla si aparece cualquier permiso fuera de la lista autorizada (`CAMERA`, `INTERNET`, `POST_NOTIFICATIONS`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE`, `CHANGE_NETWORK_STATE`, desde la 0.25.0 `REQUEST_INSTALL_PACKAGES` y `REQUEST_DELETE_PACKAGES`, desde la 0.26.0 `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE` y `WRITE_EXTERNAL_STORAGE`, estos dos últimos con `maxSdkVersion`, y desde la 0.27.0 `USE_BIOMETRIC` y `USE_FINGERPRINT`). `tools/verificacion/verificar.sh` hace la misma comprobación sobre el manifiesto de `:app`. La única excepción es el permiso propio de nivel *signature* `cu.spvi.app….DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, que declara androidx.core: no lo concede el usuario. La CI está preparada en `.github/workflows/ci.yml`, pero **inactiva** (solo se lanza a mano) hasta que exista un repositorio remoto; ejecuta el mismo `spviCheck`.
+`spviPermisos` lee el manifiesto **fusionado** de debug y de release, y falla si aparece cualquier permiso fuera de la lista autorizada (`CAMERA`, `INTERNET`, `POST_NOTIFICATIONS`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE`, `CHANGE_NETWORK_STATE`, desde la 0.25.0 `REQUEST_INSTALL_PACKAGES` y `REQUEST_DELETE_PACKAGES`, desde la 0.26.0 `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE` y `WRITE_EXTERNAL_STORAGE`, estos dos últimos con `maxSdkVersion`, y desde la 0.27.0 `USE_BIOMETRIC` y `USE_FINGERPRINT`). `tools/verificacion/verificar.sh` hace la misma comprobación sobre el manifiesto de `:app`. La única excepción es el permiso propio de nivel *signature* `cu.spvi.app….DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, que declara androidx.core: no lo concede el usuario. La CI de GitHub Actions (`.github/workflows/ci.yml`) se ejecuta en cada push a `main` o a una rama `arena/**` y en cada pull request; sus trabajos son los mismos comandos de arriba: `spviTests` + compilación de los instrumentados, `:app:lintDebug`, `:app:assembleRelease` (con `missing_rules.txt` vacío), `spviPermisos` y `tools/verificacion/api_minima.py`.
 
 ### Arquitectura
 

@@ -12,7 +12,7 @@ SPVI (Sistema de Punto de Venta e Inventario) es una app Android nativa para peq
 
 | | |
 |---|---|
-| Versión | **0.27.1** (`versionCode 50`) |
+| Versión | **0.30.0** (`versionCode 51`) |
 | Paquete | `cu.spvi.app` (debug: `cu.spvi.app.debug`) |
 | SDK | minSdk 26 · targetSdk 35 · compileSdk 35 |
 | Base de datos | Room **v10** cifrada con SQLCipher |

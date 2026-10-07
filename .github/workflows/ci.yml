@@ -1,0 +1,142 @@
+# Verificación real de SPVI (T0.1 del PLAN_CORRECCIONES.md).
+# Repositorio público: los minutos de Actions son gratis e ilimitados.
+# Cada trabajo corresponde a un comando del proyecto; si uno se pone rojo, el log dice exactamente dónde.
+name: CI
+
+on:
+  push:
+    branches: [main, "arena/**"]
+  pull_request:
+  workflow_dispatch: # a mano, para comprobar una rama suelta
+
+# Un push nuevo sobre la misma rama cancela la corrida anterior (no gasta minutos en lo ya obsoleto).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# El token del CI no necesita permisos de escritura: solo leer el código.
+permissions:
+  contents: read
+
+jobs:
+  # ./gradlew spviTests + compilar los tests instrumentados de :data y :app (los que hoy no compilaban, D2).
+  tests:
+    name: Tests JVM y compilación de instrumentados
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: spviTests + compilar androidTest
+        run: ./gradlew spviTests :data:compileDebugAndroidTestKotlin :app:compileDebugAndroidTestKotlin --stacktrace
+      - name: Informes de test (solo si falla)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informes-tests
+          path: "**/build/reports/tests/**"
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # ./gradlew :app:lintDebug — el baseline está vacío a propósito: cualquier aviso nuevo rompe el trabajo.
+  lint:
+    name: Lint (baseline)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: lintDebug
+        run: ./gradlew :app:lintDebug --stacktrace
+      - name: Informe de lint
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informe-lint
+          path: "app/build/reports/lint-results-*.html"
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # R8 de verdad: assembleRelease (sin firmar en CI; la firma es local con keystore.properties) y el APK debug
+  # para instalarlo en el teléfono (T0.6).
+  release:
+    name: Release (R8) y APK debug
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: assembleRelease + assembleDebug
+        run: ./gradlew :app:assembleRelease :app:assembleDebug --stacktrace
+      - name: R8 sin clases ausentes (missing_rules.txt vacío)
+        run: |
+          archivo=app/build/outputs/mapping/release/missing_rules.txt
+          if [ ! -f "$archivo" ]; then echo "No existe $archivo (¿cambió la ruta en AGP?)"; exit 1; fi
+          if [ -s "$archivo" ]; then echo "R8 dejó reglas ausentes en $archivo:"; cat "$archivo"; exit 1; fi
+          echo "missing_rules.txt vacío: R8 no echó de menos ninguna clase."
+      - name: APK debug y APK release sin firmar
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+  # ./gradlew spviPermisos — el manifiesto FUSIONADO de debug y release no pide nada fuera de la lista autorizada.
+  permisos:
+    name: Permisos del manifiesto fusionado
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: spviPermisos
+        run: ./gradlew spviPermisos --stacktrace
+
+  # python3 tools/verificacion/api_minima.py — ninguna clase compilada llama a una API posterior a la 26 sin
+  # comprobar la versión, tampoco en core/domain/licencia (que lint no analiza).
+  api-min:
+    name: API mínima 26
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compilar todo el bytecode (debug)
+        run: ./gradlew :app:assembleDebug --stacktrace
+      - name: Revisar API mínima
+        run: |
+          test -n "$ANDROID_HOME" || { echo "ANDROID_HOME vacío"; exit 1; }
+          python3 tools/verificacion/api_minima.py

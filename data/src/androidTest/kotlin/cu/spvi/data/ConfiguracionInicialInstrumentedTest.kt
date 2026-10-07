@@ -6,7 +6,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import cu.spvi.data.local.SecureDataStore
 import cu.spvi.data.repository.ConfiguracionInicialRepositoryImpl
 import cu.spvi.data.repository.PreferenciasRepositoryImpl
-import cu.spvi.domain.model.ConsentimientoRed
 import cu.spvi.domain.model.NivelesMinimos
 import cu.spvi.domain.model.PasoConfiguracion
 import cu.spvi.data.security.KeystoreAead
@@ -40,15 +39,15 @@ class ConfiguracionInicialInstrumentedTest {
         assertFalse(crudo.contains("ALERTAS"))
     }
 
-    @Test fun nivelesConsentimientoYOnboardingPersisten() = runBlocking<Unit> {
+    @Test fun nivelesModulosYOnboardingPersisten() = runBlocking<Unit> {
         val prefs = PreferenciasRepositoryImpl(ds)
         assertEquals(NivelesMinimos(), prefs.preferencias.first().niveles) // 5/1 por defecto
         prefs.guardarNiveles(NivelesMinimos(productoBajo = 8, productoCritico = 2))
-        prefs.guardarConsultasEnLinea(ConsentimientoRed.DENEGADO)
+        prefs.guardarEmpleadosPrevistos(2)
         prefs.completarOnboarding()
         val otra = PreferenciasRepositoryImpl(ds).preferencias.first()
         assertEquals(8L, otra.niveles.productoBajo)
-        assertEquals(ConsentimientoRed.DENEGADO, otra.consultasEnLinea)
+        assertEquals(2, otra.empleadosPrevistos)
         assertTrue(otra.onboardingCompletado)
     }
 }

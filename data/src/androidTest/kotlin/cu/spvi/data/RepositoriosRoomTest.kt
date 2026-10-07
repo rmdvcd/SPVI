@@ -65,9 +65,9 @@ class RepositoriosRoomTest {
     private fun <T> ok(r: AppResult<T>): T = (r as? AppResult.Ok)?.value ?: error("esperaba Ok y fue $r")
     private fun err(r: AppResult<*>): AppError = (r as? AppResult.Err)?.error ?: error("esperaba Err y fue $r")
 
-    private fun producto(nombre: String, cantidad: Long, categoria: String = "Bebidas", codigo: String? = null, venta: Long = 100, costo: Long = 60) =
+    private fun producto(nombre: String, cantidad: Long, categoria: String = "Bebidas", venta: Long = 100, costo: Long = 60) =
         Producto(categoria = categoria, nombre = nombre, precioCosto = Cup.ofPesos(costo), precioVenta = Cup.ofPesos(venta),
-            cantidad = cantidad, codigo = codigo, creadoEn = ahora)
+            cantidad = cantidad, creadoEn = ahora)
 
     private fun detalle(p: Producto, cantidad: Long) = DetalleVenta(productoId = p.id, nombre = p.nombre, categoria = p.categoria,
         cantidad = cantidad, precioBase = p.precioVenta, precioUnitario = p.precioVenta, costoUnitario = p.precioCosto)
@@ -76,10 +76,8 @@ class RepositoriosRoomTest {
 
     // ---------------- Inventario ----------------
 
-    @Test fun productoSeCreaBuscaPorCodigoAjustaYEliminaSinPerderHistorial() = runBlocking {
-        val id = ok(productos.crear(producto("Refresco", 10, codigo = "7501055363056"), null))
-        assertEquals(id, productos.porCodigo("7501055363056")!!.id)
-        assertNull(productos.porCodigo("0000000000000"))
+    @Test fun productoSeCreaAjustaYEliminaSinPerderHistorial() = runBlocking {
+        val id = ok(productos.crear(producto("Refresco", 10), null))
         assertEquals(7L, ok(productos.ajustarStock(id, -3, "rotura")))
         assertTrue(err(productos.ajustarStock(id, -8, null)) is AppError.StockInsuficiente) // nunca negativo
         assertEquals(7L, productos.obtener(id)!!.cantidad)

@@ -12,7 +12,6 @@ import cu.spvi.data.repository.ProductoRepositoryImpl
 import cu.spvi.data.repository.TurnoRepositoryImpl
 import cu.spvi.data.repository.VentaRepositoryImpl
 import cu.spvi.data.respaldo.RespaldoRepositoryImpl
-import cu.spvi.domain.model.ConsentimientoRed
 import cu.spvi.domain.model.DetalleVenta
 import cu.spvi.domain.model.MetodoPago
 import cu.spvi.domain.model.NivelesMinimos
@@ -174,7 +173,6 @@ class RespaldoRoomTest {
         override val onboardingCompletado = state.map { it.onboardingCompletado }
         override suspend fun completarOnboarding() { state.value = state.value.copy(onboardingCompletado = true) }
         override suspend fun guardarNiveles(n: NivelesMinimos) { state.value = state.value.copy(niveles = n) }
-        override suspend fun guardarConsultasEnLinea(c: ConsentimientoRed) { state.value = state.value.copy(consultasEnLinea = c) }
         override suspend fun guardarModulos(m: Set<cu.spvi.domain.model.Modulo>) { state.value = state.value.copy(modulos = cu.spvi.domain.model.Modulo.normalizar(m)) }
         override suspend fun guardarEmpleadosPrevistos(n: Int) { state.value = state.value.copy(empleadosPrevistos = n) }
         override suspend fun reemplazar(p: Preferencias) { state.value = p }
