@@ -50,6 +50,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -142,8 +144,15 @@ class InventarioViewModel @Inject constructor(
      */
     private val filtroConsultado: Flow<FiltroInventario> = filtro.debounce { f -> if (f.texto.isEmpty()) 0L else debounceBusqueda }
 
-    private val vista: StateFlow<EstadoCarga<VistaInventario>> = intento.flatMapLatest {
-        observarInventario(filtroConsultado)
+    /**
+     * 0.30.0 (F1): [filtroConsultado] + [intento] (Reintentar) disparan la consulta. Cada cambio de filtro
+     * vuelve a suscribir a `observarInventario` (por flatMapLatest), por eso el debounce funciona como se espera:
+     * escribiendo rápido solo llega el último valor. El estado inicial es Cargando, igual que antes.
+     */
+    private val consulta = combine(intento, filtroConsultado) { _, f -> f }.distinctUntilChanged()
+
+    private val vista: StateFlow<EstadoCarga<VistaInventario>> = consulta.flatMapLatest { f ->
+        observarInventario(flowOf(f))
             .map<VistaInventario, EstadoCarga<VistaInventario>> { if (it.total == 0) EstadoCarga.Vacio(it) else EstadoCarga.Exito(it) }
             .onStart { emit(EstadoCarga.Cargando) }
             .catch { emit(EstadoCarga.Error(TextosInventario.ERROR_CARGA)) }

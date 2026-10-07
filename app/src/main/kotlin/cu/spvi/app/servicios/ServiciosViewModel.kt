@@ -37,6 +37,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -110,8 +112,11 @@ class ServiciosViewModel @Inject constructor(
     /** 0.30.0 (F1, ver `InventarioViewModel`): el texto del buscador espera [debounceBusqueda]; el resto, al instante. */
     private val filtroConsultado: Flow<FiltroServicios> = filtro.debounce { f -> if (f.texto.isEmpty()) 0L else debounceBusqueda }
 
-    private val vista: StateFlow<EstadoCarga<VistaServicios>> = intento.flatMapLatest {
-        observarServicios(filtroConsultado)
+    /** 0.30.0 (F1, ver `InventarioViewModel`): filtro + intento (Reintentar) disparan la consulta. */
+    private val consulta = combine(intento, filtroConsultado) { _, f -> f }.distinctUntilChanged()
+
+    private val vista: StateFlow<EstadoCarga<VistaServicios>> = consulta.flatMapLatest { f ->
+        observarServicios(flowOf(f))
             .map<VistaServicios, EstadoCarga<VistaServicios>> { if (it.total == 0) EstadoCarga.Vacio(it) else EstadoCarga.Exito(it) }
             .onStart { emit(EstadoCarga.Cargando) }
             .catch { emit(EstadoCarga.Error(TextosServicios.ERROR_CARGA)) }
