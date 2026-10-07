@@ -4,29 +4,32 @@
 # Uso:  bash tools/verificacion/resumen_fallos.sh /tmp/salida.log
 #
 # Por qué existe: los registros del CI se sirven desde un almacenamiento (Azure Blob) que algunos entornos no
-# pueden leer. Para que el fallo sea visible desde la API de GitHub (check-runs → annotations y summary) y desde
-# la pestaña Actions, este script extrae lo esencial y lo publica en $GITHUB_STEP_SUMMARY y como ::error::.
-# Nunca sale con error: su misión es informar, no enmascarar ni añadir fallos.
+# pueden leer; las anotaciones del check-run, en cambio, siempre están en la API de GitHub. Este script extrae lo
+# esencial del fallo, escribe el detalle en $GITHUB_STEP_SUMMARY (pestaña Actions) y publica las líneas clave como
+# ::error:: (anotaciones visibles por la API). Nunca sale con error: informa, no añade fallos ni los enmascara.
 set -uo pipefail
 
 LOG="${1:-/tmp/salida.log}"
 MAX="${MAX_LINEAS:-160}"
 SALIDA="${GITHUB_STEP_SUMMARY:-/dev/stdout}"
 
-# --- 1. Errores de compilación y tareas de Gradle que fallaron -----------------------------------------------
+# Líneas que suelen explicar un fallo de Gradle, Kotlin, Robolectric o del propio contenedor.
+PATRONES='^e: |^error: |: error: |Unresolved reference|Permission denied|Execution failed for task|^FAILURE: |^> Task .* FAILED| FAILED$|Exception|Caused by:|Could not (resolve|download|find|determine|create)|No such file'
+
+# --- 1. Lo esencial del log ----------------------------------------------------------------------------------
 {
   printf '\n## Resumen del fallo\n'
   if [ ! -s "$LOG" ]; then
     printf '\nEl log `%s` no existe o está vacío (¿el fallo ocurrió antes de ejecutar el comando?).\n' "$LOG"
   else
-    if grep -q -E '^e: |: error: |Execution failed for task' "$LOG"; then
-      printf '\n### Compilación y tareas fallidas\n\n```\n'
-      grep -E '^e: |: error: |Execution failed for task|^FAILURE: ' "$LOG" | head -60 || true
+    if grep -q '^What went wrong' "$LOG"; then
+      printf '\n### Qué fue mal (Gradle)\n\n```\n'
+      grep -A 30 -m1 '^What went wrong' "$LOG" || true
       printf '```\n'
     fi
-    if grep -q -E ' FAILED$' "$LOG"; then
-      printf '\n### Tests fallidos (según el log)\n\n```\n'
-      grep -E ' FAILED$' "$LOG" | head -40 || true
+    if grep -qE "$PATRONES" "$LOG"; then
+      printf '\n### Líneas que explican el fallo\n\n```\n'
+      grep -E "$PATRONES" "$LOG" | head -60 || true
       printf '```\n'
     fi
   fi
@@ -89,14 +92,18 @@ if [ -s "$LOG" ]; then
   } >> "$SALIDA"
 fi
 
-# --- 4. Anotaciones (pestaña Actions y API de check-runs): los mensajes clave, escapados ----------------------
+# --- 4. Anotaciones (API de check-runs): máximo 10, priorizando lo que explica el fallo ----------------------
 anotar() {
   local linea
   while IFS= read -r linea; do
     printf '::error::%s\n' "${linea//%/%25}"
   done
 }
-grep -E '^e: |Execution failed for task|^FAILURE: ' "$LOG" 2>/dev/null | head -6 | anotar || true
-grep -E ' FAILED$' "$LOG" 2>/dev/null | head -4 | anotar || true
+{
+  grep -A 10 -m1 '^What went wrong' "$LOG" 2>/dev/null | head -10 || true
+  grep -E '^e: |^error: |: error: |Unresolved reference|Permission denied|Execution failed for task' "$LOG" 2>/dev/null | head -8 || true
+  grep -E '^> Task .* FAILED| FAILED$' "$LOG" 2>/dev/null | head -4 || true
+  tail -n 2 "$LOG" 2>/dev/null || true
+} | anotar | head -10
 
 exit 0
