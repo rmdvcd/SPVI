@@ -1,0 +1,92 @@
+package cu.spvi.domain.repository
+
+import cu.spvi.core.money.Cup
+import cu.spvi.core.result.AppResult
+import cu.spvi.domain.model.Anulacion
+import cu.spvi.domain.model.Arqueo
+import cu.spvi.domain.model.MovimientoCaja
+import cu.spvi.domain.model.MovimientoInventario
+import cu.spvi.domain.model.TipoMovimientoCaja
+import cu.spvi.domain.model.ElaboradoEnVenta
+import cu.spvi.domain.model.Transaccion
+import cu.spvi.domain.model.Turno
+import cu.spvi.domain.model.Venta
+import java.time.Instant
+import kotlinx.coroutines.flow.Flow
+
+interface VentaRepository {
+    /**
+     * Registra la venta de forma ATÓMICA: comprueba que [Venta.turnoId] sigue abierto, re-verifica
+     * existencias, inserta venta + detalles + transacción, descuenta stock de los artículos y crea los movimientos VENTA.
+     * Errores: TurnoCerrado, StockInsuficiente(nombres), NoEncontrado.
+     *
+     * [elaborados] (P26): los Elaborados de la venta no tienen existencias; en la misma transacción se descuentan
+     * sus insumos (movimientos CONSUMO ligados a la venta) y NO se toca la existencia del Elaborado.
+     * Si un insumo ya no alcanza → StockInsuficiente(nombre del insumo) y rollback completo.
+     */
+    suspend fun registrar(venta: Venta, elaborados: List<ElaboradoEnVenta> = emptyList()): AppResult<Long>
+    suspend fun obtener(id: Long): Venta?
+    /** Ventas con detalle en [desde, hasta). */
+    suspend fun entre(desde: Instant, hasta: Instant): List<Venta>
+    suspend fun deTurno(turnoId: Long): List<Venta>
+
+    /**
+     * 0.25.0 (solo app principal): anula la venta de forma ATÓMICA si su turno sigue ABIERTO: la marca (no se borra),
+     * devuelve las existencias (movimientos ANULACION, el contrario de cada salida de la venta) y, si el turno es de
+     * una secundaria, deja el cambio pendiente de enviarle. Errores: NoEncontrado, TurnoCerrado, Validacion (ya anulada).
+     */
+    suspend fun anular(ventaId: Long, anulacion: Anulacion): AppResult<Unit>
+
+    /**
+     * 0.25.0: «Modificar» = [anular] la original + [registrar] [nueva] (mismo turno), todo en UNA transacción. La original
+     * queda con el motivo «Modificada → venta #N». Devuelve el id de la nueva.
+     */
+    suspend fun modificar(ventaId: Long, anulacion: Anulacion, nueva: Venta, elaborados: List<ElaboradoEnVenta>): AppResult<Long>
+
+    /** 0.25.0: salidas de existencias de una venta (para devolverlas al planificar una modificación). */
+    suspend fun movimientosDe(ventaId: Long): List<MovimientoInventario>
+}
+
+interface TurnoRepository {
+    fun observarActivo(): Flow<Turno?>
+    suspend fun activo(): Turno?
+    suspend fun ultimoCerrado(): Turno?
+    fun observarHistorial(): Flow<List<Turno>>
+    suspend fun obtener(id: Long): Turno?
+    /** Error TurnoYaAbierto si ya hay uno abierto (verificado en transacción). [usuario] se congela en el turno. */
+    suspend fun abrir(ahora: Instant, usuario: String, fondo: Cup? = null): AppResult<Turno>
+    /**
+     * Cierra y congela el resumen (ventas, totales y nº de ventas por método, costo, movimientos de productos e
+     * insumos) calculado en la BD dentro de la misma transacción. Error TurnoCerrado si no hay turno abierto.
+     */
+    suspend fun cerrar(ahora: Instant, usuario: String, contado: Cup? = null): AppResult<Turno>
+    /** Movimientos de inventario e insumos asociados al turno, en orden cronológico. */
+    suspend fun movimientosDe(turnoId: Long): List<MovimientoInventario>
+
+    /** 0.25.0: entrada/salida de efectivo en el turno ACTIVO de esta app. Error TurnoCerrado si no hay. */
+    suspend fun registrarCaja(tipo: TipoMovimientoCaja, importe: Cup, motivo: String, hechoPor: String, ahora: Instant): AppResult<Long>
+    suspend fun cajaDe(turnoId: Long): List<MovimientoCaja>
+    /** 0.25.0: arqueo EN VIVO del turno activo de esta app (null sin turno o sin fondo). */
+    fun observarArqueoActivo(): Flow<Arqueo?>
+    /** 0.25.0 (secundaria): efectivo contado al solicitar el cierre; se envía con el turno. */
+    suspend fun declararContado(contado: Cup): AppResult<Unit>
+}
+
+/** Filtros de Registros: fecha (todas las tablas), importe (ventas y transferencias), texto libre. */
+data class FiltroRegistro(
+    val desde: Instant? = null,
+    val hasta: Instant? = null,
+    val importeMin: Cup? = null,
+    val importeMax: Cup? = null,
+    val texto: String? = null,
+)
+
+/** Consultas de solo lectura de la pantalla Registros, más recientes primero. */
+interface RegistroRepository {
+    fun ventas(filtro: FiltroRegistro): Flow<List<Venta>>
+    fun transacciones(filtro: FiltroRegistro): Flow<List<Transaccion>>
+    /** El filtro de importe no aplica a movimientos (SPVI.txt). */
+    fun movimientos(filtro: FiltroRegistro): Flow<List<MovimientoInventario>>
+    /** 0.20.0 (H1): nombres distintos de quienes abrieron turnos (filtro «Vendedor»), en orden alfabético. */
+    fun vendedores(): Flow<List<String>>
+}

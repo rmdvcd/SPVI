@@ -1,0 +1,174 @@
+package cu.spvi.app.integracion
+
+import androidx.lifecycle.SavedStateHandle
+import androidx.room.Room
+import androidx.test.core.app.ApplicationProvider
+import cu.spvi.app.ConfRepo
+import cu.spvi.app.FakeArchivos
+import cu.spvi.app.FakeExportador
+import cu.spvi.app.PerfilRepo
+import cu.spvi.app.PrefRepo
+import cu.spvi.app.common.EntradaCompartida
+import cu.spvi.app.inicio.InicioViewModel
+import cu.spvi.app.licencia.LicenciaViewModel
+import cu.spvi.app.respaldo.RespaldoViewModel
+import cu.spvi.app.root.RootViewModel
+import cu.spvi.app.venta.VentaViewModel
+import cu.spvi.core.money.Cup
+import cu.spvi.core.result.AppError
+import cu.spvi.core.result.AppResult
+import cu.spvi.core.time.Clock
+import cu.spvi.data.db.SpviDatabase
+import cu.spvi.data.repository.InsumoRepositoryImpl
+import cu.spvi.data.repository.PreciosRepositoryImpl
+import cu.spvi.data.repository.ProductoRepositoryImpl
+import cu.spvi.data.repository.TurnoRepositoryImpl
+import cu.spvi.data.repository.VentaRepositoryImpl
+import cu.spvi.data.respaldo.RespaldoRepositoryImpl
+import cu.spvi.domain.model.AutorizacionMigracion
+import cu.spvi.domain.model.Licencia
+import cu.spvi.domain.model.Perfil
+import cu.spvi.domain.model.Preferencias
+import cu.spvi.domain.model.TarjetaBancaria
+import cu.spvi.domain.model.Telefono
+import cu.spvi.domain.repository.LicenciaRepository
+import cu.spvi.domain.usecase.AbrirTurno
+import cu.spvi.domain.usecase.ActivarLicencia
+import cu.spvi.domain.usecase.CerrarTurno
+import cu.spvi.domain.usecase.CotizarVenta
+import cu.spvi.domain.usecase.ExportarRespaldo
+import cu.spvi.domain.usecase.ExtraerNumeroTransaccion
+import cu.spvi.domain.usecase.GuardarProducto
+import cu.spvi.domain.usecase.ImportarRespaldo
+import cu.spvi.domain.usecase.ObservarAlertas
+import cu.spvi.domain.usecase.ObservarPermisoVenta
+import cu.spvi.domain.usecase.ObtenerGraficosPeriodo
+import cu.spvi.domain.usecase.ObtenerResumenGeneral
+import cu.spvi.domain.usecase.PeriodoPorDefecto
+import cu.spvi.domain.usecase.RangoDePreset
+import cu.spvi.domain.usecase.RegistrarVenta
+import cu.spvi.domain.usecase.ResolverPeriodo
+import cu.spvi.domain.usecase.SolicitarLicencia
+import cu.spvi.domain.usecase.UsuarioActual
+import cu.spvi.domain.usecase.VigilarLicencia
+import cu.spvi.licencia.ActivationResult
+import cu.spvi.licencia.LicenseState
+import cu.spvi.licencia.SolicitudInput
+import cu.spvi.licencia.contract.TipoLicencia
+import java.time.Duration
+import java.time.Instant
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+
+/**
+ * Prompt 15 — entorno de los tests de integración de :app.
+ *
+ * Datos de negocio REALES: Room en memoria + repositorios de :data (productos, insumos, turnos, ventas, precios,
+ * respaldo). Se simulan solo los bordes que dependen del dispositivo o de terceros: Keystore/DataStore (perfil,
+ * preferencias, licencia), cámara y selector de archivos del sistema.
+ */
+class EntornoIntegracion(licencia: LicenseState = LicenseState.Trial(5)) {
+    var ahora: Instant = Instant.parse("2026-09-30T16:00:00Z") // 12:00 en La Habana
+    val clock = Clock { ahora }
+
+    val db: SpviDatabase = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), SpviDatabase::class.java)
+        .allowMainThreadQueries() // las aserciones leen la BD desde el hilo del test
+        .build()
+    val productos = ProductoRepositoryImpl(db, clock)
+    val insumos = InsumoRepositoryImpl(db, clock)
+    val servicios = cu.spvi.data.repository.ServicioRepositoryImpl(db, clock)
+    val turnos = TurnoRepositoryImpl(db)
+    val ventas = VentaRepositoryImpl(db)
+    val precios = PreciosRepositoryImpl(db)
+
+    val perfil = PerfilRepo(
+        Perfil(
+            nombre = "Ana", tarjetas = listOf(TarjetaBancaria(1, "9248129970876454")), telefonos = listOf(Telefono(2, "+5351815604")),
+            pagoTarjetaId = 1, pagoTelefonoId = 2,
+        ),
+    )
+    val prefs = PrefRepo(Preferencias(onboardingCompletado = true))
+    val licencia = LicMem(licencia, clock)
+    val conf = ConfRepo()
+    val archivos = FakeArchivos()
+    val entrada = EntradaCompartida()
+    val estadoApp = cu.spvi.app.EstadoAppRepo()
+    val respaldo = RespaldoRepositoryImpl(db, prefs, clock, Dispatchers.IO, this.licencia, estadoApp)
+
+    fun cerrar() = db.close()
+
+    private val usuario = UsuarioActual(perfil)
+    private val cotizar = CotizarVenta(productos, precios, insumos, servicios)
+
+    fun ventaVm(tipo: String = "VENTA") = VentaViewModel(
+        saved = SavedStateHandle(mapOf(VentaViewModel.KEY_TIPO to tipo)),
+        observarPermiso = ObservarPermisoVenta(turnos),
+        productosRepo = productos,
+        observarElaborados = cu.spvi.domain.usecase.ObservarElaborados(insumos, productos),
+        insumosRepo = insumos,
+        observarServicios = cu.spvi.domain.usecase.ObservarServicios(servicios, insumos),
+        perfilRepo = perfil,
+        abrirTurno = AbrirTurno(turnos, usuario, clock),
+        cotizar = cotizar,
+        registrar = RegistrarVenta(cotizar, turnos, ventas, perfil, clock),
+        extraer = ExtraerNumeroTransaccion(),
+        entrada = entrada,
+        sesion = sesionVenta,
+        secundaria = secundaria,
+        clientesFijos = cu.spvi.data.repository.ClienteFijoRepositoryImpl(db),
+    )
+
+    /** 0.20.0 (H5): venta en curso y estado de app secundaria (aquí siempre principal: sin cierre pedido). */
+    val sesionVenta = cu.spvi.domain.service.SesionVenta()
+    val secundaria = cu.spvi.app.SecundariaRepoFake()
+
+    fun inicioVm() = InicioViewModel(
+        SavedStateHandle(), licencia, ObservarAlertas(productos, insumos, prefs, clock), perfil,
+        precios, turnos, productos,
+        ResolverPeriodo(PeriodoPorDefecto(turnos, clock), RangoDePreset(clock)),
+        ObtenerGraficosPeriodo(ventas, turnos, clock), ObtenerResumenGeneral(ventas, productos, insumos, servicios, clock),
+        AbrirTurno(turnos, usuario, clock), CerrarTurno(turnos, usuario, clock), clock,
+        secundaria,
+    )
+
+    fun respaldoVm() = RespaldoViewModel(
+        ExportarRespaldo(respaldo), ImportarRespaldo(respaldo), respaldo,
+        archivos, entrada, clock,
+    )
+
+    fun licenciaVm() = LicenciaViewModel(
+        licencia, perfil, SolicitarLicencia(licencia, perfil), ActivarLicencia(licencia), prefs,
+    )
+
+    fun rootVm() = RootViewModel(licencia, prefs, VigilarLicencia(licencia, clock), cu.spvi.app.TipoRepo())
+}
+
+// ------------------------------------------------------------------ bordes simulados
+
+/**
+ * Licencia simulada (el Keystore y la criptografía GL reales se prueban en :data LicenciaInstrumentedTest y en
+ * :licencia). Acepta el mensaje que contiene [MENSAJE_VALIDO] y pasa a Active (30 días); el resto → Rejected.
+ */
+class LicMem(estado: LicenseState, private val clock: Clock) : LicenciaRepository {
+    private val flow = MutableStateFlow<Licencia?>(Licencia(estado, "SPVI:3f2a9c0d1e4b5a67", puedeSolicitar = true, huellaEmisor = "ab12"))
+    override val snapshot: StateFlow<Licencia?> = flow
+    val activaciones = mutableListOf<String>()
+    fun fijar(estado: LicenseState) { flow.value = flow.value!!.copy(estado = estado) }
+    override suspend fun refrescar(): Licencia = flow.value!!
+    override suspend fun construirSolicitud(input: SolicitudInput): AppResult<cu.spvi.licencia.SolicitudGenerada> =
+        AppResult.Ok(cu.spvi.licencia.SolicitudGenerada("Solicitud\n\nSPVIR1:x", "SPVIR1:x"))
+    override suspend fun activar(mensaje: String): ActivationResult {
+        activaciones += mensaje
+        if (MENSAJE_VALIDO !in mensaje) return ActivationResult.Rejected
+        val nuevo = LicenseState.Active(TipoLicencia.MENSUAL, clock.now().plus(Duration.ofDays(30)), "lic-1")
+        fijar(nuevo)
+        return ActivationResult.Accepted(nuevo)
+    }
+    override suspend fun verificarAutorizacionMigracion(mensaje: String) = AutorizacionMigracion.NO_ENCONTRADA
+    override suspend fun cederLicencia(): AppResult<Unit> = AppResult.Err(AppError.NoEncontrado)
+
+    companion object { const val MENSAJE_VALIDO = "Licencia SPVI lic-1" }
+}
+
+fun cup(pesos: Long) = Cup.ofPesos(pesos)

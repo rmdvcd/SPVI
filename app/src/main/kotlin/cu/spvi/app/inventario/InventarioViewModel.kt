@@ -1,0 +1,382 @@
+package cu.spvi.app.inventario
+
+import cu.spvi.core.time.Dates
+import cu.spvi.domain.model.nombreCompleto
+import cu.spvi.core.result.runCatchingCancelable
+import cu.spvi.domain.usecase.EliminarInsumos
+import cu.spvi.domain.usecase.ObtenerFichaInsumo
+import cu.spvi.domain.repository.InsumoRepository
+import cu.spvi.domain.model.comoProducto
+import cu.spvi.domain.model.IdArticulo
+import cu.spvi.domain.model.FichaInsumo
+import cu.spvi.domain.repository.ProductoRepository
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import cu.spvi.app.common.ArchivosApp
+import cu.spvi.app.common.ExportadorArchivos
+import cu.spvi.app.common.lanzarExportacion
+import cu.spvi.app.common.RenderizadorTabla
+import cu.spvi.app.inicio.EstadoCarga
+import cu.spvi.app.inicio.TipoVenta
+import cu.spvi.app.navigation.Route
+import cu.spvi.core.result.AppResult
+import cu.spvi.core.time.Clock
+import cu.spvi.domain.model.FichaProducto
+import cu.spvi.domain.model.FiltroInventario
+import cu.spvi.domain.model.ItemInventario
+import cu.spvi.domain.model.Producto
+import cu.spvi.domain.model.TipoArticulo
+import cu.spvi.domain.model.VistaInventario
+import cu.spvi.domain.service.FormatoExport
+import cu.spvi.domain.service.TablasExport
+import cu.spvi.domain.usecase.EliminarProductos
+import cu.spvi.domain.usecase.ExportarFicha
+import cu.spvi.domain.usecase.ExportarInventario
+import cu.spvi.domain.usecase.LimpiarFotos
+import cu.spvi.domain.usecase.ObservarInventario
+import cu.spvi.domain.usecase.ObtenerFichaProducto
+import dagger.hilt.android.lifecycle.HiltViewModel
+import java.io.File
+import java.time.LocalDate
+import java.time.ZoneId
+import javax.inject.Inject
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+enum class HojaInventario { FILTRO, EXPORTAR, COMPARTIR_FICHA }
+
+sealed interface ConfirmarEliminar {
+    data class Uno(val id: Long, val nombre: String) : ConfirmarEliminar
+    data class Seleccion(val cantidad: Int) : ConfirmarEliminar
+}
+
+data class InventarioUiState(
+    val vista: EstadoCarga<VistaInventario> = EstadoCarga.Cargando,
+    val filtro: FiltroInventario = FiltroInventario(),
+    val seleccion: Set<Long> = emptySet(),
+    val ficha: FichaProducto? = null,
+    /** P29: ficha de un insumo (fila con id negativo). */
+    val fichaInsumo: FichaInsumo? = null,
+    val hoja: HojaInventario? = null,
+    val confirmar: ConfirmarEliminar? = null,
+    val trabajando: Boolean = false,
+    /** No null = modo «elegir qué vender» (Prompt 13). */
+    val modoVenta: TipoVenta? = null,
+) {
+    val items: List<ItemInventario> get() = (vista as? EstadoCarga.Exito)?.datos?.items.orEmpty()
+    val total: Int get() = when (vista) { is EstadoCarga.Exito -> vista.datos.total; else -> 0 }
+    val categorias: List<String> get() = (vista as? EstadoCarga.Exito)?.datos?.categorias.orEmpty()
+    val todosVisiblesSeleccionados: Boolean get() = items.isNotEmpty() && items.all { it.producto.id in seleccion }
+}
+
+sealed interface EventoInventario {
+    data class Compartir(val archivos: List<File>, val mime: String, val asunto: String) : EventoInventario
+    /** La pantalla abre "Guardar como" (SAF) y devuelve la URI a [InventarioViewModel.guardarEn]. */
+    data class GuardarComo(val nombre: String, val mime: String) : EventoInventario
+    data class Navegar(val route: Route) : EventoInventario
+    data class Mensaje(val texto: String) : EventoInventario
+    /** Modo venta: el usuario confirmó; vuelve a la venta con los ids elegidos (en orden de marcado). */
+    data class SeleccionVenta(val ids: List<Long>) : EventoInventario
+}
+
+/**
+ * Inventario: tabla cronológica con buscador, filtro, selección por checkbox, ficha, borrado y exportación.
+ * El filtro llega preseleccionado desde un contador de alertas de Inicio (argumento de ruta "alerta").
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+@HiltViewModel
+class InventarioViewModel @Inject constructor(
+    saved: SavedStateHandle,
+    observarInventario: ObservarInventario,
+    private val productosRepo: ProductoRepository,
+    private val obtenerFicha: ObtenerFichaProducto,
+    private val eliminarProductos: EliminarProductos,
+    insumosRepo: InsumoRepository,
+    private val obtenerFichaInsumo: ObtenerFichaInsumo,
+    private val eliminarInsumos: EliminarInsumos,
+    private val exportarInventario: ExportarInventario,
+    private val exportarFicha: ExportarFicha,
+    private val tarjetas: RenderizadorTarjetas,
+    private val imagenTabla: RenderizadorTabla,
+    private val archivos: ArchivosApp,
+    private val clock: Clock,
+    limpiarFotos: LimpiarFotos,
+) : ViewModel() {
+
+    private val modoVenta: TipoVenta? = saved.get<String>(KEY_VENTA)?.let { v -> TipoVenta.entries.firstOrNull { it.name == v } }
+    private val filtro = MutableStateFlow(
+        FiltroInventario(
+            alerta = saved.get<String>(KEY_ALERTA)?.let { a -> (ALERTAS_PRODUCTO + ALERTAS_INSUMO + ALERTAS_GENERALES).firstOrNull { it.name == a } },
+            tipo = SeleccionVenta.filtroInicial(modoVenta),
+        ),
+    )
+    private val intento = MutableStateFlow(0)
+    private val seleccion = MutableStateFlow<Set<Long>>(if (modoVenta != null) SeleccionVenta.parse(saved.get<String>(KEY_SELECCION)) else emptySet())
+    private val local = MutableStateFlow(InventarioUiState(modoVenta = modoVenta))
+    private val eventosCh = Channel<EventoInventario>(Channel.BUFFERED)
+    val eventos: Flow<EventoInventario> = eventosCh.receiveAsFlow()
+
+    private val vista: StateFlow<EstadoCarga<VistaInventario>> = intento.flatMapLatest {
+        observarInventario(filtro)
+            .map<VistaInventario, EstadoCarga<VistaInventario>> { if (it.total == 0) EstadoCarga.Vacio(it) else EstadoCarga.Exito(it) }
+            .onStart { emit(EstadoCarga.Cargando) }
+            .catch { emit(EstadoCarga.Error(TextosInventario.ERROR_CARGA)) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EstadoCarga.Cargando)
+
+    /**
+     * Todos los productos activos + los insumos (id negativo, P29): la selección sobrevive a búsquedas/filtros y se
+     * poda si se borran.
+     */
+    private val todos: StateFlow<Map<Long, Producto>> = combine(productosRepo.observarTodos(), insumosRepo.observarTodos()) { l, xs ->
+        l.filterNot { it.eliminado }.associateBy { it.id } + xs.map { it.comoProducto() }.associateBy { it.id }
+    }
+        .catch { emit(emptyMap()) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    val state: StateFlow<InventarioUiState> = combine(vista, filtro, seleccion, todos, local) { v, f, s, t, l ->
+        l.copy(vista = v, filtro = f, seleccion = if (t.isEmpty()) emptySet() else s.filterTo(mutableSetOf()) { it in t })
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InventarioUiState(filtro = filtro.value))
+
+    /** «Enviar» y «Guardar como» (P17 S5): el formato pendiente espera la URI del selector del sistema. */
+    private val exportador = ExportadorArchivos<FormatoSalida>(archivos)
+
+    init {
+        viewModelScope.launch { runCatchingCancelable { limpiarFotos() } }
+    }
+
+    // ---------------- Buscador y filtro ----------------
+
+    fun buscar(texto: String) = filtro.update { it.copy(texto = texto.take(80)) }
+    fun aplicarFiltro(f: FiltroInventario) { filtro.update { f.copy(texto = it.texto) }; cerrarHoja() }
+    fun quitarFiltros() = filtro.update { FiltroInventario() }
+    fun reintentar() = intento.update { it + 1 }
+
+    // ---------------- Selección (checkbox) ----------------
+
+    fun alternar(id: Long) {
+        val item = state.value.items.firstOrNull { it.producto.id == id }
+        if (modoVenta != null && id !in seleccion.value && item != null && !SeleccionVenta.vendible(item)) {
+            emitir(EventoInventario.Mensaje(SeleccionVenta.motivo(item))); return
+        }
+        seleccion.update { if (id in it) it - id else it + id }
+    }
+
+    /** Marca todo lo visible; si ya estaba todo lo visible marcado, lo desmarca. En modo venta, solo lo vendible. */
+    fun seleccionarTodo() {
+        val visibles = state.value.items
+            .filter { modoVenta == null || SeleccionVenta.vendible(it) }.map { it.producto.id }.toSet()
+        seleccion.update { if (visibles.isNotEmpty() && it.containsAll(visibles)) it - visibles else it + visibles }
+    }
+
+    fun limpiarSeleccion() { seleccion.value = emptySet() }
+
+    /** Modo venta: Continuar → la venta recibe los ids (MainScaffold los devuelve por el back stack). */
+    fun confirmarSeleccionVenta() {
+        val ids = state.value.seleccion.toList()
+        if (modoVenta == null || ids.isEmpty()) return
+        emitir(EventoInventario.SeleccionVenta(ids))
+    }
+
+    // ---------------- Ficha ----------------
+
+    fun abrirFicha(id: Long) {
+        viewModelScope.launch {
+            if (IdArticulo.esInsumo(id)) {
+                when (val r = obtenerFichaInsumo(IdArticulo.insumoId(id))) {
+                    is AppResult.Ok -> local.update { it.copy(fichaInsumo = r.value) }
+                    is AppResult.Err -> emitir(EventoInventario.Mensaje(TextosInventario.FICHA_NO_DISPONIBLE))
+                }
+                return@launch
+            }
+            when (val r = obtenerFicha(id)) {
+                is AppResult.Ok -> local.update { it.copy(ficha = r.value) }
+                is AppResult.Err -> emitir(EventoInventario.Mensaje(TextosInventario.FICHA_NO_DISPONIBLE))
+            }
+        }
+    }
+
+    fun cerrarFicha() = local.update { it.copy(ficha = null, fichaInsumo = null, hoja = if (it.hoja == HojaInventario.COMPARTIR_FICHA) null else it.hoja) }
+
+    fun editar(id: Long) {
+        local.update { it.copy(ficha = null, fichaInsumo = null, hoja = null) }
+        emitir(EventoInventario.Navegar(if (IdArticulo.esInsumo(id)) Route.InsumoForm(IdArticulo.insumoId(id)) else Route.ProductoForm(id = id)))
+    }
+
+    // ---------------- Agregar ----------------
+
+    fun mostrarHoja(h: HojaInventario) = local.update { it.copy(hoja = h) }
+    fun cerrarHoja() = local.update { it.copy(hoja = null) }
+
+    /**
+     * P31: «Insumos» es una categoría, no un botón. El + abre el formulario de producto (donde se puede
+     * elegir la categoría «Insumos»), o directamente el de insumo si la tabla está filtrada por «Insumos».
+     */
+    fun agregar() {
+        cerrarHoja()
+        val destino = when {
+            filtro.value.tipo == TipoArticulo.INSUMOS -> Route.InsumoForm()
+            else -> Route.ProductoForm()
+        }
+        emitir(EventoInventario.Navegar(destino))
+    }
+
+    // ---------------- Eliminar ----------------
+
+    fun pedirEliminarFicha() {
+        val s = state.value
+        val c = s.fichaInsumo?.let { ConfirmarEliminar.Uno(IdArticulo.deInsumo(it.insumo.id), it.insumo.nombre) }
+            ?: s.ficha?.let { ConfirmarEliminar.Uno(it.producto.id, it.producto.nombreCompleto) } ?: return
+        local.update { it.copy(confirmar = c) }
+    }
+
+    fun pedirEliminarSeleccion() {
+        val n = state.value.seleccion.size
+        if (n > 0) local.update { it.copy(confirmar = ConfirmarEliminar.Seleccion(n)) }
+    }
+
+    fun cancelarEliminar() = local.update { it.copy(confirmar = null) }
+
+    fun confirmarEliminar() {
+        val c = local.value.confirmar ?: return
+        local.update { it.copy(confirmar = null, trabajando = true) }
+        viewModelScope.launch {
+            when (c) {
+                is ConfirmarEliminar.Uno -> {
+                    val mensaje = if (IdArticulo.esInsumo(c.id)) {
+                        val r = eliminarInsumos(setOf(IdArticulo.insumoId(c.id)))
+                        when {
+                            r.eliminados == 1 -> null
+                            r.enUso.isNotEmpty() -> TextosInventario.EN_USO
+                            else -> TextosInventario.ERROR_ELIMINAR
+                        }
+                    } else {
+                        if (productosRepo.eliminar(c.id) is AppResult.Ok) null else TextosInventario.ERROR_ELIMINAR
+                    }
+                    if (mensaje == null) { local.update { it.copy(ficha = null, fichaInsumo = null) }; seleccion.update { it - c.id } }
+                    emitir(EventoInventario.Mensaje(mensaje ?: TextosInventario.ELIMINADO))
+                }
+                is ConfirmarEliminar.Seleccion -> {
+                    val (insumos, productos) = state.value.seleccion.partition(IdArticulo::esInsumo)
+                    val rp = if (productos.isEmpty()) null else eliminarProductos(productos.toSet())
+                    val ri = if (insumos.isEmpty()) null else eliminarInsumos(insumos.map(IdArticulo::insumoId).toSet())
+                    seleccion.value = emptySet()
+                    emitir(
+                        EventoInventario.Mensaje(
+                            TextosInventario.eliminados(
+                                (rp?.eliminados ?: 0) + (ri?.eliminados ?: 0),
+                                (rp?.fallidos ?: 0) + (ri?.fallidos ?: 0),
+                                ri?.enUso.orEmpty(),
+                            ),
+                        ),
+                    )
+                }
+            }
+            local.update { it.copy(trabajando = false) }
+        }
+    }
+
+    // ---------------- Exportar (lista) ----------------
+
+    /** Lo que se exporta: la selección; sin selección, lo que se ve (búsqueda + filtro aplicados). */
+    fun objetivoExport(): List<Producto> {
+        val s = state.value
+        return if (s.seleccion.isNotEmpty()) s.seleccion.mapNotNull { todos.value[it] }.sortedByDescending { it.creadoEn }
+        else s.items.map { it.producto }
+    }
+
+    fun exportar(formato: FormatoSalida) {
+        val ps = objetivoExport()
+        if (ps.isEmpty()) return
+        cerrarHoja()
+        trabajar {
+            when (formato) {
+                FormatoSalida.IMAGEN -> {
+                    val fs = imagenTabla.renderizar(TablasExport.listaPrecios(ps), "SPVI_precios_${Dates.localDate(clock.now(), ZoneId.systemDefault())}")
+                    emitir(EventoInventario.Compartir(fs, "image/png", TextosInventario.TITULO))
+                }
+                FormatoSalida.TARJETAS -> {
+                    val fs = tarjetas.renderizar(ps)
+                    emitir(EventoInventario.Compartir(fs, "image/png", TextosInventario.TITULO))
+                }
+                FormatoSalida.PDF, FormatoSalida.EXCEL -> {
+                    val fx = formato.aExport()
+                    when (val r = exportador.aTemporal(nombreInventario(fx)) { exportarInventario(ps, fx, it) }) {
+                        is AppResult.Ok -> emitir(EventoInventario.Compartir(listOf(r.value.archivo), fx.mime, TextosInventario.TITULO))
+                        is AppResult.Err -> emitir(EventoInventario.Mensaje(TextosInventario.ERROR_EXPORTAR))
+                    }
+                }
+            }
+        }
+    }
+
+    /** "Guardar en el dispositivo" (PDF/Excel): primero se pide el destino al sistema. */
+    fun pedirGuardar(formato: FormatoSalida) {
+        if (!formato.guardable || objetivoExport().isEmpty()) return
+        exportador.recordar(formato)
+        cerrarHoja()
+        val fx = formato.aExport()
+        emitir(EventoInventario.GuardarComo(nombreInventario(fx), fx.mime))
+    }
+
+    fun guardarEn(uri: String?) {
+        val formato = exportador.tomar(uri) ?: return // nada pendiente o el usuario canceló el selector
+        val ps = objetivoExport()
+        trabajar {
+            val r = exportador.aDestino(checkNotNull(uri)) { out -> exportarInventario(ps, formato.aExport(), out) }
+            emitir(EventoInventario.Mensaje(if (r is AppResult.Ok) TextosInventario.GUARDADO_EN_DISPOSITIVO else TextosInventario.ERROR_EXPORTAR))
+        }
+    }
+
+    // ---------------- Compartir (ficha) ----------------
+
+    fun compartirFicha(formato: FormatoSalida) {
+        val f = state.value.ficha ?: return
+        local.update { it.copy(hoja = null) }
+        trabajar {
+            when (formato) {
+                FormatoSalida.IMAGEN, FormatoSalida.TARJETAS -> emitir(EventoInventario.Compartir(tarjetas.renderizar(listOf(f.producto)), "image/png", f.producto.nombreCompleto))
+                FormatoSalida.PDF, FormatoSalida.EXCEL -> {
+                    when (val r = exportador.aTemporal("Ficha ${f.producto.nombreCompleto}.pdf") { exportarFicha(f, it) }) {
+                        is AppResult.Ok -> emitir(EventoInventario.Compartir(listOf(r.value.archivo), FormatoExport.PDF.mime, f.producto.nombreCompleto))
+                        is AppResult.Err -> emitir(EventoInventario.Mensaje(TextosInventario.ERROR_EXPORTAR))
+                    }
+                }
+            }
+        }
+    }
+
+    // ---------------- Internos ----------------
+
+    private fun trabajar(block: suspend () -> Unit) = lanzarExportacion(
+        ocupado = { b -> local.update { it.copy(trabajando = b) } },
+        alFallar = { emitir(EventoInventario.Mensaje(TextosInventario.ERROR_EXPORTAR)) },
+        bloque = block,
+    )
+
+    private fun nombreInventario(f: FormatoExport) =
+        "SPVI_inventario_${Dates.localDate(clock.now(), ZoneId.systemDefault())}.${f.extension}"
+
+    private fun FormatoSalida.aExport() = if (this == FormatoSalida.EXCEL) FormatoExport.XLSX else FormatoExport.PDF
+
+    private fun emitir(e: EventoInventario) { eventosCh.trySend(e) }
+
+    companion object {
+        const val KEY_ALERTA = "alerta"
+        const val KEY_VENTA = "venta"
+        const val KEY_SELECCION = "seleccion"
+    }
+}

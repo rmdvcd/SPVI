@@ -1,0 +1,35 @@
+package cu.spvi.app.pagos
+
+import cu.spvi.core.result.AppError
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Test
+
+class PagoLogicTest {
+
+    @Test fun camposNuevosSonOpcionales() {
+        assertNull(errorTelefono(""))
+        assertNull(errorTarjeta("  "))
+    }
+
+    @Test fun validacionDeFormato() {
+        assertNull(errorTelefono("5123 4567"))
+        assertEquals(TextosPago.ERROR_TELEFONO, errorTelefono("123"))
+        assertNull(errorTarjeta("9205-1299-0000-1234"))
+        assertEquals(TextosPago.ERROR_TARJETA, errorTarjeta("9205"))
+    }
+
+    @Test fun enEdicionElNumeroEsObligatorio() {
+        assertEquals(TextosPago.ERROR_TELEFONO, EdicionPago(TipoCuentaPago.TELEFONO).error)
+        assertEquals(TextosPago.ERROR_TARJETA, EdicionPago(TipoCuentaPago.TARJETA, numero = "").error)
+        assertNull(EdicionPago(TipoCuentaPago.TARJETA, numero = "9205 1299 0000 1234").error)
+        assertEquals(TextosPago.DUPLICADO, EdicionPago(TipoCuentaPago.TELEFONO, numero = "51234567", errorServidor = TextosPago.DUPLICADO).error)
+    }
+
+    @Test fun formatoYMensajes() {
+        assertEquals("9205 1299 0000 1234", formatoCuenta("9205129900001234"))
+        assertEquals(TextosPago.DUPLICADO, mensajePago(AppError.Duplicado("tarjetas")))
+        assertEquals(TextosPago.ERROR_TELEFONO, mensajePago(AppError.Validacion("telefonos")))
+        assertEquals(TextosPago.ERROR_GENERICO, mensajePago(AppError.Almacenamiento))
+    }
+}

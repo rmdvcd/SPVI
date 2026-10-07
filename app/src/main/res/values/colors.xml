@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 0.27.0 (N3): el icono no tiene fondo; la pantalla de arranque usa el fondo de la app (claro u oscuro). -->
+    <color name="spvi_window_background">#F8F9FA</color>
+</resources>

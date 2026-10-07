@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rutas expuestas por el FileProvider (permiso de lectura/escritura temporal, por URI):
+     - compartir/: archivos que el usuario envía (ArchivosAppImpl.CARPETA);
+     - fotos/ (0.27.0, T13): temporal donde la app de cámara escribe la foto; se borra tras copiarla.
+     Nada de filesDir, base de datos ni fotos guardadas. -->
+<paths>
+    <cache-path name="compartir" path="compartir/" />
+    <cache-path name="fotos" path="fotos/" />
+</paths>

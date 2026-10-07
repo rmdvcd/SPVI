@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tema de ventana mínimo: Compose (SpviTheme) dibuja todo. El fondo coincide con el del tema
+         para que no haya destello al terminar la splash. Barras del sistema: las gestiona enableEdgeToEdge(). -->
+    <style name="Theme.SPVI" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/spvi_window_background</item>
+    </style>
+
+    <!-- Splash (androidx.core:core-splashscreen, compatible API 26+). -->
+    <style name="Theme.SPVI.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/spvi_window_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.SPVI</item>
+    </style>
+</resources>

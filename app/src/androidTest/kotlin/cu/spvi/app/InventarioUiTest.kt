@@ -1,0 +1,149 @@
+package cu.spvi.app
+
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import cu.spvi.app.inicio.EstadoCarga
+import cu.spvi.app.inventario.AccionesInventario
+import cu.spvi.app.inventario.ConfirmarEliminar
+import cu.spvi.app.inventario.InventarioContent
+import cu.spvi.app.inventario.InventarioTags
+import cu.spvi.app.inventario.InventarioUiState
+import cu.spvi.app.inventario.TextosInventario
+import cu.spvi.app.producto.AccionesForm
+import cu.spvi.app.producto.ProductoForm
+import cu.spvi.app.producto.ProductoFormContent
+import cu.spvi.app.producto.ProductoFormTags
+import cu.spvi.app.producto.ProductoFormUiState
+import cu.spvi.core.money.Cup
+import cu.spvi.designsystem.theme.SpviTheme
+import cu.spvi.domain.model.EstadoCaducidad
+import cu.spvi.domain.model.FichaProducto
+import cu.spvi.domain.model.ItemInventario
+import cu.spvi.domain.model.NivelStock
+import cu.spvi.domain.model.Producto
+import cu.spvi.domain.model.VistaInventario
+import java.time.Instant
+import org.junit.Assert.assertEquals
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+
+@RunWith(AndroidJUnit4::class)
+class InventarioUiTest {
+    @get:Rule val rule = createComposeRule()
+
+    private val t0 = Instant.parse("2026-09-30T16:00:00Z")
+    private fun p(id: Long, nombre: String, cantidad: Long = 10) = Producto(
+        id = id, categoria = "Bebidas", nombre = nombre, precioCosto = Cup.ofPesos(60), precioVenta = Cup.ofPesos(1450),
+        cantidad = cantidad, creadoEn = t0,
+    )
+    private val items = listOf(
+        ItemInventario(p(1, "Refresco"), NivelStock.NORMAL, EstadoCaducidad.SIN_FECHA),
+        ItemInventario(p(2, "Galletas", 1), NivelStock.CRITICO, EstadoCaducidad.PROXIMA),
+    )
+    private fun lista(seleccion: Set<Long> = emptySet(), ficha: FichaProducto? = null, confirmar: ConfirmarEliminar? = null) =
+        InventarioUiState(vista = EstadoCarga.Exito(VistaInventario(items, 2, listOf("Bebidas"))), seleccion = seleccion, ficha = ficha, confirmar = confirmar)
+
+    private fun inventario(state: InventarioUiState, acciones: AccionesInventario = AccionesInventario()) =
+        rule.setContent { SpviTheme(darkTheme = false) { InventarioContent(state, acciones) } }
+
+    @Test fun checkboxSeleccionaYFilaAbreLaFicha() {
+        var marcado: Long? = null
+        var abierto: Long? = null
+        inventario(lista(), AccionesInventario(onAlternar = { marcado = it }, onAbrirFicha = { abierto = it }))
+        rule.onNodeWithText("Refresco").assertIsDisplayed()
+        rule.onAllNodesWithText("1,450.00 CUP", useUnmergedTree = true).onFirst().assertExists()
+        rule.onNodeWithTag(InventarioTags.check(2)).assertIsOff().performClick()
+        assertEquals(2L, marcado)
+        assertEquals(null, abierto) // el checkbox no abre la ficha
+        rule.onNodeWithTag(InventarioTags.fila(1)).performClick()
+        assertEquals(1L, abierto)
+    }
+
+    @Test fun barraDeSeleccionConEliminarYExportar() {
+        var eliminar = false
+        inventario(lista(seleccion = setOf(1, 2)), AccionesInventario(onEliminarSeleccion = { eliminar = true }))
+        rule.onNodeWithText("2 seleccionados").assertIsDisplayed()
+        rule.onNodeWithTag(InventarioTags.check(1)).assertIsOn()
+        rule.onNodeWithTag(InventarioTags.ELIMINAR_SELECCION).performClick()
+        assertEquals(true, eliminar)
+    }
+
+    @Test fun confirmacionAntesDeEliminar() {
+        var confirmado = false
+        inventario(lista(confirmar = ConfirmarEliminar.Seleccion(2)), AccionesInventario(onConfirmarEliminar = { confirmado = true }))
+        rule.onNodeWithText("¿Eliminar 2 productos?").assertIsDisplayed()
+        rule.onNodeWithText(TextosInventario.ELIMINAR_DETALLE).assertIsDisplayed()
+        rule.onNodeWithContentDescriptionEliminar()
+        assertEquals(true, confirmado)
+    }
+
+    private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.onNodeWithContentDescriptionEliminar() =
+        onNode(androidx.compose.ui.test.hasContentDescription("Eliminar") and androidx.compose.ui.test.hasClickAction()).performClick()
+
+    /** P24: el estado vacío ya no repite «Agregar»; la única vía es el botón flotante (+), siempre visible. */
+    @Test fun vacioYSinResultados() {
+        inventario(InventarioUiState(vista = EstadoCarga.Vacio(VistaInventario(emptyList(), 0, emptyList()))), AccionesInventario())
+        rule.onNodeWithText(TextosInventario.VACIO_TITULO).assertIsDisplayed()
+        rule.onNodeWithTag(InventarioTags.AGREGAR).assertIsDisplayed()
+        rule.onAllNodes(hasContentDescription(TextosInventario.AGREGAR) and hasClickAction()).assertCountEquals(1)
+    }
+
+    @Test fun filtradoSinCoincidenciasOfreceQuitarFiltros() {
+        var quitado = false
+        inventario(
+            InventarioUiState(vista = EstadoCarga.Exito(VistaInventario(emptyList(), 5, emptyList()))),
+            AccionesInventario(onQuitarFiltros = { quitado = true }),
+        )
+        rule.onNodeWithText(TextosInventario.SIN_RESULTADOS_TITULO).assertIsDisplayed()
+        rule.onNodeWithTag(InventarioTags.QUITAR_FILTROS).performClick()
+        assertEquals(true, quitado)
+    }
+
+    @Test fun fichaConEditarCompartirYEliminar() {
+        var editado: Long? = null
+        val ficha = FichaProducto(p(2, "Galletas", 1), emptyList(), NivelStock.CRITICO, EstadoCaducidad.SIN_FECHA)
+        inventario(lista(ficha = ficha), AccionesInventario(onEditar = { editado = it }))
+        rule.onNodeWithTag(InventarioTags.FICHA).assertExists()
+        rule.onNodeWithTag(InventarioTags.FICHA_COMPARTIR).assertExists()
+        rule.onNodeWithTag(InventarioTags.FICHA_ELIMINAR).assertExists()
+        rule.onNodeWithTag(InventarioTags.FICHA_EDITAR).performClick()
+        assertEquals(2L, editado)
+    }
+
+    // ---------- Formulario ----------
+
+    private fun formulario(state: ProductoFormUiState) =
+        rule.setContent { SpviTheme(darkTheme = false) { ProductoFormContent(state, AccionesForm()) } }
+
+    @Test fun elaboradoOcultaFotoFechaCantidadYNivelesYMuestraReceta() {
+        formulario(ProductoFormUiState(form = ProductoForm(categoria = "Elaborado")))
+        rule.onNodeWithTag(ProductoFormTags.RECETA).assertExists()
+        rule.onNodeWithTag(ProductoFormTags.FOTO).assertDoesNotExist()
+        rule.onNodeWithTag(ProductoFormTags.FECHA).assertDoesNotExist()
+        rule.onNodeWithTag(ProductoFormTags.COSTO).assertDoesNotExist() // se calcula con la receta
+        // P26: sin existencias ni niveles propios (alcanza según sus insumos).
+        rule.onNodeWithTag(ProductoFormTags.CANTIDAD).assertDoesNotExist()
+        rule.onNodeWithTag(ProductoFormTags.BAJO).assertDoesNotExist()
+        rule.onNodeWithTag(ProductoFormTags.CRITICO).assertDoesNotExist()
+    }
+
+    @Test fun articuloMuestraTodosLosCamposYErroresTrasGuardar() {
+        formulario(ProductoFormUiState(form = ProductoForm(categoria = "Bebidas"), intentado = true))
+        rule.onNodeWithTag(ProductoFormTags.FOTO).assertExists()
+        rule.onNodeWithTag(ProductoFormTags.RECETA).assertDoesNotExist()
+        rule.onNodeWithText("Escribe el nombre.", useUnmergedTree = true).assertExists()
+    }
+}

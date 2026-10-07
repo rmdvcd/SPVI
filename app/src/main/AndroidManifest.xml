@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Únicos permisos de la app (requisito v2).
+         CAMERA: SOLO mientras la cámara está encendida (QR de vinculación o foto del producto), con explicación previa.
+         INTERNET: SOLO para actualizaciones y revocaciones en GitHub, y la sincronización en la red local.
+         La cámara NO es obligatoria: la app se instala en equipos sin cámara (queda la entrada manual). -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- P29 (autorizado por el usuario): SOLO para el aviso «Turno abierto» en la barra de estado mientras la app
+         está en segundo plano. Se pide al abrir un turno (Android 13+); si se niega, todo funciona igual.
+         Sin RECEIVE_BOOT_COMPLETED: el aviso no se restaura tras reiniciar. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 0.19.2 (P40, opción A autorizada por el usuario): servicio en primer plano «connectedDevice» SOLO en la app
+         PRINCIPAL con secundarias vinculadas, mientras SPVI está a la vista o hay algún turno abierto. Mantiene vivo el
+         servidor de red local; su notificación es la misma del turno. Los tres permisos son normales (sin diálogo).
+         CHANGE_NETWORK_STATE: requisito de Android 14 para el tipo connectedDevice; SPVI no cambia ninguna red. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <!-- 0.25.0 (P68b): actualizar SPVI desde GitHub o desde la app principal (Android siempre pide confirmar
+         «Instalar»; el usuario activa además «Permitir de esta fuente») y, en un teléfono cuya licencia se transfirió,
+         abrir el diálogo del sistema para desinstalar (nunca en silencio). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+    <!-- 0.26.0 (P74, autorizado por el usuario): el periodo de prueba no se reinicia al desinstalar y reinstalar.
+         SPVI guarda una imagen pequeña y cifrada en Imágenes/SPVI (y copias .bin en Download y Documents) y, recién
+         instalada, pide UNA vez leer las fotos para encontrar la de una instalación anterior. Solo abre sus propios
+         archivos (consulta por nombre). Si se niega, todo funciona igual (la prueba cuenta desde esta instalación).
+         WRITE_EXTERNAL_STORAGE: solo Android 8–9 (antes de MediaStore con rutas relativas); incluye la lectura. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+
+    <!-- ML Kit arrastra la telemetría de Google (datatransport), que añade ACCESS_NETWORK_STATE y componentes
+         que envían métricas de uso. v2 prohíbe la telemetría: se eliminan en la fusión del manifiesto.
+         El escáner funciona igual (modelo empaquetado, sin descargas); los registros de ML Kit se descartan. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
+
+    <application
+        android:name=".SpviApplication"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="false"
+        android:enableOnBackInvokedCallback="true"
+        android:theme="@style/Theme.SPVI.Splash">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Prompt 13 (C2 sin READ_SMS): el usuario comparte el SMS de PAGOxMOVIL desde Mensajes → SPVI. -->
+            <intent-filter android:label="@string/compartir_sms">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <!-- Prompt 14: importar un respaldo .spvi recibido por WhatsApp, Telegram, Zapya, Bluetooth, Drive, OneDrive
+                 o un gestor de archivos, con «Compartir» o «Abrir con». Sin permisos: la app de origen concede lectura
+                 temporal de esa URI (solo content://) y SPVI la copia a su carpeta privada al momento.
+                 El .spvi no tiene un tipo MIME registrado: las apps lo envían como application/octet-stream. -->
+            <intent-filter android:label="@string/importar_respaldo">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+            <intent-filter android:label="@string/importar_respaldo">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" android:mimeType="application/octet-stream" />
+            </intent-filter>
+        </activity>
+
+        <!-- 0.19.2: ver los permisos FOREGROUND_SERVICE* arriba. No exportado: solo lo arranca la propia app. -->
+        <service
+            android:name=".notificacion.ServicioSync"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
+
+        <!-- Compartir/exportar sin permisos de almacenamiento: solo la carpeta cache/compartir (se limpia sola). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.archivos"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/archivos_compartidos" />
+        </provider>
+
+        <!-- Telemetría de Google (datatransport) fusionada por ML Kit: fuera. -->
+        <service
+            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
+            tools:node="remove" />
+        <service
+            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService"
+            tools:node="remove" />
+        <receiver
+            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver"
+            tools:node="remove" />
+    </application>
+</manifest>

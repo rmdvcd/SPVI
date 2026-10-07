@@ -1,0 +1,14 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+.DS_Store
+captures/
+# P19 — firma de release: NUNCA al repositorio
+keystore.properties
+*.jks
+*.keystore
+
+# Contexto para OpenCode (17 MB): no se sube al repositorio
+SPVI_*_capturas_y_exportaciones.pdf

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  P17 U3: baseline inicial de lint. Se entrega VACÍO porque el entorno donde se escribió no tiene el SDK de Android.
+  La primera vez, en Android Studio: ./gradlew :app:updateLintBaseline y versionar el resultado.
+  A partir de ahí, cualquier error NUEVO rompe ./gradlew spviCheck.
+-->
+<issues format="6" by="lint 8.7.3">
+</issues>

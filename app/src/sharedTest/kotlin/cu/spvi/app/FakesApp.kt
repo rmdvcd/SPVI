@@ -1,0 +1,351 @@
+package cu.spvi.app
+
+import cu.spvi.core.money.Cup
+import cu.spvi.core.quantity.Cantidad
+import cu.spvi.core.result.AppError
+import cu.spvi.core.result.AppResult
+import cu.spvi.core.time.Clock
+import cu.spvi.domain.model.Insumo
+import cu.spvi.domain.model.Licencia
+import cu.spvi.domain.model.MovimientoInventario
+import cu.spvi.domain.model.NivelesMinimos
+import cu.spvi.domain.model.Perfil
+import cu.spvi.domain.model.PreajustePrecios
+import cu.spvi.domain.model.Preferencias
+import cu.spvi.domain.model.Producto
+import cu.spvi.domain.model.Receta
+import cu.spvi.domain.model.ResumenTurno
+import cu.spvi.domain.model.Turno
+import cu.spvi.domain.model.Venta
+import cu.spvi.domain.repository.InsumoRepository
+import cu.spvi.domain.repository.LicenciaRepository
+import cu.spvi.domain.repository.PerfilRepository
+import cu.spvi.domain.repository.PreciosRepository
+import cu.spvi.domain.repository.PreferenciasRepository
+import cu.spvi.domain.repository.ProductoRepository
+import cu.spvi.domain.repository.TurnoRepository
+import cu.spvi.domain.repository.VentaRepository
+import cu.spvi.licencia.ActivationResult
+import cu.spvi.licencia.LicenseState
+import cu.spvi.licencia.SolicitudInput
+import java.time.Instant
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+
+/**
+ * Fakes en memoria para los ViewModels de :app (los de :domain no son visibles desde aquí).
+ * P17 S6: viven en `src/sharedTest` y los usan tanto los tests JVM como los instrumentados (EntornoIntegracion).
+ */
+
+val T0: Instant = Instant.parse("2026-09-30T16:00:00Z") // 12:00 en La Habana
+
+class RelojFijo(var ahora: Instant = T0) : Clock { override fun now() = ahora }
+
+fun prod(id: Long, nombre: String = "P$id", cantidad: Long = 10, venta: Long = 100, costo: Long = 60, categoria: String = "Bebidas") = Producto(
+    id = id, categoria = categoria, nombre = nombre, precioCosto = Cup.ofPesos(costo), precioVenta = Cup.ofPesos(venta),
+    cantidad = cantidad, creadoEn = T0.minusSeconds(id * 60),
+)
+
+/**
+ * Licencia simulada. Por defecto: prueba de 5 días, solicitud vacía, activación "no encontrada".
+ * Las respuestas son configurables (Prompt 15) y se registra lo recibido.
+ */
+class LicRepo(estado: LicenseState = LicenseState.Trial(5)) : LicenciaRepository {
+    val flow = MutableStateFlow<Licencia?>(Licencia(estado, "SPVI:x", true, "ab"))
+    override val snapshot: StateFlow<Licencia?> = flow
+    var refrescos = 0
+    val solicitudes = mutableListOf<SolicitudInput>()
+    val activaciones = mutableListOf<String>()
+    var respuestaSolicitud: AppResult<cu.spvi.licencia.SolicitudGenerada> = AppResult.Ok(cu.spvi.licencia.SolicitudGenerada("", ""))
+    /** Si devuelve Accepted, el estado pasa a ese [LicenseState] (como la implementación real tras refrescar). */
+    var respuestaActivar: ActivationResult = ActivationResult.NotFound
+    override suspend fun refrescar(): Licencia { refrescos++; return flow.value!! }
+    override suspend fun construirSolicitud(input: SolicitudInput): AppResult<cu.spvi.licencia.SolicitudGenerada> { solicitudes += input; return respuestaSolicitud }
+    override suspend fun activar(mensaje: String): ActivationResult {
+        activaciones += mensaje
+        (respuestaActivar as? ActivationResult.Accepted)?.let { a -> flow.value = flow.value!!.copy(estado = a.state) }
+        return respuestaActivar
+    }
+    var autorizacion = cu.spvi.domain.model.AutorizacionMigracion.NO_ENCONTRADA
+    var cedida = false
+    override suspend fun verificarAutorizacionMigracion(mensaje: String) = autorizacion
+    override suspend fun cederLicencia(): AppResult<Unit> { cedida = true; flow.value = flow.value!!.copy(estado = LicenseState.TrialExpired); return AppResult.Ok(Unit) }
+}
+
+class ProdRepo : ProductoRepository {
+    val items = MutableStateFlow<List<Producto>>(emptyList())
+    override fun observarTodos(): Flow<List<Producto>> = items
+    override fun observar(id: Long) = items.map { l -> l.firstOrNull { it.id == id } }
+    override suspend fun obtener(id: Long) = items.value.firstOrNull { it.id == id }
+    override suspend fun obtenerVarios(ids: Collection<Long>) = items.value.filter { it.id in ids }
+    override suspend fun categoriasEnUso() = items.value.map { it.categoria }.distinct()
+    val recetas = mutableMapOf<Long, Receta>()
+    val guardados = mutableListOf<Producto>()
+    var fallarEliminar = emptySet<Long>()
+    override suspend fun crear(producto: Producto, receta: Receta?): AppResult<Long> {
+        val id = (items.value.maxOfOrNull { it.id } ?: 0) + 1
+        items.value = items.value + producto.copy(id = id)
+        guardados += producto.copy(id = id)
+        receta?.let { recetas[id] = it.copy(productoId = id) }
+        return AppResult.Ok(id)
+    }
+    override suspend fun actualizar(producto: Producto, receta: Receta?): AppResult<Unit> {
+        items.value = items.value.map { if (it.id == producto.id) producto else it }
+        guardados += producto
+        receta?.let { recetas[producto.id] = it }
+        return AppResult.Ok(Unit)
+    }
+    override suspend fun eliminar(id: Long): AppResult<Unit> {
+        if (id in fallarEliminar) return AppResult.Err(AppError.Almacenamiento)
+        items.value = items.value.filterNot { it.id == id }
+        return AppResult.Ok(Unit)
+    }
+    override suspend fun ajustarStock(id: Long, delta: Long, nota: String?): AppResult<Long> {
+        items.value = items.value.map { if (it.id == id) it.copy(cantidad = it.cantidad + delta) else it }
+        return AppResult.Ok(0)
+    }
+    override suspend fun actualizarPrecios(nuevos: Map<Long, Cup>): AppResult<Unit> = AppResult.Ok(Unit)
+    override suspend fun receta(productoId: Long): Receta? = recetas[productoId]
+    override suspend fun productosQueUsan(insumoId: Long): List<Producto> =
+        recetas.values.filter { r -> r.lineas.any { it.insumoId == insumoId } }.mapNotNull { r -> items.value.firstOrNull { it.id == r.productoId } }
+
+    /** Producción como en :data: descuenta los insumos (si hay [insumos]) y suma las unidades al Elaborado. */
+}
+
+class InsRepo : InsumoRepository {
+    val items = MutableStateFlow<List<Insumo>>(emptyList())
+    override fun observarTodos(): Flow<List<Insumo>> = items
+    override suspend fun obtener(id: Long) = items.value.firstOrNull { it.id == id }
+    override suspend fun obtenerVarios(ids: Collection<Long>) = items.value.filter { it.id in ids }
+    override suspend fun todos() = items.value
+    override suspend fun crear(insumo: Insumo): AppResult<Long> = AppResult.Ok(0)
+    override suspend fun actualizar(insumo: Insumo): AppResult<Unit> = AppResult.Ok(Unit)
+    override suspend fun eliminar(id: Long): AppResult<Unit> = AppResult.Ok(Unit)
+    override suspend fun ajustarStock(id: Long, delta: Cantidad, nota: String?): AppResult<Cantidad> = AppResult.Ok(delta)
+}
+
+class PrefRepo(inicial: Preferencias = Preferencias()) : PreferenciasRepository {
+    val state = MutableStateFlow(inicial)
+    override val preferencias = state
+    override val onboardingCompletado = state.map { it.onboardingCompletado }
+    override suspend fun completarOnboarding() { state.value = state.value.copy(onboardingCompletado = true) }
+    override suspend fun guardarNiveles(n: NivelesMinimos) { state.value = state.value.copy(niveles = n) }
+    override suspend fun guardarModulos(m: Set<cu.spvi.domain.model.Modulo>) { state.value = state.value.copy(modulos = cu.spvi.domain.model.Modulo.normalizar(m)) }
+    override suspend fun guardarEmpleadosPrevistos(n: Int) { state.value = state.value.copy(empleadosPrevistos = n) }
+    override suspend fun reemplazar(p: Preferencias) { state.value = p }
+}
+
+/** Asigna ids a los elementos nuevos, como la implementación de Room. */
+class PerfilRepo(inicial: Perfil = Perfil()) : PerfilRepository {
+    val state = MutableStateFlow(inicial)
+    private var next = 100L
+    override val perfil: Flow<Perfil> = state
+    override suspend fun guardar(perfil: Perfil) {
+        state.value = perfil.copy(
+            tarjetas = perfil.tarjetas.map { if (it.id == 0L) it.copy(id = next++) else it },
+            telefonos = perfil.telefonos.map { if (it.id == 0L) it.copy(id = next++) else it },
+        )
+    }
+}
+
+class PreciosRepo : PreciosRepository {
+    val preajustes = MutableStateFlow<List<PreajustePrecios>>(emptyList())
+    override fun observarPreajustes() = preajustes
+    override suspend fun preajustesActivos() = preajustes.value.filter { it.activo }
+    override suspend fun guardarPreajuste(p: PreajustePrecios): AppResult<Long> {
+        val id = if (p.id == 0L) (preajustes.value.maxOfOrNull { it.id } ?: 0L) + 1 else p.id
+        preajustes.value = preajustes.value.filterNot { it.id == id } + p.copy(id = id)
+        return AppResult.Ok(id)
+    }
+    override suspend fun eliminarPreajuste(id: Long): AppResult<Unit> { preajustes.value = preajustes.value.filterNot { it.id == id }; return AppResult.Ok(Unit) }
+}
+
+class TurnoRepo : TurnoRepository {
+    val turnos = MutableStateFlow<List<Turno>>(emptyList())
+    override fun observarActivo() = turnos.map { l -> l.firstOrNull { it.abierto } }
+    override suspend fun activo() = turnos.value.firstOrNull { it.abierto }
+    override suspend fun ultimoCerrado() = turnos.value.filterNot { it.abierto }.maxByOrNull { it.abiertoEn }
+    override fun observarHistorial() = turnos
+    override suspend fun obtener(id: Long) = turnos.value.firstOrNull { it.id == id }
+    val movimientos = mutableListOf<MovimientoInventario>()
+    var fallarAbrir = false
+    override suspend fun abrir(ahora: Instant, usuario: String, fondo: Cup?): AppResult<Turno> {
+        if (fallarAbrir) return AppResult.Err(AppError.Almacenamiento)
+        if (activo() != null) return AppResult.Err(AppError.TurnoYaAbierto)
+        val t = Turno(id = turnos.value.size + 1L, abiertoEn = ahora, abiertoPor = usuario, fondo = fondo); turnos.value = turnos.value + t; return AppResult.Ok(t)
+    }
+    override suspend fun cerrar(ahora: Instant, usuario: String, contado: Cup?): AppResult<Turno> {
+        val t = activo() ?: return AppResult.Err(AppError.TurnoCerrado)
+        val c = t.copy(cerradoEn = ahora, cerradoPor = usuario, contado = contado ?: t.contado, resumen = ResumenTurno.VACIO.copy(numVentas = 2, total = Cup.ofPesos(300)))
+        turnos.value = turnos.value.map { if (it.id == t.id) c else it }; return AppResult.Ok(c)
+    }
+    override suspend fun movimientosDe(turnoId: Long) = movimientos.filter { it.turnoId == turnoId }
+
+    /** 0.25.0. */
+    val caja = mutableListOf<cu.spvi.domain.model.MovimientoCaja>()
+    override suspend fun registrarCaja(
+        tipo: cu.spvi.domain.model.TipoMovimientoCaja, importe: Cup, motivo: String, hechoPor: String, ahora: Instant,
+    ): AppResult<Long> {
+        val t = activo() ?: return AppResult.Err(AppError.TurnoCerrado)
+        caja += cu.spvi.domain.model.MovimientoCaja(caja.size + 1L, t.id, ahora, tipo, importe, motivo, hechoPor)
+        return AppResult.Ok(caja.size.toLong())
+    }
+    override suspend fun cajaDe(turnoId: Long) = caja.filter { it.turnoId == turnoId }
+    val arqueo = MutableStateFlow<cu.spvi.domain.model.Arqueo?>(null)
+    override fun observarArqueoActivo(): Flow<cu.spvi.domain.model.Arqueo?> = arqueo
+    override suspend fun declararContado(contado: Cup): AppResult<Unit> {
+        val t = activo() ?: return AppResult.Err(AppError.TurnoCerrado)
+        turnos.value = turnos.value.map { if (it.id == t.id) it.copy(contado = contado) else it }
+        return AppResult.Ok(Unit)
+    }
+}
+
+/** [fallar] = simula un error de la base de datos. */
+class VentaRepo : VentaRepository {
+    val ventas = mutableListOf<Venta>()
+    var fallar = false
+    /** No null = el registro devuelve este error (stock, turno…) sin guardar nada. */
+    var errorRegistro: AppError? = null
+    override suspend fun registrar(venta: Venta, elaborados: List<cu.spvi.domain.model.ElaboradoEnVenta>): AppResult<Long> {
+        errorRegistro?.let { return AppResult.Err(it) }
+        ventas += venta.copy(id = ventas.size + 1L); return AppResult.Ok(ventas.size.toLong())
+    }
+    override suspend fun obtener(id: Long) = ventas.firstOrNull { it.id == id }
+    override suspend fun entre(desde: Instant, hasta: Instant): List<Venta> {
+        if (fallar) error("disco")
+        return ventas.filter { it.fecha >= desde && it.fecha < hasta }
+    }
+    override suspend fun deTurno(turnoId: Long): List<Venta> {
+        if (fallar) error("disco")
+        return ventas.filter { it.turnoId == turnoId }
+    }
+
+    /** 0.25.0. */
+    override suspend fun anular(ventaId: Long, anulacion: cu.spvi.domain.model.Anulacion): AppResult<Unit> {
+        errorRegistro?.let { return AppResult.Err(it) }
+        val i = ventas.indexOfFirst { it.id == ventaId }
+        if (i < 0) return AppResult.Err(AppError.NoEncontrado)
+        ventas[i] = ventas[i].copy(anulacion = anulacion); return AppResult.Ok(Unit)
+    }
+    override suspend fun modificar(
+        ventaId: Long, anulacion: cu.spvi.domain.model.Anulacion, nueva: Venta, elaborados: List<cu.spvi.domain.model.ElaboradoEnVenta>,
+    ): AppResult<Long> {
+        anular(ventaId, anulacion).let { if (it is AppResult.Err) return it }
+        return registrar(nueva.copy(corrigeVentaId = ventaId), elaborados)
+    }
+    override suspend fun movimientosDe(ventaId: Long): List<MovimientoInventario> = emptyList()
+}
+
+/** P29: servicios en memoria para los tests de la app. */
+class ServRepo : cu.spvi.domain.repository.ServicioRepository {
+    val items = kotlinx.coroutines.flow.MutableStateFlow<Map<Long, cu.spvi.domain.model.Servicio>>(emptyMap())
+    val lineas = kotlinx.coroutines.flow.MutableStateFlow<Map<Long, List<cu.spvi.domain.model.RecetaLinea>>>(emptyMap())
+    private var next = 900L
+    override fun observarTodos(): kotlinx.coroutines.flow.Flow<List<cu.spvi.domain.model.Servicio>> =
+        kotlinx.coroutines.flow.combine(items, lineas) { m, _ -> m.values.filterNot { it.eliminado }.sortedByDescending { it.creadoEn } }
+    override fun observarInsumos(): kotlinx.coroutines.flow.Flow<Map<Long, List<cu.spvi.domain.model.RecetaLinea>>> =
+        kotlinx.coroutines.flow.combine(items, lineas) { _, l -> l.filterValues { it.isNotEmpty() } }
+    override suspend fun obtener(id: Long) = items.value[id]
+    override suspend fun obtenerVarios(ids: Collection<Long>) = ids.mapNotNull { items.value[it] }
+    override suspend fun insumos(servicioId: Long) = lineas.value[servicioId].orEmpty()
+    override suspend fun tiposEnUso() = items.value.values.filterNot { it.eliminado }.map { it.tipo }.distinct().sorted()
+    override suspend fun crear(servicio: cu.spvi.domain.model.Servicio, insumos: List<cu.spvi.domain.model.RecetaLinea>): AppResult<Long> {
+        val id = if (servicio.id > 0) servicio.id else next++
+        items.value = items.value + (id to servicio.copy(id = id)); lineas.value = lineas.value + (id to insumos)
+        return AppResult.Ok(id)
+    }
+    override suspend fun actualizar(servicio: cu.spvi.domain.model.Servicio, insumos: List<cu.spvi.domain.model.RecetaLinea>): AppResult<Unit> {
+        if (servicio.id !in items.value) return AppResult.Err(AppError.NoEncontrado)
+        items.value = items.value + (servicio.id to servicio); lineas.value = lineas.value + (servicio.id to insumos)
+        return AppResult.Ok(Unit)
+    }
+    override suspend fun eliminar(id: Long): AppResult<Unit> {
+        val s = items.value[id] ?: return AppResult.Err(AppError.NoEncontrado)
+        items.value = items.value + (id to s.copy(eliminado = true)); return AppResult.Ok(Unit)
+    }
+    override suspend fun serviciosQueUsan(insumoId: Long) =
+        items.value.values.filter { s -> !s.eliminado && lineas.value[s.id].orEmpty().any { it.insumoId == insumoId } }
+}
+
+// ------------------------------------------------------------------ P37: Principal / Secundaria
+
+class TipoRepo(tipo: cu.spvi.domain.model.TipoApp = cu.spvi.domain.model.TipoApp.PRINCIPAL) : cu.spvi.domain.repository.TipoAppRepository {
+    val flow = MutableStateFlow(tipo)
+    val permisosFlow = MutableStateFlow(cu.spvi.domain.model.PermisosApp.PRINCIPAL)
+    override val tipo: StateFlow<cu.spvi.domain.model.TipoApp> = flow
+    override val permisos: Flow<cu.spvi.domain.model.PermisosApp> = permisosFlow
+    override val licenciaPrincipal: Flow<cu.spvi.domain.model.LicenciaPrincipal?> = MutableStateFlow(null)
+}
+
+class PrincipalRepoFake : cu.spvi.domain.repository.PrincipalRepository {
+    val empleados = MutableStateFlow<List<cu.spvi.domain.model.Empleado>>(emptyList())
+    override fun observarEmpleados(): Flow<List<cu.spvi.domain.model.Empleado>> = empleados
+    override val estado: StateFlow<cu.spvi.domain.model.EstadoPrincipal> = MutableStateFlow(cu.spvi.domain.model.EstadoPrincipal())
+    override suspend fun agregarEmpleado(nombre: String, permisos: Set<cu.spvi.domain.model.PermisoEmpleado>): AppResult<cu.spvi.domain.model.CodigoVinculacion> =
+        AppResult.Err(AppError.Red.SinConexion)
+    override suspend fun nuevoCodigo(empleadoId: Long): AppResult<cu.spvi.domain.model.CodigoVinculacion> = AppResult.Err(AppError.Red.SinConexion)
+    override suspend fun cambiarPermisos(empleadoId: Long, permisos: Set<cu.spvi.domain.model.PermisoEmpleado>): AppResult<Unit> = AppResult.Ok(Unit)
+    override suspend fun quitarEmpleado(empleadoId: Long): AppResult<Unit> = AppResult.Ok(Unit)
+    override suspend fun cambiarCobro(empleadoId: Long, tarjetaId: Long?, telefonoId: Long?): AppResult<Unit> = AppResult.Ok(Unit)
+    override suspend fun pedirCierre(empleadoId: Long): AppResult<Unit> = AppResult.Ok(Unit)
+    val aprobados = mutableListOf<Long>()
+    val rechazados = mutableListOf<Long>()
+    override suspend fun aprobarCierre(empleadoId: Long): AppResult<Unit> { aprobados += empleadoId; return AppResult.Ok(Unit) }
+    override suspend fun rechazarCierre(empleadoId: Long): AppResult<Unit> { rechazados += empleadoId; return AppResult.Ok(Unit) }
+    val fondos = mutableListOf<Pair<Long, Cup>>()
+    override suspend fun asignarFondo(empleadoId: Long, fondo: Cup): AppResult<Unit> {
+        fondos += empleadoId to fondo
+        empleados.value = empleados.value.map { if (it.id == empleadoId) it.copy(fondoAsignado = fondo, aperturaSolicitadaEn = null) else it }
+        return AppResult.Ok(Unit)
+    }
+    var sugerido: Cup? = null
+    override suspend fun fondoSugerido(empleadoId: Long): Cup? = sugerido
+}
+
+class SecundariaRepoFake : cu.spvi.domain.repository.SecundariaRepository {
+    val flow = MutableStateFlow(cu.spvi.domain.model.EstadoSecundaria())
+    override val estado: StateFlow<cu.spvi.domain.model.EstadoSecundaria> = flow
+    var telefonoVinculado: String? = null
+    override suspend fun vincular(contenidoQr: String, telefono: String): AppResult<Unit> {
+        telefonoVinculado = telefono
+        return AppResult.Err(AppError.SinPrincipal())
+    }
+    var contadoDeclarado: Cup? = null
+    override suspend fun solicitarCierre(contado: Cup): AppResult<Unit> {
+        contadoDeclarado = contado
+        flow.value = flow.value.copy(cierreSolicitado = true); return AppResult.Ok(Unit)
+    }
+    override suspend fun sincronizarAhora(): AppResult<Unit> = AppResult.Err(AppError.SinPrincipal())
+    override suspend fun cambiarModo(modo: cu.spvi.domain.model.ModoSincronizacion) = Unit
+    override suspend fun desvincular(): AppResult<Unit> = AppResult.Ok(Unit)
+    override suspend fun descartarAvisoCierre() { flow.value = flow.value.copy(turnoCerradoPorPrincipal = false, cierreRechazado = false) }
+    var fondoPedido = 0
+    override suspend fun pedirFondo(): AppResult<Unit> { fondoPedido++; flow.value = flow.value.copy(fondoPedido = true); return AppResult.Ok(Unit) }
+}
+
+/** 0.25.0: estado propio de la app en memoria (recordatorio de respaldo, versiones, licencia recuperable). */
+class EstadoAppRepo(inicial: cu.spvi.domain.model.EstadoApp = cu.spvi.domain.model.EstadoApp()) : cu.spvi.domain.repository.EstadoAppRepository {
+    val flujo = MutableStateFlow(inicial)
+    override val estado: Flow<cu.spvi.domain.model.EstadoApp> = flujo
+    override suspend fun actual() = flujo.value
+    override suspend fun editar(cambio: (cu.spvi.domain.model.EstadoApp) -> cu.spvi.domain.model.EstadoApp) { flujo.value = cambio(flujo.value) }
+    override suspend fun borrar() { flujo.value = cu.spvi.domain.model.EstadoApp() }
+}
+
+/** 0.27.0: ajustes de este teléfono (acceso con clave, tipo elegido en el recorrido). */
+class AjustesDispRepo(inicial: cu.spvi.domain.model.AjustesDispositivo = cu.spvi.domain.model.AjustesDispositivo()) :
+    cu.spvi.domain.repository.AjustesDispositivoRepository {
+    val estado = kotlinx.coroutines.flow.MutableStateFlow(inicial)
+    override val ajustes: kotlinx.coroutines.flow.Flow<cu.spvi.domain.model.AjustesDispositivo> = estado
+    override suspend fun guardarAccesoConClave(activo: Boolean) { estado.value = estado.value.copy(accesoConClave = activo) }
+    override suspend fun guardarEligioSecundaria(valor: Boolean) { estado.value = estado.value.copy(eligioSecundaria = valor) }
+}
+
+/** 0.27.0 (N2): clientes fijos en memoria. */
+class ClientesFijosRepo(inicial: List<cu.spvi.domain.model.ClienteFijo> = emptyList()) : cu.spvi.domain.repository.ClienteFijoRepository {
+    val estado = kotlinx.coroutines.flow.MutableStateFlow(inicial)
+    override fun observar(): kotlinx.coroutines.flow.Flow<List<cu.spvi.domain.model.ClienteFijo>> = estado
+    override suspend fun quitar(ci: String) { estado.value = estado.value.filterNot { it.ci == ci } }
+}

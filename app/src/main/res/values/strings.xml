@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SPVI</string>
+    <string name="compartir_sms">SPVI: nº de transacción</string>
+    <string name="importar_respaldo">Importar respaldo en SPVI</string>
+</resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SVIPicono adaptativo. P29: fondo TRANSPARENTE (sin el azul): solo se ve la figura sobre el fondo de pantalla.
+     <monochrome> = icono temático de Android 13+ (silueta). Algunos lanzadores dibujan su propia placa detrás de
+     cualquier icono adaptativo: eso depende del lanzador, no de la app. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@android:color/transparent" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />
+</adaptive-icon>

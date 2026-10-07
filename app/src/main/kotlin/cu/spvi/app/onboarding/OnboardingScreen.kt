@@ -1,0 +1,494 @@
+package cu.spvi.app.onboarding
+
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.ui.unit.Density
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.RadioButton
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.stateDescription
+import cu.spvi.designsystem.component.SpviListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cu.spvi.app.common.SecureWindow
+import cu.spvi.core.money.Money
+import cu.spvi.designsystem.component.FiltroEntrada
+import cu.spvi.designsystem.component.CardTone
+import cu.spvi.designsystem.component.IconActionStyle
+import cu.spvi.designsystem.component.SpviBarraAcciones
+import cu.spvi.designsystem.component.SpviCard
+import cu.spvi.designsystem.component.SpviIconAction
+import cu.spvi.designsystem.component.SpviLoading
+import cu.spvi.designsystem.component.SpviLogo
+import cu.spvi.designsystem.component.SpviPrimaryButton
+import cu.spvi.designsystem.component.SpviSecondaryText
+import cu.spvi.designsystem.component.SpviSnackbarHost
+import cu.spvi.designsystem.component.SpviStepper
+import cu.spvi.designsystem.component.SpviTextButton
+import cu.spvi.designsystem.component.SpviTextField
+import cu.spvi.designsystem.component.spviContentWidth
+import cu.spvi.designsystem.icon.SpviIcons
+import cu.spvi.designsystem.theme.SpviTextos
+import cu.spvi.designsystem.token.SpviMotion
+import cu.spvi.designsystem.token.SpviSize
+import cu.spvi.designsystem.token.SpviSpacing
+import cu.spvi.domain.model.DatosIniciales
+import cu.spvi.domain.model.PasoConfiguracion
+import cu.spvi.licencia.LicenseState
+import cu.spvi.licencia.contract.TipoLicencia
+
+/**
+ * Asistente de primera ejecución (y "Completar configuración" desde Ajustes).
+ * [onTerminar] solo se usa en modo RETOMAR: en PRIMERA_VEZ, RootViewModel cambia de estado solo.
+ */
+@Composable
+fun OnboardingScreen(
+    modo: ModoWizard,
+    onTerminar: () -> Unit,
+    soloPaso: PasoConfiguracion? = null,
+    viewModel: OnboardingViewModel = hiltViewModel(),
+) {
+    LaunchedEffect(viewModel) { viewModel.iniciar(modo, soloPaso) }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbar = remember { SnackbarHostState() }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { e ->
+            when (e) {
+                OnboardingEvento.Terminado -> onTerminar()
+                is OnboardingEvento.Mensaje -> snackbar.showSnackbar(e.texto)
+            }
+        }
+    }
+    // Atrás del sistema = paso anterior (en el primer paso: salir, como siempre en Android).
+    BackHandler(enabled = state.puedeVolver) { viewModel.atras() }
+    if (state.paso == PasoWizard.DATOS) SecureWindow() // CI y teléfono
+
+    OnboardingContent(
+        state = state,
+        acciones = OnboardingAcciones(
+            onSiguiente = viewModel::siguiente,
+            onAtras = viewModel::atras,
+            onOmitirPaso = viewModel::omitirPaso,
+            onOmitirTodo = viewModel::omitirTodo,
+            onDatos = viewModel::editarDatos,
+            onNivel = viewModel::editarNivel,
+            onSumarNivel = viewModel::sumarNivel,
+            onRestablecerNiveles = viewModel::restablecerNiveles,
+            onTipo = viewModel::elegirTipo,
+            onModulo = viewModel::alternarModulo,
+            onEmpleados = viewModel::cambiarEmpleados,
+            onAccesoClave = cu.spvi.app.acceso.rememberCambiarAccesoClave(
+                guardar = viewModel::guardarAccesoClave,
+                mensaje = { m -> scope.launch { snackbar.showSnackbar(m) } },
+            ),
+        ),
+        snackbar = snackbar,
+    )
+}
+
+class OnboardingAcciones(
+    val onSiguiente: () -> Unit,
+    val onAtras: () -> Unit,
+    val onOmitirPaso: () -> Unit,
+    val onOmitirTodo: () -> Unit,
+    val onDatos: ((DatosIniciales) -> DatosIniciales) -> Unit,
+    val onNivel: (CampoNivel, String) -> Unit,
+    val onSumarNivel: (CampoNivel, Int) -> Unit,
+    val onRestablecerNiveles: () -> Unit,
+    // 0.21.0 (C12): recorrido inicial.
+    val onTipo: (Boolean) -> Unit = {},
+    val onModulo: (cu.spvi.domain.model.Modulo) -> Unit = {},
+    val onEmpleados: (Int) -> Unit = {},
+    /** 0.27.0 (T11). */
+    val onAccesoClave: (Boolean) -> Unit = {},
+)
+
+object OnboardingTags {
+    const val SIGUIENTE = "onboarding.siguiente"
+    const val OMITIR_PASO = "onboarding.omitir_paso"
+    const val OMITIR_TODO = "onboarding.omitir_todo"
+    const val PROGRESO = "onboarding.progreso"
+    fun paso(p: PasoWizard) = "onboarding.paso.${p.name}"
+    const val TIPO_PRINCIPAL = "onboarding.tipo_principal"
+    const val TIPO_SECUNDARIA = "onboarding.tipo_secundaria"
+    const val EMPLEADOS = "onboarding.empleados"
+    fun modulo(m: cu.spvi.domain.model.Modulo) = "onboarding.modulo.${m.name}"
+}
+
+@Composable
+fun OnboardingContent(state: OnboardingUiState, acciones: OnboardingAcciones, snackbar: SnackbarHostState = remember { SnackbarHostState() }) {
+    val paso = state.paso
+    if (state.cargando || paso == null) {
+        Surface(color = MaterialTheme.colorScheme.background) { SpviLoading(Modifier.fillMaxSize()) }
+        return
+    }
+    Scaffold(
+        topBar = { BarraSuperior(state, acciones) },
+        bottomBar = { BarraInferior(state, acciones) },
+        snackbarHost = { SpviSnackbarHost(snackbar) },
+    ) { padding ->
+        AnimatedContent(
+            targetState = paso,
+            transitionSpec = { SpviMotion.screenEnter togetherWith SpviMotion.screenExit },
+            label = "paso",
+            modifier = Modifier.padding(padding).consumeWindowInsets(padding),
+        ) { p ->
+            // P28: todo centrado y repartido a partes iguales en el alto disponible (si no cabe, se desplaza con 16dp
+            // entre elementos). Ver [Equitativo].
+            BoxWithConstraints(Modifier.fillMaxSize()) {
+                val alto = maxHeight
+                Column(
+                    Modifier.fillMaxWidth().imePadding().verticalScroll(rememberScrollState()).heightIn(min = alto)
+                        .spviContentWidth().padding(SpviSpacing.lg).testTag(OnboardingTags.paso(p)),
+                    verticalArrangement = Equitativo,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    when (p) {
+                        PasoWizard.BIENVENIDA -> PasoBienvenida()
+                        PasoWizard.TIPO_APP -> PasoTipoApp(state, acciones)
+                        PasoWizard.ACCESO_CLAVE -> PasoAccesoClave(state, acciones)
+                        PasoWizard.OBJETIVO -> PasoObjetivo(state, acciones)
+                        PasoWizard.EMPLEADOS -> PasoEmpleados(state, acciones)
+                        PasoWizard.DATOS -> PasoDatos(state, acciones)
+                        PasoWizard.ALERTAS -> PasoAlertas(state, acciones)
+                        PasoWizard.PRUEBA -> PasoPrueba(state)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * P28: reparte los elementos con el MISMO espacio entre ellos y en los bordes. Si no caben, 16dp entre ellos
+ * desde arriba (y se desplaza).
+ */
+private val Equitativo = object : Arrangement.Vertical {
+    override val spacing = SpviSpacing.md
+    override fun Density.arrange(totalSize: Int, sizes: IntArray, outPositions: IntArray) {
+        val minimo = spacing.roundToPx()
+        val libre = (totalSize - sizes.sum()) / (sizes.size + 1)
+        val hueco = maxOf(minimo, libre)
+        var y = if (libre >= minimo) hueco else 0
+        sizes.forEachIndexed { i, s -> outPositions[i] = y; y += s + hueco }
+    }
+}
+
+@Composable
+private fun BarraSuperior(state: OnboardingUiState, acciones: OnboardingAcciones) {
+    // P28: en Bienvenida no hay cabecera: «Bienvenido» repetía «Bienvenido a SPVI» y «Saltar todo» quedaba solo.
+    if (state.paso == PasoWizard.BIENVENIDA) {
+        Spacer(Modifier.statusBarsPadding())
+        return
+    }
+    Column(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = SpviSpacing.md, vertical = SpviSpacing.xs)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            if (state.totalPasos <= 1) {
+                Text(
+                    state.paso!!.titulo, style = MaterialTheme.typography.titleSmall, textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f).testTag(OnboardingTags.PROGRESO).semantics { liveRegion = LiveRegionMode.Polite },
+                )
+            } else {
+                // P18 (L9): misma cabecera que Licencia y Respaldo. Atrás/Siguiente siguen abajo, con texto.
+                SpviStepper(
+                    actual = state.numeroPaso, total = state.totalPasos, titulo = state.paso!!.titulo,
+                    modifier = Modifier.weight(1f).testTag(OnboardingTags.PROGRESO),
+                )
+            }
+            SpviTextButton(
+                text = if (state.modo == ModoWizard.PRIMERA_VEZ) "Saltar todo" else "Cerrar",
+                icon = SpviIcons.Cancelar,
+                onClick = acciones.onOmitirTodo,
+                modifier = Modifier.testTag(OnboardingTags.OMITIR_TODO),
+            )
+        }
+    }
+}
+
+@Composable
+private fun BarraInferior(state: OnboardingUiState, acciones: OnboardingAcciones) {
+    // P24: botones solo con icono, agrupados y centrados (Atrás · Ahora no · Siguiente), como en los diálogos.
+    SpviBarraAcciones(Modifier.imePadding()) {
+        if (state.paso == PasoWizard.BIENVENIDA) {
+            SpviTextButton(
+                text = if (state.modo == ModoWizard.PRIMERA_VEZ) "Saltar todo" else "Cerrar", icon = SpviIcons.Cancelar,
+                onClick = acciones.onOmitirTodo, modifier = Modifier.testTag(OnboardingTags.OMITIR_TODO),
+            )
+        }
+        if (state.puedeVolver) SpviTextButton(text = "Atrás", icon = SpviIcons.Atras, onClick = acciones.onAtras, enabled = !state.ocupado)
+        if (state.pasoOmitible) {
+            SpviTextButton(
+                text = "Ahora no", icon = SpviIcons.AhoraNo, onClick = acciones.onOmitirPaso, enabled = !state.ocupado,
+                modifier = Modifier.testTag(OnboardingTags.OMITIR_PASO),
+            )
+        }
+        SpviPrimaryButton(
+            text = state.textoBotonPrincipal, onClick = acciones.onSiguiente, loading = state.ocupado, enabled = state.puedeSeguir,
+            icon = if (state.esUltimo) SpviIcons.Listo else SpviIcons.Siguiente,
+            modifier = Modifier.testTag(OnboardingTags.SIGUIENTE),
+        )
+    }
+}
+
+@Composable
+private fun Titulo(texto: String) {
+    Text(texto, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().semantics { heading() })
+}
+
+/** P28: icono encima y texto centrado (antes icono a la izquierda y texto alineado a la izquierda). */
+@Composable
+private fun Punto(icon: ImageVector, texto: String) {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        Text(texto, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+    }
+}
+
+@Composable
+private fun Explicacion(texto: String) = SpviSecondaryText(texto, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+
+// ---------------- Pasos ----------------
+
+@Composable
+private fun PasoBienvenida() {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(SpviSpacing.md)) {
+        SpviLogo(size = SpviSize.logoLarge, contentDescription = "SPVI")
+        Text("Bienvenido a SPVI", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center, modifier = Modifier.semantics { heading() })
+        Text(
+            "Tu punto de venta e inventario. Funciona sin internet y guarda tus datos cifrados en este teléfono.",
+            style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center,
+        )
+    }
+    Punto(SpviIcons.Inventario, "Controla lo que tienes y recibe avisos cuando quede poco.")
+    Punto(SpviIcons.Venta, "Vende y cobra en efectivo o por transferencia.")
+    Punto(SpviIcons.Registros, "Revisa todo lo que vendiste.")
+    SpviCard(tone = CardTone.Tonal) {
+        Text("Te haremos unas pocas preguntas (unos 2 minutos).", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        SpviSecondaryText("Puedes saltar cualquiera y completarla después en Ajustes → Completar configuración.", textAlign = TextAlign.Center)
+    }
+}
+
+@Composable
+private fun PasoDatos(state: OnboardingUiState, acciones: OnboardingAcciones) {
+    // P28: sin título propio: la cabecera ya dice «Paso 2 de 4: Tus datos».
+    Explicacion("Se usan para pedir tu licencia y para cobrar por transferencia. Solo se guardan en este teléfono, cifrados. Puedes dejarlos en blanco.")
+    val d = state.datos
+    val err = erroresDatos(d)
+    val forzar = state.mostrarErroresDatos
+    SpviTextField(
+        filtro = FiltroEntrada.NOMBRE,
+        value = d.nombre, onValueChange = { v -> acciones.onDatos { it.copy(nombre = v) } }, label = "Nombre",
+        isError = "nombre" in err, errorText = err["nombre"], validarAlSalir = true, forzarError = forzar, imeAction = ImeAction.Next,
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words), modifier = Modifier.fillMaxWidth(),
+    )
+    SpviTextField(
+        filtro = FiltroEntrada.NOMBRE,
+        value = d.apellidos, onValueChange = { v -> acciones.onDatos { it.copy(apellidos = v) } }, label = "Apellidos",
+        isError = "apellidos" in err, errorText = err["apellidos"], validarAlSalir = true, forzarError = forzar, imeAction = ImeAction.Next,
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words), modifier = Modifier.fillMaxWidth(),
+    )
+    SpviTextField(
+        filtro = FiltroEntrada.CARNE,
+        value = d.ci, onValueChange = { v -> acciones.onDatos { it.copy(ci = v) } }, label = "Carné de identidad",
+        isError = "ci" in err, errorText = err["ci"], validarAlSalir = true, forzarError = forzar, imeAction = ImeAction.Next,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth(),
+    )
+    SpviTextField(
+        filtro = FiltroEntrada.TELEFONO,
+        value = d.telefono, onValueChange = { v -> acciones.onDatos { it.copy(telefono = v) } }, label = "Teléfono",
+        placeholder = "52345678", isError = "telefono" in err, errorText = err["telefono"], validarAlSalir = true, forzarError = forzar,
+        imeAction = ImeAction.Done, onImeAction = acciones.onSiguiente,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+@Composable
+private fun PasoAlertas(state: OnboardingUiState, acciones: OnboardingAcciones) {
+    // P28: sin título propio: la cabecera ya dice «Avisos de inventario».
+    Text("SPVI te avisará cuando quede poco de algo.", style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+    Explicacion("«Bajo»: conviene reponer pronto. «Crítico»: casi no queda, repón ya. Cada producto puede tener sus propios niveles más adelante.")
+    val err = state.niveles.errores()
+    // Los botones − / + cuentan como una edición terminada: su resultado se valida al momento.
+    var conBotones by rememberSaveable { mutableStateOf(false) }
+    val forzar = state.mostrarErroresNiveles || conBotones
+    val sumar: (CampoNivel, Int) -> Unit = { c, d -> conBotones = true; acciones.onSumarNivel(c, d) }
+    SpviCard(title = "Productos (en unidades)") {
+        CampoNivelUi("Bajo", CampoNivel.PRODUCTO_BAJO, state.niveles, err, forzar, sumar, acciones, decimal = false)
+        CampoNivelUi("Crítico", CampoNivel.PRODUCTO_CRITICO, state.niveles, err, forzar, sumar, acciones, decimal = false)
+    }
+    SpviCard(title = "Insumos (en su medida: kg, L, unidades…)") {
+        CampoNivelUi("Bajo", CampoNivel.INSUMO_BAJO, state.niveles, err, forzar, sumar, acciones, decimal = true)
+        CampoNivelUi("Crítico", CampoNivel.INSUMO_CRITICO, state.niveles, err, forzar, sumar, acciones, decimal = true)
+    }
+    SpviTextButton(text = "Usar valores recomendados (5 y 1)", icon = SpviIcons.Recomendados, onClick = { conBotones = false; acciones.onRestablecerNiveles() })
+}
+
+@Composable
+private fun CampoNivelUi(
+    etiqueta: String, campo: CampoNivel, form: NivelesForm, err: Map<CampoNivel, String>,
+    forzar: Boolean, sumar: (CampoNivel, Int) -> Unit, acciones: OnboardingAcciones, decimal: Boolean,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
+        SpviIconAction(SpviIcons.Quitar, "Restar 1 a $etiqueta", onClick = { sumar(campo, -1) }, style = IconActionStyle.Tonal)
+        SpviTextField(
+            filtro = if (decimal) FiltroEntrada.DECIMAL else FiltroEntrada.ENTERO,
+            value = form.valor(campo), onValueChange = { acciones.onNivel(campo, it) }, label = etiqueta,
+            isError = campo in err, errorText = err[campo], clearable = false, validarAlSalir = true, forzarError = forzar, textAlign = TextAlign.Center,
+            keyboardOptions = KeyboardOptions(keyboardType = if (decimal) KeyboardType.Decimal else KeyboardType.Number),
+            modifier = Modifier.weight(1f),
+        )
+        SpviIconAction(SpviIcons.Agregar, "Sumar 1 a $etiqueta", onClick = { sumar(campo, 1) }, style = IconActionStyle.Tonal)
+    }
+}
+
+@Composable
+private fun PasoPrueba(state: OnboardingUiState) {
+    val dias = (state.licencia?.estado as? LicenseState.Trial)?.daysLeft
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(SpviIcons.Prueba, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(SpviSize.logoLarge))
+    }
+    Titulo(
+        when (dias) {
+            null -> "Periodo de prueba"
+            1 -> "Te queda 1 día de prueba gratis"
+            else -> "Tienes $dias días de prueba gratis"
+        },
+    )
+    Punto(SpviIcons.Verificado, "Durante la prueba puedes usar todas las funciones.")
+    Punto(SpviIcons.Bloqueo, "Cuando termine, SPVI se bloqueará hasta que actives una licencia. Tus datos NO se borran.")
+    Punto(SpviIcons.Licencia, "Puedes pedir la licencia cuando quieras en Ajustes → Licencia.")
+    SpviCard(title = "Precios", tone = CardTone.Tonal) {
+        TipoLicencia.entries.forEach { t ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(t.etiqueta, style = MaterialTheme.typography.bodyMedium)
+                // 0.28.0: los importes van en seminegrita.
+                Text(Money.cup(t.precioCup), style = SpviTextos.datoEn(MaterialTheme.typography.bodyMedium))
+            }
+        }
+    }
+}
+
+// ---------------- 0.21.0 (C12): recorrido inicial ----------------
+
+@Composable
+private fun PasoTipoApp(state: OnboardingUiState, acciones: OnboardingAcciones) {
+    Explicacion(TextosTour.TIPO_EXPLICACION)
+    Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
+        OpcionTour(TextosTour.PRINCIPAL, TextosTour.PRINCIPAL_DETALLE, SpviIcons.Perfil, !state.esSecundaria, radio = true, tag = OnboardingTags.TIPO_PRINCIPAL) { acciones.onTipo(false) }
+        OpcionTour(TextosTour.SECUNDARIA, TextosTour.SECUNDARIA_DETALLE, SpviIcons.Movil, state.esSecundaria, radio = true, tag = OnboardingTags.TIPO_SECUNDARIA) { acciones.onTipo(true) }
+    }
+    Explicacion(TextosTour.TIPO_DEFINITIVO) // 0.27.0 (T9)
+    if (state.esSecundaria) {
+        SpviCard(tone = CardTone.Tonal) {
+            Text(TextosTour.SECUNDARIA_SIGUIENTE, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        }
+    }
+}
+
+/** 0.27.0 (T11): paso opcional «Acceso con clave». */
+@Composable
+private fun PasoAccesoClave(state: OnboardingUiState, acciones: OnboardingAcciones) {
+    Explicacion(TextosTour.ACCESO_EXPLICACION)
+    cu.spvi.app.acceso.FilaAccesoClave(state.accesoClave, acciones.onAccesoClave)
+}
+
+@Composable
+private fun PasoObjetivo(state: OnboardingUiState, acciones: OnboardingAcciones) {
+    Explicacion(TextosTour.OBJETIVO_EXPLICACION)
+    Column(verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
+        cu.spvi.domain.model.Modulo.entries.forEach { m ->
+            OpcionTour(m.etiqueta, m.detalle, iconoModulo(m), m in state.modulos, radio = false, tag = OnboardingTags.modulo(m)) { acciones.onModulo(m) }
+        }
+    }
+    if (cu.spvi.domain.model.Modulo.VENTAS in state.modulos) Explicacion(TextosTour.VENTAS_ACTIVA_INVENTARIO)
+}
+
+@Composable
+private fun PasoEmpleados(state: OnboardingUiState, acciones: OnboardingAcciones) {
+    Explicacion(TextosTour.EMPLEADOS_EXPLICACION)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SpviSpacing.md, Alignment.CenterHorizontally),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        SpviIconAction(
+            SpviIcons.Quitar, "Un empleado menos", onClick = { acciones.onEmpleados(state.empleados - 1) },
+            enabled = state.empleados > 0, style = IconActionStyle.Tonal,
+        )
+        Text(
+            state.empleados.toString(), style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.testTag(OnboardingTags.EMPLEADOS).semantics { contentDescription = TextosTour.empleados(state.empleados) },
+        )
+        SpviIconAction(
+            SpviIcons.Agregar, "Un empleado más", onClick = { acciones.onEmpleados(state.empleados + 1) },
+            enabled = state.empleados < cu.spvi.domain.model.Vinculacion.SECUNDARIAS_MAX, style = IconActionStyle.Tonal,
+        )
+    }
+    Explicacion(TextosTour.EMPLEADOS_AYUDA)
+}
+
+@Composable
+internal fun iconoModulo(m: cu.spvi.domain.model.Modulo): ImageVector = when (m) {
+    cu.spvi.domain.model.Modulo.VENTAS -> SpviIcons.Venta
+    cu.spvi.domain.model.Modulo.INVENTARIO -> SpviIcons.Inventario
+    cu.spvi.domain.model.Modulo.SERVICIOS -> SpviIcons.Servicios
+}
+
+/** Opción seleccionable de fila completa (radio o casilla), con icono, título y detalle. */
+@Composable
+private fun OpcionTour(titulo: String, detalle: String, icon: ImageVector, marcado: Boolean, radio: Boolean, tag: String, onClick: () -> Unit) {
+    SpviListItem(
+        title = titulo, subtitle = detalle, subtitleMaxLines = 3, indicatorColor = null, selected = marcado,
+        leading = {
+            if (radio) RadioButton(selected = marcado, onClick = null) else Checkbox(checked = marcado, onCheckedChange = null)
+        },
+        trailing = { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+        onClick = onClick,
+        modifier = Modifier.testTag(tag).semantics { stateDescription = if (marcado) "Marcado" else "Sin marcar" },
+    )
+}
