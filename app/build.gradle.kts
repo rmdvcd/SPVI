@@ -110,6 +110,8 @@ android {
         abortOnError = true
         checkDependencies = true
         warningsAsErrors = false
+        // El XML siempre se escribe: el CI lo publica en el resumen del fallo (tools/verificacion/resumen_fallos.sh).
+        xmlReport = true
     }
 
     packaging {
