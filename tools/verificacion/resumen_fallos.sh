@@ -14,7 +14,7 @@ MAX="${MAX_LINEAS:-160}"
 SALIDA="${GITHUB_STEP_SUMMARY:-/dev/stdout}"
 
 # Líneas que suelen explicar un fallo de Gradle, Kotlin, Robolectric o del propio contenedor.
-PATRONES='^e: |^error: |: error: |Unresolved reference|Permission denied|Execution failed for task|^FAILURE: |^> Task .* FAILED| FAILED$|Exception|Caused by:|Could not (resolve|download|find|determine|create)|No such file'
+PATRONES='^e: |^error: |: error: |(Error|Warning): |Unresolved reference|Permission denied|Execution failed for task|^FAILURE: |^BUILD FAILED|^> Task .* FAILED| FAILED$|Exception|Caused by:|Could not (resolve|download|find|determine|create)|No such file|Configuration cache|^[0-9]+ errors?, [0-9]+ warnings?'
 
 # --- 1. Lo esencial del log ----------------------------------------------------------------------------------
 {
@@ -36,9 +36,14 @@ PATRONES='^e: |^error: |: error: |Unresolved reference|Permission denied|Executi
 } >> "$SALIDA"
 
 # --- 2. Detalle de los tests fallidos y de lint, desde los XML de resultados ---------------------------------
-python3 - >> "$SALIDA" 2>/dev/null <<'PY' || true
+python3 - >> "$SALIDA" <<'PY' || true
 import glob
+import sys
 import xml.etree.ElementTree as ET
+
+def anotar(mensaje):
+    # stderr no se redirige: el runner lo convierte en anotaciones legibles por la API de check-runs.
+    print(f"::error::{mensaje.replace('%', '%25')}", file=sys.stderr)
 
 def primeras_lineas(texto, n=30):
     lineas = (texto or "").splitlines()
@@ -59,6 +64,9 @@ if fallos:
     print(f"\n### Tests fallidos (XML de resultados): {len(fallos)}\n")
     for clase, nombre, detalle in fallos[:15]:
         print(f"- `{clase}.{nombre}`\n\n```\n{detalle}\n```\n")
+    for clase, nombre, detalle in fallos[:6]:
+        primera = (detalle or "").splitlines()[0] if detalle else ""
+        anotar(f"test fallido: {clase}.{nombre} — {primera}")
 
 errores_lint = []
 for xml in sorted(glob.glob("**/build/reports/lint-results-*.xml", recursive=True)):
@@ -78,6 +86,8 @@ if errores_lint:
     print(f"\n### Errores de lint: {len(errores_lint)}\n")
     for error in errores_lint[:40]:
         print(f"- {error}")
+    for error in errores_lint[:6]:
+        anotar(f"lint: {error}")
 
 if not fallos and not errores_lint:
     print("\n(Sin XML de tests ni de lint: el fallo fue antes de generarlos.)\n")

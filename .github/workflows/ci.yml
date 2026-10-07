@@ -7,8 +7,11 @@
 # Por eso no se usa ninguna acción de terceros para instalarlo (la que se probó, android-actions/setup-android@v3,
 # falló en los 5 trabajos) ni se descarga nada: el paso «SDK de Android» solo comprueba que está lo que hace falta.
 #
-# Cada comando se ejecuta con `tee` y, si falla, `tools/verificacion/resumen_fallos.sh` publica lo esencial en el
-# resumen del trabajo y como anotaciones: los registros del CI (Azure Blob) no siempre son descargables.
+# Cada comando se ejecuta con `tee` y, si falla, `tools/verificacion/resumen_fallos.sh` publica lo esencial como
+# anotaciones (los registros del CI, en Azure Blob, no siempre son descargables).
+#
+# Todos los comandos usan --no-configuration-cache: el 2026-10-07 el trabajo de lint murió con «Configuration cache
+# entry discarded due to serialization error», y en el CI la reproducibilidad pesa más que el tiempo que ahorra.
 name: CI
 
 on:
@@ -48,7 +51,7 @@ jobs:
         run: |
           set -o pipefail
           ./gradlew spviTests :data:compileDebugAndroidTestKotlin :app:compileDebugAndroidTestKotlin \
-            --continue --stacktrace --console=plain 2>&1 | tee /tmp/salida.log
+            --continue --stacktrace --console=plain --no-configuration-cache 2>&1 | tee /tmp/salida.log
       - name: Resumen del fallo
         if: failure()
         run: bash tools/verificacion/resumen_fallos.sh /tmp/salida.log
@@ -64,7 +67,8 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-  # ./gradlew :app:lintDebug — el baseline está vacío a propósito: cualquier aviso nuevo rompe el trabajo.
+  # ./gradlew :app:lintDebug — baseline vacío a propósito: cualquier error de lint rompe el trabajo y ningún aviso
+  # queda tapado por el baseline (warningsAsErrors sigue en false: los avisos se ven, no rompen).
   lint:
     name: Lint (baseline)
     runs-on: ubuntu-24.04
@@ -84,7 +88,7 @@ jobs:
       - name: lintDebug
         run: |
           set -o pipefail
-          ./gradlew :app:lintDebug --stacktrace --console=plain 2>&1 | tee /tmp/salida.log
+          ./gradlew :app:lintDebug --no-configuration-cache --stacktrace --console=plain 2>&1 | tee /tmp/salida.log
       - name: Resumen del fallo
         if: failure()
         run: bash tools/verificacion/resumen_fallos.sh /tmp/salida.log
@@ -123,8 +127,8 @@ jobs:
           set -o pipefail
           # -Pkotlin.compiler.execution.strategy=in-process: el demonio de Kotlin se cayó al arrancar en este trabajo
           # («the daemon has terminated unexpectedly on startup»); compilando dentro del demonio de Gradle no hay carrera.
-          ./gradlew :app:assembleRelease :app:assembleDebug --continue --stacktrace --console=plain \
-            -Pkotlin.compiler.execution.strategy=in-process "-Dorg.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8" 2>&1 | tee /tmp/salida.log
+          ./gradlew :app:assembleRelease :app:assembleDebug --continue --stacktrace --console=plain --no-configuration-cache \
+            -Pkotlin.compiler.execution.strategy=in-process "-Dorg.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8" --no-configuration-cache 2>&1 | tee /tmp/salida.log
       - name: Resumen del fallo
         if: failure()
         run: bash tools/verificacion/resumen_fallos.sh /tmp/salida.log
@@ -190,7 +194,7 @@ jobs:
       - name: spviPermisos
         run: |
           set -o pipefail
-          ./gradlew spviPermisos --stacktrace --console=plain 2>&1 | tee /tmp/salida.log
+          ./gradlew spviPermisos --no-configuration-cache --stacktrace --console=plain 2>&1 | tee /tmp/salida.log
       - name: Resumen del fallo
         if: failure()
         run: bash tools/verificacion/resumen_fallos.sh /tmp/salida.log
@@ -215,7 +219,7 @@ jobs:
       - name: Compilar todo el bytecode (debug)
         run: |
           set -o pipefail
-          ./gradlew :app:assembleDebug --stacktrace --console=plain 2>&1 | tee /tmp/salida.log
+          ./gradlew :app:assembleDebug --no-configuration-cache --stacktrace --console=plain 2>&1 | tee /tmp/salida.log
       - name: Resumen del fallo
         if: failure()
         run: bash tools/verificacion/resumen_fallos.sh /tmp/salida.log
