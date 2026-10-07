@@ -24,6 +24,10 @@ Cinco trabajos independientes; cada uno es un comando del proyecto:
 | Permisos del manifiesto fusionado | `./gradlew spviPermisos` | Que ni debug ni release piden permisos fuera de la lista autorizada |
 | API mínima 26 | `python3 tools/verificacion/api_minima.py` | Que ninguna clase compilada llama a una API posterior a Android 8 sin comprobar la versión |
 
+Los comandos de Gradle del CI llevan `--no-configuration-cache`: el 2026-10-07 el trabajo de lint murió con
+«Configuration cache entry discarded due to serialization error» sobre el mismo código que el día anterior había
+pasado; en el CI manda la reproducibilidad.
+
 Cuando un trabajo falla, `tools/verificacion/resumen_fallos.sh` publica lo esencial en las anotaciones del
 *check run*; cuando pasa, `tools/verificacion/resumen_ok.py` publica las cifras como avisos. Así el resultado es
 legible desde la API de GitHub y no solo desde la interfaz web.
@@ -32,7 +36,11 @@ legible desde la API de GitHub y no solo desde la interfaz web.
 
 | Fecha | Commit | Corrida | Trabajos | Resultado |
 |---|---|---|---|---|
-| 2026-10-07 | `f480e50` | [37653496967](https://github.com/rmdvcd/SPVI/actions/runs/37653496967) | 5/5 | **Todo en verde** (~11 min) |
+| 2026-10-07 | `531cab3` | [37656256703](https://github.com/rmdvcd/SPVI/actions/runs/37656256703) | 5/5 | **Todo en verde** (~11 min), con `--no-configuration-cache` |
+| 2026-10-07 | `f480e50` | [37653496967](https://github.com/rmdvcd/SPVI/actions/runs/37653496967) | 5/5 | Todo en verde (~11 min) |
+
+Dos corridas seguidas dan las **mismas cifras** (825 tests, 95 avisos de lint, 3423 clases), así que el resultado es
+reproducible, no una casualidad de una máquina.
 
 ### Detalle de la corrida del 2026-10-07
 
@@ -40,9 +48,9 @@ legible desde la API de GitHub y no solo desde la interfaz web.
 |---|---|
 | Tests JVM | **825 ejecutados, 0 fallidos, 0 errores, 0 omitidos** |
 | Compilación de los instrumentados | Compilan los de `:data` y `:app` (no se ejecutan: ver §3) |
-| Lint | **0 errores, 95 avisos** con el baseline vacío |
-| R8 (release) | **Sin clases ausentes**; `app-release-unsigned.apk` de 45,4 MB (sha256 `fba04320c6ae9b89…`) |
-| APK debug | `app-debug.apk` de 58,7 MB (sha256 `e723b4f6a37e2a34…`) |
+| Lint | **0 errores, 95 avisos** con el baseline vacío. Decisión: no se regenera el baseline para «tapar» los 95 avisos; mientras no haya errores, se ven en el informe y no rompen; si algún día hay errores, se corrigen (no se basilinan) |
+| R8 (release) | **Sin clases ausentes**; `app-release-unsigned.apk` de 45,4 MB (sha256 `7096fa3a96882edd…`) |
+| APK debug | `app-debug.apk` de 58,7 MB (sha256 `ef5a70c724add286…`) |
 | Permisos | Manifiesto fusionado (debug y release) dentro de la lista autorizada |
 | API mínima | **3423 clases revisadas, 0 llamadas no permitidas** |
 

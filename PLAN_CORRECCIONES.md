@@ -1,8 +1,11 @@
 # SPVI — Plan de correcciones propuesto
 
-> Estado: **propuesta, sin ejecutar.** Lo único que existe hoy en el repositorio local es el commit de auditoría
-> (`8c48aa3`, `ANALISIS_SPVI.md`). **No se ha empujado nada al remoto** ni se ha abierto ningún PR.
-> Este documento se ejecuta solo si tú lo apruebas, fase por fase.
+> Estado: **F0 ejecutada y en verde** (2026-10-07). Corrida del CI:
+> [37656256703](https://github.com/rmdvcd/SPVI/actions/runs/37656256703) — 5/5 trabajos, con el detalle en
+> [docs/VERIFICACION.md](docs/VERIFICACION.md). Fases F1–F3 y F6 pendientes de empezar.
+>
+> Lo empujado a `arena/3c116bea-spvi`: `8c48aa3` (auditoría) → `f480e50`/`531cab3` (CI, tests rotos, versión
+> 0.30.0, VERIFICACION.md). Sin PR abierto todavía.
 
 ---
 
