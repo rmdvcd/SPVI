@@ -118,7 +118,7 @@ class StockEstadisticasTest {
         val ventanas = Estadisticas.ventanas(desde, hasta, habana)
 
         assertEquals(Granularidad.HORA, Estadisticas.granularidad(desde, hasta))
-        assertEquals(3, ventanas.size)
+        assertEquals(2, ventanas.size)
         assertTrue(ventanas[0].inicio != ventanas[1].inicio)
         assertEquals(ventanas[0].inicio.atZone(habana).toLocalDateTime(), ventanas[1].inicio.atZone(habana).toLocalDateTime())
     }

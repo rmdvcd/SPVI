@@ -35,7 +35,7 @@ val firmaKeyAlias = datoFirma("keyAlias", "SPVI_KEY_ALIAS")
 val firmaKeyPassword = datoFirma("keyPassword", "SPVI_KEY_PASSWORD")
 val firmaCompleta = listOf(firmaStoreFile, firmaStorePassword, firmaKeyAlias, firmaKeyPassword).all { it != null }
 
-/** P23: android-all de Robolectric (SDK 35), resuelto por Gradle para ejecutar las capturas sin red. */
+/** android-all de Robolectric (SDK 35), resuelto por Gradle para ejecutar pruebas JVM sin red. */
 val robolectricSdk: Configuration by configurations.creating { isTransitive = false }
 
 android {
@@ -179,11 +179,9 @@ dependencies {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// P23 — Capturas (cu.spvi.app.capturas). Solo se ejecutan con las tareas de Roborazzi:
-//   ./gradlew :app:recordRoborazziDebug   → app/capturas/{claro,oscuro}/*.png
-// En `test`, `spviTests` y `spviCheck` quedan excluidas (son lentas y no validan lógica).
-// Robolectric corre SIN RED: el android-all de SDK 35 lo resuelve Gradle (configuración robolectricSdk) y se
-// pasa en modo offline, coherente con la regla de tests sin red del Prompt 15.
+// Robolectric corre SIN RED: Gradle resuelve android-all de SDK 35 (configuración robolectricSdk) y lo pasa
+// en modo offline. Se usa tanto para las capturas Roborazzi como para las pruebas JVM que ejercitan Room.
+// Las capturas de UI siguen excluidas de `test`, `spviTests` y `spviCheck` (solo corren con Roborazzi).
 // ---------------------------------------------------------------------------------------------------------------
 val robolectricSdkDir = layout.buildDirectory.dir("robolectric-sdk")
 val prepararRobolectricSdk = tasks.register<Copy>("prepararRobolectricSdk") {
@@ -192,12 +190,11 @@ val prepararRobolectricSdk = tasks.register<Copy>("prepararRobolectricSdk") {
 }
 val conCapturas = gradle.startParameter.taskNames.any { it.contains("Roborazzi", ignoreCase = true) }
 tasks.withType<Test>().configureEach {
-    if (conCapturas) {
+    if (conCapturas || name == "testDebugUnitTest") {
         dependsOn(prepararRobolectricSdk)
         systemProperty("robolectric.offline", "true")
         systemProperty("robolectric.dependency.dir", robolectricSdkDir.get().asFile.absolutePath)
         maxHeapSize = "2g"
-    } else {
-        exclude("**/capturas/**")
     }
+    if (!conCapturas) exclude("**/capturas/**")
 }
