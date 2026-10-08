@@ -95,8 +95,9 @@ object AyudaContenido {
             listOf(
                 "Ajustes → Respaldo → Exportar y toca Siguiente.",
                 "Proteger con contraseña viene activado. Escribe una contraseña de 8 caracteres o más dos veces y anótala.",
-                "Si eliges continuar sin contraseña, cualquiera que consiga el archivo podrá leer tus ventas y los datos personales de tus clientes.",
-                "Toca Guardar en el teléfono o Enviar a otra app (Drive, Telegram…). Para recuperarla: Respaldo → Elegir archivo.",
+                "Sin contraseña no hay protección para el archivo.",
+                "Quien lo consiga podrá leer tus ventas y los datos personales de tus clientes.",
+                "Guarda en el teléfono o envía a otra app. Para importar: Respaldo → Elegir archivo.",
             ),
         ),
         TemaAyuda(
