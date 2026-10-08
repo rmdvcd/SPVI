@@ -34,11 +34,11 @@ object DisenoPdf {
      */
     fun destacada(t: TablaExport, c: Int): Boolean {
         if (t.columnas.size == 2 && c == 1 && t.columnas[1] == "Valor") return true
-        return valores(t, c).let { v -> v.isNotEmpty() && v.all { (NUMERO.matches(it) && !CODIGO_BARRAS.matches(it)) || FECHA.matches(it) } }
+        return valores(t, c).let { v -> v.isNotEmpty() && v.all { (NUMERO.matches(it) && !NUMERO_LARGO.matches(it)) || FECHA.matches(it) } }
     }
 
-    /** 0.26.0: un código de barras o un teléfono (8 o más cifras seguidas) no es un importe: no va destacado. */
-    private val CODIGO_BARRAS = Regex("""^\+?\d{8,}$""")
+    /** Un identificador numérico largo (por ejemplo, un teléfono) no es un importe y no va destacado. */
+    private val NUMERO_LARGO = Regex("""^\+?\d{8,}$""")
 
     /** No se corta nunca. */
     fun compacta(t: TablaExport, c: Int): Boolean =

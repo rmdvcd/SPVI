@@ -1,5 +1,7 @@
 # SPVI — Auditoría técnica sin anestesia
 
+> **Instantánea histórica; no describe el árbol actual.** Este informe se hizo sobre el commit `2e5a149` y la versión `0.27.1`. El proyecto avanzó desde entonces hasta 0.30.0: varios hallazgos, cifras y rutas ya fueron corregidos o dejaron de ser vigentes. No uses sus conclusiones como diagnóstico actual; consulta [README.md](README.md), [docs/VERIFICACION.md](docs/VERIFICACION.md) y [SECURITY.md](SECURITY.md) para el estado vigente.
+
 **Alcance:** commit `2e5a149` («Primer commit: Proyecto inicial»), rama de trabajo `arena/3c116bea-spvi`.
 **Método:** lectura completa de los 6 módulos (38 903 líneas Kotlin en `src/main`, 434 archivos `.kt`),
 manifiesto, Gradle, documentación (4 673 líneas Markdown), capturas y herramientas. Análisis **estático**.

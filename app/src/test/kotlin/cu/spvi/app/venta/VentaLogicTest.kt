@@ -106,6 +106,11 @@ class VentaLogicTest {
     @Test fun mensajesDeErrorSinJerga() {
         assertEquals("No alcanza: Pan, Sal. Ajusta las cantidades.", TextosVenta.mensaje(AppError.StockInsuficiente(listOf("Pan", "Sal"))))
         assertEquals("El turno está cerrado: ábrelo para vender.", TextosVenta.mensaje(AppError.TurnoCerrado))
+        assertEquals(
+            "El precio de venta debe superar el costo, también después de aplicar los ajustes.",
+            TextosVenta.mensaje(AppError.Validacion("precioVenta", AppError.Regla.RANGO)),
+        )
+        assertEquals("Un insumo no tiene precio de venta: ponlo en Inventario.", TextosVenta.mensaje(AppError.Validacion("precioVenta", AppError.Regla.REQUERIDO)))
         assertEquals(TextosVenta.ERROR, TextosVenta.mensaje(AppError.Desconocido(IllegalStateException("interno"))))
     }
 

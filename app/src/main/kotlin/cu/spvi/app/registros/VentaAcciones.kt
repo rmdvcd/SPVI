@@ -23,6 +23,7 @@ import cu.spvi.core.money.Money
 import cu.spvi.core.money.sumOfCup
 import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
+import cu.spvi.designsystem.component.FiltroEntrada
 import cu.spvi.designsystem.component.IconActionStyle
 import cu.spvi.designsystem.component.SpviDialog
 import cu.spvi.designsystem.component.SpviIconAction
@@ -176,6 +177,7 @@ fun AccionesFichaVenta(v: Venta, vm: VentaAccionesViewModel, onMensaje: (String)
 @Composable
 private fun CampoMotivo(motivo: String, onCambio: (String) -> Unit) {
     SpviTextField(
+        filtro = FiltroEntrada.NOMBRE,
         value = motivo, onValueChange = { onCambio(it.take(Anulacion.MOTIVO_MAX)) }, label = "${TextosAnulacion.MOTIVO} *",
         supportingText = TextosAnulacion.MOTIVO_AYUDA, modifier = Modifier.fillMaxWidth().testTag(VentaAccionesTags.MOTIVO),
     )

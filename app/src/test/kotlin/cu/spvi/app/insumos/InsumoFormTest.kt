@@ -60,6 +60,12 @@ class InsumoFormTest {
         assertEquals(null, InsumoFormLogic.aInsumo(valido.copy(cantidad = "-1"), T0))
     }
 
+    @Test fun precioDeVentaOpcionalDebeSuperarElCosto() {
+        assertEquals("El precio de venta debe superar el costo del insumo.", InsumoFormLogic.validar(valido.copy(precioVenta = "120.50"))[CamposInsumo.PRECIO_VENTA])
+        assertEquals("El precio de venta debe superar el costo del insumo.", InsumoFormLogic.validar(valido.copy(precioVenta = "120.49"))[CamposInsumo.PRECIO_VENTA])
+        assertTrue(InsumoFormLogic.validar(valido.copy(precioVenta = "120.51")).isEmpty())
+    }
+
     @Test fun criticoNoPuedeSuperarAlBajoReglaDelDominio() {
         val e = InsumoFormLogic.validar(valido.copy(nivelBajo = "2", nivelCritico = "3"))
         assertEquals("El nivel crítico debe ser 0 o más y no mayor que el nivel bajo.", e[CamposInsumo.NIVEL_CRITICO])
@@ -85,7 +91,7 @@ class InsumoFormTest {
     @After fun despues() = Dispatchers.resetMain()
 
     private fun TestScope.vm(id: Long = 0, nombre: String? = null): InsumoFormViewModel {
-        val vm = InsumoFormViewModel(SavedStateHandle(mapOf("id" to id, "nombre" to nombre)), insumos, GuardarInsumo(insumos, productos, reloj), reloj)
+        val vm = InsumoFormViewModel(SavedStateHandle(mapOf("id" to id, "nombre" to nombre)), insumos, GuardarInsumo(insumos, productos, cu.spvi.app.ServRepo(), reloj), reloj)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.eventos.collect { eventos += it } }
         return vm
     }
@@ -112,7 +118,7 @@ class InsumoFormTest {
 
     @Test fun editarCargaYAlCambiarPrecioRecalculaElCostoDelElaborado() = runTest {
         insumos.put(ins(1, "Harina", cantidad = 10, precio = 100))
-        productos.items.value = listOf(prod(50, "Pan", categoria = Categorias.ELABORADO, costo = 50))
+        productos.items.value = listOf(prod(50, "Pan", venta = 200, categoria = Categorias.ELABORADO, costo = 50))
         productos.recetas[50] = Receta(50, listOf(RecetaLinea(1, Cantidad(500))))
         val vm = vm(id = 1)
         assertEquals("Harina", vm.state.value.form.nombre)

@@ -65,6 +65,7 @@ class ServiciosAppTest {
         assertEquals(Cup.ofPesos(250), s.importe)
         assertEquals(listOf(RecetaLinea(1, Cantidad.enteras(10))), lineas)
         assertEquals(Cup.ofPesos(20), ServicioFormLogic.costo(f)) // 10 ml × 2 CUP
+        assertEquals("El importe debe superar el costo de los insumos.", ServicioFormLogic.validar(f.copy(importe = "20"))[CamposServicio.IMPORTE])
         assertTrue(CamposServicio.INSUMOS in ServicioFormLogic.validar(f.copy(insumos = listOf(LineaRecetaForm(1, "Gel", "ml", Cup.ofPesos(2), "0")))))
         assertTrue(CamposServicio.IMPORTE in ServicioFormLogic.validar(f.copy(importe = "abc")))
     }
@@ -115,7 +116,7 @@ class ServiciosAppTest {
 
     @Test fun formularioGuardaElServicio() = runTest {
         val repo = ServRepo()
-        val vm = ServicioFormViewModel(SavedStateHandle(), repo, InsRepo(), GuardarServicio(repo, RelojFijo()), FakeFotos(), RelojFijo())
+        val vm = ServicioFormViewModel(SavedStateHandle(), repo, InsRepo(), GuardarServicio(repo, InsRepo(), RelojFijo()), FakeFotos(), RelojFijo())
         val eventos = mutableListOf<EventoServicioForm>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.eventos.collect { eventos += it } }
         vm.guardar()

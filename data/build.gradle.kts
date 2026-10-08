@@ -59,7 +59,7 @@ dependencies {
     implementation(libs.sqlcipher.android)
 
     implementation(libs.fastexcel)
-    // Escáner: única red de la app (bases públicas de productos) y fotos re-codificadas.
+    // OkHttp consulta releases y revocaciones de GitHub; ExifInterface corrige la orientación de las fotos.
     implementation(libs.okhttp)
     implementation(libs.androidx.exifinterface)
 

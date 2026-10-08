@@ -162,12 +162,27 @@ class AjustesCapturas {
     private val importacion = ImportForm("content://respaldo", info, nombre = "SPVI_respaldo_2026-09-28.spvi")
 
     @Test @Config(qualifiers = Captura.LARGA) fun respaldoPaso1() = respaldo("09a_respaldo_paso1", RespaldoUiState())
+    @Test fun respaldoPaso1ConBiometria() = rule.capturar("09o_respaldo_paso1_biometria") {
+        RespaldoContent(RespaldoUiState(), {}, accionesRespaldo, zona = Captura.ZONA, biometriaDisponible = true)
+    }
     @Test fun respaldoErrores() = respaldo("09b_respaldo_paso1_errores", RespaldoUiState(export = ExportForm(true, "abc12", "abc", mostrarErrores = true)))
+    @Test fun respaldoConfirmarSinBiometria() = rule.capturar("09m_respaldo_confirmar_sin_contrasena") {
+        RespaldoContent(
+            RespaldoUiState(), {}, accionesRespaldo, zona = Captura.ZONA,
+            confirmarExportacionSinContrasena = true, biometriaDisponible = false,
+        )
+    }
+    @Test fun respaldoConfirmarConBiometria() = rule.capturar("09n_respaldo_confirmar_biometria") {
+        RespaldoContent(
+            RespaldoUiState(), {}, accionesRespaldo, zona = Captura.ZONA,
+            confirmarExportacionSinContrasena = true, biometriaDisponible = true,
+        )
+    }
     @Test fun respaldoPaso2() = rule.capturar(
         "09c_respaldo_paso2",
         antes = { onNodeWithContentDescription(SpviStepperTextos.SIGUIENTE).performScrollTo().performClick() },
     ) { RespaldoContent(RespaldoUiState(ExportForm(true, "clave-segura", "clave-segura")), {}, accionesRespaldo, zona = Captura.ZONA) }
-    @Test fun respaldoProgreso() = respaldo("09d_respaldo_progreso", RespaldoUiState(progreso = Progreso(2, 3, "Cifrando con tu contraseña…")))
+    @Test fun respaldoProgreso() = respaldo("09d_respaldo_progreso", RespaldoUiState(progreso = Progreso(2, 3, "Preparando el archivo…")))
     @Test fun respaldoListo() = respaldo(
         "09e_respaldo_listo",
         RespaldoUiState(

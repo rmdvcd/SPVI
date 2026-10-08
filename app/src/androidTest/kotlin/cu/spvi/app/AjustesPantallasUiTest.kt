@@ -121,6 +121,46 @@ class AjustesPantallasUiTest {
         rule.onNodeWithText(TextosRespaldo.ERROR_CONTRASENA).assertIsDisplayed()
     }
 
+    @Test fun respaldoSinContrasenaAdvierteQueElArchivoNoEsConfidencial() {
+        rule.setContent {
+            SpviTheme(darkTheme = false) {
+                RespaldoContent(RespaldoUiState(), {}, accionesRespaldo(), biometriaDisponible = true)
+            }
+        }
+        rule.onNodeWithTag(RespaldoTags.SIN_CONTRASENA).performScrollTo().assertTextContains("cualquiera que lo obtenga")
+        rule.onNodeWithText(TextosRespaldo.AVISO_BIOMETRIA).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test fun confirmarRespaldoSinContrasenaExplicaAlcanceDeBiometria() {
+        var confirmaciones = 0
+        rule.setContent {
+            SpviTheme(darkTheme = false) {
+                RespaldoContent(
+                    RespaldoUiState(), {}, accionesRespaldo(), confirmarExportacionSinContrasena = true,
+                    biometriaDisponible = true, onConfirmarExportacionSinContrasena = { confirmaciones++ },
+                )
+            }
+        }
+        rule.onNodeWithText(TextosRespaldo.CONFIRMAR_SIN_CONTRASENA).assertIsDisplayed()
+        rule.onNodeWithContentDescription(TextosRespaldo.CONFIRMAR_BIOMETRIA).performClick()
+        assertEquals(1, confirmaciones)
+    }
+
+    @Test fun sinBiometriaAunExigeConfirmacionExplicita() {
+        var confirmaciones = 0
+        rule.setContent {
+            SpviTheme(darkTheme = false) {
+                RespaldoContent(
+                    RespaldoUiState(), {}, accionesRespaldo(), confirmarExportacionSinContrasena = true,
+                    biometriaDisponible = false, onConfirmarExportacionSinContrasena = { confirmaciones++ },
+                )
+            }
+        }
+        rule.onNodeWithText(TextosRespaldo.CONFIRMAR_SIN_CONTRASENA).assertIsDisplayed()
+        rule.onNodeWithContentDescription(TextosRespaldo.CONFIRMAR_SIN_BIOMETRIA).performClick()
+        assertEquals(1, confirmaciones)
+    }
+
     @Test fun respaldoBotones() {
         var guardar = 0; var importar = 0
         rule.setContent {
@@ -142,7 +182,7 @@ class AjustesPantallasUiTest {
             SpviTheme(darkTheme = false) {
                 RespaldoContent(
                     RespaldoUiState(
-                        progreso = Progreso(2, 3, "Cifrando con tu contraseña…"),
+                        progreso = Progreso(2, 3, "Preparando el archivo…"),
                         resultado = ResultadoRespaldo(true, "Respaldo guardado", "SPVI_respaldo_2026-09-30.spvi"),
                     ),
                     {}, AccionesRespaldo(
@@ -152,7 +192,7 @@ class AjustesPantallasUiTest {
                 )
             }
         }
-        rule.onNodeWithText("Etapa 2 de 3 · Cifrando con tu contraseña…").assertExists()
+        rule.onNodeWithText("Etapa 2 de 3 · Preparando el archivo…").assertExists()
         rule.onNodeWithText("Respaldo guardado").assertIsDisplayed()
         rule.onNodeWithContentDescription(TextosRespaldo.ACEPTAR).performClick()
         assertEquals(1, cerrar)

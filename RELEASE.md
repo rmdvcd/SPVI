@@ -1,12 +1,27 @@
-# SPVI — Release firmado (APK y AAB)
+# SPVI — compilar y publicar
 
-Cómo generar la versión que se entrega a los clientes. Describe la versión **0.27.1** (`versionCode 50`). Todo se hace en el ordenador del desarrollador con Android Studio (JDK 17 y SDK 35). El repositorio **no contiene** keystore ni contraseñas.
+Guía del estado actual del proyecto: versión **0.30.0** (`versionCode 51`), Room **v11**, respaldo `.spvi` v4. Requiere Android Studio o JDK 17 y Android SDK 35. El repositorio no contiene keystore ni contraseñas.
 
-> **Regla de oro:** firma **siempre con el mismo keystore**. En Android 8+ el `ANDROID_ID` depende de la clave de firma, y el `deviceId` de la licencia GL es `SPVI:` + `ANDROID_ID`. Si cambias de clave:
-> - todas las licencias emitidas dejan de valer;
-> - Android no deja actualizar la app instalada: hay que desinstalar, y con eso se pierden los datos (salvo que haya respaldo `.spvi`).
+> **No distribuir sin comprobar este árbol.** La última corrida remota consultada pasó en el commit anterior `82672fdf`; los cambios locales actuales no se han compilado ni probado porque este entorno no tiene Java. El estado medido está en [docs/VERIFICACION.md](docs/VERIFICACION.md).
 
-## 1. Crear el keystore (una sola vez)
+## 1. Destino público de actualizaciones — obligatorio en release
+
+La app consulta releases y la lista de licencias revocadas en GitHub. Por eso todo `assembleRelease`, `bundleRelease` o `spviRelease` exige `spviGithubRepo` con el formato `propietario/repositorio`. Debe ser el repositorio público que realmente publica esos archivos. Sin él, la compilación falla en `validarRepositorioGitHubRelease`; no se permite generar por accidente un release que no pueda consultar actualizaciones ni revocaciones. En debug puede omitirse y `BuildConfig.GITHUB_REPO` queda vacío.
+
+```bash
+# Ejemplo para este repositorio
+./gradlew :app:assembleRelease -PspviGithubRepo=rmdvcd/SPVI
+./gradlew :app:bundleRelease -PspviGithubRepo=rmdvcd/SPVI
+./gradlew spviRelease -PspviGithubRepo=rmdvcd/SPVI
+```
+
+También se puede configurar `spviGithubRepo=rmdvcd/SPVI` en un `~/.gradle/gradle.properties` local no versionado. GitHub Actions usa `GITHUB_REPOSITORY` automáticamente. El parámetro no sustituye la publicación real ni comprueba que el repositorio sea público; verifica el formato y evita dejar el destino vacío.
+
+## 2. Keystore de firma
+
+**Firma siempre con el mismo keystore.** `ANDROID_ID` y el `deviceId` de licencia dependen de la firma del APK. Si se pierde o cambia la clave, Android no acepta la actualización como tal y las licencias existentes pueden dejar de corresponder.
+
+Crear una sola vez (fuera del repositorio):
 
 ```bash
 keytool -genkeypair -v \
@@ -15,170 +30,104 @@ keytool -genkeypair -v \
   -dname "CN=SPVI, O=<tu nombre o negocio>, C=CU"
 ```
 
-- Con PKCS12 (el formato por defecto de JDK 17), la contraseña de la clave es **la misma** que la del almacén: usa el mismo valor en `storePassword` y `keyPassword`.
-- `-validity 10000` son unos 27 años.
-- **Guarda una copia del `.jks` y de la contraseña en al menos dos sitios fuera del ordenador** (memoria USB cifrada y un gestor de contraseñas). Sin ellos no se puede volver a publicar una actualización.
-- Anota la huella del certificado para comprobar cada build:
-  ```bash
-  keytool -list -v -keystore spvi-release.jks -alias spvi | grep SHA256
-  ```
+Guarda copias seguras del `.jks` y de sus contraseñas en más de un sitio. Para verificar la huella:
 
-## 2. Configurar la firma en Gradle
-
-`app/build.gradle.kts` ya trae el `signingConfig` de release. Lee los datos, por orden, de:
-
-**Opción A — `keystore.properties`** en la raíz del proyecto. Está en `.gitignore`, así que nunca se sube:
-
-```properties
-storeFile=/ruta/absoluta/spvi-release.jks
-storePassword=CAMBIAR
-keyAlias=spvi
-keyPassword=CAMBIAR
+```bash
+keytool -list -v -keystore spvi-release.jks -alias spvi | grep SHA256
 ```
 
-**Opción B — variables de entorno** (útil en CI):
+Gradle lee la firma, en este orden:
 
-| Variable | Contenido |
-|---|---|
-| `SPVI_KEYSTORE` | Ruta absoluta del `.jks` |
-| `SPVI_KEYSTORE_PASSWORD` | Contraseña del almacén |
-| `SPVI_KEY_ALIAS` | `spvi` |
-| `SPVI_KEY_PASSWORD` | Contraseña de la clave (igual que la del almacén con PKCS12) |
+1. `keystore.properties` en la raíz del proyecto (está ignorado por Git):
+   ```properties
+   storeFile=/ruta/absoluta/spvi-release.jks
+   storePassword=CAMBIAR
+   keyAlias=spvi
+   keyPassword=CAMBIAR
+   ```
+2. Variables de entorno: `SPVI_KEYSTORE`, `SPVI_KEYSTORE_PASSWORD`, `SPVI_KEY_ALIAS` y `SPVI_KEY_PASSWORD`.
 
-Si falta algún dato, Gradle avisa con «firma de release no configurada» y el release sale **sin firmar** (`app-release-unsigned.apk`), que no se puede instalar.
-
-Fragmento real del build, como referencia:
-
-```kotlin
-signingConfigs {
-    if (firmaCompleta) {
-        create("release") {
-            storeFile = file(firmaStoreFile!!)
-            storePassword = firmaStorePassword
-            keyAlias = firmaKeyAlias
-            keyPassword = firmaKeyPassword
-        }
-    }
-}
-buildTypes {
-    release {
-        isMinifyEnabled = true        // R8: reduce, optimiza y ofusca
-        isShrinkResources = true
-        isDebuggable = false
-        proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-        if (firmaCompleta) signingConfig = signingConfigs.getByName("release")
-    }
-}
-```
+Si no se configura firma, Gradle produce un APK **sin firmar**, no instalable como release. El CI construye releases sin firmar intencionalmente porque no recibe el keystore.
 
 ## 3. Antes de compilar
 
-1. Sube `versionCode` (siempre mayor que el anterior) y `versionName` en `app/build.gradle.kts`.
-   - **Actualizaciones automáticas (0.25.0):** compila con `-PspviGithubRepo=usuario/repositorio` (o pon `spviGithubRepo=usuario/repositorio` en `gradle.properties`). Sin ese valor, `BuildConfig.GITHUB_REPO` queda vacío y la app **no consulta** GitHub: ni versiones ni lista de revocadas (las recuperaciones de licencia no bloquean el teléfono antiguo).
-2. Ejecuta `./gradlew spviCheck spviInstrumentedTests` con un emulador o teléfono conectado.
-   Después, `python3 tools/verificacion/api_minima.py` (con el JDK 17 en el PATH). Comprueba que ninguna clase compilada llama a una API de Android o de Java posterior a la 26 sin comprobar la versión, también en core/domain/licencia, que lint no analiza. Debe terminar con «0 llamadas no permitidas».
-3. **Solo la primera vez:**
-   - `./gradlew :app:updateLintBaseline`; revisa el diff y versiona `app/lint-baseline.xml`.
-   - Versiona `data/schemas/cu.spvi.data.db.SpviDatabase/3.json`, que genera Room.
+1. Revisa que `versionCode` sea mayor que el de la Release anterior y actualiza `versionName` en `app/build.gradle.kts` cuando se vaya a publicar una nueva versión. No cambies ambos solo para probar el árbol actual.
+2. Asegúrate de que `spviGithubRepo` apunta al repositorio público correcto (sección 1).
+3. Ejecuta con JDK 17 y SDK 35:
+   ```bash
+   ./gradlew spviCheck spviInstrumentedTests
+   python3 tools/verificacion/api_minima.py
+   ```
+   Los tests instrumentados requieren teléfono o emulador API 26+. Las capturas se comprueban aparte con `./gradlew :app:recordRoborazziDebug`.
+4. Si se cambió el esquema Room, versiona el JSON nuevo en `data/schemas/cu.spvi.data.db.SpviDatabase/` y revisa la migración. La versión actual es `11.json`; la migración que retiró `producto.codigo` es `MIGRACION_10_11`.
+5. Revisa los informes de lint y R8, así como el resultado de [docs/VERIFICACION.md](docs/VERIFICACION.md). No regeneres un baseline para ocultar avisos sin revisar cada cambio.
+
+En `gradle.properties` el configuration cache está desactivado para que el comportamiento local coincida con CI (`--no-configuration-cache`) mientras se resuelve el error de serialización de tareas/plugins.
 
 ## 4. Compilar
 
 ```bash
-./gradlew spviRelease          # spviCheck + AAB + APK, en un solo comando
-# o por separado:
-./gradlew :app:assembleRelease # APK
-./gradlew :app:bundleRelease   # AAB
+# APK de desarrollo (no necesita repositorio público)
+./gradlew :app:assembleDebug
+
+# APK y AAB de release (requieren spviGithubRepo; firmados si se configuró el keystore)
+./gradlew :app:assembleRelease -PspviGithubRepo=rmdvcd/SPVI
+./gradlew :app:bundleRelease -PspviGithubRepo=rmdvcd/SPVI
+
+# Comprobaciones del proyecto + AAB + APK release
+./gradlew spviRelease -PspviGithubRepo=rmdvcd/SPVI
 ```
 
-| Artefacto | Ruta | Para qué |
+| Artefacto | Ruta habitual | Uso |
 |---|---|---|
-| APK firmado | `app/build/outputs/apk/release/app-release.apk` | **Distribución directa** (WhatsApp, Telegram, Zapya, Bluetooth, USB). Es lo habitual para SPVI |
-| AAB | `app/build/outputs/bundle/release/app-release.aab` | Solo para subir a Google Play. No se instala directamente |
-| Mapping de R8 | `app/build/outputs/mapping/release/mapping.txt` | **Guárdalo con cada versión**: sin él las trazas de error de release no se pueden leer |
+| APK release firmado | `app/build/outputs/apk/release/app-release.apk` | Distribución directa si se firmó con el keystore de siempre |
+| APK release sin firmar | `app/build/outputs/apk/release/app-release-unsigned.apk` | Pruebas de build; no distribuir para instalar |
+| AAB | `app/build/outputs/bundle/release/app-release.aab` | Subida a Google Play; no se instala directamente |
+| Mapping de R8 | `app/build/outputs/mapping/release/mapping.txt` | Archivar con la versión para poder leer trazas ofuscadas |
 
-En Android Studio, el mismo resultado: **Build → Generate Signed App Bundle / APK…**, con el mismo `.jks`.
+Google Play puede volver a firmar con Play App Signing; esa instalación puede tener otro `ANDROID_ID` que el APK firmado directamente. Elige un canal por cliente y no mezcles firmas.
 
-> **Google Play y Play App Signing:** Play vuelve a firmar con **su** clave. El `ANDROID_ID`, y con él el `deviceId`, de una instalación desde Play es distinto del de un APK instalado a mano. Por eso las licencias no se pueden pasar de un canal a otro. Elige un canal por cliente.
+## 5. Verificar artefactos
 
-¿Necesitas un APK a partir del AAB? Usa `bundletool build-apks --bundle=app-release.aab --output=spvi.apks --mode=universal --ks=spvi-release.jks --ks-key-alias=spvi`.
-
-## 5. Verificar el APK
+Para APK firmado:
 
 ```bash
-BT=$ANDROID_HOME/build-tools/35.0.0
-$BT/apksigner verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk
-  # → "Verified using v2 scheme: true" y la huella SHA-256 anotada en el paso 1
-$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer manifest permissions app/build/outputs/apk/release/app-release.apk
-  # → android.permission.CAMERA, android.permission.INTERNET, android.permission.POST_NOTIFICATIONS,
-  #   android.permission.FOREGROUND_SERVICE, android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE,
-  #   android.permission.CHANGE_NETWORK_STATE, android.permission.REQUEST_INSTALL_PACKAGES,
-  #   android.permission.REQUEST_DELETE_PACKAGES, android.permission.READ_MEDIA_IMAGES,
-  #   android.permission.READ_EXTERNAL_STORAGE (maxSdk 32), android.permission.WRITE_EXTERNAL_STORAGE (maxSdk 28),
-  #   android.permission.USE_BIOMETRIC, android.permission.USE_FINGERPRINT (0.27.0, acceso con clave)
-  #   (y cu.spvi.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION, permiso propio de androidx.core)
-$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer manifest debuggable app/build/outputs/apk/release/app-release.apk
-  # → false
+BT="$ANDROID_HOME/build-tools/35.0.0"
+"$BT/apksigner" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk
+"$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest debuggable app/build/outputs/apk/release/app-release.apk
 ```
 
-## 6. Prueba de humo en un teléfono real (APK de release)
+Comprueba que la verificación de firma sea correcta, que la huella coincida con la anotada y que `debuggable` sea `false`. En el manifiesto no deben aparecer permisos nuevos fuera de la lista autorizada que valida `spviPermisos`.
 
-> La guía completa por USB (comandos adb, tests instrumentados, pruebas manuales por flujo y checklist de 45 puntos) está en [PRUEBAS_DISPOSITIVO.md](PRUEBAS_DISPOSITIVO.md).
+Para publicar, genera también un SHA-256 y súbelo junto con el APK a una GitHub Release pública:
 
 ```bash
-adb install -r app/build/outputs/apk/release/app-release.apk
-adb logcat -c && adb logcat | grep -i spvi    # en release no debe aparecer ningún log propio
+sha256sum app/build/outputs/apk/release/app-release.apk
 ```
 
-| # | Comprobación | Esperado |
-|---|---|---|
-| 1 | Primera apertura | Splash → asistente; se puede saltar |
-| 2 | Licencia → solicitar por WhatsApp | Se abre WhatsApp con el mensaje cifrado |
-| 3 | Pegar una licencia de GL emitida para **este** teléfono | Activa; banner correcto en Inicio |
-| 4 | Abrir turno → venta en efectivo y por transferencia (QR) | Venta registrada; stock descontado |
-| 5 | Inventario → escanear un código | La cámara se pide solo entonces y se apaga al salir |
-| 6 | Respaldo → exportar e importar el `.spvi` | Datos restaurados; contraseña incorrecta = error claro |
-| 7 | Registros → exportar PDF y Excel | Se abren en otra app |
-| 8 | Recientes con Licencia, Perfil o el QR abiertos | Miniatura en blanco (`FLAG_SECURE`) |
-| 9 | Tema claro y oscuro del sistema; letra grande al 200 % | Legible y sin cortes |
-| 10 | (0.25.0) Abrir turno con fondo 100 → entrada 50 → venta en efectivo → cerrar con **Cuadra** | Registros → Turnos → Caja: esperado = contado, «Diferencia (cuadra)» |
-| 11 | (0.25.0) Registros → venta → **Anular** / **Modificar** | ANULADA / «Corrige #N»; existencias devueltas |
-| 12 | (0.25.0) Instalar la versión anterior, publicar esta en GitHub → Ajustes → **Buscar ahora** → **Actualizar** | Descarga, confirmación de Android y datos intactos |
-| 13 | (0.25.1) Registros → Turnos → turno → **Compartir** → PDF y Excel (enviar y guardar) | El PDF alterna vertical/horizontal sin columnas cortadas; el Excel se abre sin avisos de reparación |
-| 14 | (0.25.1) Modificar una venta: añadir un artículo, quitar otro y pasar a Transferencia | «Corrige #N» con el total y método nuevos; caja y existencias ajustadas |
-| 15 | (0.25.1) Secundaria: pedir el cierre desde la principal → **Ahora no** → **Contar** | No se cierra hasta contar; luego llega el conteo y se cierra |
-| 16 | (0.25.1) Licencia vencida → Licencia | Aparece «ID de la licencia anterior (opcional)» |
-| 17 | (0.26.0) Secundaria: Abrir turno sin fondo → **Pedir fondo**; en la principal, Apps vinculadas → **Asignar fondo** | La secundaria abre con ese fondo, sin poder cambiarlo; el siguiente turno vuelve a pedirlo |
-| 18 | (0.26.0) Instalar → aceptar el permiso de fotos → usar 1 día → desinstalar → reinstalar → aceptar el permiso | Licencia muestra los días que quedaban, no 7. Con la prueba vencida, sigue vencida. Existe `Imágenes/SPVI/sys_….png` |
-| 19 | (0.26.0) Igual que 18, pero **negando** el permiso en la reinstalación | La prueba vuelve a empezar (limitación aceptada: sin permiso no se puede leer el registro en Android 10+) |
-| 20 | (0.26.0) Publicar una versión nueva y adelantar el reloj 30 días | Inicio avisa «Obligatoria desde…»; al vencer, pantalla de bloqueo con Actualizar, Exportar respaldo y Cerrar turno |
-| 21 | (0.27.0) Ajustes → Acceso con clave → activar; cerrar la app del todo y abrirla; luego 10 min en segundo plano | Pide huella o PIN las dos veces; en release también (R8 no rompe `BiometricPrompt`) |
-| 22 | (0.27.0) Exportar respaldo sin contraseña e importarlo en otro teléfono; importar uno de la 0.26.0 | El primero no pide contraseña; el de la 0.26.0 sí |
-| 23 | (0.27.0) Nuevo producto → **Cámara** | Pide el permiso de cámara, guarda la foto (≤ 1024 px) |
-| 24 | (0.27.0) Venta por transferencia con **Cliente fijo** → otra venta | Se sugiere el cliente; aparece en Registros → Clientes |
+La app solo ofrece instalar una actualización si puede validar el hash y Android acepta la firma.
 
-Si R8 rompe algo en release que en debug funciona, es casi siempre por reflexión o serialización:
+## 6. Prueba de humo en dispositivo
 
-1. Revisa `app/build/outputs/mapping/release/missing_rules.txt`.
-2. Añade la regla en `app/proguard-rules.pro`.
-3. Repite la prueba de humo.
+La lista de regresión detallada está en [PRUEBAS_DISPOSITIVO.md](PRUEBAS_DISPOSITIVO.md). Como mínimo, antes de entregar:
 
-## 7. Distribuir
+1. Instala/actualiza el APK en Android 8.0 o superior; confirma que los datos anteriores se conservan.
+2. Completa el inicio, abre turno, vende un producto y un servicio; confirma que inventario, caja y registros quedan coherentes.
+3. Comprueba que no se puede guardar un precio de venta igual o inferior al costo, ni un precio tras preajustes igual o inferior; intenta vender con un descuento que cruce el costo.
+4. Prueba inventario, servicios, insumos, fechas, cantidades, filtros monetarios y porcentajes con escritura y pegado, incluidos `1,450.00 CUP`, comas decimales y agrupaciones inválidas.
+5. Exporta un respaldo con contraseña, impórtalo en un dispositivo de prueba y confirma que una contraseña incorrecta no altera los datos.
+6. Exporta sin contraseña: debe aparecer primero el aviso de que cualquiera que obtenga el archivo podrá leerlo. Con biometría disponible, la acción debe exigir biometría sin alternativa de PIN; sin biometría, debe exigir aceptar el aviso. Cancela el diálogo y confirma que no se inicia la exportación. La biometría autoriza la acción: no cifra ni protege el archivo.
+7. Revisa el QR de transferencia, vinculación principal/secundaria, sincronización en red local y actualización firmada si se distribuye ese flujo.
+8. Prueba tema claro/oscuro, letra grande, navegación Atrás y contenido sensible en Recientes.
 
-- **Actualizaciones obligatorias (0.26.0):** toda versión nueva publicada es obligatoria a los 30 días de que cada teléfono la detecte (no hay que marcar nada en la Release). Publica solo versiones estables.
+No uses datos reales de clientes en las pruebas; la importación de un respaldo reemplaza los datos locales.
 
-- Envía `app-release.apk` y, aparte, su SHA-256 (`sha256sum app-release.apk`), para que el cliente pueda comprobarlo.
-- El cliente tiene que permitir «Instalar apps desconocidas» para la app desde la que abre el APK.
-- **Actualizar:** instala el APK nuevo por encima del anterior. Los datos se conservan si la firma es la misma y el `versionCode` es mayor.
+## 7. Publicar y actualizar
 
-## 8. Publicar una actualización en GitHub (0.25.0)
+1. Aumenta `versionCode` y `versionName` en `app/build.gradle.kts`.
+2. Completa las verificaciones de las secciones anteriores y guarda mapping y hash.
+3. Publica APK y hash en una Release **pública** del repositorio configurado como `spviGithubRepo`.
+4. Instala la versión desde el mismo canal y verifica que se ofrece, que el SHA-256 coincide y que Android reconoce la firma.
+5. No edites la Release `revocaciones`: pertenece al servicio GL y contiene la lista de licencias revocadas.
 
-SPVI busca la **última Release pública** del repositorio configurado (`GITHUB_REPO`). Para que la ofrezca e instale:
-
-1. Crea la etiqueta `vX.Y.Z` (por ejemplo `v0.25.1`) y una Release **no** marcada como borrador ni pre-release.
-2. Sube el APK firmado con el nombre `SPVI-X.Y.Z.apk`. GitHub calcula su huella (`digest: sha256:…`), que SPVI usa para comprobar la descarga. Si tu cuenta no muestra `digest`, sube también `SPVI-X.Y.Z.apk.sha256`, con la huella en hex (`sha256sum SPVI-X.Y.Z.apk | cut -d' ' -f1 > SPVI-X.Y.Z.apk.sha256`). **Sin huella, SPVI avisa pero no instala.**
-3. Escribe las novedades en la descripción: se muestran como notas.
-4. **No toques la Release `revocaciones`**: la gestiona GL (lista firmada `revocadas.json`, ver [docs/GL_PROMPT_0.25.md](docs/GL_PROMPT_0.25.md)) y debe tener «Set as latest» desactivado para no tapar la versión de la app.
-5. Firma **siempre con el mismo keystore**: Android rechaza instalar encima una versión con otra firma.
-
-Las apps principales lo ven en su próxima consulta semanal (o con **Ajustes → Buscar ahora**). Las secundarias reciben el APK de su principal por la red local, sin internet.
-
+Consulta [docs/VERIFICACION.md](docs/VERIFICACION.md) para separar resultados de CI previos de pruebas pendientes sobre cambios nuevos.

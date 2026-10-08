@@ -71,16 +71,22 @@ object PlanificadorVenta {
         }
         val ajustes = mutableMapOf<Long, Int>()
         val detalles = items.map { (p, cant) ->
+            val costoUnitario = if (p.esElaborado) costosReceta[p.id] ?: p.precioCosto else p.precioCosto
+            // Defensa final además de las reglas al guardar: bases antiguas/recuperadas no deben venderse bajo costo.
+            if (p.precioVenta <= costoUnitario) return AppResult.Err(AppError.Validacion("precioVenta", AppError.Regla.RANGO))
             val bp = aplicables.filter { p.id in it.productoIds }.sumOf { it.puntosBasicos }.coerceAtLeast(-10_000)
             if (bp != 0) ajustes[p.id] = bp
+            val precioUnitario = if (bp == 0) p.precioVenta else p.precioVenta.ajustar(bp)
+            // Un descuento combinado puede superar el margen aunque cada preajuste aislado sea válido.
+            if (precioUnitario <= costoUnitario) return AppResult.Err(AppError.Validacion("precioVenta", AppError.Regla.RANGO))
             DetalleVenta(
                 productoId = p.id,
                 nombre = p.nombreCompleto, // 0.24.0: «Nombre · Descripción» congelado en la venta
                 categoria = p.categoria,
                 cantidad = cant,
                 precioBase = p.precioVenta,
-                precioUnitario = if (bp == 0) p.precioVenta else p.precioVenta.ajustar(bp),
-                costoUnitario = if (p.esElaborado) costosReceta[p.id] ?: p.precioCosto else p.precioCosto,
+                precioUnitario = precioUnitario,
+                costoUnitario = costoUnitario,
             )
         }
         return AppResult.Ok(Cotizacion(metodoPago, detalles, ajustes, elaborados))

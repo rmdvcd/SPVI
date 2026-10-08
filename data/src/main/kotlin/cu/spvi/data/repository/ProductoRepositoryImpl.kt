@@ -80,7 +80,11 @@ class ProductoRepositoryImpl @Inject constructor(
 
     override suspend fun actualizarPrecios(nuevos: Map<Long, Cup>): AppResult<Unit> = db.tx {
         val ahora = clock.now().toEpochMilli()
-        nuevos.forEach { (id, precio) -> if (productos.actualizarPrecio(id, precio.centavos, ahora) == 0) abortar(AppError.NoEncontrado) }
+        nuevos.forEach { (id, precio) ->
+            val actual = productos.obtener(id)?.takeUnless { it.eliminado } ?: abortar(AppError.NoEncontrado)
+            if (precio <= Cup(actual.precioCostoCent)) abortar(AppError.Validacion("precioVenta", AppError.Regla.RANGO))
+            if (productos.actualizarPrecio(id, precio.centavos, ahora) == 0) abortar(AppError.NoEncontrado)
+        }
     }
 
     override suspend fun receta(productoId: Long): Receta? =

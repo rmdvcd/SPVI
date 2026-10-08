@@ -11,6 +11,7 @@ import cu.spvi.domain.model.MetodoPago
 import cu.spvi.domain.model.Perfil
 import cu.spvi.domain.model.Receta
 import cu.spvi.domain.model.RecetaLinea
+import cu.spvi.domain.model.Servicio
 import cu.spvi.domain.model.TarjetaBancaria
 import cu.spvi.domain.model.Telefono
 import cu.spvi.domain.repository.EtapaRespaldo
@@ -48,9 +49,10 @@ class UseCasesTest {
     private val turnos = FakeTurnos()
     private val ventas = FakeVentas(productos, turnos)
     private val precios = FakePrecios()
+    private val servicios = FakeServicios()
     private val perfil = FakePerfil()
 
-    private val registrar = RegistrarVenta(CotizarVenta(productos, precios, FakeInsumos(), FakeServicios()), turnos, ventas, perfil, clock)
+    private val registrar = RegistrarVenta(CotizarVenta(productos, precios, FakeInsumos(), servicios), turnos, ventas, perfil, clock)
     private val guardarProducto = GuardarProducto(productos, insumos, clock)
 
     private fun <T> ok(r: AppResult<T>): T = (r as? AppResult.Ok)?.value ?: error("esperaba Ok y fue $r")
@@ -107,8 +109,28 @@ class UseCasesTest {
         insumos.put(insumo(1, precio = 10))
         val id = ok(guardarProducto(producto(0, categoria = Categorias.ELABORADO), Receta(0, listOf(RecetaLinea(1, Cantidad.enteras(3))))))
         assertEquals(Cup.ofPesos(30), productos.obtener(id)!!.precioCosto)
-        ok(GuardarInsumo(insumos, productos, clock)(insumo(1, precio = 12)))
+        ok(GuardarInsumo(insumos, productos, servicios, clock)(insumo(1, precio = 12)))
         assertEquals(Cup.ofPesos(36), productos.obtener(id)!!.precioCosto)
+    }
+
+    @Test fun `subir costo que deja un elaborado sin margen se rechaza sin guardar`() = runBlocking {
+        insumos.put(insumo(1, precio = 10))
+        val id = ok(guardarProducto(producto(0, categoria = Categorias.ELABORADO, venta = 35), Receta(0, listOf(RecetaLinea(1, Cantidad.enteras(3))))))
+        val r = GuardarInsumo(insumos, productos, servicios, clock)(insumo(1, precio = 12))
+        assertEquals(AppError.Validacion("costoElaborados", AppError.Regla.RANGO), err(r))
+        assertEquals(Cup.ofPesos(10), insumos.obtener(1)!!.precio)
+        assertEquals(Cup.ofPesos(30), productos.obtener(id)!!.precioCosto)
+    }
+
+    @Test fun `subir costo que deja un servicio sin margen se rechaza sin guardar`() = runBlocking {
+        insumos.put(insumo(1, precio = 10))
+        servicios.crear(
+            Servicio(nombre = "Servicio", tipo = "General", importe = Cup.ofPesos(25), creadoEn = clock.now()),
+            listOf(RecetaLinea(1, Cantidad.enteras(2))),
+        )
+        val r = GuardarInsumo(insumos, productos, servicios, clock)(insumo(1, precio = 13))
+        assertEquals(AppError.Validacion("costoServicios", AppError.Regla.RANGO), err(r))
+        assertEquals(Cup.ofPesos(10), insumos.obtener(1)!!.precio)
     }
 
     @Test fun `elaborado se guarda sin existencias ni niveles propios`() = runBlocking {

@@ -128,7 +128,8 @@ jobs:
           # -Pkotlin.compiler.execution.strategy=in-process: el demonio de Kotlin se cayó al arrancar en este trabajo
           # («the daemon has terminated unexpectedly on startup»); compilando dentro del demonio de Gradle no hay carrera.
           ./gradlew :app:assembleRelease :app:assembleDebug --continue --stacktrace --console=plain --no-configuration-cache \
-            -Pkotlin.compiler.execution.strategy=in-process "-Dorg.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8" --no-configuration-cache 2>&1 | tee /tmp/salida.log
+            -PspviGithubRepo="$GITHUB_REPOSITORY" -Pkotlin.compiler.execution.strategy=in-process \
+            "-Dorg.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8" --no-configuration-cache 2>&1 | tee /tmp/salida.log
       - name: Resumen del fallo
         if: failure()
         run: bash tools/verificacion/resumen_fallos.sh /tmp/salida.log

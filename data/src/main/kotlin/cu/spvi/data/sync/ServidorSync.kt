@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import cu.spvi.domain.model.TipoApp
@@ -69,6 +70,8 @@ class ServidorSync @Inject constructor(
     val estado: StateFlow<EstadoPrincipal> = _estado.asStateFlow()
 
     private val sesiones = ConcurrentHashMap<Long, Sesion>()
+    /** Límite global: cubre handshakes y sesiones ya autenticadas; las conexiones sobrantes se cierran al aceptar. */
+    private val conexiones = Semaphore(MAX_CONEXIONES)
     private val vinculando = Mutex()
     private val avisos = Channel<Unit>(Channel.CONFLATED)
     private var trabajo: Job? = null
@@ -103,7 +106,13 @@ class ServidorSync @Inject constructor(
             try {
                 while (isActive) {
                     val s = withContext(Dispatchers.IO) { ss.accept() }
-                    launch { atender(s) }
+                    if (!conexiones.tryAcquire()) {
+                        runCatching { s.close() }
+                        continue
+                    }
+                    launch {
+                        try { atender(s) } finally { conexiones.release() }
+                    }
                 }
             } catch (e: IOException) {
                 // socket cerrado al detener
@@ -170,7 +179,8 @@ class ServidorSync @Inject constructor(
     private suspend fun atender(socket: Socket) {
         try {
             socket.tcpNoDelay = true
-            socket.soTimeout = LECTURA_MS
+            // Handshake corto para que una conexión que no envía nada no ocupe una plaza durante 90 s.
+            socket.soTimeout = HANDSHAKE_MS
             val input = BufferedInputStream(socket.getInputStream())
             val output = BufferedOutputStream(socket.getOutputStream())
             when (val s = withContext(Dispatchers.IO) { Saludos.recibir(input) }) {
@@ -230,26 +240,52 @@ class ServidorSync @Inject constructor(
         withContext(Dispatchers.IO) { Saludos.enviar(out, HolaOk(CriptoSync.enc(nonceS), comandosUnicos = true)) }
         val canal = CanalCifrado.paraPrincipal(input, out, CriptoSync.clavesSesion(clave, nonceC, nonceS))
         clave.fill(0)
+
+        // No se sustituye una sesión existente hasta comprobar el primer mensaje GCM. Un saludo falso o
+        // una conexión que se queda colgada no puede expulsar al empleado que ya está sincronizando.
+        val primero = try {
+            withContext(Dispatchers.IO) { canal.recibir() }
+        } catch (e: CancellationException) {
+            canal.borrarClaves()
+            throw e
+        } catch (e: Exception) {
+            canal.borrarClaves()
+            throw e
+        }
+        socket.soTimeout = LECTURA_MS
         val s = Sesion(e.id, socket, canal)
-        sesiones.put(e.id, s)?.cerrar() // la misma app reconectando: se queda la conexión nueva
+        sesiones.put(e.id, s)?.takeIf { it !== s }?.cerrar()
         _estado.update { it.copy(conectadas = it.conectadas + e.id) }
         try {
-            while (true) {
+            var seguir = procesarMensaje(e, s, primero)
+            while (seguir) {
                 val m = withContext(Dispatchers.IO) { canal.recibir() }
-                val actual = db.syncDao().empleado(e.id)
-                if (actual == null || !actual.activo) { runCatching { s.enviar(Quitada) }; break }
-                when (m) {
-                    is Sincronizar -> s.enviar(responder(actual, m) ?: break)
-                    is Comando -> s.enviar(ejecutor.resultado(m, actual))
-                    is Ping -> s.enviar(Pong(m.id))
-                    is PedirApk -> s.enviar(withContext(Dispatchers.IO) { apk.bloque(m.id, m.sha256, m.desde) })
-                    else -> Unit
-                }
+                seguir = procesarMensaje(e, s, m)
             }
         } finally {
             s.cerrar()
             if (sesiones.remove(e.id, s)) _estado.update { it.copy(conectadas = it.conectadas - e.id) }
         }
+    }
+
+    /** Procesa solo mensajes de una sesión cuyo primer mensaje cifrado ya autenticó el canal. */
+    private suspend fun procesarMensaje(e: EmpleadoEntity, s: Sesion, m: Mensaje): Boolean {
+        val actual = db.syncDao().empleado(e.id)
+        if (actual == null || !actual.activo) {
+            runCatching { s.enviar(Quitada) }
+            return false
+        }
+        when (m) {
+            is Sincronizar -> {
+                val respuesta = responder(actual, m) ?: return false
+                s.enviar(respuesta)
+            }
+            is Comando -> s.enviar(ejecutor.resultado(m, actual))
+            is Ping -> s.enviar(Pong(m.id))
+            is PedirApk -> s.enviar(withContext(Dispatchers.IO) { apk.bloque(m.id, m.sha256, m.desde) })
+            else -> Unit
+        }
+        return true
     }
 
     /** null = error al guardar: se corta la conexión y la secundaria reintenta (nada se marcó como recibido). */
@@ -336,6 +372,9 @@ class ServidorSync @Inject constructor(
 
     companion object {
         const val PUERTO = 47_811
+        /** Hay como máximo diez secundarias vinculadas; se deja margen para reconexiones concurrentes. */
+        const val MAX_CONEXIONES = 12
+        const val HANDSHAKE_MS = 10_000
         /** La secundaria hace ping cada 30 s; sin noticias en 90 s se da la conexión por perdida. */
         const val LECTURA_MS = 90_000
     }

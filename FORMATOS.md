@@ -1,10 +1,10 @@
 # SPVI — Formatos de respaldo y de exportación
 
-Formatos de archivo que SPVI escribe y lee en la versión **0.27.0** (contenedor `.spvi` v4, se leen v3 y v4; contenido `RespaldoDto` v4, se importan v3 y v4).
+Formatos de archivo que SPVI escribe y lee en el código actual **0.30.0** (contenedor `.spvi` v4, se leen v3 y v4; contenido `RespaldoDto` v4, se importan v3 y v4). El contenedor conserva compatibilidad; sin contraseña su cifrado interno no ofrece confidencialidad.
 
 | Formato | Extensión | Tipo MIME | Cifrado | Se importa |
 |---|---|---|---|---|
-| Respaldo | `.spvi` | `application/octet-stream` | Sí (contraseña) | Sí |
+| Respaldo | `.spvi` | `application/octet-stream` | Con contraseña: sí. Sin contraseña: cifrado interno sin confidencialidad efectiva | Sí |
 | PDF | `.pdf` | `application/pdf` | No | No |
 | Excel | `.xlsx` | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` | No | No |
 | Imagen / Tarjetas | `.png` | `image/png` | No | No |
@@ -35,7 +35,7 @@ Desde la 0.27.0 se escribe la **v4**, que añade un byte indicador (con o sin co
 | 57 | 32 | SHA-256 del cifrado | Suma de control |
 | 89 | largo | Cifrado | `AES-256-GCM( gzip(JSON UTF-8) )` + tag de 16 B |
 
-- **Clave:** `PBKDF2WithHmacSHA256(contraseña, salt, iteraciones, 256 bits)`. **Sin contraseña** (indicador `0`), la «contraseña» es un secreto interno ofuscado de la app: el archivo sigue cifrado y protegido contra alteraciones, pero **cualquiera con SPVI puede abrirlo** (riesgo aceptado, SECURITY.md §4 ter).
+- **Clave:** `PBKDF2WithHmacSHA256(contraseña, salt, iteraciones, 256 bits)`. **Sin contraseña** (indicador `0`), la derivación usa un secreto ofuscado incluido en la app. El bloque sigue siendo AES-GCM, pero el secreto no es confidencial: **quien obtenga el archivo puede leer los datos**. Antes de exportar se muestra una advertencia y, si el equipo tiene biometría inscrita, se solicita biometría sin alternativa de PIN. Esa autenticación solo autoriza la acción; no cifra ni protege el archivo (ver [SECURITY.md](SECURITY.md)).
 - **El indicador** se lee sin contraseña y va dentro del AAD: cambiarlo invalida el tag. Así la app sabe si debe pedir la contraseña al importar.
 - **AAD de GCM:** los **57 primeros bytes** en v4 (56 en v3), es decir, todo salvo la suma de control. Si se cambia la fecha, las iteraciones, el salt, el IV o el largo, el tag deja de ser válido.
 - **El largo y el SHA-256 no aportan seguridad:** cualquiera puede recalcularlos, y la integridad la da GCM. Sirven para saber **sin contraseña** si el archivo llegó **cortado** o **dañado**, y no confundirlo con una contraseña incorrecta.
@@ -82,7 +82,7 @@ Desde la 0.27.0 se escribe la **v4**, que añade un byte indicador (con o sin co
 El respaldo es siempre **completo**. Desde la 0.13.0 ya no existe «Solo configuración»: es una desviación de SPVI.txt:132, decidida en P17.
 
 1. *Reuniendo los datos…*: lectura en una transacción.
-2. *Cifrando con tu contraseña…*: JSON → gzip → AES-GCM. Al terminar, el JSON en claro se sobrescribe con ceros.
+2. *Preparando el archivo…*: JSON → gzip → AES-GCM (con contraseña del usuario, o con la clave interna del formato si se omitió). Al terminar, el JSON en claro se sobrescribe con ceros.
 3. *Guardando el archivo…*: va al destino elegido con el selector del sistema (**Guardar en el teléfono**) o a `cacheDir/compartir` para **Enviar a otra app**. Lo hace `ExportadorArchivos`, compartido con el resto de exportaciones.
 
 Nombre: `SPVI_respaldo_<fecha>.spvi`.
@@ -113,7 +113,7 @@ Cualquier error deja los datos como estaban.
 Tras importar un respaldo v4 con bloque `licencia` en un teléfono sin licencia instalada, Licencia muestra el ID ya escrito para **Recuperar** (MANUAL §9). Exportar un respaldo pone a cero el recordatorio mensual de Inicio.
 | Contraseña incorrecta | «Contraseña incorrecta» (el diálogo queda abierto para reintentar) |
 
-**Cómo llega el archivo:** «Importar» → selector del sistema; **Compartir** a SPVI desde otra app; o **Abrir con → SPVI**. En los dos últimos casos se copia a `cacheDir/compartir` (solo `content://`, máx. 128 MB, se borra a las 24 h) y siempre se piden contraseña y confirmación.
+**Cómo llega el archivo:** «Importar» → selector del sistema; **Compartir** a SPVI desde otra app; o **Abrir con → SPVI**. En los dos últimos casos se copia a `cacheDir/compartir` (solo `content://`, máx. 128 MB, se borra a las 24 h). La contraseña se pide solo si el indicador del respaldo dice que la requiere; antes de importar siempre se confirma el reemplazo de datos.
 
 ---
 

@@ -28,17 +28,17 @@ enum class FiltroEntrada(val teclado: KeyboardOptions, val maximo: Int) {
     /** Carné de identidad: solo dígitos, 11. */
     CARNE(KeyboardOptions(keyboardType = KeyboardType.Number), 11),
     /** Cantidades y niveles enteros (sin signo). */
-    ENTERO(KeyboardOptions(keyboardType = KeyboardType.Number), 7),
+    ENTERO(KeyboardOptions(keyboardType = KeyboardType.Number), 9),
     /** Cantidades de insumos: dígitos y UN separador decimal (punto o coma, que se guarda como punto), hasta 3 decimales. */
     DECIMAL(KeyboardOptions(keyboardType = KeyboardType.Decimal), 12),
-    /** Importes en CUP: dígitos y UN separador decimal, hasta 2 decimales. */
+    /** Importes CUP: decimal con punto/coma y miles agrupados tipo «1,450.00»; hasta 2 decimales. */
     DINERO(KeyboardOptions(keyboardType = KeyboardType.Decimal), 12),
-    /** Código de barras / QR del producto: letras, dígitos y - . sin espacios. */
+    /** Identificador ASCII corto: letras, dígitos y - . _ sin espacios. */
     CODIGO(KeyboardOptions(keyboardType = KeyboardType.Ascii, capitalization = KeyboardCapitalization.Characters), 64),
     /** Nº de transacción de Transfermóvil: letras y dígitos, en mayúsculas. */
     TRANSACCION(KeyboardOptions(keyboardType = KeyboardType.Ascii, capitalization = KeyboardCapitalization.Characters), 30),
-    /** Porcentaje entero 0–100 (ajustes de precio). */
-    PORCENTAJE(KeyboardOptions(keyboardType = KeyboardType.Number), 3),
+    /** Porcentaje 0–100, hasta 2 decimales (el dominio comprueba el rango). */
+    PORCENTAJE(KeyboardOptions(keyboardType = KeyboardType.Decimal), 6),
     ;
 
     /** Lo que queda del texto escrito o pegado. Idempotente: aplicar dos veces da lo mismo. */
@@ -47,9 +47,10 @@ enum class FiltroEntrada(val teclado: KeyboardOptions, val maximo: Int) {
         NOMBRE, BUSQUEDA -> s.map { if (it.isISOControl()) ' ' else it }.joinToString("").replace(Regex(" {2,}"), " ")
         // Al pegar «+53 5XXXXXXX» se quita el prefijo del país (el campo es el móvil de 8 cifras).
         TELEFONO -> s.filter { it in '0'..'9' }.let { d -> if (d.length > 8 && d.startsWith("53")) d.drop(2) else d }
-        TARJETA, CARNE, ENTERO, PORCENTAJE -> s.filter { it in '0'..'9' }
+        TARJETA, CARNE, ENTERO -> s.filter { it in '0'..'9' }
+        PORCENTAJE -> decimal(s, 2)
         DECIMAL -> decimal(s, 3)
-        DINERO -> decimal(s, 2)
+        DINERO -> dinero(s)
         CODIGO -> s.filter { it.isLetterOrDigit() && it.code < 128 || it == '-' || it == '.' || it == '_' } // = dominio (3–64)
         TRANSACCION -> s.filter { it.isLetterOrDigit() && it.code < 128 }.uppercase()
     }.take(maximo)
@@ -57,17 +58,46 @@ enum class FiltroEntrada(val teclado: KeyboardOptions, val maximo: Int) {
     companion object {
         const val MAX_TEXTO = 500
 
-        /** Dígitos y como mucho un separador (el primero que aparezca), con [decimales] cifras detrás. */
+        private val GRUPOS_MILES = Regex("^[0-9]{1,3}(?:,[0-9]{3})+$")
+        private val GRUPOS_MILES_DECIMAL = Regex("^[0-9]{1,3}(?:,[0-9]{3})+\\.[0-9]{0,2}$")
+        private val DECIMAL_COMA = Regex("^[0-9]+,[0-9]{0,2}$")
+
+        /** CUP: reconoce miles tipo «1,450.00» y coma decimal «2,5» sin convertir un pegado mal formado en otro importe. */
+        private fun dinero(s: String): String {
+            val texto = s.trim().removeSuffix("CUP").trim()
+            if (texto.any { it !in '0'..'9' && it != ',' && it != '.' }) return ""
+            if (',' in texto && '.' in texto) {
+                return when {
+                    GRUPOS_MILES_DECIMAL.matches(texto) -> texto.replace(",", "")
+                    texto.indexOf('.') < texto.indexOf(',') && texto.substringAfter(',').isEmpty() ->
+                        decimal(texto.substringBefore(','), 2) // ignora solo un separador extra al final mientras se escribe
+                    else -> "" // coma y punto en orden/formato inválido; no adivinar el importe pegado
+                }
+            }
+            if (',' in texto) {
+                return when {
+                    GRUPOS_MILES.matches(texto) -> texto.replace(",", "")
+                    DECIMAL_COMA.matches(texto) -> texto.replace(',', '.')
+                    else -> ""
+                }
+            }
+            return decimal(texto, 2)
+        }
+
+        /** Dígitos y como mucho un separador decimal, con [decimales] cifras detrás; permite estados parciales como «0.». */
         private fun decimal(s: String, decimales: Int): String {
             val out = StringBuilder()
             var separador = false
             var tras = 0
             for (c in s) {
+                if ((c == '.' || c == ',') && separador) break
                 when {
                     c in '0'..'9' -> if (!separador) out.append(c) else if (tras < decimales) { out.append(c); tras++ }
-                    // 0.21.6: la coma del teclado en español se guarda como punto. Antes «2,5» llegaba a Cantidad.parse, que quita
-                    // las comas (separador de miles) y lo leía como 25.
-                    (c == '.' || c == ',') && !separador -> { separador = true; out.append('.') }
+                    (c == '.' || c == ',') && !separador -> {
+                        if (out.isEmpty()) out.append('0')
+                        separador = true
+                        out.append('.')
+                    }
                 }
             }
             return out.toString()

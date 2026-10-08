@@ -57,7 +57,7 @@ class ServiciosUseCasesTest {
     }
 
     @Test fun guardarRecortaValidaYNoEditaUnoBorrado() = runTest {
-        val guardar = GuardarServicio(servicios, FixedClock())
+        val guardar = GuardarServicio(servicios, insumos, FixedClock())
         val id = (guardar(servicio(0, "  Corte  ", "  Peluquería ").copy(descripcion = "   "), emptyList()) as AppResult.Ok).value
         val s = servicios.obtener(id)!!
         assertEquals("Corte", s.nombre)

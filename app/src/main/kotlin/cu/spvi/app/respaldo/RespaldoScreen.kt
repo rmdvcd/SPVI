@@ -25,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -37,9 +38,12 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cu.spvi.app.common.Compartir
 import cu.spvi.app.common.SecureWindow
+import cu.spvi.app.common.actividadDe
+import cu.spvi.app.acceso.Autenticador
 import cu.spvi.designsystem.component.FiltroEntrada
 import cu.spvi.designsystem.component.CardTone
 import cu.spvi.designsystem.component.SpviButtonRow
@@ -57,6 +61,7 @@ import cu.spvi.designsystem.component.spviContentWidth
 import cu.spvi.designsystem.icon.SpviIcons
 import cu.spvi.designsystem.token.SpviSpacing
 import java.time.ZoneId
+import kotlinx.coroutines.launch
 
 object RespaldoTags {
     const val CONTRASENA = "respaldo.contrasena"
@@ -75,6 +80,7 @@ object RespaldoTags {
     const val STEPPER_IMPORTAR = "respaldo.stepper_importar"
     const val HECHO = "respaldo.hecho"
     const val OTRO_RESPALDO = "respaldo.otro_respaldo"
+    const val CONFIRMAR_SIN_CONTRASENA = "respaldo.confirmar_sin_contrasena"
 }
 
 class AccionesRespaldo(
@@ -90,10 +96,12 @@ class AccionesRespaldo(
 )
 
 /**
- * Ajustes → Respaldo: exportar/importar la configuración o la base de datos completa, cifrada con contraseña.
+ * Ajustes → Respaldo: exportar/importar la base de datos completa; la contraseña es opcional. Sin contraseña,
+ * el cifrado interno usa un secreto incluido en la app y no ofrece confidencialidad: quien obtenga el archivo
+ * puede leerlo. La confirmación y la biometría solo autorizan exportar, no protegen el archivo.
  * Guardar en el teléfono (SAF) o enviar por otras apps (selector del sistema: WhatsApp, Telegram, Zapya,
  * Bluetooth, Drive, OneDrive…); importar desde cualquier proveedor de archivos o recibiéndolo de otra app.
- * 0.26.0: el respaldo se exporta solo como `.spvi` cifrado (sin el PDF de configuración). Sin permisos de almacenamiento. FLAG_SECURE: se escriben contraseñas.
+ * Se exporta como `.spvi` (sin el PDF de configuración). Sin permisos de almacenamiento. FLAG_SECURE: se escriben contraseñas.
  */
 @Composable
 fun RespaldoScreen(onBack: () -> Unit, viewModel: RespaldoViewModel = hiltViewModel()) {
@@ -101,6 +109,41 @@ fun RespaldoScreen(onBack: () -> Unit, viewModel: RespaldoViewModel = hiltViewMo
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val puedeConfirmarBiometria = remember(context) { Autenticador.biometriaDisponible(context) }
+    var accionSinContrasena by rememberSaveable { mutableIntStateOf(0) } // 1 = guardar, 2 = compartir
+
+    fun confirmarExportacionSinContrasena() {
+        val accion = accionSinContrasena
+        accionSinContrasena = 0
+        if (accion == 0) return
+        val exportar = {
+            if (accion == 1) viewModel.guardarEnTelefono() else viewModel.compartir()
+        }
+        if (!puedeConfirmarBiometria) {
+            exportar() // ya se aceptó el aviso; sin contraseña no hay protección de confidencialidad
+            return
+        }
+        val activity = actividadDe(context) as? FragmentActivity
+        if (activity == null) {
+            scope.launch { snackbar.showSnackbar(TextosRespaldo.ERROR_BIOMETRIA) }
+            return
+        }
+        Autenticador.pedirBiometria(
+            activity, TextosRespaldo.TITULO_CONFIRMAR_SIN_CONTRASENA,
+            alConfirmar = exportar,
+            alFallar = { scope.launch { snackbar.showSnackbar(TextosRespaldo.BIOMETRIA_NO_CONFIRMADA) } },
+        )
+    }
+
+    fun solicitarExportacion(guardar: Boolean) {
+        if (state.export.conContrasena) {
+            if (guardar) viewModel.guardarEnTelefono() else viewModel.compartir()
+        } else {
+            accionSinContrasena = if (guardar) 1 else 2
+        }
+    }
+
     val guardar = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(TextosRespaldo.MIME)) {
         viewModel.destinoElegido(it?.toString())
     }
@@ -121,7 +164,7 @@ fun RespaldoScreen(onBack: () -> Unit, viewModel: RespaldoViewModel = hiltViewMo
         onBack = onBack,
         acciones = AccionesRespaldo(
             onEditarExport = viewModel::editarExport,
-            onGuardar = viewModel::guardarEnTelefono, onCompartir = viewModel::compartir,
+            onGuardar = { solicitarExportacion(guardar = true) }, onCompartir = { solicitarExportacion(guardar = false) },
             onElegirArchivo = { abrir.launch(arrayOf("*/*")) },
             onContrasenaImport = viewModel::editarImport, onConfirmarImport = viewModel::confirmarImport,
             onCancelarImport = viewModel::cancelarImport,
@@ -129,6 +172,10 @@ fun RespaldoScreen(onBack: () -> Unit, viewModel: RespaldoViewModel = hiltViewMo
             onNuevoRespaldo = viewModel::nuevoRespaldo,
         ),
         snackbar = snackbar,
+        confirmarExportacionSinContrasena = accionSinContrasena != 0,
+        biometriaDisponible = puedeConfirmarBiometria,
+        onConfirmarExportacionSinContrasena = ::confirmarExportacionSinContrasena,
+        onCancelarExportacionSinContrasena = { accionSinContrasena = 0 },
     )
 }
 
@@ -139,6 +186,10 @@ fun RespaldoContent(
     acciones: AccionesRespaldo,
     snackbar: SnackbarHostState = remember { SnackbarHostState() },
     zona: ZoneId = ZoneId.systemDefault(),
+    confirmarExportacionSinContrasena: Boolean = false,
+    biometriaDisponible: Boolean = false,
+    onConfirmarExportacionSinContrasena: () -> Unit = {},
+    onCancelarExportacionSinContrasena: () -> Unit = {},
 ) {
     Scaffold(
         topBar = { SpviTopBar(title = TextosRespaldo.TITULO, onBack = onBack) },
@@ -180,6 +231,7 @@ fun RespaldoContent(
                     )
                     if (!e.conContrasena) {
                         SpviSecondaryText(TextosRespaldo.SIN_CONTRASENA_AVISO, modifier = Modifier.testTag(RespaldoTags.SIN_CONTRASENA))
+                        SpviSecondaryText(if (biometriaDisponible) TextosRespaldo.AVISO_BIOMETRIA else TextosRespaldo.AVISO_SIN_BIOMETRIA)
                     }
                 }
                 if (paso == 1 && e.conContrasena) {
@@ -276,6 +328,19 @@ fun RespaldoContent(
                     }
                 }
             },
+        )
+    }
+
+    if (confirmarExportacionSinContrasena) {
+        SpviDialog(
+            title = TextosRespaldo.TITULO_CONFIRMAR_SIN_CONTRASENA,
+            text = TextosRespaldo.CONFIRMAR_SIN_CONTRASENA,
+            onDismiss = onCancelarExportacionSinContrasena,
+            onConfirm = onConfirmarExportacionSinContrasena,
+            confirmDescription = if (biometriaDisponible) TextosRespaldo.CONFIRMAR_BIOMETRIA else TextosRespaldo.CONFIRMAR_SIN_BIOMETRIA,
+            confirmIcon = if (biometriaDisponible) SpviIcons.Huella else SpviIcons.Confirmar,
+            confirmEnabled = !state.ocupado,
+            confirmTag = RespaldoTags.CONFIRMAR_SIN_CONTRASENA,
         )
     }
 

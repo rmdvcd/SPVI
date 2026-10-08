@@ -25,6 +25,17 @@ class ValidadoresTest {
         assertEquals(setOf("nombre", "precioVenta", "cantidad", "nivelCritico"), campos(Validadores.producto(p)))
     }
 
+    @Test fun `precio de venta debe superar estrictamente el costo`() {
+        val base = producto(1, venta = 60, costo = 60)
+        assertEquals(Regla.RANGO, Validadores.producto(base).single { it.campo == "precioVenta" }.regla)
+        assertEquals(Regla.RANGO, Validadores.producto(base.copy(precioVenta = Cup.ofPesos(59))).single { it.campo == "precioVenta" }.regla)
+        assertTrue(Validadores.producto(base.copy(precioVenta = Cup.ofPesos(61))).none { it.campo == "precioVenta" })
+
+        val i = insumo(2, precio = 40).copy(precioVenta = Cup.ofPesos(40))
+        assertEquals(Regla.RANGO, Validadores.insumo(i).single { it.campo == "precioVenta" }.regla)
+        assertTrue(Validadores.insumo(i.copy(precioVenta = Cup.ofPesos(41))).none { it.campo == "precioVenta" })
+    }
+
     @Test fun `elaborado no admite foto ni caducidad`() {
         val p = producto(1, categoria = Categorias.ELABORADO, cantidad = 0).copy(fotoUri = "x", fechaCaducidad = LocalDate.MAX)
         val e = Validadores.producto(p)

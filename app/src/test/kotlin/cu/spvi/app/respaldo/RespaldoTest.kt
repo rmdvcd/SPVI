@@ -115,7 +115,7 @@ class RespaldoTest {
     }
 
     @Test fun etapasConPasoYTotal() {
-        assertEquals(Progreso(2, 3, "Cifrando con tu contraseña…"), EtapasRespaldo.progreso(EtapaRespaldo.CIFRANDO))
+        assertEquals(Progreso(2, 3, "Preparando el archivo…"), EtapasRespaldo.progreso(EtapaRespaldo.CIFRANDO))
         val p = EtapasRespaldo.progreso(EtapaRespaldo.DESCIFRANDO)
         assertEquals("Etapa 3 de 4 · Comprobando la contraseña…", p.etiqueta)
         assertEquals(0.75f, p.fraccion)

@@ -29,13 +29,18 @@ import cu.spvi.licencia.prueba.RegistroExterno
 import cu.spvi.licencia.prueba.RegistroPrueba
 import cu.spvi.licencia.prueba.combinarCopias
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.IOException
+import java.io.InputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /** Dónde vive cada copia del registro de la prueba. */
@@ -64,6 +69,11 @@ class RegistroPruebaAndroid @Inject constructor(
     override val info: StateFlow<InfoRegistroPrueba?> = _info.asStateFlow()
     /** Se fija en la primera lectura del proceso: ¿faltaba la copia interna? */
     @Volatile private var instalacionNueva: Boolean? = null
+    /** MediaStore solo se vuelve a consultar al caducar la caché; las fechas se avanzan desde el registro ya leído. */
+    private val lecturasMutex = Mutex()
+    private var lecturasCache: Map<CopiaPrueba, List<Pair<Uri?, LecturaCopia>>>? = null
+    private var lecturasCacheEn: Long = 0L
+    private var lecturasCacheConPermiso: Boolean? = null
 
     override val permisoLectura: String =
         if (Build.VERSION.SDK_INT >= 33) Manifest.permission.READ_MEDIA_IMAGES
@@ -76,24 +86,49 @@ class RegistroPruebaAndroid @Inject constructor(
     override suspend fun marcarPermisoPedido() = ds.put(K_PEDIDO, "1")
 
     override suspend fun sincronizar(trialStart: Long?, lastSeen: Long?, trialDays: Int): CopiasCombinadas<*> = withContext(io) {
-        val lecturas = leerTodas()
-        val comb = combinarCopias(lecturas.mapValues { (_, v) -> v.map { it.second } })
-        if (instalacionNueva == null) instalacionNueva = lecturas[CopiaPrueba.INTERNA].orEmpty().none { it.second is LecturaCopia.Valida }
-        val inicio = listOfNotNull(comb.firstInstall, trialStart).minOrNull()
-        if (inicio != null) {
-            val ultima = listOfNotNull(comb.lastSeen, lastSeen).maxOrNull()
-            val objetivo = RegistroPrueba(firstInstall = inicio, trialDays = trialDays, lastSeen = ultima)
-            for (copia in CopiaPrueba.entries) {
-                val actual = lecturas[copia] ?: continue // inaccesible (sin permiso en Android 8–9)
-                if (actual.none { (_, l) -> l is LecturaCopia.Valida && alDia(l.registro, objetivo) }) escribir(copia, objetivo, actual.map { it.first })
+        // Serializa lectura, reescritura e invalidación: dos evaluaciones concurrentes no insertan copias duplicadas.
+        lecturasMutex.withLock {
+            val ahora = SystemClock.elapsedRealtime()
+            val permiso = lecturaPermitida()
+            val cacheada = lecturasCache
+            val lecturas = if (
+                cacheada != null && lecturasCacheConPermiso == permiso &&
+                ahora - lecturasCacheEn in 0 until CACHE_LECTURAS_MS
+            ) {
+                cacheada
+            } else {
+                leerTodas().also {
+                    lecturasCache = it
+                    lecturasCacheEn = ahora
+                    lecturasCacheConPermiso = permiso
+                }
             }
+            val comb = combinarCopias(lecturas.mapValues { (_, v) -> v.map { it.second } })
+            if (instalacionNueva == null) instalacionNueva = lecturas[CopiaPrueba.INTERNA].orEmpty().none { it.second is LecturaCopia.Valida }
+            val inicio = listOfNotNull(comb.firstInstall, trialStart).minOrNull()
+            var invalidaCache = false
+            if (inicio != null) {
+                val ultima = listOfNotNull(comb.lastSeen, lastSeen).maxOrNull()
+                val objetivo = RegistroPrueba(firstInstall = inicio, trialDays = trialDays, lastSeen = ultima)
+                for (copia in CopiaPrueba.entries) {
+                    val actual = lecturas[copia] ?: continue // inaccesible (sin permiso en Android 8–9)
+                    if (actual.none { (_, l) -> l is LecturaCopia.Valida && alDia(l.registro, objetivo) }) {
+                        invalidaCache = escribir(copia, objetivo, actual.map { it.first }) || invalidaCache
+                    }
+                }
+            }
+            // Si se creó o reparó una copia, se releerá en la próxima evaluación para no duplicar archivos.
+            if (invalidaCache) {
+                lecturasCache = null
+                lecturasCacheConPermiso = null
+            }
+            _info.value = InfoRegistroPrueba(
+                instalacionNueva = instalacionNueva == true,
+                primeraInstalacion = comb.primeraInstalacion,
+                copiasDanadas = lecturas.values.sumOf { l -> l.count { it.second == LecturaCopia.Ilegible } },
+            )
+            comb
         }
-        _info.value = InfoRegistroPrueba(
-            instalacionNueva = instalacionNueva == true,
-            primeraInstalacion = comb.primeraInstalacion,
-            copiasDanadas = lecturas.values.sumOf { l -> l.count { it.second == LecturaCopia.Ilegible } },
-        )
-        comb
     }
 
     /** Se reescribe solo si cambia el inicio o la última fecha vista avanzó más de una hora (pocas escrituras). */
@@ -105,15 +140,18 @@ class RegistroPruebaAndroid @Inject constructor(
     /** Por copia: (uri o null, lectura). Copia ausente del mapa = no accesible (no se puede leer ni escribir). */
     private fun leerTodas(): Map<CopiaPrueba, List<Pair<Uri?, LecturaCopia>>> {
         val m = LinkedHashMap<CopiaPrueba, List<Pair<Uri?, LecturaCopia>>>()
-        m[CopiaPrueba.INTERNA] = listOf(null to leerBin(runCatching { interna().takeIf(File::exists)?.readBytes() }.getOrNull(), interna().exists()))
+        val archivoInterno = interna()
+        val internoExiste = archivoInterno.exists()
+        val binario = runCatching { if (internoExiste) archivoInterno.inputStream().use { it.leerAcotado(MAX_BIN_BYTES) } else null }.getOrNull()
+        m[CopiaPrueba.INTERNA] = listOf(null to leerBin(binario, internoExiste))
         if (Build.VERSION.SDK_INT >= 29) {
-            m[CopiaPrueba.IMAGENES] = consultar(imagenes(), RUTA_IMAGENES, Ofuscado.nombreImagen()) { PngRegistro.extraer(it) }
-            m[CopiaPrueba.DESCARGAS] = consultar(descargas(), Environment.DIRECTORY_DOWNLOADS, Ofuscado.nombreBin()) { it }
-            m[CopiaPrueba.DOCUMENTOS] = consultar(archivos(), Environment.DIRECTORY_DOCUMENTS, Ofuscado.nombreBin()) { it }
+            m[CopiaPrueba.IMAGENES] = consultar(imagenes(), RUTA_IMAGENES, Ofuscado.nombreImagen(), MAX_PNG_BYTES) { PngRegistro.extraer(it) }
+            m[CopiaPrueba.DESCARGAS] = consultar(descargas(), Environment.DIRECTORY_DOWNLOADS, Ofuscado.nombreBin(), MAX_BIN_BYTES) { it }
+            m[CopiaPrueba.DOCUMENTOS] = consultar(archivos(), Environment.DIRECTORY_DOCUMENTS, Ofuscado.nombreBin(), MAX_BIN_BYTES) { it }
         } else if (concedido(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-            m[CopiaPrueba.IMAGENES] = listOf(null to leerArchivo(legado(CopiaPrueba.IMAGENES)) { PngRegistro.extraer(it) })
-            m[CopiaPrueba.DESCARGAS] = listOf(null to leerArchivo(legado(CopiaPrueba.DESCARGAS)) { it })
-            m[CopiaPrueba.DOCUMENTOS] = listOf(null to leerArchivo(legado(CopiaPrueba.DOCUMENTOS)) { it })
+            m[CopiaPrueba.IMAGENES] = listOf(null to leerArchivo(legado(CopiaPrueba.IMAGENES), MAX_PNG_BYTES) { PngRegistro.extraer(it) })
+            m[CopiaPrueba.DESCARGAS] = listOf(null to leerArchivo(legado(CopiaPrueba.DESCARGAS), MAX_BIN_BYTES) { it })
+            m[CopiaPrueba.DOCUMENTOS] = listOf(null to leerArchivo(legado(CopiaPrueba.DOCUMENTOS), MAX_BIN_BYTES) { it })
         }
         return m
     }
@@ -123,51 +161,77 @@ class RegistroPruebaAndroid @Inject constructor(
         else -> cifrado.descifrar(blob)?.let(LecturaCopia::Valida) ?: LecturaCopia.Ilegible
     }
 
-    private fun leerArchivo(f: File, blob: (ByteArray) -> ByteArray?): LecturaCopia =
+    private fun leerArchivo(f: File, maxBytes: Int, blob: (ByteArray) -> ByteArray?): LecturaCopia =
         if (!f.exists()) LecturaCopia.Ausente
-        else leerBin(runCatching { f.readBytes() }.getOrNull()?.let(blob), true)
+        else leerBin(runCatching { f.inputStream().use { it.leerAcotado(maxBytes) } }.getOrNull()?.let(blob), true)
 
     /**
      * Todas las entradas visibles con ese nombre (también «nombre (1).ext», que crea Android si una instalación anterior
-     * dejó el archivo y esta no puede verlo). Sin el permiso solo se ven las de esta instalación.
+     * dejó el archivo y esta no puede verlo). Sin el permiso solo se ven las de esta instalación. El número y tamaño de
+     * entradas inspeccionadas son acotados para no leer archivos arbitrarios desde MediaStore.
      */
-    private fun consultar(coleccion: Uri, ruta: String, nombre: String, blob: (ByteArray) -> ByteArray?): List<Pair<Uri?, LecturaCopia>> = runCatching {
+    private fun consultar(
+        coleccion: Uri,
+        ruta: String,
+        nombre: String,
+        maxBytes: Int,
+        blob: (ByteArray) -> ByteArray?,
+    ): List<Pair<Uri?, LecturaCopia>> = runCatching {
         val base = nombre.substringBeforeLast('.')
         val ext = nombre.substringAfterLast('.')
-        val res = ArrayList<Pair<Uri?, LecturaCopia>>()
+        val res = ArrayList<Pair<Uri?, LecturaCopia>>(MAX_ENTRADAS_MEDIASTORE)
         cr.query(
             coleccion, arrayOf(MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DISPLAY_NAME),
             "${MediaStore.MediaColumns.RELATIVE_PATH} LIKE ? AND ${MediaStore.MediaColumns.DISPLAY_NAME} LIKE ?",
-            arrayOf("$ruta%", "$base%.$ext"), null,
+            arrayOf("$ruta%", "$base%.$ext"), "${MediaStore.MediaColumns._ID} DESC",
         )?.use { c ->
-            while (c.moveToNext()) {
+            while (res.size < MAX_ENTRADAS_MEDIASTORE && c.moveToNext()) {
                 val uri = ContentUris.withAppendedId(coleccion, c.getLong(0))
-                val datos = runCatching { cr.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
+                val datos = runCatching { cr.openInputStream(uri)?.use { it.leerAcotado(maxBytes) } }.getOrNull()
                 res += uri to leerBin(datos?.let(blob), true)
             }
         }
         res.ifEmpty { listOf(null to LecturaCopia.Ausente) }
     }.getOrDefault(listOf(null to LecturaCopia.Ausente))
 
+    private fun InputStream.leerAcotado(maxBytes: Int): ByteArray {
+        val salida = ByteArrayOutputStream(minOf(maxBytes, 1024))
+        val buffer = ByteArray(1024)
+        while (true) {
+            val n = read(buffer)
+            if (n < 0) break
+            if (n == 0) {
+                val byte = read()
+                if (byte < 0) break
+                if (salida.size() == maxBytes) throw IOException("registro de prueba demasiado grande")
+                salida.write(byte.toInt())
+                continue
+            }
+            if (salida.size() + n > maxBytes) throw IOException("registro de prueba demasiado grande")
+            salida.write(buffer, 0, n)
+        }
+        return salida.toByteArray()
+    }
+
     // ------------------------------------------------------------------------------------------------ escritura
 
-    private fun escribir(copia: CopiaPrueba, r: RegistroPrueba, uris: List<Uri?>) {
+    private fun escribir(copia: CopiaPrueba, r: RegistroPrueba, uris: List<Uri?>): Boolean {
         val blob = cifrado.cifrar(r)
         val datos = if (copia == CopiaPrueba.IMAGENES) PngRegistro.crear(blob) else blob
-        runCatching {
+        return runCatching {
             when {
-                copia == CopiaPrueba.INTERNA -> atomico(interna(), datos)
+                copia == CopiaPrueba.INTERNA -> atomico(interna(), datos).let { true }
                 Build.VERSION.SDK_INT >= 29 -> escribirMediaStore(copia, datos, uris.filterNotNull())
-                else -> legado(copia).let { f -> f.parentFile?.mkdirs(); atomico(f, datos) }
+                else -> legado(copia).let { f -> f.parentFile?.mkdirs(); atomico(f, datos); true }
             }
-        }
+        }.getOrDefault(false)
     }
 
     /** Primero sobre una entrada propia (las de otra instalación no dejan escribir); si no hay, una nueva. */
-    private fun escribirMediaStore(copia: CopiaPrueba, datos: ByteArray, existentes: List<Uri>) {
+    private fun escribirMediaStore(copia: CopiaPrueba, datos: ByteArray, existentes: List<Uri>): Boolean {
         for (uri in existentes) {
             val ok = runCatching { cr.openOutputStream(uri, "wt")?.use { it.write(datos) } != null }.getOrDefault(false)
-            if (ok) return
+            if (ok) return true
         }
         val (coleccion, ruta, nombre, mime) = when (copia) {
             CopiaPrueba.IMAGENES -> Destino(imagenes(), RUTA_IMAGENES, Ofuscado.nombreImagen(), "image/png")
@@ -179,9 +243,10 @@ class RegistroPruebaAndroid @Inject constructor(
             put(MediaStore.MediaColumns.MIME_TYPE, mime)
             put(MediaStore.MediaColumns.RELATIVE_PATH, ruta)
         }
-        val uri = cr.insert(coleccion, v) ?: return
+        val uri = cr.insert(coleccion, v) ?: return false
         val ok = runCatching { cr.openOutputStream(uri, "wt")?.use { it.write(datos) } != null }.getOrDefault(false)
         if (!ok) runCatching { cr.delete(uri, null, null) }
+        return ok
     }
 
     private data class Destino(val coleccion: Uri, val ruta: String, val nombre: String, val mime: String)
@@ -217,6 +282,10 @@ class RegistroPruebaAndroid @Inject constructor(
         const val RUTA_IMAGENES = "Pictures/SPVI"
         const val MIME_BIN = "application/octet-stream"
         const val UNA_HORA = 3_600_000L
+        const val CACHE_LECTURAS_MS = 15 * 60_000L
+        const val MAX_ENTRADAS_MEDIASTORE = 8
+        const val MAX_BIN_BYTES = 4 * 1024
+        const val MAX_PNG_BYTES = 16 * 1024
     }
 }
 

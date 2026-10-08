@@ -34,6 +34,7 @@ data class PreciosUiState(
     val errores: Map<CampoPrecio, String> get() = form?.takeIf { it.mostrarErrores }?.let(::validar).orEmpty()
     val visibles: List<Producto> get() = form?.let { filtrar(productos, it.busqueda) }.orEmpty()
     val vistaPrevia: String? get() = form?.let { vistaPrevia(it, productos) }
+    val avisoMargen: Boolean get() = form?.let { ajusteNoSuperaCosto(it, productos) } == true
     fun existentes(p: PreajustePrecios): Int = productos.count { it.id in p.productoIds }
 }
 

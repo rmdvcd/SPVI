@@ -67,8 +67,9 @@ abstract class SpviDatabase : RoomDatabase() {
 
     companion object {
         /**
-         * v3 (P17): esquema consolidado, sin `tasa_cambio` ni `caducidad_codigo`. Es la base de las migraciones
-         * futuras: cada versión nueva añade una `Migration(3, 4)`… explícita (regla: nunca borrar datos de usuarios).
+         * v3 (P17): base histórica consolidada, sin `tasa_cambio` ni `caducidad_codigo`. Las migraciones explícitas
+         * desde v3 hasta la v11 están declaradas abajo. Un cambio futuro debe continuar la cadena desde v11 con
+         * `Migration(11, 12)` y su esquema exportado; nunca borrar datos de usuarios.
          */
         const val VERSION = 11
         const val NOMBRE = "spvi.db"

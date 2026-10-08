@@ -38,7 +38,7 @@ object Validadores {
         if (Categorias.esInsumos(p.categoria)) add(Validacion("categoria", Regla.NO_PERMITIDO)) // P29: reservada
         descripcion(p.descripcion)?.let(::add)
         if (p.precioCosto.isNegative) add(Validacion("precioCosto", Regla.RANGO))
-        if (p.precioVenta <= Cup.ZERO) add(Validacion("precioVenta", Regla.RANGO))
+        if (p.precioVenta <= Cup.ZERO || p.precioVenta <= p.precioCosto) add(Validacion("precioVenta", Regla.RANGO))
         if (p.cantidad < 0) add(Validacion("cantidad", Regla.RANGO))
         niveles(p.nivelBajo, p.nivelCritico).forEach(::add)
         if (p.esElaborado) {
@@ -53,15 +53,17 @@ object Validadores {
         texto("nombre", i.nombre, MAX_NOMBRE)?.let(::add)
         if (i.precio.isNegative) add(Validacion("precio", Regla.RANGO))
         if (i.cantidad.isNegative) add(Validacion("cantidad", Regla.RANGO))
-        if (i.precioVenta?.isNegative == true) add(Validacion("precioVenta", Regla.RANGO))
+        if (i.precioVenta != null && (i.precioVenta.isNegative || i.precioVenta <= Cup.ZERO || i.precioVenta <= i.precio)) {
+            add(Validacion("precioVenta", Regla.RANGO))
+        }
         niveles(i.nivelBajo?.milesimas, i.nivelCritico?.milesimas).forEach(::add)
     }
 
     /** P29: Nombre, Tipo e Importe obligatorios; insumos opcionales (cantidad > 0, sin repetir). */
-    fun servicio(s: Servicio, lineas: List<RecetaLinea>): List<Validacion> = buildList {
+    fun servicio(s: Servicio, lineas: List<RecetaLinea>, costo: Cup = Cup.ZERO): List<Validacion> = buildList {
         texto("nombre", s.nombre, MAX_NOMBRE)?.let(::add)
         texto("tipo", s.tipo, MAX_CATEGORIA)?.let(::add)
-        if (s.importe.isNegative || s.importe.centavos == 0L) add(Validacion("importe", Regla.RANGO))
+        if (s.importe.isNegative || s.importe.centavos == 0L || s.importe <= costo) add(Validacion("importe", Regla.RANGO))
         descripcion(s.descripcion)?.let(::add)
         if (lineas.any { it.cantidad <= Cantidad.ZERO }) add(Validacion("insumos", Regla.RANGO))
         if (lineas.map { it.insumoId }.toSet().size != lineas.size) add(Validacion("insumos", Regla.NO_PERMITIDO))

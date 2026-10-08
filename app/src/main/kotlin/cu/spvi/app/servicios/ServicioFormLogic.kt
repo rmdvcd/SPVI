@@ -47,7 +47,7 @@ object ServicioFormLogic {
         if (f.insumos.any { l -> Cantidad.parse(l.cantidad)?.let { it > Cantidad.ZERO } != true }) {
             e[CamposServicio.INSUMOS] = "Cada insumo necesita una cantidad mayor que 0 (hasta 3 decimales)."
         }
-        Validadores.servicio(servicio(f, importe ?: Cup(1), Instant.EPOCH), lineasValidas(f))
+        Validadores.servicio(servicio(f, importe ?: Cup(1), Instant.EPOCH), lineasValidas(f), costo(f) ?: Cup.ZERO)
             .forEach { v -> if (v.campo !in e) mensaje(v)?.let { e[v.campo] = it } }
         return e
     }
@@ -73,7 +73,7 @@ object ServicioFormLogic {
         is AppError.Validacion -> when (e.campo) {
             CamposServicio.NOMBRE -> if (e.regla == AppError.Regla.REQUERIDO) "Escribe el nombre." else "Máximo ${Validadores.MAX_NOMBRE} caracteres."
             CamposServicio.TIPO -> if (e.regla == AppError.Regla.REQUERIDO) "Elige o escribe un tipo." else "Máximo ${Validadores.MAX_CATEGORIA} caracteres."
-            CamposServicio.IMPORTE -> "El importe debe ser mayor que 0."
+            CamposServicio.IMPORTE -> if (e.regla == AppError.Regla.RANGO) "El importe debe superar el costo de los insumos." else "Escribe un importe válido."
             CamposServicio.DESCRIPCION -> ProductoFormLogic.mensajeDescripcion(e.regla, "servicio")
             CamposServicio.INSUMOS -> "Revisa las cantidades de los insumos."
             else -> null

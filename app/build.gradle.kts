@@ -119,6 +119,25 @@ android {
     }
 }
 
+/** Un release sin un destino público no puede consultar actualizaciones ni revocaciones de licencia. */
+val validarRepositorioGitHubRelease = tasks.register("validarRepositorioGitHubRelease") {
+    group = "verification"
+    description = "Exige el propietario/repositorio público de GitHub para generar un release distribuible."
+    doLast {
+        val repo = project.providers.gradleProperty("spviGithubRepo").orNull?.trim().orEmpty()
+        if (!Regex("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$").matches(repo)) {
+            throw GradleException(
+                "Para assembleRelease/bundleRelease define -PspviGithubRepo=propietario/repositorio público (por ejemplo, rmdvcd/SPVI). " +
+                    "En debug puede omitirse, pero la app no tendrá actualizaciones ni revocaciones de licencia.",
+            )
+        }
+    }
+}
+
+tasks.matching { it.name == "assembleRelease" || it.name == "bundleRelease" }.configureEach {
+    dependsOn(validarRepositorioGitHubRelease)
+}
+
 kotlin {
     compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
 }

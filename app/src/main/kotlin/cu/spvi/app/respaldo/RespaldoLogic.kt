@@ -11,11 +11,19 @@ import java.time.ZoneId
 
 object TextosRespaldo {
     const val TITULO = "Respaldo"
-    const val EXPLICACION = "Guarda una copia cifrada de todo el negocio. Si la proteges con contraseña, nadie puede abrirla sin ella, ni siquiera el desarrollador."
+    const val EXPLICACION = "Guarda una copia de todo el negocio. Con contraseña, el archivo se protege con esa contraseña. Sin ella, quien obtenga el archivo puede leer los datos: el cifrado interno no ofrece confidencialidad."
     /** 0.27.0 (T10): contraseña opcional, apagada por defecto. */
     const val PROTEGER = "Proteger con contraseña"
-    const val SIN_CONTRASENA_AVISO = "Sin contraseña, cualquiera con SPVI podrá abrir este archivo."
-    const val LISTO_SIN_CONTRASENA = "Ahora elige dónde guardar el respaldo."
+    const val SIN_CONTRASENA_AVISO = "Sin contraseña, el archivo no tiene protección de confidencialidad: cualquiera que lo obtenga puede leer los datos."
+    const val AVISO_BIOMETRIA = "Si el dispositivo ofrece biometría, solo confirma que autorizas exportarlo; no añade una clave ni protege el archivo."
+    const val AVISO_SIN_BIOMETRIA = "Este dispositivo no tiene biometría compatible. Para continuar deberás confirmar la advertencia; el archivo no queda protegido."
+    const val LISTO_SIN_CONTRASENA = "Sin contraseña, cualquiera que obtenga el archivo podrá leer los datos. SPVI te pedirá confirmar la exportación, pero esa confirmación no protege el archivo."
+    const val CONFIRMAR_SIN_CONTRASENA = "Quien obtenga este archivo podrá leer los datos del negocio. La biometría, si está disponible, solo confirma que autorizas exportarlo: no cifra ni protege el archivo."
+    const val TITULO_CONFIRMAR_SIN_CONTRASENA = "Exportar respaldo sin contraseña"
+    const val CONFIRMAR_BIOMETRIA = "Confirmar con biometría"
+    const val CONFIRMAR_SIN_BIOMETRIA = "Entiendo; continuar"
+    const val BIOMETRIA_NO_CONFIRMADA = "No se confirmó la biometría. No se exportó el respaldo."
+    const val ERROR_BIOMETRIA = "No se pudo abrir el diálogo de biometría. No se exportó el respaldo."
     const val SIN_LICENCIA = "La licencia no viaja en el respaldo: en otro teléfono hace falta una licencia nueva."
     const val ERROR_CONTRASENA = "Mínimo ${Validadores.MIN_CONTRASENA} caracteres"
     const val ERROR_REPETIR = "Las contraseñas no coinciden"
@@ -88,7 +96,7 @@ object EtapasRespaldo {
 
     fun texto(e: EtapaRespaldo): String = when (e) {
         EtapaRespaldo.PREPARANDO -> "Reuniendo los datos…"
-        EtapaRespaldo.CIFRANDO -> "Cifrando con tu contraseña…"
+        EtapaRespaldo.CIFRANDO -> "Preparando el archivo…"
         EtapaRespaldo.ESCRIBIENDO -> "Guardando el archivo…"
         EtapaRespaldo.LEYENDO -> "Leyendo el archivo…"
         EtapaRespaldo.VERIFICANDO -> "Comprobando que el archivo esté completo…"

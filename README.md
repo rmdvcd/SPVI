@@ -1,15 +1,15 @@
 # SPVI — Sistema de Punto de Venta e Inventario
 
-App Android nativa para pequeños negocios: vender en turnos, controlar inventario e insumos, cobrar por transferencia, ver estadísticas y exportar registros. Funciona **sin conexión** y guarda todos los datos **cifrados en el teléfono**. El uso se controla con licencias offline emitidas por la app GL del desarrollador (contrato v1).
+App Android nativa para pequeños negocios: vender en turnos, controlar inventario e insumos, cobrar por transferencia, ver estadísticas y exportar registros. Los datos del negocio se guardan cifrados en el teléfono; las ventas y la sincronización de principal/secundarias funcionan en la red local. La licencia y las actualizaciones usan internet. El uso se controla con licencias offline emitidas por la app GL del desarrollador (contrato v1).
 
 | | |
 |---|---|
 | Versión | **0.30.0** (`versionCode 51`) |
 | Paquete | `cu.spvi.app` (debug: `cu.spvi.app.debug`) |
 | minSdk / targetSdk / compileSdk | 26 / 35 / 35 |
-| Base de datos | Room **v10** cifrada con SQLCipher (respaldo `RespaldoDto` v4; archivo `.spvi` v4) |
+| Base de datos | Room **v11** cifrada con SQLCipher (respaldo `RespaldoDto` v4; archivo `.spvi` v4) |
 | Contrato de licencias | GL v1 (`ECIES-P256-AES256GCM-v1`) |
-| Permisos | Solo `CAMERA`, `INTERNET` y `POST_NOTIFICATIONS` (aviso «Turno abierto», Android 13+), más `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE` y `CHANGE_NETWORK_STATE` (servicio de la app principal con secundarias, 0.19.2), `REQUEST_INSTALL_PACKAGES` / `REQUEST_DELETE_PACKAGES` (actualizaciones y licencia transferida, 0.25.0) y `READ_MEDIA_IMAGES` / `READ_EXTERNAL_STORAGE` (hasta Android 12) / `WRITE_EXTERNAL_STORAGE` (hasta Android 9) para el registro de la prueba (0.26.0), y `USE_BIOMETRIC` / `USE_FINGERPRINT` (acceso con clave opcional, 0.27.0; permisos normales que añade `androidx.biometric`) |
+| Permisos | Solo `CAMERA`, `INTERNET` y `POST_NOTIFICATIONS` (aviso «Turno abierto», Android 13+), más `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE` y `CHANGE_NETWORK_STATE` (servicio de la app principal con secundarias, 0.19.2), `REQUEST_INSTALL_PACKAGES` / `REQUEST_DELETE_PACKAGES` (actualizaciones y licencia transferida, 0.25.0) y `READ_MEDIA_IMAGES` / `READ_EXTERNAL_STORAGE` (hasta Android 12) / `WRITE_EXTERNAL_STORAGE` (hasta Android 9) para el registro de la prueba (0.26.0), y `USE_BIOMETRIC` / `USE_FINGERPRINT` (acceso con clave opcional desde 0.27.0 y autorización de exportación de respaldo sin contraseña desde 0.30.0; permisos normales que añade `androidx.biometric`) |
 
 **Documentación**
 
@@ -23,8 +23,9 @@ App Android nativa para pequeños negocios: vender en turnos, controlar inventar
 | [MANUAL_USUARIO.md](MANUAL_USUARIO.md) | Manual breve para el usuario final, sin tecnicismos |
 | [RELEASE.md](RELEASE.md) | Keystore, firma, `bundleRelease`/`assembleRelease`, verificación del APK y prueba de humo |
 | [PRUEBAS_DISPOSITIVO.md](PRUEBAS_DISPOSITIVO.md) | Pruebas en teléfono por USB: adb, tests instrumentados, pruebas manuales guiadas, checklist y solución de problemas |
-| [Contexto.md](Contexto.md) · [Pruebas.md](Pruebas.md) · [Pendiente.md](Pendiente.md) | Resumen del proyecto, orden de pruebas y lo que falta (para OpenCode) |
-| [docs/HISTORIAL_DESARROLLO.md](docs/HISTORIAL_DESARROLLO.md) | Qué se hizo en cada fase (Prompts 1–19) y las suposiciones de cada momento |
+| [Contexto.md](Contexto.md) | Resumen del proyecto y sus decisiones vigentes |
+| [docs/VERIFICACION.md](docs/VERIFICACION.md) | Estado medido de CI, lo no verificado y cómo reproducirlo |
+| [docs/HISTORIAL_DESARROLLO.md](docs/HISTORIAL_DESARROLLO.md) | Historial de cambios y decisiones; las afirmaciones antiguas son históricas y prevalece la documentación vigente |
 
 Los documentos de trabajo que estaban fuera del proyecto (`DECISIONES_LICENCIA_SPVI.md`, `PRUEBA_COMPATIBILIDAD_GL.md`, `ARQUITECTURA_SPVI.md`, planes y auditorías de los Prompts 17 y 18, entregas `ENTREGA_*`) se retiraron en la 0.18.0. Lo vigente está en `LICENSE_CLIENT.md` (contrato GL y decisiones de licencia), `SECURITY.md`, `docs/HISTORIAL_DESARROLLO.md` y el propio código.
 
@@ -34,18 +35,19 @@ Los documentos de trabajo que estaban fuera del proyecto (`DECISIONES_LICENCIA_S
 
 | Área | Funciones |
 |---|---|
-| **Inicio** | Banner de licencia, turno (abrir/cerrar), **Nueva venta**, alertas de inventario (stock bajo/crítico, insumo bajo/crítico, próximo a caducar), accesos a Pago electrónico y Precios, selector de período, 4 gráficos (Ventas, Inventario, Métodos de pago, Ganancia neta) y Top 3 (más vendido, lento movimiento, rentabilidad) |
-| **Venta** | Solo con turno abierto. Selección desde el Inventario, carrito con cantidades, **Efectivo** (comprobante) o **Transferencia** (QR de Transfermóvil con tarjeta y móvil + datos del cliente y nº de transacción, que se puede pegar desde el SMS de PAGOxMOVIL). Un Elaborado no tiene existencias: se vende mientras alcancen sus insumos, que se descuentan en la misma transacción |
+| **Inicio** | Banner de licencia, turno (abrir/cerrar), **Nueva venta**, alertas de inventario (stock bajo/crítico, insumo bajo/crítico, próximo a caducar), accesos a Pago electrónico y Precios, selector de período, 4 gráficos (Ventas, Inventario, Métodos de pago, Ganancia neta), Top 3 de productos y listas Top de empleados y clientes |
+| **Venta** | Solo con turno abierto. Selección desde el Inventario, carrito con cantidades, **Efectivo** (comprobante) o **Transferencia** (QR de Transfermóvil con tarjeta y móvil + datos del cliente y nº de transacción, que se puede pegar desde el SMS de PAGOxMOVIL). Un Elaborado no tiene existencias: se vende mientras alcancen sus insumos, que se descuentan en la misma transacción. El precio base y el precio efectivo tras preajustes deben ser estrictamente mayores que el costo de compra/receta/insumos |
 | **Inventario** | Lista con buscador, filtros, selección múltiple, ficha, alta manual, exportación (PDF, Excel, Imagen, Tarjetas) |
 | **QR de vinculación** | CameraX + ML Kit (modelo empaquetado). Solo lee el QR para vincular la principal con la secundaria |
 | **Servicios** | (0.18.0, sustituye a Elaboración.) Nombre, Tipo, Importe y, opcionales, foto y descripción. Pueden gastar insumos. Se venden aparte de los productos, tienen su pestaña en Registros y sus indicadores en Inicio. Los **insumos** son ahora la categoría «Insumos» del Inventario (precio de venta opcional, en unidades enteras). Los Elaborados muestran «Alcanza para N» |
 | **Registros** | Ventas, Transferencias, Movimientos, **Clientes** (clientes fijos, 0.27.0) y Turnos, con buscador y filtros de fecha e importe. Exportar a PDF/Excel (0.26.0: ya no se comparte como texto) |
-| **Ajustes** | Completar configuración, Perfil, Licencia, Pago electrónico, Precios (preajustes), Avisos de inventario, Consultas de códigos en internet, Permisos, Respaldo, Migrar a otro teléfono, Ayuda, Soporte |
+| **Ajustes** | Completar configuración, Perfil, Licencia, Pago electrónico, Precios (preajustes), Avisos de inventario, permisos, acceso con clave opcional, Respaldo, Migrar a otro teléfono, Apps vinculadas, Ayuda y Soporte |
 
 ### Qué no hace
 
-- No tiene servidor, cuentas de usuario, sincronización en la nube, Firebase, analítica, telemetría ni anuncios.
+- No tiene servicio remoto, cuentas de usuario ni sincronización en la nube. La comunicación entre la app principal y hasta cinco secundarias es solo por la red local; no hay Firebase, analítica, telemetría ni anuncios.
 - No lee SMS (`READ_SMS` no se usa): el SMS se pega o se comparte a SPVI.
+- No tiene lector de códigos de barras ni consulta catálogos de productos por internet. La cámara se usa para leer QR de vinculación y tomar fotos.
 - No usa el almacenamiento compartido para tus datos: guardar y abrir archivos pasa por el selector del sistema. La única excepción (0.26.0) es el registro cifrado de la prueba en Imágenes/SPVI y Download/Documents.
 - No tiene usuarios ni contraseñas propias. Desde la 0.27.0 hay un **acceso con clave opcional** que usa la huella o el PIN/patrón **del teléfono** (SPVI no guarda ninguna clave).
 - No modifica el launcher, la barra de estado, la de navegación ni el notch (edge-to-edge estándar).
@@ -57,30 +59,30 @@ Los documentos de trabajo que estaban fuera del proyecto (`DECISIONES_LICENCIA_S
 - **Gradle 8.11.1**: lo descarga el wrapper (`gradlew`).
 - Teléfono o emulador con **Android 8.0 (API 26)** o superior. La cámara es opcional (`android.hardware.camera.any`, `required=false`).
 
-Versiones principales (`gradle/libs.versions.toml`): Kotlin 2.0.21, AGP 8.7.3, Compose BOM 2024.12.01, Hilt 2.52, Room 2.6.1, SQLCipher 4.6.1, DataStore 1.1.1, Navigation 2.8.5, CameraX 1.4.1, ML Kit barcode 17.3.0, OkHttp 4.12.0, Coil 3.0.4, fastexcel 0.18.4, ZXing core 3.5.3, kotlinx.serialization 1.7.3, coroutines 1.9.0.
+Versiones principales (`gradle/libs.versions.toml`): Kotlin 2.0.21, AGP 8.7.3, Compose BOM 2024.12.01, Hilt 2.52, Room 2.6.1, SQLCipher 4.6.1, DataStore 1.1.1, Navigation 2.8.5, CameraX 1.4.1, ML Kit Barcode Scanning 17.3.0 (solo QR de vinculación), OkHttp 4.12.0, Coil 3.0.4, fastexcel 0.18.4, ZXing core 3.5.3, kotlinx.serialization 1.7.3, coroutines 1.9.0.
 
 ## Configuración
 
 1. **Claves públicas de GL.** Ya están fijadas en `licencia/src/main/kotlin/cu/spvi/licencia/LicenseTrust.kt` (par vigente de GL del 05/10/2026: clave ECDH `sha256:2a3f:9fce:…:666d` y clave de firma `sha256:58d4:3aac:…:8c4e`; se conserva la firma anterior `sha256:8a91:bcfb:…:6888` para las licencias ya emitidas). `LicenseTrustTest` falla si alguna no se puede leer o no coincide con su huella. Si GL cambia de par de claves (borrado de datos, reinstalación, otro teléfono), hay que publicar un build nuevo con la clave añadida a `SIGN_KEYS` (ver [LICENSE_CLIENT.md](LICENSE_CLIENT.md)).
 2. **Firma de release.** El repositorio no contiene ningún keystore ni contraseña. `app/build.gradle.kts` los lee de `keystore.properties`, que git ignora, o de las variables `SPVI_KEYSTORE`, `SPVI_KEYSTORE_PASSWORD`, `SPVI_KEY_ALIAS` y `SPVI_KEY_PASSWORD`. Los pasos completos están en [RELEASE.md](RELEASE.md). **Firma siempre con la misma clave**, porque `ANDROID_ID` (y con él el `deviceId` de la licencia) depende de la firma del APK.
 3. **Contacto del desarrollador.** Teléfono `+5351815604` en una sola constante (`core/.../contact/DeveloperContact.kt`), que usan Licencia, Migrar y Soporte.
-4. **Esquema Room.** El primer build genera `data/schemas/cu.spvi.data.db.SpviDatabase/3.json` (`room.schemaLocation`). Versiónalo en git: es la base de las migraciones futuras y lo usa `EsquemaTest`.
+4. **Esquema Room.** El esquema vigente es `data/schemas/cu.spvi.data.db.SpviDatabase/11.json` (`room.schemaLocation`). Cada migración debe generar y versionar el siguiente esquema; lo verifica `EsquemaTest`.
 5. **Baseline de lint.** Se entrega vacío. La primera vez ejecuta `./gradlew :app:updateLintBaseline` y versiona `app/lint-baseline.xml`; a partir de ahí, cualquier error nuevo de lint rompe `spviCheck`.
-6. **Nada más que configurar:** no hay claves de API, `google-services.json` ni variables de entorno. UPCitemdb se usa en su modo de prueba sin clave.
+6. **GitHub para releases:** `spviGithubRepo` debe apuntar al repositorio público que publica los APK y la lista de revocaciones. Debug puede omitirse; `assembleRelease`, `bundleRelease` y `spviRelease` lo exigen. CI usa automáticamente `$GITHUB_REPOSITORY`. No hay claves de API ni `google-services.json`.
 
 ## Compilación
 
 ```bash
-./gradlew assembleDebug           # APK debug (cu.spvi.app.debug), incluye Ajustes → Design system
-./gradlew assembleRelease         # APK release: R8 activo (ofusca y elimina android.util.Log); firmado si hay keystore
-./gradlew bundleRelease           # AAB release (solo para Google Play)
-./gradlew spviRelease             # spviCheck + AAB + APK de release (ver RELEASE.md)
-./gradlew spviTests               # todos los tests JVM (sin dispositivo y sin red)
-./gradlew spviInstrumentedTests   # tests instrumentados (emulador o teléfono API 26+)
-./gradlew spviCheck               # antes de entregar: spviTests + lintDebug + assembleDebug + spviPermisos
+./gradlew assembleDebug                                      # APK debug (cu.spvi.app.debug)
+./gradlew :app:assembleRelease -PspviGithubRepo=rmdvcd/SPVI  # APK release; requiere destino público y keystore para firmar
+./gradlew :app:bundleRelease -PspviGithubRepo=rmdvcd/SPVI    # AAB release (Google Play)
+./gradlew spviRelease -PspviGithubRepo=rmdvcd/SPVI           # spviCheck + AAB + APK de release
+./gradlew spviTests                                           # tests JVM (sin dispositivo y sin red)
+./gradlew spviInstrumentedTests                               # tests instrumentados (emulador o teléfono API 26+)
+./gradlew spviCheck                                           # spviTests + lintDebug + assembleDebug + spviPermisos
 ```
 
-`spviPermisos` lee el manifiesto **fusionado** de debug y de release, y falla si aparece cualquier permiso fuera de la lista autorizada (`CAMERA`, `INTERNET`, `POST_NOTIFICATIONS`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE`, `CHANGE_NETWORK_STATE`, desde la 0.25.0 `REQUEST_INSTALL_PACKAGES` y `REQUEST_DELETE_PACKAGES`, desde la 0.26.0 `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE` y `WRITE_EXTERNAL_STORAGE`, estos dos últimos con `maxSdkVersion`, y desde la 0.27.0 `USE_BIOMETRIC` y `USE_FINGERPRINT`). `tools/verificacion/verificar.sh` hace la misma comprobación sobre el manifiesto de `:app`. La única excepción es el permiso propio de nivel *signature* `cu.spvi.app….DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, que declara androidx.core: no lo concede el usuario. La CI de GitHub Actions (`.github/workflows/ci.yml`) se ejecuta en cada push a `main` o a una rama `arena/**` y en cada pull request; sus trabajos son los mismos comandos de arriba: `spviTests` + compilación de los instrumentados, `:app:lintDebug`, `:app:assembleRelease` (con `missing_rules.txt` vacío), `spviPermisos` y `tools/verificacion/api_minima.py`.
+`spviPermisos` lee el manifiesto **fusionado** de debug y de release, y falla si aparece cualquier permiso fuera de la lista autorizada (`CAMERA`, `INTERNET`, `POST_NOTIFICATIONS`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE`, `CHANGE_NETWORK_STATE`, desde la 0.25.0 `REQUEST_INSTALL_PACKAGES` y `REQUEST_DELETE_PACKAGES`, desde la 0.26.0 `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE` y `WRITE_EXTERNAL_STORAGE`, estos dos últimos con `maxSdkVersion`, y desde la 0.27.0 `USE_BIOMETRIC` y `USE_FINGERPRINT` para el acceso con clave opcional; desde la 0.30.0 también autorizan exportar respaldos sin contraseña, sin añadir cifrado ni proteger el archivo). `tools/verificacion/verificar.sh` hace la misma comprobación sobre el manifiesto de `:app`. La única excepción es el permiso propio de nivel *signature* `cu.spvi.app….DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, que declara androidx.core: no lo concede el usuario. La CI de GitHub Actions (`.github/workflows/ci.yml`) se ejecuta en cada push a `main` o a una rama `arena/**` y en cada pull request; comprueba tests JVM y compilación de instrumentados, lint, release/debug con R8, permisos y API mínima. El job de release le pasa `GITHUB_REPOSITORY` a `spviGithubRepo`; consulta [docs/VERIFICACION.md](docs/VERIFICACION.md) para distinguir corridas medidas de cambios aún no verificados.
 
 ### Arquitectura
 
@@ -97,7 +99,7 @@ Versiones principales (`gradle/libs.versions.toml`): Kotlin 2.0.21, AGP 8.7.3, C
 | `:core` | JVM | `AppResult`/`AppError`, `Cup` (centavos) y `Money.format` («1,450.00 CUP»), `Percent`, `Cantidad` (milésimas), `Clock`, validadores, contacto del desarrollador |
 | `:licencia` | JVM | Contrato GL v1, criptografía (ECDH, HKDF, AES-GCM, ECDSA), `LicenseManager`, estados y banner |
 | `:domain` | JVM | Modelos, interfaces de repositorio, servicios puros (stock, planificador de venta, recetas, estadísticas, tablas de exportación) y casos de uso |
-| `:data` | Android | Room + SQLCipher, DAOs, repositorios, DTO de respaldo, `BackupCipher`, exportadores PDF/XLSX, DataStore cifrado, red del escáner (OkHttp), fotos y, en `security/`, `KeystoreAead`, `AndroidDeviceKey` y `DatabasePassphrase` (antes módulo `:security`, fusionado en P17) |
+| `:data` | Android | Room + SQLCipher, DAOs, repositorios, DTO de respaldo, `BackupCipher`, exportadores PDF/XLSX, DataStore cifrado, consultas HTTPS a GitHub, fotos y, en `security/`, `KeystoreAead`, `AndroidDeviceKey` y `DatabasePassphrase` (antes módulo `:security`, fusionado en P17) |
 | `:designsystem` | Android | Tema, tokens, iconos, componentes y gráficos (ver [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)) |
 | `:app` | Android | Una Activity, NavHost y las pantallas como paquetes (MVVM + UDF: `StateFlow` de estado y `Channel` de eventos). Los ViewModels usan casos de uso cuando hay lógica, y la interfaz de repositorio de `:domain` cuando solo se lee o se borra (P17) |
 
@@ -117,9 +119,9 @@ Versiones principales (`gradle/libs.versions.toml`): Kotlin 2.0.21, AGP 8.7.3, C
 | **Sin Gradle ni Android SDK** (Linux): compila todo, Room y Hilt por KSP, migración, tests JVM y los tests de Room de `:data` con SQLite por JDBC | `bash tools/verificacion/verificar.sh` (descarga ~1,5 GB la primera vez en `~/.cache/spvi-tc`) |
 
 - Los tests JVM **no pueden salir a internet** (proxy inexistente salvo el bucle local, que usa `MockWebServer`) y se ejecutan con `user.timezone=UTC`.
-- Los instrumentados usan Room **en memoria** y fakes en los bordes (cámara, selector de archivos, bases públicas). Los fakes de `:app` viven en `app/src/sharedTest` y los comparten los tests JVM y los instrumentados.
+- Los tests instrumentados de integración de `:app` usan Room **en memoria** y repositorios reales para los datos de negocio. `EntornoIntegracion` sustituye perfil, preferencias, configuración inicial, licencia y acceso al selector de archivos; los archivos compartidos se inyectan mediante `EntradaCompartida`. Estos flujos no arrancan la cámara ni consultan catálogos públicos de productos. Los fakes comunes viven en `app/src/sharedTest` y se comparten entre tests JVM e instrumentados.
 - Informes: `<módulo>/build/reports/tests/` y `<módulo>/build/reports/androidTests/connected/`.
-- **Verificación actual: [docs/VERIFICACION.md](docs/VERIFICACION.md)** (única fuente de verdad; este README ya no lleva historial). Corrida del 2026-10-07, todo en verde: 825 tests JVM, lint 0 errores, R8 sin clases ausentes, permisos del manifiesto dentro de la lista autorizada y API mínima 26 sin llamadas prohibidas. El detalle por capa y los casos borde están en [docs/HISTORIAL_DESARROLLO.md](docs/HISTORIAL_DESARROLLO.md#tests-prompt-15).
+- **Verificación: [docs/VERIFICACION.md](docs/VERIFICACION.md)**. La última corrida remota consultada pasó 5/5 trabajos en `82672fdf`; el conteo exacto de tests no se pudo recuperar. Los cambios de este árbol son posteriores y siguen pendientes de CI. El entorno local no tiene Java, así que no se ejecutó Gradle.
 
 ## Contrato GL aplicado
 
@@ -138,6 +140,16 @@ SPVI es **cliente** del contrato v1 de GL, sin cambiarlo. Detalle completo en [L
 | Tipos y precios | Mensual 6,000 · Semestral 30,000 · Anual 50,000 · Perpetua 90,000 CUP |
 | Reloj | Si retrocede más de 2 h respecto a la última hora vista → bloqueo hasta corregirlo |
 | Migrar | La autorización es la licencia emitida al teléfono nuevo; el viejo cede su licencia y se borra |
+
+## Novedades de la 0.30.0 ([historial](docs/HISTORIAL_DESARROLLO.md))
+
+- **Sin escáner de códigos de barras:** la cámara queda para el QR de vinculación y las fotos. Room v11 elimina `producto.codigo`; se mantienen las demás columnas y se pueden importar respaldos anteriores que aún lo contengan.
+- **Inicio:** añade los Top 3 de empleados y clientes, además de los indicadores existentes.
+- **Datos de prueba:** la versión debug puede generar una bodega de ejemplo con historial de ventas; esta herramienta no aparece en release.
+- **Campos numéricos y monetarios:** filtran la entrada mientras se escribe y rechazan formatos inválidos. Los precios base y los precios efectivos tras descuentos deben ser estrictamente mayores que el costo.
+- **Respaldo sin contraseña:** la opción sigue siendo voluntaria. Antes de exportar aparece una advertencia; si el dispositivo ofrece biometría, esta autoriza la exportación, pero no añade una clave ni protege el archivo.
+
+El estado de verificación del árbol actual está en [docs/VERIFICACION.md](docs/VERIFICACION.md); las modificaciones locales recientes no se deben considerar validadas hasta completar esas comprobaciones.
 
 ## Novedades de la 0.27.1 (correcciones, [historial](docs/HISTORIAL_DESARROLLO.md))
 
@@ -158,7 +170,7 @@ SPVI es **cliente** del contrato v1 de GL, sin cambiarlo. Detalle completo en [L
 | **PDF y Excel** | Con su icono en todas las hojas de exportar |
 | **Textos llanos** | Sin versiones, nombres técnicos ni explicaciones de la licencia o del registro de la prueba |
 | **Principal ≠ secundaria** | Una app principal nunca puede pasar a secundaria; para cambiar el tipo hay que exportar el respaldo y borrar los datos de SPVI |
-| **Respaldo sin contraseña** | «Proteger con contraseña» es opcional y viene apagado; el archivo `.spvi` v4 indica si la lleva. Se siguen abriendo los v3 |
+| **Respaldo sin contraseña** | «Proteger con contraseña» es opcional y viene apagado; el archivo `.spvi` v4 indica si la lleva y se siguen abriendo los v3. Sin contraseña no hay confidencialidad: cualquiera con el archivo puede leerlo. La exportación requiere confirmar la advertencia y, si hay biometría, autenticarse sin alternativa de PIN; esa biometría no protege el archivo |
 | **Acceso con clave** | Opcional (recorrido inicial y Ajustes): huella o PIN/patrón del teléfono al abrir la app y tras 10 minutos o más en segundo plano. No va en el respaldo |
 | **Soporte** | Datos del desarrollador con icono |
 | **Foto primero** | Nuevo producto y Nuevo servicio empiezan por la foto, con botones Cámara y Galería (selector de fotos del sistema, sin permisos) |
@@ -217,32 +229,36 @@ Una app **principal** (dueño: base de datos general y licencia) y hasta **5 sec
 
 ## Esquema de base de datos
 
-Archivo `spvi.db`, Room **versión 10** (v4: servicios; v5: Principal/Secundaria; historial abajo, ver [docs/VINCULACION.md](docs/VINCULACION.md)), cifrado con SQLCipher. Definición en `data/src/main/kotlin/cu/spvi/data/db/entity/Entities.kt`.
+Archivo `spvi.db`, Room **versión 11** (v4: servicios; v5: Principal/Secundaria; v10: clientes fijos; v11: retirada del código de barras), cifrado con SQLCipher. Definición vigente en `data/src/main/kotlin/cu/spvi/data/db/entity/Entities.kt`; el esquema exportado es `data/schemas/cu.spvi.data.db.SpviDatabase/11.json`.
 
 **Convenciones:** importes en centavos (`…Cent`, `Long`); cantidades de insumo en milésimas (`…Mil`); instantes en epoch ms UTC; fechas de calendario en `epochDay`; enums como `TEXT` con su nombre; sin `TypeConverters`.
 
-| Tabla | Clave | Columnas principales | Relaciones e índices |
+| Tabla | Clave | Columnas | Relaciones e índices |
 |---|---|---|---|
-| `producto` | `id` auto | `categoria`, `nombre`, `descripcion`, `fotoUri`, `fechaCaducidad`, `precioCostoCent`, `precioVentaCent`, `cantidad`, `nivelBajo`, `nivelCritico`, `codigo`, `creadoEn`, `actualizadoEn`, `eliminado` | Índices: `categoria`, `codigo`, (`eliminado`, `creadoEn`), `fechaCaducidad`. Borrado lógico (`eliminado`) |
-| `insumo` | `id` auto | `nombre`, `unidad`, `precioCent`, `cantidadMil`, `nivelBajoMil`, `nivelCriticoMil`, `creadoEn`, `actualizadoEn` | Índices: `creadoEn`, `nombre` |
-| `receta_linea` | (`productoId`, `insumoId`) | `cantidadMil` | FK producto (CASCADE), FK insumo (**RESTRICT**: un insumo en uso no se borra) |
-| `turno` | `id` auto | `abiertoEn`, `cerradoEn`, `numVentas`, `unidades`, `totalCent`, `efectivoCent`, `transferenciaCent`, `costoCent`, `numMovimientos`, `abiertoPor`, `cerradoPor`, `ventasEfectivo`, `ventasTransferencia`, `movimientosProducto`, `movimientosInsumo` | Resumen nulo mientras está abierto |
-| `venta` | `id` auto | `turnoId`, `fecha`, `metodoPago`, `totalCent`, `costoCent`, `unidades` | FK turno (RESTRICT). Índices: `fecha`, `turnoId`, `totalCent` |
-| `detalle_venta` | `id` auto | `ventaId`, `productoId`, `nombre`, `categoria`, `cantidad`, `precioBaseCent`, `precioUnitarioCent`, `costoUnitarioCent` | FK venta (CASCADE). Nombre y precios copiados al vender |
-| `transaccion` | `id` auto | `ventaId`, `fecha`, `importeCent`, `numero`, `clienteNombre`, `clienteCi`, `clienteTelefono`, `tarjetaCobro`, `telefonoCobro`, `clienteFijo` (v10) | FK venta (CASCADE), `ventaId` único. Índices: `fecha`, `numero`, `importeCent` |
-| `movimiento` | `id` auto | `fecha`, `tipo`, `entidad` (PRODUCTO/INSUMO), `entidadId`, `nombre`, `delta`, `existencia`, `turnoId`, `ventaId`, `nota` | Índices: `fecha`, (`entidad`, `entidadId`), `turnoId` |
-| `perfil` | `id` = 1 | `nombre`, `apellidos`, `ci`, `pagoTarjetaId`, `pagoTelefonoId` | Fila única |
-| `tarjeta` | `id` auto | `numero`, `alias` | `numero` único |
-| `telefono` | `id` auto | `numero`, `alias` | `numero` único |
+| `producto` | `id` auto | `categoria`, `nombre`, `descripcion`, `fotoUri`, `fechaCaducidad`, `precioCostoCent`, `precioVentaCent`, `cantidad`, `nivelBajo`, `nivelCritico`, `creadoEn`, `actualizadoEn`, `eliminado` | Índices `categoria`, (`eliminado`, `creadoEn`), `fechaCaducidad`; borrado lógico |
+| `insumo` | `id` auto | `nombre`, `unidad`, `precioCent`, `cantidadMil`, `nivelBajoMil`, `nivelCriticoMil`, `creadoEn`, `actualizadoEn`, `precioVentaCent` | Índices `creadoEn`, `nombre`; `precioVentaCent` nulo = no se vende suelto |
+| `receta_linea` | (`productoId`, `insumoId`) | `cantidadMil` | FK producto (CASCADE), FK insumo (RESTRICT); índice `insumoId` |
+| `turno` | `id` auto | `abiertoEn`, `cerradoEn`, `numVentas`, `unidades`, `totalCent`, `efectivoCent`, `transferenciaCent`, `costoCent`, `numMovimientos`, `abiertoPor`, `cerradoPor`, `ventasEfectivo`, `ventasTransferencia`, `movimientosProducto`, `movimientosInsumo`, `uuid`, `empleadoId`, `sincronizado`, `fondoCent`, `contadoCent`, `entradasCent`, `salidasCent`, `numAnuladas` | Índices `abiertoEn`, `cerradoEn`, `uuid` único; resumen nulo mientras está abierto |
+| `venta` | `id` auto | `turnoId`, `fecha`, `metodoPago`, `totalCent`, `costoCent`, `unidades`, `uuid`, `empleadoId`, `sincronizado`, `anuladaEn`, `motivoAnulacion`, `anuladaPor`, `corrigeVentaId`, `bajarCambio` | FK turno (RESTRICT); índices `fecha`, `turnoId`, `totalCent`, `uuid` único |
+| `movimiento_caja` | `id` auto | `turnoId`, `fecha`, `tipo`, `importeCent`, `motivo`, `hechoPor`, `uuid`, `sincronizado` | FK turno (RESTRICT); índices `turnoId`, `uuid` único |
+| `detalle_venta` | `id` auto | `ventaId`, `productoId`, `nombre`, `categoria`, `cantidad`, `precioBaseCent`, `precioUnitarioCent`, `costoUnitarioCent`, `clase` | FK venta (CASCADE); índices `ventaId`, `productoId`; precios/nombre congelados al vender |
+| `transaccion` | `id` auto | `ventaId`, `fecha`, `importeCent`, `numero`, `clienteNombre`, `clienteCi`, `clienteTelefono`, `tarjetaCobro`, `telefonoCobro`, `clienteFijo` | FK venta (CASCADE), `ventaId` único; índices `fecha`, `numero`, `importeCent` |
+| `movimiento` | `id` auto | `fecha`, `tipo`, `entidad`, `entidadId`, `nombre`, `delta`, `existencia`, `turnoId`, `ventaId`, `nota`, `hechoPor` | Índices `fecha`, (`entidad`, `entidadId`), `turnoId` |
+| `perfil` | `id = 1` | `nombre`, `apellidos`, `ci`, `pagoTarjetaId`, `pagoTelefonoId` | Fila única |
+| `tarjeta` | `id` auto | `numero`, `alias` | Índice único `numero` |
+| `telefono` | `id` auto | `numero`, `alias` | Índice único `numero` |
 | `preajuste` | `id` auto | `nombre`, `puntosBasicos`, `metodoPago`, `importeMinimoCent`, `activo` | — |
-| `preajuste_producto` | (`preajusteId`, `productoId`) | — | FK a ambos (CASCADE) |
-| `cliente_fijo` (v10) | `id` auto | `nombreApellidos`, `ci`, `telefono`, `creadoEn`, `actualizadoEn` | `ci` único. Las compras se calculan de `transaccion` por carné |
+| `preajuste_producto` | (`preajusteId`, `productoId`) | — | FK preajuste (CASCADE), FK producto (CASCADE); índice `productoId` |
+| `cliente_fijo` | `id` auto | `nombreApellidos`, `ci`, `telefono`, `creadoEn`, `actualizadoEn` | Índice único `ci`; las compras se calculan de `transaccion` por carné |
+| `servicio` | `id` auto | `nombre`, `tipo`, `importeCent`, `descripcion`, `fotoUri`, `creadoEn`, `actualizadoEn`, `eliminado` | Índices `tipo`, (`eliminado`, `creadoEn`); borrado lógico |
+| `servicio_insumo` | (`servicioId`, `insumoId`) | `cantidadMil` | FK servicio (CASCADE), FK insumo (RESTRICT); índice `insumoId` |
+| `empleado` | `id` auto | `nombre`, `permisos`, `creadoEn`, `vinculadoEn`, `ultimaSincronizacion`, `clave`, `codigoToken`, `codigoVence`, `activo`, `tarjetaId`, `telefonoId`, `cierreSolicitadoEn`, `telefono`, `cierrePedidoPorEmpleadoEn`, `fondoAsignadoCent`, `fondoAsignadoEn`, `aperturaSolicitadaEn`, `versionCode` | Apps secundarias de la principal; se conserva una fila inactiva para poder notificar que fue retirada |
 
-- **Versión 3 consolidada (P17):** sin `tasa_cambio` ni `caducidad_codigo`. Como no había clientes, las bases de desarrollo v1 y v2 se recrean vacías (`fallbackToDestructiveMigrationFrom(1, 2)`) y no hay clases de migración. Cualquier versión futura necesita una `Migration(3, 4)`… explícita: una migración que falte rompe en desarrollo en lugar de borrar datos de usuarios.
+- **v3 (base histórica consolidada, P17):** sin `tasa_cambio` ni `caducidad_codigo`. Solo las bases de desarrollo v1 y v2 se recrean vacías (`fallbackToDestructiveMigrationFrom(1, 2)`). Desde v3 hay migraciones explícitas hasta la v11; el próximo cambio de esquema debe incluir `Migration(11, 12)`, `12.json` y una prueba, sin borrar datos de usuarios.
 - **v5 (0.19.0):** `turno` y `venta` con `uuid` único, `empleadoId` y `sincronizado`; tabla `empleado` (apps secundarias de la principal). `MIGRACION_4_5`.
-- **v10 (0.27.0):** tabla `cliente_fijo` y `transaccion.clienteFijo` (`MIGRACION_9_10`, esquema `10.json`). Solo añade.
+- **v6–v9:** v6/v7 (0.20–0.21) empleados y permisos; **v8 (0.25.0)**: arqueo de caja y anulaciones (`MIGRACION_7_8`, esquema `8.json`); **v9 (0.26.0)**: fondos asignados y `versionCode` de las secundarias (`MIGRACION_8_9`, esquema `9.json`).
 - **v10 (0.27.0):** tabla `cliente_fijo` (carné único) y `transaccion.clienteFijo` (`MIGRACION_9_10`, esquema `10.json`).
-- **v6–v9:** v6/v7 (0.20–0.21) empleados y permisos; **v9 (0.26.0)**: `empleado.fondoAsignadoCent`/`fondoAsignadoEn`/`aperturaSolicitadaEn`/`versionCode` (`MIGRACION_8_9`, esquema `9.json`); **v8 (0.25.0)**: tabla `movimiento_caja`, `turno.fondoCent`/`contadoCent` y totales de caja, `venta.anuladaEn`/`motivoAnulacion`/`anuladaPor`/`corrigeVentaId`. `MIGRACION_7_8`, esquema `8.json`.
+- **v11 (0.30.0):** elimina `producto.codigo` y su índice sin perder otras columnas (`MIGRACION_10_11`, esquema `11.json`).
 - **Stock nunca negativo:** las actualizaciones usan `WHERE cantidad + :delta >= 0`.
 - **Atomicidad:** venta, producción, cierre de turno e importación de respaldo van cada uno en una sola transacción (`db.tx { }`).
 - **Fuera de la base de datos:** preferencias (`pref.v1`), progreso del asistente (`setup.v1`) y licencia (`lic.*`) van en DataStore con cada valor cifrado; las fotos, en `filesDir/fotos`.
@@ -256,8 +272,8 @@ El manual para el usuario final, sin tecnicismos, está en [MANUAL_USUARIO.md](M
 3. **Configurar el cobro por transferencia:** Pago electrónico (tarjeta de Inicio o Ajustes): tarjeta y teléfono.
 4. **Vender:** en Inicio, abrir el turno (interruptor de la tarjeta de turno) → **Nueva venta** → elegir productos → Efectivo o Transferencia → Confirmar.
 5. **Cerrar el turno** al terminar: queda su resumen en Registros → Turnos.
-6. **Revisar y exportar:** Registros (texto, PDF o Excel) e Inventario (PDF, Excel, imagen, tarjetas, texto).
-7. **Copia de seguridad:** Ajustes → Respaldo, con contraseña. El respaldo siempre es completo.
+6. **Revisar y exportar:** Registros (PDF o Excel) e Inventario (PDF, Excel, imagen o tarjetas).
+7. **Copia de seguridad:** Ajustes → Respaldo. La contraseña es opcional; sin ella, cualquiera que obtenga el archivo puede leer los datos. El respaldo es completo.
 8. **Licencia:** Ajustes → Licencia → elegir tipo → *Enviar por WhatsApp* o *SMS* → pegar la respuesta → *Activar*.
 
 ## Desviaciones de SPVI.txt (decididas en P17)
@@ -271,17 +287,17 @@ El manual para el usuario final, sin tecnicismos, está en [MANUAL_USUARIO.md](M
 
 ## Advertencias
 
-- **La contraseña del respaldo no se puede recuperar.** Sin ella el archivo `.spvi` no se abre.
+- **La contraseña del respaldo no se puede recuperar.** Si la activas, consérvala por separado: SPVI no puede restablecerla. Si la omites, cualquiera que obtenga el `.spvi` puede leer los datos; la confirmación y la biometría solo autorizan exportarlo, no protegen el archivo.
 - **Importar reemplaza TODOS los datos:** inventario, insumos, turnos, ventas y configuración. Los respaldos de versiones anteriores a la 0.13.0 (formato v1/v2) ya no se abren.
 - **Las fotos de los productos no van en el respaldo.** El respaldo guarda la ruta de la foto, pero no la imagen; en otro teléfono los productos aparecen sin foto.
 - **La licencia no va en el respaldo.** Cada teléfono necesita la suya (`deviceId` distinto). Desde la 0.25.0 el respaldo lleva su ID para **recuperarla** gratis en otro teléfono (MANUAL §9).
 - **Borrar los datos de la app o reinstalarla** destruye la base de datos (su clave vive en el Keystore del teléfono) y la licencia instalada. Haz un respaldo antes. El `deviceId` suele mantenerse si el APK está firmado con la misma clave, así que el desarrollador puede volver a emitir la licencia.
 - **El PDF de configuración y las exportaciones de Registros no llevan contraseña.** Las de Transferencias incluyen nombre, carné y teléfono de clientes.
-- **Licencia offline:** la única revocación es la lista de GitHub (0.25.0), que el teléfono antiguo solo aplica si se conecta a internet; un APK modificado puede saltarse la comprobación. **Reinstalar** SPVI reinicia los 7 días de prueba (aceptado y documentado). Ver [SECURITY.md](SECURITY.md#modelo-de-amenazas).
+- **Licencia offline:** la única revocación es la lista de GitHub (0.25.0), que el teléfono antiguo solo aplica si se conecta a internet; un APK modificado puede saltarse la comprobación. El registro cifrado de la prueba se conserva fuera de la app para que normalmente no se reinicie al reinstalar; si el sistema impide leer las copias o se deniega el permiso necesario, no se detecta la instalación anterior. Ver [SECURITY.md](SECURITY.md#modelo-de-amenazas).
 - **QR de Transfermóvil sin importe:** el formato oficial no lo admite; el cliente escribe el total que SPVI muestra bajo el QR.
 - **SMS de licencia:** la solicitud ocupa unos 780 caracteres (varios SMS) y la licencia, unos 340 (3 SMS) o 216 si GL manda solo el código. WhatsApp es el canal recomendado.
 - **Valores fijos:** el tema sigue al sistema, el aviso de caducidad salta 7 días antes y la red espera 5 s. Son constantes, no preferencias (P17).
-- **Pruebas en este entorno:** la suite se compiló y los tests JVM pasaron fuera de Gradle. Gradle, lint, R8, Room KSP y los tests instrumentados no se han ejecutado nunca. Confirma con `./gradlew spviCheck spviInstrumentedTests` y la prueba de humo de [RELEASE.md](RELEASE.md) antes de distribuir.
+- **Pruebas en este entorno:** Java no está instalado, así que no se ejecutaron Gradle, tests, lint ni R8 para estos cambios. La última corrida remota consultada corresponde al commit anterior `82672fdf`; consulta [docs/VERIFICACION.md](docs/VERIFICACION.md). No distribuir hasta que el CI y la prueba de humo de [RELEASE.md](RELEASE.md) validen la versión actual.
 - **Debug y release no comparten licencia:** cada uno tiene su propio paquete (`cu.spvi.app.debug` frente a `cu.spvi.app`) y su propia firma, así que su `deviceId` es distinto. Lo mismo pasa entre el APK distribuido a mano y uno publicado en Google Play con *Play App Signing*.
 
 ## Licencia del código

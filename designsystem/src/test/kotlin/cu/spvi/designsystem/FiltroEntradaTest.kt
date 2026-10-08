@@ -11,13 +11,20 @@ class FiltroEntradaTest {
         assertEquals("9200123412341234", FiltroEntrada.TARJETA.aplicar("9200 1234 1234 1234 99"))
         assertEquals("85010112345", FiltroEntrada.CARNE.aplicar("850101-12345"))
         assertEquals("12", FiltroEntrada.ENTERO.aplicar("-1.2"))
-        assertEquals("100", FiltroEntrada.PORCENTAJE.aplicar("1000%"))
+        assertEquals("1000", FiltroEntrada.PORCENTAJE.aplicar("1000%"))
+        assertEquals("100.25", FiltroEntrada.PORCENTAJE.aplicar("100,25%"))
     }
 
     @Test fun decimales() {
         assertEquals("12.50", FiltroEntrada.DINERO.aplicar("12.505"))
-        assertEquals("12.53", FiltroEntrada.DINERO.aplicar("12,5.3"))     // un solo separador (el segundo se ignora); la coma pasa a punto
+        assertEquals("1450.00", FiltroEntrada.DINERO.aplicar("1,450.00 CUP")) // importe pegado con miles
+        assertEquals("1450", FiltroEntrada.DINERO.aplicar("1,450"))
+        assertEquals("1.45", FiltroEntrada.DINERO.aplicar("1,45")) // coma decimal española
+        assertEquals("", FiltroEntrada.DINERO.aplicar("12,5.3")) // separadores mezclados con agrupación inválida: se rechaza
+        assertEquals("", FiltroEntrada.DINERO.aplicar("1.2,3")) // tampoco se acepta la agrupación inversa
+        assertEquals("1.2", FiltroEntrada.DINERO.aplicar("1.2,")) // un separador extra final no cambia el importe mientras se escribe
         assertEquals("2.5", FiltroEntrada.DECIMAL.aplicar("2,5"))       // 0.21.6: antes quedaba «2,5» y Cantidad.parse lo leía como 25
+        assertEquals("0.5", FiltroEntrada.DECIMAL.aplicar(".5"))
         assertEquals("1.250", FiltroEntrada.DECIMAL.aplicar("1.2509"))
         assertEquals("", FiltroEntrada.DINERO.aplicar("abc"))
     }

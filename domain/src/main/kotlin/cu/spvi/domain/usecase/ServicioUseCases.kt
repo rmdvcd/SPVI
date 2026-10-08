@@ -15,6 +15,7 @@ import cu.spvi.domain.model.RecetaLinea
 import cu.spvi.domain.model.Servicio
 import cu.spvi.domain.model.ServicioDisponible
 import cu.spvi.domain.model.VistaServicios
+import cu.spvi.core.money.Cup
 import cu.spvi.domain.repository.InsumoRepository
 import cu.spvi.domain.repository.ServicioRepository
 import cu.spvi.domain.service.InventarioFiltro
@@ -102,6 +103,7 @@ class ObtenerFichaServicio @Inject constructor(
 /** Crea o edita un servicio y los insumos que consume (valida antes de escribir). */
 class GuardarServicio @Inject constructor(
     private val servicios: ServicioRepository,
+    private val insumosRepo: InsumoRepository,
     private val clock: Clock,
 ) {
     suspend operator fun invoke(servicio: Servicio, insumos: List<RecetaLinea>): AppResult<Long> {
@@ -110,7 +112,14 @@ class GuardarServicio @Inject constructor(
             nombre = servicio.nombre.trim(), tipo = servicio.tipo.trim(),
             descripcion = servicio.descripcion?.trim()?.ifEmpty { null },
         )
+        // Primero valida estructura y precio positivo; después resuelve el costo real de los insumos.
         Validadores.servicio(s, insumos).toResult().let { if (it is AppResult.Err) return it }
+        val mapaInsumos = insumosRepo.obtenerVarios(insumos.map { it.insumoId }).associateBy { it.id }
+        val costo = when (val r = Recetas.costo(Receta(s.id, insumos), mapaInsumos)) {
+            is AppResult.Ok -> r.value
+            is AppResult.Err -> return AppResult.Err(r.error)
+        }
+        Validadores.servicio(s, insumos, costo).toResult().let { if (it is AppResult.Err) return it }
         // 0.24.0: dos servicios con el mismo nombre se distinguen por la descripción.
         errorIdentificacion(s.id, s.nombre, s.descripcion, servicios.observarTodos().first().map { it.identidad })
             ?.let { return AppResult.Err(it) }

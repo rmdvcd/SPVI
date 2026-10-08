@@ -65,12 +65,16 @@ class ServiciosTest {
         assertTrue(Validadores.servicio(servicio(1), emptyList()).isEmpty())
         val malo = servicio(1, nombre = " ", tipo = "", importe = 0)
         assertEquals(setOf("nombre", "tipo", "importe"), Validadores.servicio(malo, emptyList()).map { it.campo }.toSet())
+        assertTrue(Validadores.servicio(servicio(2, importe = 60), listOf(RecetaLinea(1, Cantidad.enteras(2))), Cup.ofPesos(60))
+            .any { it.campo == "importe" })
         val repetido = listOf(RecetaLinea(1, Cantidad.enteras(1)), RecetaLinea(1, Cantidad.enteras(2)))
         assertTrue(Validadores.servicio(servicio(1), repetido).any { it.campo == "insumos" })
     }
 
     @Test fun guardarServicioCreaYEdita() = runTest {
-        val guardar = GuardarServicio(servicios, FixedClock())
+        val guardar = GuardarServicio(servicios, insumos, FixedClock())
+        val costoIgual = guardar(servicio(0, importe = 30), listOf(RecetaLinea(1, Cantidad.enteras(1))))
+        assertEquals(AppError.Validacion("importe", AppError.Regla.RANGO), (costoIgual as AppResult.Err).error)
         val id = (guardar(servicio(0), listOf(RecetaLinea(1, Cantidad.enteras(1)))) as AppResult.Ok).value
         assertEquals(1, servicios.insumos(id).size)
         assertTrue(guardar(servicio(id, nombre = "Corte"), emptyList()) is AppResult.Ok)

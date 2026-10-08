@@ -2,7 +2,7 @@
 
 App Android de punto de venta e inventario para pequeños negocios en Cuba. **Versión 0.30.0 (`versionCode 51`)**. Paquete `cu.spvi.app`. Todo el texto de la interfaz, los comentarios y la documentación están en **español**; responde en español.
 
-**Empieza por `Contexto.md`** (resumen completo del proyecto), `Pendiente.md` (lo que falta) y `Pruebas.md` (qué probar y en qué orden); `opencode.json` carga los dos primeros en cada sesión. La referencia visual es `SPVI_0.26.0_capturas_y_exportaciones.pdf` (raíz; no se sube a git). Guía paso a paso para compilar y retocar con OpenCode Desktop: `docs/OPENCODE_DESKTOP.md`. Lee los demás documentos solo cuando la tarea los necesite:
+**Empieza por `README.md`** (visión general y estado del producto), `docs/VERIFICACION.md` (qué se ha medido y qué sigue pendiente) y `PRUEBAS_DISPOSITIVO.md` (humo manual en teléfono). No dependas de documentos retirados como `Pendiente.md`, `Pruebas.md` u `opencode.json`. Guía para compilar y retocar con OpenCode Desktop: `docs/OPENCODE_DESKTOP.md`. Lee los demás documentos solo cuando la tarea los necesite:
 - arquitectura, compilación y novedades: `README.md`;
 - release firmado y pruebas en el teléfono: `RELEASE.md`;
 - archivos que escribe la app (respaldo, PDF, Excel, PNG): `FORMATOS.md`;
@@ -14,7 +14,7 @@ App Android de punto de venta e inventario para pequeños negocios en Cuba. **Ve
 
 ## Pila
 
-Kotlin 2.0.21 · AGP 8.7.3 · Gradle 8.11.1 (wrapper) · JDK 17 · compileSdk/targetSdk 35 · minSdk 26 · Compose BOM 2024.12.01 (Material 3) · Hilt 2.52 (KSP) · Room 2.6.1 + SQLCipher 4.6.1 · OkHttp + kotlinx.serialization · fastexcel · ML Kit (escáner) · Robolectric 4.14.1 + Roborazzi 1.38.0. Versiones en `gradle/libs.versions.toml`.
+Kotlin 2.0.21 · AGP 8.7.3 · Gradle 8.11.1 (wrapper) · JDK 17 · compileSdk/targetSdk 35 · minSdk 26 · Compose BOM 2024.12.01 (Material 3) · Hilt 2.52 (KSP) · Room 2.6.1 + SQLCipher 4.6.1 · OkHttp + kotlinx.serialization · fastexcel · CameraX + ML Kit (lectura de QR para vinculación) · Robolectric 4.14.1 + Roborazzi 1.38.0. Versiones en `gradle/libs.versions.toml`.
 
 ## Módulos (Clean Architecture)
 
@@ -37,15 +37,15 @@ Reutiliza repositorios y casos de uso existentes; no metas lógica de negocio en
 ./gradlew spviCheck                    # antes de entregar: tests + lintDebug + assembleDebug + spviPermisos
 ./gradlew :app:recordRoborazziDebug    # capturas reales (claro y oscuro)
 ./gradlew spviInstrumentedTests        # emulador o teléfono API 26+
-./gradlew spviRelease                  # AAB + APK firmados (requiere keystore.properties, ver RELEASE.md)
+./gradlew spviRelease -PspviGithubRepo=rmdvcd/SPVI # AAB + APK; requiere destino público y keystore para firmar
 ```
 
 Un solo test: `./gradlew :domain:test --tests "cu.spvi.domain.Version025Test"`. Sin Android SDK queda `bash tools/verificacion/verificar.sh` (descarga kotlinc y compila sin Gradle; ~15 min).
 
 ## Reglas que no se negocian (decididas por el dueño del proyecto)
 
-1. **Permisos:** solo `CAMERA`, `INTERNET`, `POST_NOTIFICATIONS`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE`, `CHANGE_NETWORK_STATE`, `REQUEST_INSTALL_PACKAGES`, `REQUEST_DELETE_PACKAGES` y, solo para el registro de la prueba (0.26.0), `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE` (`maxSdkVersion` 32) y `WRITE_EXTERNAL_STORAGE` (`maxSdkVersion` 28) y, solo para el acceso con clave opcional (0.27.0), `USE_BIOMETRIC` y `USE_FINGERPRINT` (los añade `androidx.biometric`). `spviPermisos` falla con cualquier otro. Nada de WAKE_LOCK, arranque, batería ni otro uso del almacenamiento.
-2. **Sin** Firebase, analítica, telemetría, anuncios ni servidores propios. INTERNET solo para: sincronización en la red local, consultas de códigos de barras, y GitHub (actualizaciones y lista de revocadas).
+1. **Permisos:** solo `CAMERA`, `INTERNET`, `POST_NOTIFICATIONS`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE`, `CHANGE_NETWORK_STATE`, `REQUEST_INSTALL_PACKAGES`, `REQUEST_DELETE_PACKAGES` y, solo para el registro de la prueba (0.26.0), `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE` (`maxSdkVersion` 32) y `WRITE_EXTERNAL_STORAGE` (`maxSdkVersion` 28) y `USE_BIOMETRIC` / `USE_FINGERPRINT` (acceso con clave opcional desde 0.27.0 y autorización de exportaciones de respaldo sin contraseña desde 0.30.0) (los añade `androidx.biometric`; la biometría autoriza la exportación, pero no protege el archivo). `spviPermisos` falla con cualquier otro. Nada de WAKE_LOCK, arranque, batería ni otro uso del almacenamiento.
+2. **Sin servicios remotos, Firebase, analítica, telemetría ni anuncios.** La sincronización principal/secundaria usa solo la red local. INTERNET se usa para GitHub (actualizaciones y lista de revocadas); no se consulta ningún catálogo de códigos de barras.
 3. **No se vende sin turno abierto.** La cámara solo mientras se usa. SMS solo pegando o compartiendo (nunca leer SMS ni el portapapeles en segundo plano).
 4. **UI:** Material 3 claro/oscuro, contraste WCAG AA (`ContrastTest`), sin estilos sueltos: usa `Spvi*` del `:designsystem`. `SpviSpacing` tiene xs=8, md=16, lg=24, xl=32 (**no existe `sm`**). Botones de solo icono con descripción. Diálogos centrados. Guardar = ✓. Gráficos sin líneas de rejilla. Asistentes de 3–4 pasos.
 5. **Datos sensibles:** nada en logs ni en Recientes (`FLAG_SECURE` en Licencia, Perfil, QR y datos del cliente). El CI sale enmascarado (`••••••••345`) en los textos compartidos.
@@ -60,15 +60,11 @@ Un solo test: `./gradlew :domain:test --tests "cu.spvi.domain.Version025Test"`. 
 - KSP: si falla Room/Hilt de forma rara, borra `build/generated/ksp` del módulo y repite.
 - Categoría de elaborados: `Categorias.ELABORADO = "Elaborado"` (singular).
 - Excel: el formato de importe es `#,##0.00 \C\U\P` (con comillas fastexcel genera un `styles.xml` inválido).
-- Base de datos v10 (`MIGRACION_9_10`, esquema `data/schemas/…/10.json`); respaldo DTO v4 (importa v3); archivo `.spvi` v4 (lee v3). Un cambio de esquema exige migración + esquema exportado + test.
+- Base de datos v11 (`MIGRACION_10_11`, esquema `data/schemas/…/11.json`); respaldo DTO v4 (importa v3); archivo `.spvi` v4 (lee v3). Un cambio de esquema exige migración + esquema exportado + test.
 - La firma de release debe ser **siempre la misma** (el `deviceId` de la licencia depende de ella).
 
 ## Qué se ha ejecutado y qué no
 
-Desde el **2026-10-07** el CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) ejecuta Gradle real en cada push:
-`spviTests` (825 tests JVM), `:app:lintDebug`, `:app:assembleRelease` (R8, con control de clases ausentes),
-`spviPermisos` y `tools/verificacion/api_minima.py`. El estado y los números están en
-[docs/VERIFICACION.md](docs/VERIFICACION.md).
+La última corrida remota consultada pasó 5/5 trabajos en el commit `82672fdf`; no se recuperó su conteo exacto de tests. Los cambios actuales del árbol son posteriores y **no están verificados** (este entorno no tiene Java). Consulta [docs/VERIFICACION.md](docs/VERIFICACION.md), que distingue el último CI verde de los cambios pendientes.
 
-El CI **no** ejecuta (y por tanto no verifica en cada push): Roborazzi (capturas), los 136 tests instrumentados, el
-APK en un teléfono ni la prueba con dos teléfonos (principal + secundaria). Sigue `docs/OPENCODE_DESKTOP.md` §3–§6.
+El CI compila, pero no ejecuta, los tests instrumentados; tampoco regenera capturas Roborazzi ni instala el APK en un teléfono. Para esos pasos, usa `PRUEBAS_DISPOSITIVO.md` y `CAPTURAS.md`.

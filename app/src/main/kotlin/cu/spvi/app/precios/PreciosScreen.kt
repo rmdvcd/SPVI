@@ -210,7 +210,7 @@ private fun FormularioPreajuste(state: PreciosUiState, f: PreajusteForm, accione
             SpviChip("Bajar", selected = !f.sube, onClick = { acciones.onCambiar { it.copy(sube = false) } }, icon = SpviIcons.Quitar)
         }
         SpviTextField(
-            filtro = FiltroEntrada.DECIMAL,
+            filtro = FiltroEntrada.PORCENTAJE,
             value = f.porcentaje,
             onValueChange = { v -> acciones.onCambiar { it.copy(porcentaje = v) } },
             label = "Porcentaje",
@@ -292,6 +292,9 @@ private fun FormularioPreajuste(state: PreciosUiState, f: PreajusteForm, accione
             SpviCard(tone = CardTone.Highlight, modifier = Modifier.testTag(PreciosTags.VISTA_PREVIA)) {
                 SpviSecondaryText("Así quedaría al cobrar")
                 Text(it, style = SpviTextos.dato)
+                if (state.avisoMargen) {
+                    Text(TextosPrecios.AVISO_MARGEN, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
             }
         }
     }

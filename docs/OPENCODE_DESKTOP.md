@@ -1,110 +1,79 @@
-# Compilar y dar los retoques finales con OpenCode Desktop
+# Trabajar con SPVI desde OpenCode Desktop
 
-Guía para llevar SPVI **0.26.0** desde esta carpeta hasta un APK probado en el teléfono, usando OpenCode Desktop como asistente. El código ya pasa la verificación sin Gradle (`tools/verificacion/verificar.sh`: 823 tests JVM + 38 de Room). Lo que **nunca** se ha hecho es lo de esta guía: Gradle real, lint, R8, Roborazzi y el teléfono.
+Guía vigente para orientar las tareas de compilación, verificación y prueba manual. El proyecto declara SPVI **0.30.0** (`versionCode 51`), Room **v11** y respaldo `.spvi` v4. El estado medido y las comprobaciones pendientes están en [docs/VERIFICACION.md](VERIFICACION.md); no se deben trasladar a los cambios actuales resultados de una corrida anterior.
 
-OpenCode lee `AGENTS.md` (raíz) en cada sesión y, por `opencode.json`, también `Contexto.md` y `Pendiente.md`. `Pruebas.md` tiene el orden de pruebas. El PDF de capturas está en la raíz (excluido de git). Los comandos `/compilar`, `/probar`, `/capturas`, `/release` y `/retoque` están en `.opencode/commands/`.
+## 1. Abrir y entender el proyecto
 
-## 1. Preparar el ordenador (una vez)
+1. Abre la carpeta raíz `SPVI`.
+2. Pide al agente que lea `AGENTS.md`, `README.md`, `docs/VERIFICACION.md` y el documento específico de la tarea. Para pruebas en teléfono usa [PRUEBAS_DISPOSITIVO.md](../PRUEBAS_DISPOSITIVO.md); para firma y publicación, [RELEASE.md](../RELEASE.md); para capturas, [CAPTURAS.md](../CAPTURAS.md).
+3. Conserva los cambios existentes: antes de editar, revisa `git status` y el diff. No ejecutes una inicialización que reemplace `AGENTS.md` ni dependas de `Pendiente.md`, `Pruebas.md`, `opencode.json` o comandos `/...` que no forman parte de este repositorio.
+4. Mantén los textos y la documentación en español. Si cambias comportamiento, actualiza también el manual/documentación pertinente y añade una entrada a [docs/HISTORIAL_DESARROLLO.md](HISTORIAL_DESARROLLO.md).
 
-| Qué | Versión | Nota |
+## 2. Preparar el entorno
+
+| Requisito | Versión | Nota |
 |---|---|---|
-| JDK | **17** | Android Studio trae uno («JetBrains Runtime 17»). Comprueba con `java -version`. |
-| Android Studio | Ladybug (2024.2) o posterior | Instala con él **SDK Platform 35** y **Build-Tools 35**. |
-| `ANDROID_HOME` | ruta del SDK | O crea `local.properties` en la raíz con `sdk.dir=/ruta/al/Android/Sdk` (no se sube a git). |
-| OpenCode Desktop | la última | Abre la carpeta `SPVI` como proyecto. Elige un modelo con buena capacidad para Kotlin. |
-| Teléfono | Android 8.0+ (API 26) | Activa **Opciones de desarrollador → Depuración USB**. |
+| JDK | 17 | Comprueba con `java -version`. El JBR de Android Studio sirve. |
+| Android SDK | Platform 35 | El CI requiere también Build-Tools 35.0.0. |
+| Gradle | 8.11.1 | Lo instala el wrapper del repositorio (`./gradlew`). |
+| Dispositivo | Android 8.0 / API 26 o superior | Necesario para instrumentados y pruebas manuales; puede usarse un emulador. |
 
-La primera compilación descarga Gradle 8.11.1 y las dependencias (~1 GB). Necesita internet una vez; después funciona sin conexión.
+Configura `ANDROID_HOME` o crea `local.properties` local con `sdk.dir=...` (no se versiona). La primera compilación necesita internet para descargar dependencias. Mantén desactivado el configuration cache, tal como está configurado en `gradle.properties` y en CI.
 
-## 2. Abrir el proyecto en OpenCode
+## 3. Verificación local
 
-1. **File → Open folder →** `SPVI`.
-2. En la primera sesión escribe: `Lee AGENTS.md y docs/OPENCODE_DESKTOP.md y resume en 5 líneas qué vas a respetar.` Así compruebas que cargó las reglas.
-3. **No** ejecutes `/init`: reescribiría `AGENTS.md`. Si lo haces, revisa que no se pierdan las reglas.
-
-## 3. Primera compilación — `/compilar`
+Primero comprueba el entorno:
 
 ```bash
-./gradlew --version            # Gradle 8.11.1, JVM 17
-./gradlew :app:assembleDebug
+java -version
+./gradlew --version
 ```
 
-Errores esperables en la primera vez y qué hacer:
-
-| Síntoma | Causa probable | Arreglo |
-|---|---|---|
-| `SDK location not found` | falta `local.properties` o `ANDROID_HOME` | ver §1 |
-| `Unsupported class file major version` | JDK distinto de 17 | `JAVA_HOME` al JDK 17 o *Gradle JDK* en Android Studio |
-| Error de KSP en Room o Hilt | caché de una compilación anterior | `./gradlew clean` y repetir |
-| Lint: `MissingTranslation`, `UnusedResources`… | lint nunca se ha ejecutado | arreglar o, solo si es un falso positivo, anotarlo en `app/lint.xml` explicando el motivo |
-| Resolución de dependencias | red o repositorio caído | repetir; las versiones están fijas en `gradle/libs.versions.toml` |
-
-Pide a OpenCode que **corrija solo lo que falla**, sin refactorizar, y que repita hasta que compile. El APK queda en `app/build/outputs/apk/debug/app-debug.apk` (paquete `cu.spvi.app.debug`).
-
-## 4. Tests y comprobación completa — `/probar`
+Después puedes reproducir por separado las comprobaciones del CI:
 
 ```bash
-./gradlew spviTests     # deben salir 823 tests JVM (core 16, licencia 98, domain 238, data 92, designsystem 26, app 353)
-./gradlew spviCheck     # tests + lintDebug + assembleDebug + spviPermisos
+# Tests JVM y compilación de los tests instrumentados (estos no se ejecutan aquí)
+./gradlew spviTests :data:compileDebugAndroidTestKotlin :app:compileDebugAndroidTestKotlin
+
+# Lint
+./gradlew :app:lintDebug
+
+# APK debug y release con R8. Release exige el repositorio público de actualizaciones.
+./gradlew :app:assembleDebug :app:assembleRelease -PspviGithubRepo=rmdvcd/SPVI
+
+# Manifiestos fusionados
+./gradlew spviPermisos
+
+# Ejecutar después de compilar el bytecode debug
+python3 tools/verificacion/api_minima.py
 ```
 
-Si una cifra no coincide, que OpenCode compare con `README.md` («Última verificación») antes de tocar nada: un test que Gradle ejecuta y `verificar.sh` no (o al revés) se explica, no se borra.
+`./gradlew spviCheck` agrupa tests JVM, lint, APK debug y permisos; no compila los tests instrumentados. `./gradlew spviRelease -PspviGithubRepo=rmdvcd/SPVI` añade los AAB y APK de release a esas comprobaciones. La firma requiere el keystore real; el CI genera el APK de release sin firmar.
 
-Los 37 tests de Room de `data/src/androidTest` corren de verdad en un emulador o teléfono con `./gradlew spviInstrumentedTests`.
+**Estado de este árbol:** Java no está instalado en el entorno de desarrollo actual. No se ejecutaron Gradle, tests, lint, R8 ni compilaciones instrumentadas sobre los cambios locales; la última corrida remota está registrada por separado en [docs/VERIFICACION.md](VERIFICACION.md). No afirmes que el árbol actual pasó hasta que se verifique.
 
-## 5. Capturas reales — `/capturas`
+## 4. Pruebas con dispositivo
+
+Los tests instrumentados necesitan un emulador o teléfono conectado con API 26 o superior:
+
+```bash
+./gradlew spviInstrumentedTests
+```
+
+El CI compila los instrumentados, pero no los ejecuta. Para migraciones de Room, permisos en Android, biometría, selector de archivos, QR/cámara, actualización y sincronización de dos teléfonos, sigue [PRUEBAS_DISPOSITIVO.md](../PRUEBAS_DISPOSITIVO.md). Antes de instalar un release, revisa [RELEASE.md](../RELEASE.md). Usa datos ficticios: importar un respaldo reemplaza los datos locales.
+
+## 5. Capturas de interfaz
+
+Las capturas Roborazzi se generan aparte y no se incluyen en `spviTests` ni `spviCheck`:
 
 ```bash
 ./gradlew :app:recordRoborazziDebug
 ```
 
-Genera las capturas claro/oscuro en `app/build/outputs/roborazzi/` (ver `CAPTURAS.md`). Compáralas con el PDF entregado `SPVI_0.26.0_capturas_y_exportaciones.pdf`: las maquetas de ese PDF son HTML hechas a mano, así que la **referencia es la captura real**. Si ves cortes de texto, contraste bajo o diferencias de diseño, pide el arreglo con `/retoque`.
+Para revisar diferencias o detalles del arnés, consulta [CAPTURAS.md](../CAPTURAS.md). Robolectric no sustituye una prueba visual en un teléfono; en particular, no ejecuta la vista real de CameraX ni los diálogos del sistema.
 
-## 6. En el teléfono
+## 6. Firma y publicación
 
-1. `./gradlew :app:installDebug` (teléfono conectado) o copia el APK.
-2. Sigue la tabla de **RELEASE.md §6** (pruebas de humo 1–20). Las filas 13–16 son de la 0.25.1 y las 17–20, de la 0.26.0 (fondo asignado, reinstalar sin reiniciar la prueba, con y sin permiso de fotos, actualización obligatoria):
-   - compartir un turno en PDF y Excel;
-   - modificar una venta añadiendo un artículo y cambiando a Transferencia;
-   - en una secundaria, «Ahora no» y después «Contar»;
-   - licencia vencida → campo de recuperación.
-3. **Dos teléfonos** (principal + secundaria en la misma wifi):
-   - vincular con el QR;
-   - vender en la secundaria y ver la venta en la principal;
-   - pedir el cierre desde la principal y contar la caja en la secundaria;
-   - aprobar el cierre;
-   - repartir una actualización por la red local.
-4. Abre los Excel exportados con Excel o LibreOffice: **no** debe salir «encontró un problema con el contenido».
+`assembleRelease`, `bundleRelease` y `spviRelease` requieren `spviGithubRepo` con formato `propietario/repositorio`, porque la app consulta actualizaciones y revocaciones en ese destino. Usa `-PspviGithubRepo=rmdvcd/SPVI` o una configuración local no versionada. No guardes secretos en `gradle.properties` del repositorio.
 
-Anota lo que falle (pantalla, pasos, qué esperabas) y pásaselo a OpenCode con `/retoque`.
-
-## 7. Release firmado — `/release`
-
-Sigue **RELEASE.md** desde §1:
-
-1. Crea el keystore **una sola vez** y guárdalo en dos sitios.
-2. Crea `keystore.properties`.
-3. Si ya tienes el repositorio de GitHub para las actualizaciones, añade `spviGithubRepo=usuario/repositorio` en `gradle.properties`. Sin él, la app no consulta GitHub: ni actualizaciones ni revocaciones.
-4. Ejecuta `./gradlew spviRelease`.
-5. Prueba el APK **de release** en el teléfono (R8 puede romper la serialización: revisa `missing_rules.txt` y añade reglas en `app/proguard-rules.pro`).
-
-## 8. Retoques pendientes conocidos
-
-| # | Pendiente | Dónde | Cómo |
-|---|---|---|---|
-| 1 | Repositorio GitHub de actualizaciones sin configurar | `gradle.properties` → `spviGithubRepo` | Crear el repo público y publicar la release (RELEASE.md §8) |
-| 2 | Lint nunca ejecutado | `./gradlew :app:lintDebug` | Corregir avisos reales; no desactivar reglas en bloque |
-| 3 | R8 nunca probado | `assembleRelease` | Probar compra, respaldo, licencia y sincronización con el APK de release |
-| 4 | Capturas Roborazzi nunca generadas | §5 | Revisar textos cortados con letra al 200 % |
-| 5 | Prueba con dos teléfonos | §6.3 | Vinculación, sincronización, cierre pedido, APK por LAN |
-| 6 | PDF real en el teléfono | Registros/Turnos → Compartir → PDF | Confirmar que coincide con las muestras del PDF entregado (hojas horizontales con más de 5 columnas) |
-| 7 | GL (generador de licencias) | `docs/GL_PROMPT_0.25.md` | Recuperación automática y `revocadas.json` firmado |
-
-## 9. Cómo pedir cambios a OpenCode (plantilla)
-
-```
-/retoque <pantalla o archivo>: <qué pasa> → <qué quieres>.
-Ejemplo: /retoque Registros → Turnos → Compartir: con letra al 200 % el texto de la hoja se corta → que ocupe 3 líneas.
-```
-
-El comando recuerda las reglas: cambio mínimo, español, design system, sin permisos nuevos, test si cambia la lógica, `spviTests` en verde y una entrada en `docs/HISTORIAL_DESARROLLO.md`. Si el cambio altera lo que ve el usuario, también actualiza `MANUAL_USUARIO.md`.
+Configura el keystore de release según [RELEASE.md](../RELEASE.md); no lo añadas al repositorio y conserva siempre la misma clave. No publiques hasta completar la verificación de código, la prueba de humo y la lista de dispositivo.

@@ -49,7 +49,11 @@ class PreciosLogicTest {
     @Test fun vistaPreviaConElPrimerProductoElegido() {
         val ps = listOf(prod(1, "Refresco", venta = 100), prod(2, "Pan", venta = 50))
         assertEquals("Pan: 50.00 CUP → 55.00 CUP", vistaPrevia(PreajusteForm(porcentaje = "10", productoIds = setOf(2)), ps))
-        assertEquals("Refresco: 100.00 CUP → 10.00 CUP", vistaPrevia(PreajusteForm(porcentaje = "90", sube = false, productoIds = setOf(1)), ps))
+        val seguro = PreajusteForm(porcentaje = "10", productoIds = setOf(2))
+        val bajoCosto = PreajusteForm(porcentaje = "90", sube = false, productoIds = setOf(1))
+        assertEquals("Refresco: 100.00 CUP → 10.00 CUP", vistaPrevia(bajoCosto, ps))
+        assertTrue(ajusteNoSuperaCosto(bajoCosto, ps))
+        assertTrue(!ajusteNoSuperaCosto(seguro, ps))
         assertNull(vistaPrevia(PreajusteForm(porcentaje = "10"), ps))
     }
 

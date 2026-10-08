@@ -23,6 +23,7 @@ object TextosPrecios {
     const val ERROR_IMPORTE = "Escribe un importe mayor que 0, por ejemplo 5000"
     const val ERROR_PRODUCTOS = "Elige al menos un producto"
     const val ERROR_NOMBRE = "El nombre es demasiado largo"
+    const val AVISO_MARGEN = "Con este ajuste, al menos un precio quedaría en o por debajo del costo. SPVI impedirá confirmar esa venta."
     const val ERROR_GENERICO = "No se pudo guardar. Inténtalo de nuevo."
     const val MAX_LISTA = 50
 }
@@ -109,6 +110,13 @@ fun vistaPrevia(f: PreajusteForm, productos: List<Producto>): String? {
     val p = productos.firstOrNull { it.id in f.productoIds } ?: return null
     val nuevo = p.precioVenta.ajustar(pb).let { if (it.isNegative) Cup.ZERO else it }
     return "${p.nombreCompleto}: ${Money.format(p.precioVenta)} → ${Money.format(nuevo)}"
+}
+
+/** Aviso del ejemplo si este ajuste, por sí solo, ya rebasa el margen del producto seleccionado. */
+fun ajusteNoSuperaCosto(f: PreajusteForm, productos: List<Producto>): Boolean {
+    val pb = f.puntosBasicos ?: return false
+    if (pb >= 0) return false
+    return productos.any { it.id in f.productoIds && it.precioVenta.ajustar(pb) <= it.precioCosto }
 }
 
 /** Búsqueda literal por nombre, descripción o categoría; como máximo [TextosPrecios.MAX_LISTA] resultados. */

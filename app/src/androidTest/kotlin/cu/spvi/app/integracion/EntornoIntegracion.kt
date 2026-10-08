@@ -65,8 +65,9 @@ import kotlinx.coroutines.flow.StateFlow
  * Prompt 15 — entorno de los tests de integración de :app.
  *
  * Datos de negocio REALES: Room en memoria + repositorios de :data (productos, insumos, turnos, ventas, precios,
- * respaldo). Se simulan solo los bordes que dependen del dispositivo o de terceros: Keystore/DataStore (perfil,
- * preferencias, licencia), cámara y selector de archivos del sistema.
+ * respaldo). Se sustituyen los repositorios de perfil, preferencias, configuración inicial y licencia, además del
+ * acceso al selector de archivos del sistema. Los archivos compartidos se inyectan mediante EntradaCompartida;
+ * estos flujos no arrancan la cámara ni consultan servicios públicos de catálogo.
  */
 class EntornoIntegracion(licencia: LicenseState = LicenseState.Trial(5)) {
     var ahora: Instant = Instant.parse("2026-09-30T16:00:00Z") // 12:00 en La Habana

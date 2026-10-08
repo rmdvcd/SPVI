@@ -1,12 +1,12 @@
-# SPVI — Historial de desarrollo (Prompts 1–15)
+# SPVI — Historial de desarrollo
 
-Registro **histórico** de lo que se implementó en cada fase y de las suposiciones que se tomaron en ese momento, tal como figuraba en el README hasta la versión 0.12.0. Se conserva para trazabilidad.
+Registro cronológico de decisiones y cambios. La primera parte conserva la crónica original de los Prompts 1–15 tal como figuraba en el README hasta la versión 0.12.0; después se añadieron entradas de versiones y tareas posteriores, hasta el trabajo de F1. Las afirmaciones antiguas describen su momento y no necesariamente el producto actual.
 
-> **Prevalece la documentación actual.** Si algo de este historial contradice a [README.md](../README.md), [SECURITY.md](../SECURITY.md), [FORMATOS.md](../FORMATOS.md), [LICENSE_CLIENT.md](../LICENSE_CLIENT.md) o [UI_UX_IX.md](../UI_UX_IX.md), vale lo que dicen esos documentos. Las fases posteriores sustituyen a las anteriores.
+> **Prevalece la documentación vigente y el código.** Si algo de este historial contradice a [AGENTS.md](../AGENTS.md), [README.md](../README.md), [MANUAL_USUARIO.md](../MANUAL_USUARIO.md), [PRUEBAS_DISPOSITIVO.md](../PRUEBAS_DISPOSITIVO.md), [docs/VERIFICACION.md](VERIFICACION.md), [RELEASE.md](../RELEASE.md), [SECURITY.md](../SECURITY.md), [FORMATOS.md](../FORMATOS.md), [LICENSE_CLIENT.md](../LICENSE_CLIENT.md) o [UI_UX_IX.md](../UI_UX_IX.md), valen esos documentos y el comportamiento medido del código. Las fases posteriores sustituyen a las anteriores.
 
 ## Afirmaciones superadas
 
-| Dónde (abajo) | Decía | Estado actual (0.12.0) |
+| Dónde (abajo) | Decía | Estado al cierre de 0.12.0 (histórico) |
 |---|---|---|
 | Suposiciones domain/data, 13 | Exportar como imagen/tarjetas es trabajo de la UI (fase 5) | Implementado: Tarjetas (Prompt 8) e Imagen = lista de precios PNG (Prompt 14) |
 | Prompt 5, suposición 1 | Todavía no existe ninguna llamada de red | Desde el Prompt 8 el escáner consulta 4 bases públicas, solo con consentimiento |
@@ -1170,7 +1170,7 @@ Ver [PLAN_ANTIREINSTALACION.md](PLAN_ANTIREINSTALACION.md).
 
 ## Limpieza para OpenCode (0.26.0)
 
-Se retiraron los documentos de trabajo antiguos: `docs/PLAN_0.25.md`, `docs/DEPURACION_0.21.6.md`, `docs/PRUEBAS_0.21.9.md`, `docs/PRUEBA_ESCANER.md` y `REVISION_FINAL.md`. Su contenido vigente está en este historial (Prompts 53, 55, 58 y 70), en `Contexto.md`, `Pruebas.md` y `Pendiente.md`. Las menciones que quedan arriba son históricas.
+Se retiraron documentos de trabajo antiguos: `docs/PLAN_0.25.md`, `docs/DEPURACION_0.21.6.md`, `docs/PRUEBAS_0.21.9.md`, `docs/PRUEBA_ESCANER.md` y `REVISION_FINAL.md`. En aquella limpieza se remitía también a `Pruebas.md` y `Pendiente.md`; esos archivos ya no forman parte del proyecto. Para el estado vigente consulta `Contexto.md`, `docs/VERIFICACION.md` y `PRUEBAS_DISPOSITIVO.md`. Las menciones a documentos retirados en esta entrada describen aquella limpieza histórica, no instrucciones actuales.
 
 ## 0.27.0 · Claves de GL del 05/10/2026
 
@@ -1343,7 +1343,9 @@ Primera vez que el repositorio se verifica solo: GitHub Actions ejecuta Gradle r
   [VERIFICACION.md](VERIFICACION.md).
 - **Pendiente (T0.6):** instalar el APK en un teléfono real y probar dos teléfonos (principal + secundaria).
 
-## 0.30.1 — F1 (1/2): trabajo pesado fuera del hilo principal (2026-10-07)
+## Trabajo posterior a 0.30.0 — F1 (1/2): trabajo pesado fuera del hilo principal (2026-10-07)
+
+La etiqueta de este bloque agrupa el trabajo de F1; no indica una versión publicada. La versión de la app sigue siendo la que declaran `app/build.gradle.kts` y [README.md](../README.md): 0.30.0 (`versionCode 51`).
 
 - **T1.1** `@IoDispatcher` se traslada de `cu.spvi.data.di` a `cu.spvi.domain.di` (antes no se podía usar desde
   los casos de uso). `ObtenerGraficosPeriodo` y `ObtenerResumenGeneral` envuelven todo su cuerpo en

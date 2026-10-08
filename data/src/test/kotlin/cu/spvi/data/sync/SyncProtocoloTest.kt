@@ -106,6 +106,16 @@ class SyncProtocoloTest {
         assertEquals(Rechazo(Rechazo.CODIGO_VENCIDO), Saludos.recibir(ByteArrayInputStream(out.toByteArray())))
     }
 
+    @Test fun saludoGrandeSeRechazaAntesDeLeerOReservarLaTrama() {
+        val cabecera = ByteArrayOutputStream().also { java.io.DataOutputStream(it).writeInt(Saludos.MAX_SALUDO + 1) }.toByteArray()
+        falla { Saludos.recibir(ByteArrayInputStream(cabecera)) }
+    }
+
+    @Test fun limiteEspecificoDeTramaSeCompruebaAntesDeLeerElContenido() {
+        val cabecera = ByteArrayOutputStream().also { java.io.DataOutputStream(it).writeInt(5) }.toByteArray()
+        falla { Tramas.leer(ByteArrayInputStream(cabecera), maxBytes = 4) }
+    }
+
     @Test fun licenciaDeLaPrincipalViajaSinIdsYSeReconstruye() {
         val ahora = Instant.parse("2026-10-02T12:00:00Z")
         val prueba = LicenciaPrincipal.de(LicenseState.Trial(3), ahora)

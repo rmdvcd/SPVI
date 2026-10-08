@@ -4,6 +4,7 @@ import android.app.KeyguardManager
 import android.content.Context
 import android.os.SystemClock
 import androidx.activity.compose.BackHandler
+import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.BiometricPrompt
@@ -116,6 +117,26 @@ object Autenticador {
     /** ¿El teléfono tiene bloqueo de pantalla (PIN, patrón, contraseña)? Sin él, la opción aparece desactivada. */
     fun disponible(context: Context): Boolean =
         ContextCompat.getSystemService(context, KeyguardManager::class.java)?.isDeviceSecure == true
+
+    /** ¿Hay biometría inscrita y compatible? Para respaldos sin contraseña no se acepta PIN como sustituto. */
+    fun biometriaDisponible(context: Context): Boolean =
+        BiometricManager.from(context).canAuthenticate(BIOMETRIC_WEAK) == BiometricManager.BIOMETRIC_SUCCESS
+
+    /** Pide solo biometría (huella/cara): autoriza la acción en pantalla, no deriva ni guarda claves del archivo. */
+    fun pedirBiometria(activity: FragmentActivity, titulo: String, alConfirmar: () -> Unit, alFallar: () -> Unit) {
+        val prompt = BiometricPrompt(
+            activity, ContextCompat.getMainExecutor(activity),
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) = alConfirmar()
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) = alFallar()
+            },
+        )
+        val info = BiometricPrompt.PromptInfo.Builder()
+            .setTitle(titulo)
+            .setAllowedAuthenticators(BIOMETRIC_WEAK)
+            .build()
+        runCatching { prompt.authenticate(info) }.onFailure { alFallar() }
+    }
 
     /**
      * BIOMETRIC_WEAK | DEVICE_CREDENTIAL: la combinación que la librería admite en todas las versiones (26+); el PIN o

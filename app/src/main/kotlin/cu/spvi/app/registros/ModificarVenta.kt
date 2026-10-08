@@ -46,6 +46,7 @@ import cu.spvi.core.money.Money
 import cu.spvi.core.money.sumOfCup
 import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
+import cu.spvi.designsystem.component.FiltroEntrada
 import cu.spvi.designsystem.component.IconActionStyle
 import cu.spvi.designsystem.component.SpviButtonRow
 import cu.spvi.designsystem.component.SpviIconAction
@@ -391,6 +392,7 @@ fun ModificarVentaContent(s: ModificarVentaUiState, a: AccionesModificar) {
             if (s.buscando) {
                 item {
                     SpviTextField(
+                        filtro = FiltroEntrada.BUSQUEDA,
                         value = s.busqueda, onValueChange = a.onBuscar, label = TextosModificar.BUSCAR,
                         modifier = Modifier.fillMaxWidth().testTag(ModificarTags.BUSCAR),
                     )
@@ -435,6 +437,7 @@ fun ModificarVentaContent(s: ModificarVentaUiState, a: AccionesModificar) {
             }
             item {
                 SpviTextField(
+                    filtro = FiltroEntrada.NOMBRE,
                     value = s.motivo, onValueChange = a.onMotivo, label = "${TextosAnulacion.MOTIVO} *",
                     supportingText = TextosAnulacion.MOTIVO_AYUDA, modifier = Modifier.fillMaxWidth().padding(top = SpviSpacing.md).testTag(VentaAccionesTags.MOTIVO),
                 )

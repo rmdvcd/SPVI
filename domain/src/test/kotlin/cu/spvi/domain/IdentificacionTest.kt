@@ -99,7 +99,7 @@ class IdentificacionTest {
 
     @Test fun losServiciosSiguenLaMismaRegla() = runTest {
         val servicios = FakeServicios()
-        val g = GuardarServicio(servicios, FixedClock())
+        val g = GuardarServicio(servicios, insumos, FixedClock())
         fun s(nombre: String, d: String? = null) = Servicio(nombre = nombre, tipo = "Peluquería", importe = Cup.ofPesos(300), descripcion = d, creadoEn = T0)
         assertTrue(g(s("Corte"), emptyList()) is AppResult.Ok)
         assertEquals(AppError.Validacion("descripcion", AppError.Regla.REQUERIDO), (g(s("corte"), emptyList()) as AppResult.Err).error)

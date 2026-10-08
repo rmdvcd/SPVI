@@ -287,6 +287,7 @@ fun DialogoMovimientoCaja(trabajando: Boolean, onConfirmar: (TipoMovimientoCaja,
                 modifier = Modifier.fillMaxWidth().testTag(CajaTags.IMPORTE),
             )
             SpviTextField(
+                filtro = FiltroEntrada.NOMBRE,
                 value = motivo, onValueChange = { motivo = it.take(MovimientoCaja.MOTIVO_MAX) }, label = "${TextosCaja.MOTIVO} *",
                 supportingText = TextosCaja.MOTIVO_AYUDA,
                 modifier = Modifier.fillMaxWidth().testTag(CajaTags.MOTIVO),

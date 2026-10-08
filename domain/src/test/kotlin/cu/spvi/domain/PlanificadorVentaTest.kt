@@ -53,6 +53,30 @@ class PlanificadorVentaTest {
         assertTrue(ef.ajustes.isEmpty())
     }
 
+    @Test fun `precio base igual o menor al costo no se puede cotizar`() {
+        listOf(60L, 59L).forEach { venta ->
+            val p = ps + (1L to ps.getValue(1).copy(precioVenta = Cup.ofPesos(venta)))
+            val r = PlanificadorVenta.cotizar(listOf(LineaSolicitada(1, 1)), p, MetodoPago.EFECTIVO, emptyList())
+            assertEquals(AppError.Validacion("precioVenta", AppError.Regla.RANGO), (r as AppResult.Err).error)
+        }
+    }
+
+    @Test fun `descuento que deja precio igual o menor al costo bloquea la venta`() {
+        val pa = PreajustePrecios(1, "40 %", -4_000, setOf(1))
+        val r = PlanificadorVenta.cotizar(listOf(LineaSolicitada(1, 1)), ps, MetodoPago.EFECTIVO, listOf(pa))
+        assertEquals(AppError.Validacion("precioVenta", AppError.Regla.RANGO), (r as AppResult.Err).error)
+    }
+
+    @Test fun `costo efectivo de receta tambien se compara con el precio base`() {
+        val elaborado = producto(3, categoria = cu.spvi.domain.model.Categorias.ELABORADO, venta = 100, costo = 10)
+        val r = PlanificadorVenta.cotizar(
+            lineas = listOf(LineaSolicitada(3, 1)), productos = mapOf(3L to elaborado),
+            metodoPago = MetodoPago.EFECTIVO, preajustes = emptyList(), alcanza = mapOf(3L to 1),
+            costosReceta = mapOf(3L to Cup.ofPesos(100)),
+        )
+        assertEquals(AppError.Validacion("precioVenta", AppError.Regla.RANGO), (r as AppResult.Err).error)
+    }
+
     @Test fun `producto eliminado no se vende`() {
         val m = ps + (1L to ps.getValue(1).copy(eliminado = true))
         assertEquals(AppError.NoEncontrado, (PlanificadorVenta.cotizar(listOf(LineaSolicitada(1, 1)), m, MetodoPago.EFECTIVO, emptyList()) as AppResult.Err).error)

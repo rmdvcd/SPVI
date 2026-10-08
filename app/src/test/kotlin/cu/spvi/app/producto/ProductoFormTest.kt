@@ -43,6 +43,12 @@ class ProductoFormLogicTest {
         assertNull(receta)
     }
 
+    @Test fun precioDeVentaDebeSuperarElCostoEnElFormulario() {
+        assertEquals("El precio de venta debe superar el costo.", ProductoFormLogic.validar(base.copy(precioVenta = "60"))[Campos.PRECIO_VENTA])
+        assertEquals("El precio de venta debe superar el costo.", ProductoFormLogic.validar(base.copy(precioVenta = "59.99"))[Campos.PRECIO_VENTA])
+        assertNull(ProductoFormLogic.validar(base.copy(precioVenta = "60.01"))[Campos.PRECIO_VENTA])
+    }
+
     @Test fun descripcionResumidaConAyudaYMensajes() { // 0.24.0
         assertEquals("Lo que lo distingue de otros con el mismo nombre · 20/40", ProductoFormLogic.ayudaDescripcion("Lata 350 ml Superior"))
         val largo = ProductoFormLogic.validar(base.copy(descripcion = "x".repeat(41)))
@@ -60,7 +66,7 @@ class ProductoFormLogicTest {
         assertEquals("Elige o escribe una categoría.", e[Campos.CATEGORIA])
         assertEquals("Escribe el nombre.", e[Campos.NOMBRE])
         assertEquals(ProductoFormLogic.FORMATO_IMPORTE, e[Campos.PRECIO_COSTO])
-        assertEquals("El precio de venta debe ser mayor que 0.", e[Campos.PRECIO_VENTA])
+        assertEquals("El precio de venta debe superar el costo.", e[Campos.PRECIO_VENTA])
         assertEquals(ProductoFormLogic.FORMATO_ENTERO, e[Campos.CANTIDAD])
         assertTrue(e.getValue(Campos.NIVEL_CRITICO).contains("no mayor que el nivel bajo"))
         assertNull(ProductoFormLogic.aProducto(ProductoForm(), T0))

@@ -57,6 +57,7 @@ object InsumoFormLogic {
             when {
                 pv == null -> e[CamposInsumo.PRECIO_VENTA] = ProductoFormLogic.FORMATO_IMPORTE
                 pv <= Cup.ZERO -> e[CamposInsumo.PRECIO_VENTA] = "El precio de venta debe ser mayor que 0 (o déjalo vacío)."
+                precio != null && pv <= precio -> e[CamposInsumo.PRECIO_VENTA] = "El precio de venta debe superar el costo del insumo."
             }
         }
         if (f.nivelBajo.isNotBlank() && Cantidad.parse(f.nivelBajo) == null) e[CamposInsumo.NIVEL_BAJO] = FORMATO_CANTIDAD
@@ -93,7 +94,9 @@ object InsumoFormLogic {
             CamposInsumo.CANTIDAD -> "La cantidad no puede ser negativa."
             CamposInsumo.NIVEL_BAJO -> "El nivel bajo no puede ser negativo."
             CamposInsumo.NIVEL_CRITICO -> "El nivel crítico debe ser 0 o más y no mayor que el nivel bajo."
-            CamposInsumo.PRECIO_VENTA -> "El precio de venta debe ser mayor que 0 (o déjalo vacío)."
+            CamposInsumo.PRECIO_VENTA -> if (e.regla == AppError.Regla.RANGO) "El precio de venta debe superar el costo del insumo (o déjalo vacío)." else "Escribe un precio válido o déjalo vacío."
+            "costoElaborados" -> "Ese costo dejaría un elaborado en o por debajo de su costo. Sube primero su precio de venta."
+            "costoServicios" -> "Ese costo dejaría un servicio en o por debajo del costo de sus insumos. Sube primero su importe."
             else -> null
         }
         else -> null

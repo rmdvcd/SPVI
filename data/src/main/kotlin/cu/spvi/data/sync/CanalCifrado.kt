@@ -85,10 +85,12 @@ object Tramas {
         d.flush()
     }
 
-    fun leer(input: InputStream): ByteArray {
+    /** Comprueba el límite específico del tipo de trama antes de reservar memoria. */
+    fun leer(input: InputStream, maxBytes: Int = MAX_TRAMA): ByteArray {
+        require(maxBytes in 0..MAX_TRAMA)
         val d = DataInputStream(input)
         val n = try { d.readInt() } catch (e: EOFException) { throw e }
-        if (n < 0 || n > MAX_TRAMA) throw ProtocoloException("trama de $n bytes")
+        if (n < 0 || n > maxBytes) throw ProtocoloException("trama de $n bytes (máximo $maxBytes)")
         return ByteArray(n).also { d.readFully(it) }
     }
 
@@ -173,9 +175,11 @@ class CanalCifrado(
 object Saludos {
     fun enviar(out: OutputStream, s: Saludo) = Tramas.escribir(out, SyncJson.encodeToString(Saludo.serializer(), s).toByteArray(Charsets.UTF_8))
 
+    const val MAX_SALUDO = 64 * 1024
+
     fun recibir(input: InputStream): Saludo {
-        val t = Tramas.leer(input)
-        if (t.size > 64 * 1024) throw ProtocoloException("saludo demasiado grande")
+        // El tamaño se valida en la cabecera, antes de que Tramas asigne la memoria.
+        val t = Tramas.leer(input, MAX_SALUDO)
         return try {
             SyncJson.decodeFromString(Saludo.serializer(), String(t, Charsets.UTF_8))
         } catch (e: Exception) {
