@@ -236,6 +236,21 @@ class Version025Test {
         assertFalse(InfoApp("0.25.0", 46, "https://evil/x").repoConfigurado)
     }
 
+    @Test fun ajustesAvisanTrasCatorceDiasSinRespuestaCorrecta() {
+        assertTrue("nunca hubo comprobación correcta", Actualizaciones.avisoSinComprobacion(T0, EstadoApp(), true))
+        assertFalse(Actualizaciones.avisoSinComprobacion(
+            T0, EstadoApp(ultimaComprobacion = T0.minus(Duration.ofDays(13)).minusSeconds(86_399)), true,
+        ))
+        val atrasada = EstadoApp(ultimaComprobacion = T0.minus(Duration.ofDays(14)))
+        assertTrue(Actualizaciones.avisoSinComprobacion(T0, atrasada, true))
+        assertEquals(14L, Actualizaciones.diasDesdeComprobacion(T0, atrasada))
+        assertFalse("no se consulta si el build no tiene repositorio", Actualizaciones.avisoSinComprobacion(T0, EstadoApp(), false))
+
+        val relojAtrasado = EstadoApp(ultimaComprobacion = T0.plusSeconds(60))
+        assertTrue(Actualizaciones.avisoSinComprobacion(T0, relojAtrasado, true))
+        assertNull(Actualizaciones.diasDesdeComprobacion(T0, relojAtrasado))
+    }
+
     @Test fun avisoSoloSiEsMasNueva() {
         val info = InfoActualizacion("0.25.1", "https://github.com/u/spvi/releases/tag/v0.25.1")
         assertEquals(info, Actualizaciones.aviso(EstadoApp(disponible = info), "0.25.0"))

@@ -30,6 +30,7 @@ import cu.spvi.licencia.prueba.RegistroPrueba
 import cu.spvi.licencia.prueba.combinarCopias
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
+import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
@@ -50,6 +51,9 @@ enum class CopiaPrueba { INTERNA, IMAGENES, DESCARGAS, DOCUMENTOS }
  *  - DESCARGAS / DOCUMENTOS: `.sys_<huella>.bin`. En Android 8–9 se leen siempre (con el permiso de almacenamiento);
  *    en 10+ Android no deja a una instalación nueva leer las de la anterior: sirven dentro de la misma instalación.
  * Todo en [io]. Nunca lanza: una copia inaccesible no cuenta, una que no descifra se ignora y se reescribe (no bloquea).
+ * Las lecturas (incluidas las tres consultas de MediaStore) se guardan solo en memoria: caducan al cambiar el día local,
+ * cambiar el permiso de lectura o vencer seis horas. Un proceso/instalación nueva empieza sin caché; las escrituras
+ * propias actualizan la caché sin volver a consultar MediaStore.
  */
 @Singleton
 class RegistroPruebaAndroid @Inject constructor(
@@ -64,6 +68,8 @@ class RegistroPruebaAndroid @Inject constructor(
     override val info: StateFlow<InfoRegistroPrueba?> = _info.asStateFlow()
     /** Se fija en la primera lectura del proceso: ¿faltaba la copia interna? */
     @Volatile private var instalacionNueva: Boolean? = null
+    /** Evita repetir las tres consultas de MediaStore en cada vuelta a primer plano. */
+    private val cacheLecturas = CacheLecturas<Map<CopiaPrueba, List<Pair<Uri?, LecturaCopia>>>>()
 
     override val permisoLectura: String =
         if (Build.VERSION.SDK_INT >= 33) Manifest.permission.READ_MEDIA_IMAGES
@@ -76,17 +82,29 @@ class RegistroPruebaAndroid @Inject constructor(
     override suspend fun marcarPermisoPedido() = ds.put(K_PEDIDO, "1")
 
     override suspend fun sincronizar(trialStart: Long?, lastSeen: Long?, trialDays: Int): CopiasCombinadas<*> = withContext(io) {
-        val lecturas = leerTodas()
+        val ahoraMonotono = SystemClock.elapsedRealtime()
+        val diaLocal = LocalDate.now().toEpochDay()
+        val permisoActual = lecturaPermitida()
+        val lecturas = cacheLecturas.obtener(ahoraMonotono, diaLocal, permisoActual) { leerTodas() }
         val comb = combinarCopias(lecturas.mapValues { (_, v) -> v.map { it.second } })
         if (instalacionNueva == null) instalacionNueva = lecturas[CopiaPrueba.INTERNA].orEmpty().none { it.second is LecturaCopia.Valida }
         val inicio = listOfNotNull(comb.firstInstall, trialStart).minOrNull()
         if (inicio != null) {
             val ultima = listOfNotNull(comb.lastSeen, lastSeen).maxOrNull()
             val objetivo = RegistroPrueba(firstInstall = inicio, trialDays = trialDays, lastSeen = ultima)
+            var lecturasActualizadas = lecturas
+            var cambioCache = false
             for (copia in CopiaPrueba.entries) {
                 val actual = lecturas[copia] ?: continue // inaccesible (sin permiso en Android 8–9)
-                if (actual.none { (_, l) -> l is LecturaCopia.Valida && alDia(l.registro, objetivo) }) escribir(copia, objetivo, actual.map { it.first })
+                if (actual.none { (_, l) -> l is LecturaCopia.Valida && alDia(l.registro, objetivo) }) {
+                    val escritura = escribir(copia, objetivo, actual.map { it.first }) ?: continue
+                    val lista = (lecturasActualizadas[copia].orEmpty().filterNot { it.first == escritura.uri } +
+                        (escritura.uri to LecturaCopia.Valida(objetivo)))
+                    lecturasActualizadas = lecturasActualizadas + (copia to lista)
+                    cambioCache = true
+                }
             }
+            if (cambioCache) cacheLecturas.reemplazar(SystemClock.elapsedRealtime(), diaLocal, lecturasActualizadas, permisoActual)
         }
         _info.value = InfoRegistroPrueba(
             instalacionNueva = instalacionNueva == true,
@@ -151,23 +169,23 @@ class RegistroPruebaAndroid @Inject constructor(
 
     // ------------------------------------------------------------------------------------------------ escritura
 
-    private fun escribir(copia: CopiaPrueba, r: RegistroPrueba, uris: List<Uri?>) {
+    private fun escribir(copia: CopiaPrueba, r: RegistroPrueba, uris: List<Uri?>): ResultadoEscritura? {
         val blob = cifrado.cifrar(r)
         val datos = if (copia == CopiaPrueba.IMAGENES) PngRegistro.crear(blob) else blob
-        runCatching {
+        return runCatching {
             when {
-                copia == CopiaPrueba.INTERNA -> atomico(interna(), datos)
-                Build.VERSION.SDK_INT >= 29 -> escribirMediaStore(copia, datos, uris.filterNotNull())
-                else -> legado(copia).let { f -> f.parentFile?.mkdirs(); atomico(f, datos) }
+                copia == CopiaPrueba.INTERNA -> { atomico(interna(), datos); ResultadoEscritura(null) }
+                Build.VERSION.SDK_INT >= 29 -> escribirMediaStore(copia, datos, uris.filterNotNull())?.let(::ResultadoEscritura)
+                else -> legado(copia).let { f -> f.parentFile?.mkdirs(); atomico(f, datos); ResultadoEscritura(null) }
             }
-        }
+        }.getOrNull()
     }
 
     /** Primero sobre una entrada propia (las de otra instalación no dejan escribir); si no hay, una nueva. */
-    private fun escribirMediaStore(copia: CopiaPrueba, datos: ByteArray, existentes: List<Uri>) {
+    private fun escribirMediaStore(copia: CopiaPrueba, datos: ByteArray, existentes: List<Uri>): Uri? {
         for (uri in existentes) {
             val ok = runCatching { cr.openOutputStream(uri, "wt")?.use { it.write(datos) } != null }.getOrDefault(false)
-            if (ok) return
+            if (ok) return uri
         }
         val (coleccion, ruta, nombre, mime) = when (copia) {
             CopiaPrueba.IMAGENES -> Destino(imagenes(), RUTA_IMAGENES, Ofuscado.nombreImagen(), "image/png")
@@ -179,11 +197,13 @@ class RegistroPruebaAndroid @Inject constructor(
             put(MediaStore.MediaColumns.MIME_TYPE, mime)
             put(MediaStore.MediaColumns.RELATIVE_PATH, ruta)
         }
-        val uri = cr.insert(coleccion, v) ?: return
+        val uri = cr.insert(coleccion, v) ?: return null
         val ok = runCatching { cr.openOutputStream(uri, "wt")?.use { it.write(datos) } != null }.getOrDefault(false)
         if (!ok) runCatching { cr.delete(uri, null, null) }
+        return uri.takeIf { ok }
     }
 
+    private data class ResultadoEscritura(val uri: Uri?)
     private data class Destino(val coleccion: Uri, val ruta: String, val nombre: String, val mime: String)
 
     private fun atomico(f: File, datos: ByteArray) {

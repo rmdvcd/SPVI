@@ -6,10 +6,13 @@ import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import cu.spvi.app.ajustes.AjustesContent
+import cu.spvi.app.ajustes.AjustesTags
 import cu.spvi.app.ajustes.AjustesUiState
+import cu.spvi.app.actualizacion.EstadoActualizacion
 import cu.spvi.app.ayuda.AyudaScreen
 import cu.spvi.app.licencia.LicenciaAcciones
 import cu.spvi.app.licencia.LicenciaContent
@@ -84,6 +87,21 @@ class AjustesCapturas {
         "07a_ajustes",
         AjustesUiState(ResumenConfiguracion(PasoConfiguracion.entries.toList(), listOf(PasoConfiguracion.ALERTAS, PasoConfiguracion.PRUEBA))),
     )
+    @Test fun actualizacionesSinConfirmar() = rule.capturar(
+        "07t_ajustes_actualizaciones_atrasadas",
+        antes = { onNodeWithTag(AjustesTags.ACTUALIZACIONES).performScrollTo().performClick() },
+    ) {
+        AjustesContent(
+            state = AjustesUiState(ResumenConfiguracion(PasoConfiguracion.entries.toList(), emptyList())),
+            onNavigate = {}, onPermisos = {},
+            actualizacion = EstadoActualizacion(
+                repoConfigurado = true,
+                ultimaComprobacion = Instant.parse("2026-09-17T12:00:00Z"),
+                diasSinComprobar = 14,
+                avisoSinComprobar = true,
+            ),
+        )
+    }
 
     // ---------- Perfil ----------
     private fun perfilCap(id: String, form: DatosPerfilForm) = rule.capturar(id) {
@@ -162,6 +180,9 @@ class AjustesCapturas {
     private val importacion = ImportForm("content://respaldo", info, nombre = "SPVI_respaldo_2026-09-28.spvi")
 
     @Test @Config(qualifiers = Captura.LARGA) fun respaldoPaso1() = respaldo("09a_respaldo_paso1", RespaldoUiState())
+    @Test @Config(qualifiers = Captura.LARGA) fun respaldoSinContrasena() = respaldo(
+        "09m_respaldo_sin_contrasena", RespaldoUiState(export = ExportForm(conContrasena = false)),
+    )
     @Test fun respaldoErrores() = respaldo("09b_respaldo_paso1_errores", RespaldoUiState(export = ExportForm(true, "abc12", "abc", mostrarErrores = true)))
     @Test fun respaldoPaso2() = rule.capturar(
         "09c_respaldo_paso2",

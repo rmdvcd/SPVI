@@ -2,6 +2,7 @@ package cu.spvi.app.actualizacion
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
+import cu.spvi.core.time.Clock
 import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
 import cu.spvi.domain.model.Actualizaciones
@@ -55,6 +56,10 @@ data class EstadoActualizacion(
     /** 0.26.0 (P73 §6): aviso con fecha límite o bloqueo (plazo de 30 días vencido). */
     val obligatoria: ActualizacionObligatoria.Estado = ActualizacionObligatoria.Estado.Ninguna,
     val esSecundaria: Boolean = false,
+    /** Última consulta a GitHub que terminó correctamente (las fallidas no la modifican). */
+    val ultimaComprobacion: java.time.Instant? = null,
+    val diasSinComprobar: Long? = null,
+    val avisoSinComprobar: Boolean = false,
 ) {
     /** Pantalla de bloqueo en toda la app (MainScaffold la omite durante una venta). */
     val bloqueada: Boolean get() = obligatoria is ActualizacionObligatoria.Estado.Bloqueo
@@ -102,6 +107,14 @@ object TextosActualizacion {
     const val BUSCAR_DETALLE = "Una vez por semana, al abrir la app, mira en GitHub si hay una versión nueva. No envía ningún dato. " +
         "Las versiones nuevas son obligatorias: puedes aplazarlas hasta 30 días."
     const val BUSCAR_AHORA = "Buscar ahora"
+    fun ultimaComprobacion(ultima: java.time.Instant, zona: java.time.ZoneId = java.time.ZoneId.systemDefault()) =
+        "Última comprobación correcta: ${java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy").format(ultima.atZone(zona))}."
+    const val SIN_COMPROBACION_CORRECTA = "Todavía no se ha completado una comprobación correcta."
+    fun avisoSinComprobar(ultima: java.time.Instant?, dias: Long?): String = when {
+        ultima == null -> "Aún no se ha confirmado si hay actualizaciones. Conéctate y toca «Buscar ahora»."
+        dias == null -> "La fecha del teléfono es anterior a la última comprobación. Corrígela y vuelve a buscar."
+        else -> "No se ha podido confirmar si hay actualizaciones desde hace $dias días. Conéctate y toca «Buscar ahora»."
+    }
 }
 
 /**
@@ -119,6 +132,7 @@ class GestorActualizacion @Inject constructor(
     private val instalador: InstaladorApk,
     private val info: InfoApp,
     private val obligatoria: EstadoActualizacionObligatoria,
+    private val clock: Clock,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val local = MutableStateFlow(EstadoActualizacion(repoConfigurado = github.repoConfigurado))
@@ -137,6 +151,7 @@ class GestorActualizacion @Inject constructor(
         secundaria.estado,
         reloj,
     ) { l, e, s, _ ->
+        val ahora = clock.now()
         val hayNueva = obligatoria.hayNueva(e, info.versionName, s.vinculada, github.repoConfigurado, s.apk.takeIf { s.vinculada }, info.versionCode)
         // 0.26.0 (§6): primera detección → empieza el plazo; ya actualizada → se borra. Una más nueva no lo reinicia.
         if (ActualizacionObligatoria.necesitaRegistro(e, info.versionName, hayNueva)) {
@@ -147,6 +162,9 @@ class GestorActualizacion @Inject constructor(
             desdePrincipal = s.apk?.takeIf { s.vinculada && it.versionCode > info.versionCode },
             obligatoria = obligatoria.estado(e, info.versionName, hayNueva),
             esSecundaria = s.vinculada,
+            ultimaComprobacion = e.ultimaComprobacion,
+            diasSinComprobar = Actualizaciones.diasDesdeComprobacion(ahora, e),
+            avisoSinComprobar = Actualizaciones.avisoSinComprobacion(ahora, e, github.repoConfigurado),
         )
     }.stateIn(scope, SharingStarted.Eagerly, local.value)
 

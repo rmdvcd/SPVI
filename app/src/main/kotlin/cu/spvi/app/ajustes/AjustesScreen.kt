@@ -93,6 +93,7 @@ object AjustesTags {
     const val SOPORTE = "ajustes.soporte"
     const val VINCULACION = "ajustes.vinculacion"
     const val ACTUALIZACIONES = "ajustes.actualizaciones"
+    const val ACTUALIZACION_ATRASADA = "ajustes.actualizacion_atrasada"
     const val SEED = "ajustes.seed"
 }
 
@@ -223,7 +224,22 @@ fun AjustesContent(
             content = {
                 Column(verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
                     Text(T.BUSCAR_DETALLE, style = MaterialTheme.typography.bodyMedium)
-                    if (!actualizacion.repoConfigurado) cu.spvi.designsystem.component.SpviSecondaryText(T.SIN_REPO, maxLines = 3)
+                    if (!actualizacion.repoConfigurado) {
+                        cu.spvi.designsystem.component.SpviSecondaryText(T.SIN_REPO, maxLines = 3)
+                    } else {
+                        cu.spvi.designsystem.component.SpviSecondaryText(
+                            actualizacion.ultimaComprobacion?.let { T.ultimaComprobacion(it) } ?: T.SIN_COMPROBACION_CORRECTA,
+                            maxLines = 2,
+                        )
+                        if (actualizacion.avisoSinComprobar) {
+                            Text(
+                                T.avisoSinComprobar(actualizacion.ultimaComprobacion, actualizacion.diasSinComprobar),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.testTag(AjustesTags.ACTUALIZACION_ATRASADA),
+                            )
+                        }
+                    }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                         cu.spvi.designsystem.component.SpviPrimaryButton(
                             T.BUSCAR_AHORA, onClick = onBuscarAhora, icon = SpviIcons.Sincronizar, loading = actualizacion.buscando,

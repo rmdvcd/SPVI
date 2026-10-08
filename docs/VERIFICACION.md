@@ -1,8 +1,8 @@
 # SPVI — Verificación real
 
 > **Única fuente de verdad** del estado de verificación del proyecto: lo que diga este archivo es lo que se ha
-> medido; lo que no esté aquí, no está verificado. Última actualización: **2026-10-08**; última CI completa: `e687bbb`
-> (`arena/c64c3dc9-spvi`, corrida [37832730353](https://github.com/rmdvcd/SPVI/actions/runs/37832730353)).
+> medido; lo que no esté aquí, no está verificado. Última actualización: **2026-10-08**; última CI completa: `3bf4fc1`
+> (`arena/c64c3dc9-spvi`, corrida [37834591679](https://github.com/rmdvcd/SPVI/actions/runs/37834591679)).
 >
 > Regla permanente (F6 del plan de correcciones): cada release añade o actualiza una fila de la tabla de
 > corridas. El README ya no lleva historial de verificaciones: apunta aquí.
@@ -37,6 +37,7 @@ legible desde la API de GitHub y no solo desde la interfaz web.
 
 | Fecha | Commit | Corrida | Trabajos | Resultado |
 |---|---|---|---|---|
+| 2026-10-08 | `3bf4fc1` | [37834591679](https://github.com/rmdvcd/SPVI/actions/runs/37834591679) | 5/5 | **Todo en verde**; 836 tests JVM (0 fallidos/errores/omitidos), lint 0 errores, R8 sin clases ausentes, API mínima 3440 clases/0 llamadas no permitidas |
 | 2026-10-08 | `e687bbb` | [37832730353](https://github.com/rmdvcd/SPVI/actions/runs/37832730353) | 5/5 | **Todo en verde**; 832 tests JVM (0 fallidos/errores/omitidos), lint 0 errores, R8 sin clases ausentes, API mínima 3431 clases/0 llamadas no permitidas |
 | 2026-10-08 | `cc30f77` | [37766967443](https://github.com/rmdvcd/SPVI/actions/runs/37766967443) | 5/5 | **Todo en verde**; 831 tests JVM, 3431 clases API mínima; incluye T1.4 SQL-vs-memoria |
 | 2026-10-07 | `531cab3` | [37656256703](https://github.com/rmdvcd/SPVI/actions/runs/37656256703) | 5/5 | Todo en verde (~11 min), con `--no-configuration-cache` |
@@ -71,7 +72,20 @@ La corrida [37832730353](https://github.com/rmdvcd/SPVI/actions/runs/37832730353
 | Permisos y API mínima | manifiestos dentro de la lista autorizada; **3431 clases, 0 llamadas no permitidas** |
 | T2.1 | El código y los tests JVM pasan; las capturas de referencia todavía están pendientes, así que no se declara T2.1 cerrado |
 
-Los artefactos se descargan desde la página de la corrida: `apk` (debug + release sin firmar, 30 días) e
+### Detalle de `3bf4fc1` — T2.2 y T2.3
+
+La corrida [37834591679](https://github.com/rmdvcd/SPVI/actions/runs/37834591679) terminó **5/5 jobs en verde**:
+
+| Comprobación | Resultado medido |
+|---|---|
+| Tests JVM | **836 ejecutados, 0 fallidos, 0 errores, 0 omitidos** |
+| Compilación instrumentada | Los instrumentados de `:data` y `:app` compilan, pero no se ejecutan |
+| Lint y R8 | **0 errores** de lint (95 avisos existentes); R8 sin clases ausentes |
+| API mínima | **3440 clases revisadas, 0 llamadas no permitidas** |
+| T2.2 | La prueba de sesión y los límites/backoff pasan. La comprobación entre tres teléfonos **sigue pendiente** |
+| T2.3 | La prueba del rechazo indistinguible pasa; el protocolo de sincronización v1 no cambia |
+
+Los artefactos se descargan desde la página de cada corrida: `apk` (debug + release sin firmar, 30 días) e
 `informe-lint` (14 días).
 
 ### Cuadre de los «831» (para que el número sea comprobable)

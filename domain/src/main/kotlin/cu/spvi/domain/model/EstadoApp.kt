@@ -74,6 +74,8 @@ object RecordatorioRespaldo {
 /** Comprobación semanal de versiones (sin trabajo en segundo plano: al abrir la app). */
 object Actualizaciones {
     const val DIAS = 7L
+    /** Ajustes avisa tras dos comprobaciones semanales fallidas o catorce días sin una respuesta correcta. */
+    const val DIAS_SIN_CONFIRMAR = 14L
 
     /**
      * ¿Toca consultar GitHub? 0.26.0: la consulta semanal es fija (sin interruptor en Ajustes); la lista de revocadas
@@ -83,6 +85,16 @@ object Actualizaciones {
         repoConfigurado &&
             (e.ultimaComprobacion == null || Duration.between(e.ultimaComprobacion, ahora).toDays() >= DIAS ||
                 ahora.isBefore(e.ultimaComprobacion))
+
+    /** ¿Debe Ajustes avisar de que hace demasiado que GitHub no confirma la lista de versiones/revocaciones? */
+    fun avisoSinComprobacion(ahora: Instant, e: EstadoApp, repoConfigurado: Boolean): Boolean =
+        repoConfigurado && (e.ultimaComprobacion == null || ahora.isBefore(e.ultimaComprobacion) ||
+            Duration.between(e.ultimaComprobacion, ahora).toDays() >= DIAS_SIN_CONFIRMAR)
+
+    /** Días desde la última respuesta correcta; null = nunca hubo una o el reloj del teléfono retrocedió. */
+    fun diasDesdeComprobacion(ahora: Instant, e: EstadoApp): Long? = e.ultimaComprobacion?.let {
+        if (ahora.isBefore(it)) null else Duration.between(it, ahora).toDays()
+    }
 
     /** Versión de GitHub más nueva que [instalada] (0.26.0: ya no se puede descartar; solo aplazar el aviso). */
     fun aviso(e: EstadoApp, instalada: String): InfoActualizacion? =
