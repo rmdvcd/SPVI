@@ -1,11 +1,12 @@
 # SPVI — Plan de correcciones propuesto
 
-> Estado: **F0 ejecutada y en verde** (2026-10-07). Corrida del CI:
-> [37656256703](https://github.com/rmdvcd/SPVI/actions/runs/37656256703) — 5/5 trabajos, con el detalle en
-> [docs/VERIFICACION.md](docs/VERIFICACION.md). Fases F1–F3 y F6 pendientes de empezar.
+> Estado: **F0 en verde** y **F1.1–F1.4 implementadas/verificadas** (2026-10-08). CI:
+> [37766967443](https://github.com/rmdvcd/SPVI/actions/runs/37766967443) — 5/5 trabajos verdes; 831 tests JVM,
+> incluidos SQL-vs-memoria sobre el seed. El detalle está en [docs/VERIFICACION.md](docs/VERIFICACION.md).
+> **T1.5 sigue NO VERIFICADO**: el CI compila androidTest, pero no ejecuta instrumentados ni mide teléfono/Perfetto.
 >
-> Lo empujado a `arena/3c116bea-spvi`: `8c48aa3` (auditoría) → `f480e50`/`531cab3` (CI, tests rotos, versión
-> 0.30.0, VERIFICACION.md). Sin PR abierto todavía.
+> El historial inicial de F0 fue empujado a `arena/3c116bea-spvi` (`8c48aa3` → `f480e50`/`531cab3`). La
+> continuación de este ciclo está en `arena/c64c3dc9-spvi`; no hay PR abierto.
 
 ---
 
@@ -72,9 +73,8 @@ cerrar esa brecha, y la elección cambia el calendario:
 4. **Cambio de esquema = v12 + `Migration(11, 12)` + `12.json` + test de migración.** Sin excepciones.
 5. **El README solo puede afirmar lo que un comando reproducible demuestre**, y la afirmación debe citar el
    comando y la fecha. Esto se convierte en una comprobación automática (T3.6).
-6. Yo trabajo **siempre** en `arena/3c116bea-spvi` (esta sesión está fijada a esa rama): los PR salen de ahí,
-   uno detrás de otro. Si un PR no está fusionado cuando empiezo el siguiente, el segundo PR incluirá los
-   commits del primero (apilado) y lo avisaré.
+6. Trabajar siempre en la rama asignada a esta sesión; en esta continuación es `arena/c64c3dc9-spvi`. Los PR salen
+   de esa rama; si uno no está fusionado al empezar el siguiente, el segundo será apilado y se avisará.
 
 ---
 
@@ -83,7 +83,7 @@ cerrar esa brecha, y la elección cambia el calendario:
 | Fase | Qué | Estado |
 |---|---|---|
 | F0 | CI y verdad documental | **VERDE** (corridas 37656256703, 37657849682, 37704972362) |
-| F1 | Rendimiento | **T1.1–T1.3 en verde**; T1.4 (SQL) y T1.5 (rendimiento real en teléfono) pendientes; T1.6 opcional |
+| F1 | Rendimiento | **T1.1–T1.4 en verde**; T1.5 **NO VERIFICADO** (instrumentados compilados, pero no ejecutados en dispositivo); T1.6 opcional |
 | F2 | Seguridad | Pendiente |
 | F3 | Coherencia documental | Pendiente |
 | F6 | Higiene | Pendiente |
@@ -118,8 +118,8 @@ vs. la versión de Compose), lo arreglo antes de tocar nada de lógica.
 | ✅ T1.1 | `withContext(io)` con `@IoDispatcher` inyectado en los casos de uso de Inicio (`ObtenerGraficosPeriodo`, `ObtenerResumenGeneral`) | `domain/.../InicioUseCases.kt`, `data/di` | Mismo resultado, fuera del hilo de UI |
 | ✅ T1.2 | `flowOn(io)` en las cadenas reactivas que hoy transforman en el colector (`ObservarInventario`, `ObservarRegistro`, los `stateIn(viewModelScope)` que mapean) | `domain`, `app` | Ninguna transformación pesada en Main |
 | ✅ T1.3 | `debounce(250 ms)` en los buscadores (Inventario, Registros, Precios, ficha) conservando el «sin parpadeo» actual | 4 ViewModels | 8 pulsaciones = 1 consulta |
-| ⏳ T1.4 | Agregación en SQL: nuevas `@Query` con `GROUP BY` por cubo y rango para `Estadisticas.serie`; `Estadisticas` se conserva como función pura (es la autoridad de los tests) y se usa para verificar el SQL | `VentaDaos`, `Estadisticas`, `InicioUseCases` | Test que compara **SQL vs memoria** sobre el seed → resultados idénticos |
-| ⏳ T1.5 | Prueba de verdad: test de instrumentación con el `GeneradorSeed` de 18 meses que mida `ObtenerResumenGeneral` y falle por encima de un umbral (p. ej. 250 ms), más una captura de `Systrace`/`Perfetto` antes y después *(tú, en un gama baja si es posible)* | `app/src/androidTest` | Número antes y después en `docs/VERIFICACION.md` |
+| ✅ T1.4 | Agregación en SQL por ventanas calculadas en JVM, con `GROUP BY` por cubo/rango; `Estadisticas.serie` se conserva como referencia pura y `ObtenerGraficosPeriodo` conserva su firma pública | `VentaDaos`, `Estadisticas`, `InicioUseCases` | ✅ CI 37766967443: SQL vs memoria idénticos en seed; pruebas Room de rangos/DST, anulaciones, cubos vacíos, centavos y lotes pasan |
+| ⏳ T1.5 — **NO VERIFICADO** | El test instrumentado de 18 meses/umbrales ya existe; hace falta ejecutarlo en dispositivo y capturar `Systrace`/`Perfetto` antes y después *(preferible teléfono gama baja)* | `app/src/androidTest` | La última CI solo lo compiló; no hay medición nueva ni trazas en `docs/VERIFICACION.md` |
 | ⏭ T1.6 | *(opcional)* `baseline profile` real: el módulo ya trae `profileinstaller` pero no hay perfil generado | nuevo `:baselineprofile` | Arranque en frío medido |
 
 **Riesgo:** mover la agregación a SQL puede cambiar redondeos (céntimos). Contingencia: los tests de
