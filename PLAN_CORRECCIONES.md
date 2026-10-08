@@ -80,6 +80,15 @@ cerrar esa brecha, y la elección cambia el calendario:
 
 ## 3. Fases
 
+| Fase | Qué | Estado |
+|---|---|---|
+| F0 | CI y verdad documental | **VERDE** (corridas 37656256703, 37657849682, 37704972362) |
+| F1 | Rendimiento | **T1.1–T1.3 en verde**; T1.4 (SQL) y T1.5 (rendimiento real en teléfono) pendientes; T1.6 opcional |
+| F2 | Seguridad | Pendiente |
+| F3 | Coherencia documental | Pendiente |
+| F6 | Higiene | Pendiente |
+
+
 Esfuerzos en **días de trabajo**; entre paréntesis, quién verifica en el teléfono cuando hace falta (tú).
 
 ### F0 · Red de seguridad y verdad documental — **bloqueante, 2–4 días**
@@ -106,12 +115,12 @@ vs. la versión de Compose), lo arreglo antes de tocar nada de lógica.
 
 | ID | Tarea | Dónde | Hecho cuando |
 |---|---|---|---|
-| T1.1 | `withContext(io)` con `@IoDispatcher` inyectado en los casos de uso de Inicio (`ObtenerGraficosPeriodo`, `ObtenerResumenGeneral`) | `domain/.../InicioUseCases.kt`, `data/di` | Mismo resultado, fuera del hilo de UI |
-| T1.2 | `flowOn(io)` en las cadenas reactivas que hoy transforman en el colector (`ObservarInventario`, `ObservarRegistro`, los `stateIn(viewModelScope)` que mapean) | `domain`, `app` | Ninguna transformación pesada en Main |
-| T1.3 | `debounce(250 ms)` en los buscadores (Inventario, Registros, Precios, ficha) conservando el «sin parpadeo» actual | 4 ViewModels | 8 pulsaciones = 1 consulta |
-| T1.4 | Agregación en SQL: nuevas `@Query` con `GROUP BY` por cubo y rango para `Estadisticas.serie`; `Estadisticas` se conserva como función pura (es la autoridad de los tests) y se usa para verificar el SQL | `VentaDaos`, `Estadisticas`, `InicioUseCases` | Test que compara **SQL vs memoria** sobre el seed → resultados idénticos |
-| T1.5 | Prueba de verdad: test de instrumentación con el `GeneradorSeed` de 18 meses que mida `ObtenerResumenGeneral` y falle por encima de un umbral (p. ej. 250 ms), más una captura de `Systrace`/`Perfetto` antes y después *(tú, en un gama baja si es posible)* | `app/src/androidTest` | Número antes y después en `docs/VERIFICACION.md` |
-| T1.6 | *(opcional)* `baseline profile` real: el módulo ya trae `profileinstaller` pero no hay perfil generado | nuevo `:baselineprofile` | Arranque en frío medido |
+| ✅ T1.1 | `withContext(io)` con `@IoDispatcher` inyectado en los casos de uso de Inicio (`ObtenerGraficosPeriodo`, `ObtenerResumenGeneral`) | `domain/.../InicioUseCases.kt`, `data/di` | Mismo resultado, fuera del hilo de UI |
+| ✅ T1.2 | `flowOn(io)` en las cadenas reactivas que hoy transforman en el colector (`ObservarInventario`, `ObservarRegistro`, los `stateIn(viewModelScope)` que mapean) | `domain`, `app` | Ninguna transformación pesada en Main |
+| ✅ T1.3 | `debounce(250 ms)` en los buscadores (Inventario, Registros, Precios, ficha) conservando el «sin parpadeo» actual | 4 ViewModels | 8 pulsaciones = 1 consulta |
+| ⏳ T1.4 | Agregación en SQL: nuevas `@Query` con `GROUP BY` por cubo y rango para `Estadisticas.serie`; `Estadisticas` se conserva como función pura (es la autoridad de los tests) y se usa para verificar el SQL | `VentaDaos`, `Estadisticas`, `InicioUseCases` | Test que compara **SQL vs memoria** sobre el seed → resultados idénticos |
+| ⏳ T1.5 | Prueba de verdad: test de instrumentación con el `GeneradorSeed` de 18 meses que mida `ObtenerResumenGeneral` y falle por encima de un umbral (p. ej. 250 ms), más una captura de `Systrace`/`Perfetto` antes y después *(tú, en un gama baja si es posible)* | `app/src/androidTest` | Número antes y después en `docs/VERIFICACION.md` |
+| ⏭ T1.6 | *(opcional)* `baseline profile` real: el módulo ya trae `profileinstaller` pero no hay perfil generado | nuevo `:baselineprofile` | Arranque en frío medido |
 
 **Riesgo:** mover la agregación a SQL puede cambiar redondeos (céntimos). Contingencia: los tests de
 `Estadisticas` son la autoridad; ninguna firma pública cambia.

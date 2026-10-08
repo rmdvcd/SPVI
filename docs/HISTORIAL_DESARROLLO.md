@@ -1342,3 +1342,25 @@ Primera vez que el repositorio se verifica solo: GitHub Actions ejecuta Gradle r
 - Versión a **0.30.0 (`versionCode` 51)**. El historial de verificaciones ya no vive en el README: vive en
   [VERIFICACION.md](VERIFICACION.md).
 - **Pendiente (T0.6):** instalar el APK en un teléfono real y probar dos teléfonos (principal + secundaria).
+
+## 0.30.1 — F1 (1/2): trabajo pesado fuera del hilo principal (2026-10-07)
+
+- **T1.1** `@IoDispatcher` se traslada de `cu.spvi.data.di` a `cu.spvi.domain.di` (antes no se podía usar desde
+  los casos de uso). `ObtenerGraficosPeriodo` y `ObtenerResumenGeneral` envuelven todo su cuerpo en
+  `withContext(io)`: con el período «Año» ya no cargan, mapean y agregan miles de ventas en el hilo de UI.
+- **T1.2** `flowOn(io)` en las seis cadenas reactivas que transformaban listas completas en el colector
+  (`ObservarAlertas`, `ObservarInventario`, `ObservarRegistro`, `ObservarElaboracion`, `ObservarElaborados`,
+  `ObservarServicios`).
+- **T1.3** `debounce(250 ms)` en los tres buscadores que consultan Room por texto (Inventario, Registros y
+  Servicios); el texto espera el retardo y el resto de filtros pasan al instante; con el texto vacío el
+  retardo es 0 (abrir la pantalla no espera). El filtro que ve la UI sigue siendo inmediato. **Los buscadores
+  de Precios y ModificarVenta NO** llevan debounce: filtran en memoria sobre un catálogo ya cargado, sin
+  consulta que ahorrar (el plan decía 4 ViewModels; la realidad del código son 3).
+- **T1.5 (esqueleto)** `RendimientoInicioTest` (instrumentado) que genera los 548 días del seed real y medirá
+  la agregación de un año (umbral 250 ms) y los dos casos de uso de Inicio ya con `withContext(io)` (umbral
+  3000 ms). Necesita teléfono: los números aparecerán en `docs/VERIFICACION.md`.
+- **T1.4 (pendiente)** la agregación sigue siendo en memoria sobre la lista completa (la serie del año
+  sigue haciendo `.entre(…).validas()`). Siguiente paso: `@Query` con `GROUP BY` por cubo y rango, manteniendo
+  `Estadisticas` como autoridad en los tests y comparando SQL vs memoria.
+- CI: **826 tests JVM, 0 fallos** (+1, el test nuevo del debounce); lint 0/95; R8 limpio; permisos OK; API 26 OK.
+  Corrida verde: [37704972362](https://github.com/rmdvcd/SPVI/actions/runs/37704972362).
