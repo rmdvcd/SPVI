@@ -1,6 +1,8 @@
 # SPVI — Auditoría técnica sin anestesia
 
-**Alcance:** commit `2e5a149` («Primer commit: Proyecto inicial»), rama de trabajo `arena/3c116bea-spvi`.
+> **Aviso (2026-10-08): informe histórico, no estado actual.** El análisis siguiente describe únicamente el commit `2e5a149`; desde entonces cambiaron la versión, el esquema, los tests, la CI y los documentos. La última evidencia de CI y los pendientes actuales están en [docs/VERIFICACION.md](docs/VERIFICACION.md) y [Pendiente.md](Pendiente.md). Por ejemplo, los tests instrumentados que este informe encontró rotos ya compilaron después, aunque aún no se han ejecutado en dispositivo.
+
+**Alcance histórico:** commit `2e5a149` («Primer commit: Proyecto inicial»), rama de trabajo `arena/3c116bea-spvi`.
 **Método:** lectura completa de los 6 módulos (38 903 líneas Kotlin en `src/main`, 434 archivos `.kt`),
 manifiesto, Gradle, documentación (4 673 líneas Markdown), capturas y herramientas. Análisis **estático**.
 
@@ -179,8 +181,7 @@ en `:domain/seed` + `Migracion1011Test`), **0.29.1/0.29.2** (tops de empleado y 
 - el README sigue anunciando *«Codigo de barras»*, la columna `codigo` en la tabla `producto` y
   «consultas de códigos de barras» como función de INTERNET;
 - el README dice **«Room v10»** y el código es **v11** (`data/schemas/.../11.json`);
-- `docs/HISTORIAL_DESARROLLO.md` está **corrupto en UTF-8** desde 0.29.2 (`0.29.2 � Tops de empleado`,
-  `los d�as`, `c�digo`): no es un carácter suelto, es un documento de bitácora que ya no se lee bien;
+- El informe original marcó `docs/HISTORIAL_DESARROLLO.md` como corrupto en UTF-8. En la revisión estática del 2026-10-08 el archivo actual decodifica como UTF-8 y no contiene U+FFFD ni secuencias habituales de mojibake; se conserva la afirmación únicamente como hallazgo histórico de aquel commit.
 - `UI_UX_IX.md` sigue anclado a «la versión **0.19.3**» y `SECURITY.md` a «la versión **0.26.0**» (mientras
   incluye contenido de la 0.27.0).
 

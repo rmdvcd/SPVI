@@ -1,6 +1,6 @@
 # SPVI — Release firmado (APK y AAB)
 
-Cómo generar la versión que se entrega a los clientes. Describe la versión **0.27.1** (`versionCode 50`). Todo se hace en el ordenador del desarrollador con Android Studio (JDK 17 y SDK 35). El repositorio **no contiene** keystore ni contraseñas.
+Cómo preparar la versión de distribución actual, **0.30.0** (`versionCode 51`), en el PC del propietario con JDK 17 y Android SDK 35. En el flujo acordado, OpenCode CLI en ese PC ejecuta las validaciones; el agente de Arena no compila ni firma. El repositorio **no contiene** keystore ni contraseñas.
 
 > **Regla de oro:** firma **siempre con el mismo keystore**. En Android 8+ el `ANDROID_ID` depende de la clave de firma, y el `deviceId` de la licencia GL es `SPVI:` + `ANDROID_ID`. Si cambias de clave:
 > - todas las licencias emitidas dejan de valer;
@@ -75,11 +75,9 @@ buildTypes {
 
 1. Sube `versionCode` (siempre mayor que el anterior) y `versionName` en `app/build.gradle.kts`.
    - **Actualizaciones automáticas (0.25.0):** compila con `-PspviGithubRepo=usuario/repositorio` (o pon `spviGithubRepo=usuario/repositorio` en `gradle.properties`). Sin ese valor, `BuildConfig.GITHUB_REPO` queda vacío y la app **no consulta** GitHub: ni versiones ni lista de revocadas (las recuperaciones de licencia no bloquean el teléfono antiguo).
-2. Ejecuta `./gradlew spviCheck spviInstrumentedTests` con un emulador o teléfono conectado.
-   Después, `python3 tools/verificacion/api_minima.py` (con el JDK 17 en el PATH). Comprueba que ninguna clase compilada llama a una API de Android o de Java posterior a la 26 sin comprobar la versión, también en core/domain/licencia, que lint no analiza. Debe terminar con «0 llamadas no permitidas».
-3. **Solo la primera vez:**
-   - `./gradlew :app:updateLintBaseline`; revisa el diff y versiona `app/lint-baseline.xml`.
-   - Versiona `data/schemas/cu.spvi.data.db.SpviDatabase/3.json`, que genera Room.
+2. Ejecuta `./gradlew spviCheck` y `./gradlew spviInstrumentedTests` por separado con el JDK 17. El segundo comando requiere un emulador o teléfono conectado; compilarlos no significa que se hayan ejecutado.
+3. Ejecuta `python3 tools/verificacion/api_minima.py` después de compilar el bytecode. Comprueba que ninguna clase llama a una API posterior a Android 8 sin comprobar la versión; debe terminar con «0 llamadas no permitidas».
+4. Si una tarea genera cambios en `data/schemas/cu.spvi.data.db.SpviDatabase/`, revisa y versiona el esquema Room correspondiente junto con su migración y test. No se genera un esquema nuevo si no cambió la BD.
 
 ## 4. Compilar
 
@@ -135,7 +133,7 @@ adb logcat -c && adb logcat | grep -i spvi    # en release no debe aparecer ning
 | 2 | Licencia → solicitar por WhatsApp | Se abre WhatsApp con el mensaje cifrado |
 | 3 | Pegar una licencia de GL emitida para **este** teléfono | Activa; banner correcto en Inicio |
 | 4 | Abrir turno → venta en efectivo y por transferencia (QR) | Venta registrada; stock descontado |
-| 5 | Inventario → escanear un código | La cámara se pide solo entonces y se apaga al salir |
+| 5 | Inventario → crear un producto y, si se desea, añadir una foto | Los datos se pueden escribir manualmente; la cámara se pide solo al tomar la foto |
 | 6 | Respaldo → exportar e importar el `.spvi` | Datos restaurados; contraseña incorrecta = error claro |
 | 7 | Registros → exportar PDF y Excel | Se abren en otra app |
 | 8 | Recientes con Licencia, Perfil o el QR abiertos | Miniatura en blanco (`FLAG_SECURE`) |
@@ -152,7 +150,7 @@ adb logcat -c && adb logcat | grep -i spvi    # en release no debe aparecer ning
 | 19 | (0.26.0) Igual que 18, pero **negando** el permiso en la reinstalación | La prueba vuelve a empezar (limitación aceptada: sin permiso no se puede leer el registro en Android 10+) |
 | 20 | (0.26.0) Publicar una versión nueva y adelantar el reloj 30 días | Inicio avisa «Obligatoria desde…»; al vencer, pantalla de bloqueo con Actualizar, Exportar respaldo y Cerrar turno |
 | 21 | (0.27.0) Ajustes → Acceso con clave → activar; cerrar la app del todo y abrirla; luego 10 min en segundo plano | Pide huella o PIN las dos veces; en release también (R8 no rompe `BiometricPrompt`) |
-| 22 | (0.27.0) Exportar respaldo sin contraseña e importarlo en otro teléfono; importar uno de la 0.26.0 | El primero no pide contraseña; el de la 0.26.0 sí |
+| 22 | Exportar respaldo con protección activada e importarlo en un teléfono de prueba; abrir también un respaldo antiguo sin contraseña | La exportación nueva solicita contraseña (8 caracteres como mínimo); el archivo antiguo se importa con advertencia |
 | 23 | (0.27.0) Nuevo producto → **Cámara** | Pide el permiso de cámara, guarda la foto (≤ 1024 px) |
 | 24 | (0.27.0) Venta por transferencia con **Cliente fijo** → otra venta | Se sugiere el cliente; aparece en Registros → Clientes |
 

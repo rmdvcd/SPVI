@@ -70,7 +70,9 @@ object InsumoFormLogic {
     /** Insumo listo para guardar con [cu.spvi.domain.usecase.GuardarInsumo], o null si hay errores. */
     fun aInsumo(f: InsumoForm, ahora: Instant): Insumo? {
         if (validar(f).isNotEmpty()) return null
-        return insumo(f, Money.parse(f.precio)!!, Cantidad.parse(f.cantidad)!!, f.creadoEn ?: ahora)
+        val precio = Money.parse(f.precio) ?: return null
+        val cantidad = Cantidad.parse(f.cantidad) ?: return null
+        return insumo(f, precio, cantidad, f.creadoEn ?: ahora)
     }
 
     fun desde(i: Insumo) = InsumoForm(

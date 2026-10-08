@@ -2,9 +2,11 @@ package cu.spvi.app.inventario
 
 import cu.spvi.domain.model.nombreCompleto
 import cu.spvi.app.common.LocalPermisosApp
+import cu.spvi.app.common.calculateListDetailPaneWidth
 import cu.spvi.domain.model.IdArticulo
 import cu.spvi.domain.model.FichaInsumo
 import androidx.compose.ui.text.style.TextAlign
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -15,8 +17,10 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -46,7 +50,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -179,6 +186,9 @@ fun InventarioContent(
     snackbar: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     val venta = state.modoVenta
+    val anchoPanelDetalle = calculateListDetailPaneWidth()
+    val panelDeDetalle = anchoPanelDetalle != null && venta == null
+    BackHandler(enabled = panelDeDetalle && (state.ficha != null || state.fichaInsumo != null)) { acciones.onCerrarFicha() }
     Scaffold(
         topBar = {
             if (venta != null) {
@@ -207,40 +217,42 @@ fun InventarioContent(
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             if (state.trabajando) SpviLinearProgress(Modifier.fillMaxWidth())
+            if (state.buscando) SpviLinearProgress(
+                Modifier.fillMaxWidth().testTag(InventarioTags.BUSCANDO)
+                    .semantics {
+                        contentDescription = TextosInventario.BUSCANDO
+                        liveRegion = LiveRegionMode.Polite
+                    },
+            )
             Buscador(state, acciones)
             if (venta == null && state.seleccion.isNotEmpty()) BarraSeleccion(state, acciones)
             cu.spvi.designsystem.component.BloquearGestos(state.seleccion.isNotEmpty()) // 0.27.0 (T5)
             Box(Modifier.weight(1f)) {
-                when (val v = state.vista) {
-                    EstadoCarga.Idle, EstadoCarga.Cargando -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { SpviLoading() }
-                    is EstadoCarga.Error -> SpviEmptyState(title = "Algo salió mal", detail = v.mensaje, ilustracion = SpviIlustracion.Error) {
-                        SpviSecondaryButton("Reintentar", icon = SpviIcons.Reintentar, onClick = acciones.onReintentar)
-                    }
-                    // P24: sin botón «Agregar» aquí: repetía el botón flotante (+), que sigue visible.
-                    is EstadoCarga.Vacio -> SpviEmptyState(
-                        title = TextosInventario.VACIO_TITULO, detail = TextosInventario.VACIO_DETALLE, ayuda = acciones.onAyuda,
-                        ilustracion = SpviIlustracion.Inventario,
-                    )
-                    is EstadoCarga.Exito -> if (v.datos.items.isEmpty()) {
-                        SpviEmptyState(
-                            title = TextosInventario.SIN_RESULTADOS_TITULO, detail = TextosInventario.SIN_RESULTADOS_DETALLE,
-                            ilustracion = SpviIlustracion.SinResultados,
-                        ) {
-                            SpviSecondaryButton(
-                                TextosInventario.QUITAR_FILTROS, icon = SpviIcons.QuitarFiltros, onClick = { acciones.onBuscar(""); acciones.onQuitarFiltros() },
-                                modifier = Modifier.testTag(InventarioTags.QUITAR_FILTROS),
-                            )
+                val hayFicha = state.ficha != null || state.fichaInsumo != null
+                if (panelDeDetalle && hayFicha) {
+                    Row(
+                        Modifier.fillMaxSize().padding(horizontal = SpviSpacing.xs),
+                        horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
+                    ) {
+                        Box(Modifier.weight(1f).fillMaxHeight()) { ContenidoLista(state, acciones) }
+                        Box(Modifier.width(anchoPanelDetalle ?: 280.dp).fillMaxHeight()) {
+                            when {
+                                state.ficha != null -> Ficha(state.ficha, state, acciones, enPanel = true)
+                                state.fichaInsumo != null -> FichaDeInsumo(state.fichaInsumo, state, acciones, enPanel = true)
+                            }
                         }
-                    } else {
-                        Tabla(state, acciones)
                     }
+                } else {
+                    ContenidoLista(state, acciones)
                 }
             }
         }
     }
 
-    state.ficha?.let { Ficha(it, state, acciones) }
-    state.fichaInsumo?.let { FichaDeInsumo(it, state, acciones) }
+    if (!panelDeDetalle) {
+        state.ficha?.let { Ficha(it, state, acciones) }
+        state.fichaInsumo?.let { FichaDeInsumo(it, state, acciones) }
+    }
     when (state.hoja) {
         HojaInventario.FILTRO -> HojaFiltro(state, acciones)
         HojaInventario.EXPORTAR -> HojaExportar(state, acciones)
@@ -259,6 +271,34 @@ fun InventarioContent(
             confirmDescription = "Eliminar",
             destructive = true,
         )
+    }
+}
+
+@Composable
+private fun ContenidoLista(state: InventarioUiState, acciones: AccionesInventario) {
+    when (val v = state.vista) {
+        EstadoCarga.Idle, EstadoCarga.Cargando -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { SpviLoading() }
+        is EstadoCarga.Error -> SpviEmptyState(title = "Algo salió mal", detail = v.mensaje, ilustracion = SpviIlustracion.Error) {
+            SpviSecondaryButton("Reintentar", icon = SpviIcons.Reintentar, onClick = acciones.onReintentar)
+        }
+        // P24: sin botón «Agregar» aquí: repetía el botón flotante (+), que sigue visible.
+        is EstadoCarga.Vacio -> SpviEmptyState(
+            title = TextosInventario.VACIO_TITULO, detail = TextosInventario.VACIO_DETALLE, ayuda = acciones.onAyuda,
+            ilustracion = SpviIlustracion.Inventario,
+        )
+        is EstadoCarga.Exito -> if (v.datos.items.isEmpty()) {
+            SpviEmptyState(
+                title = TextosInventario.SIN_RESULTADOS_TITULO, detail = TextosInventario.SIN_RESULTADOS_DETALLE,
+                ilustracion = SpviIlustracion.SinResultados,
+            ) {
+                SpviSecondaryButton(
+                    TextosInventario.QUITAR_FILTROS, icon = SpviIcons.QuitarFiltros, onClick = { acciones.onBuscar(""); acciones.onQuitarFiltros() },
+                    modifier = Modifier.testTag(InventarioTags.QUITAR_FILTROS),
+                )
+            }
+        } else {
+            Tabla(state, acciones)
+        }
     }
 }
 
@@ -384,11 +424,12 @@ private fun colorDe(t: TonoFila): Color = when (t) {
 // ---------------- Ficha ----------------
 
 @Composable
-private fun Ficha(f: FichaProducto, state: InventarioUiState, acciones: AccionesInventario) {
+private fun Ficha(f: FichaProducto, state: InventarioUiState, acciones: AccionesInventario, enPanel: Boolean = false) {
     val p = f.producto
     SpviBottomSheet(
         onDismiss = acciones.onCerrarFicha,
         title = p.nombreCompleto,
+        enPanel = enPanel,
         footer = {
             val permisos = LocalPermisosApp.current
             if (permisos.editarInventario) SpviIconAction(SpviIcons.Editar, "Editar", onClick = { acciones.onEditar(p.id) }, style = IconActionStyle.Tonal, modifier = Modifier.testTag(InventarioTags.FICHA_EDITAR))
@@ -422,12 +463,13 @@ private fun Ficha(f: FichaProducto, state: InventarioUiState, acciones: Acciones
 
 /** P29: ficha de un insumo (antes en Elaboración). 0.26.0: ya no se comparte (era solo texto). */
 @Composable
-private fun FichaDeInsumo(f: FichaInsumo, state: InventarioUiState, acciones: AccionesInventario) {
+private fun FichaDeInsumo(f: FichaInsumo, state: InventarioUiState, acciones: AccionesInventario, enPanel: Boolean = false) {
     val i = f.insumo
     val id = IdArticulo.deInsumo(i.id)
     SpviBottomSheet(
         onDismiss = acciones.onCerrarFicha,
         title = i.nombre,
+        enPanel = enPanel,
         footer = {
             val permisos = LocalPermisosApp.current
             if (permisos.editarInventario) SpviIconAction(SpviIcons.Editar, "Editar", onClick = { acciones.onEditar(id) }, style = IconActionStyle.Tonal, modifier = Modifier.testTag(InventarioTags.FICHA_EDITAR))

@@ -98,8 +98,8 @@ fun MainScaffold(snapshot: Licencia) {
         }
     }
 
-    // 0.26.0 (P73 §6): plazo de la actualización vencido → bloqueo de toda la app. Nunca en mitad de una venta (ni al
-    // elegir artículos o escanear para ella) ni en Respaldo (salida «Exportar respaldo», suposición 3).
+    // 0.26.0 (P73 §6): plazo de la actualización vencido → bloqueo de toda la app. Nunca durante una venta, la
+    // vinculación por QR ni en Respaldo (salida «Exportar respaldo», suposición 3).
     val bloqueoVm: cu.spvi.app.actualizacion.ActualizacionViewModel = hiltViewModel()
     val actualizacion by bloqueoVm.estado.collectAsStateWithLifecycle()
     val permitidaConBloqueo = enSeleccionVenta || current?.hasRoute(Route.Venta::class) == true ||

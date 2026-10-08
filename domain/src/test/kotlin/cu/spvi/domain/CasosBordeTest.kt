@@ -37,7 +37,7 @@ import org.junit.Test
 
 /**
  * Casos borde del Prompt 15 reunidos en un solo lugar (los de licencia GL están en :licencia → CasosBordeLicenciaTest).
- * Complementa, sin repetir, VentaFlujoTest, TurnoUseCasesTest, StockEstadisticasTest y EscanerInventarioTest.
+ * Complementa, sin repetir, VentaFlujoTest, TurnoUseCasesTest, StockEstadisticasTest e InventarioTest.
  */
 class CasosBordeTest {
     private val clock = FixedClock()

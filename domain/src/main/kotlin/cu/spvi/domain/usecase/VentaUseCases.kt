@@ -227,7 +227,9 @@ internal fun transaccion(t: DatosTransferencia, fecha: java.time.Instant, import
     cliente = DatosCliente(
         nombreApellidos = t.cliente.nombreApellidos.trim().replace(Regex("\\s+"), " "),
         ci = t.cliente.ci.trim(),
-        telefono = Phone.normalize(t.cliente.telefono)!!,
+        telefono = requireNotNull(Phone.normalize(t.cliente.telefono)) {
+            "Se debe validar la transferencia antes de crearla"
+        },
     ),
     tarjetaCobro = tarjeta,
     telefonoCobro = telefono,

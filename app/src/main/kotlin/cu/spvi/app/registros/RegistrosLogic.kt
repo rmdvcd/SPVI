@@ -20,6 +20,7 @@ object TextosRegistros {
     const val TITULO = "Registros"
     const val FILTRAR = "Filtrar por fecha e importe"
     const val FILTRAR_FECHA = "Filtrar por fecha"
+    const val BUSCANDO = "Buscando en los registros…"
     /** 0.20.0 (H1). */
     const val VENDEDOR = "Vendedor"
     const val TODOS_VENDEDORES = "Todos"
@@ -137,6 +138,7 @@ object RegistrosTags {
     const val LISTA = "registros_lista"
     const val REINTENTAR = "registros_reintentar"
     const val BUSCAR = "registros_buscar"
+    const val BUSCANDO = "registros_busqueda_progreso"
     const val FILTRO = "registros_filtro"
     const val COMPARTIR = "registros_compartir"
     const val EXPORTAR = "registros_exportar"
@@ -186,13 +188,13 @@ fun resumenFiltro(f: FiltroRegistros, tipo: TipoRegistro): String? {
         }
         if (tipo != TipoRegistro.MOVIMIENTOS && f.porImporte) {
             val min = f.importeMin; val max = f.importeMax
-            add(
-                when {
-                    min != null && max != null -> "${Money.format(min)} – ${Money.format(max)}"
-                    min != null -> "desde ${Money.format(min)}"
-                    else -> "hasta ${Money.format(max!!)}"
-                },
-            )
+            val importe = when {
+                min != null && max != null -> "${Money.format(min)} – ${Money.format(max)}"
+                min != null -> "desde ${Money.format(min)}"
+                max != null -> "hasta ${Money.format(max)}"
+                else -> null
+            }
+            if (importe != null) add(importe)
         }
         if (tipo != TipoRegistro.MOVIMIENTOS) f.vendedor?.let { add(it) } // 0.20.0 (H1)
     }

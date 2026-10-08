@@ -10,11 +10,6 @@ object TextosPago {
     const val TITULO = "Pago electrónico"
     const val EXPLICACION = "Cuando un cliente paga por transferencia, el código QR lleva la tarjeta o cuenta que recibe " +
         "el dinero y el teléfono que recibe el mensaje de confirmación. Elige cuáles usar."
-    const val TELEFONO = "Teléfono de confirmación"
-    const val TARJETA = "Tarjeta o cuenta que recibe el dinero"
-    const val NINGUNO = "Ninguno"
-    const val NUEVO_TELEFONO = "Otro teléfono"
-    const val NUEVA_TARJETA = "Otra tarjeta o cuenta"
     const val EN_USO = "En uso"
     const val ERROR_TELEFONO = "Escribe un teléfono válido, por ejemplo 5123 4567"
     const val ERROR_TARJETA = "Escribe solo los números de la tarjeta o cuenta (12 a 20 dígitos)"

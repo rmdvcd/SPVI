@@ -141,10 +141,12 @@ fun TurnoDetalleContent(
     Scaffold(
         topBar = {
             SpviTopBar(title = titulo, onBack = onBack, actions = {
-                if (puedeExportar) SpviIconAction(
-                    SpviIcons.Compartir, TextosTurno.COMPARTIR, onClick = exportar!!.onAbrir, enabled = !exportacion.exportando,
-                    modifier = Modifier.testTag(TurnoDetalleTags.COMPARTIR),
-                )
+                if (puedeExportar) exportar?.let { acciones ->
+                    SpviIconAction(
+                        SpviIcons.Compartir, TextosTurno.COMPARTIR, onClick = acciones.onAbrir, enabled = !exportacion.exportando,
+                        modifier = Modifier.testTag(TurnoDetalleTags.COMPARTIR),
+                    )
+                }
             })
         },
         snackbarHost = { SpviSnackbarHost(snackbar) },
@@ -170,7 +172,10 @@ fun TurnoDetalleContent(
             }
         }
     }
-    if (puedeExportar && exportacion.hoja) HojaExportarTurno((state as EstadoCarga.Exito).datos, exportar!!)
+    if (puedeExportar && exportacion.hoja) {
+        val datos = (state as? EstadoCarga.Exito)?.datos
+        if (datos != null) exportar?.let { acciones -> HojaExportarTurno(datos, acciones) }
+    }
 }
 
 /** 0.25.1: PDF o Excel del turno completo; cada formato se envía a otra app o se guarda en el teléfono. */

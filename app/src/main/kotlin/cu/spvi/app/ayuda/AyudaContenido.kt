@@ -87,7 +87,7 @@ object AyudaContenido {
             listOf(
                 "En Registros ves ventas, servicios, transferencias, movimientos y turnos.",
                 "Toca Filtrar para elegir las fechas (hoy, 7 días, este mes…) o el importe.",
-                "Toca Compartir para enviar el resumen por WhatsApp u otra app.",
+                "Toca Exportar para enviar la tabla en PDF o Excel a otra app o guardarla en el teléfono.",
             ),
         ),
         TemaAyuda(

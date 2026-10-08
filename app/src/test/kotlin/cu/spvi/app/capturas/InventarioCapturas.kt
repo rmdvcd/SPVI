@@ -82,6 +82,10 @@ class InventarioCapturas {
         "02k_inventario_ficha",
         lista { it.copy(ficha = FichaProducto(items[1].producto, emptyList(), NivelStock.CRITICO, EstadoCaducidad.PROXIMA)) },
     )
+    @Test @Config(qualifiers = Captura.TABLETA) fun fichaTableta() = inventario(
+        "02q_inventario_tableta_detalle",
+        lista { it.copy(ficha = FichaProducto(items[1].producto, emptyList(), NivelStock.CRITICO, EstadoCaducidad.PROXIMA)) },
+    )
     @Test fun fichaLetraGrande() = rule.capturar("02z_inventario_ficha_letra_200") {
         LetraGrande {
             InventarioContent(

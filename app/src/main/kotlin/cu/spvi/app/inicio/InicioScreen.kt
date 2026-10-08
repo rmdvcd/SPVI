@@ -494,7 +494,7 @@ private fun TurnoCard(state: InicioUiState, acciones: AccionesInicio, zona: Zone
             }
             Switch(checked = abierto, onCheckedChange = null, enabled = !state.cambiandoTurno)
         }
-        // P25: «Nueva venta», solo icono, centrada (antes en pareja con Escanear, eliminado con el código de barras).
+        // P25: «Nueva venta», solo icono, centrada.
         // 0.21.0 (C12): sin ningún tipo de venta (solo Inventario, o sin permiso de vender) no hay botón de venta.
         if (permisos.vender) Row(
             Modifier.fillMaxWidth().padding(top = SpviSpacing.xs),

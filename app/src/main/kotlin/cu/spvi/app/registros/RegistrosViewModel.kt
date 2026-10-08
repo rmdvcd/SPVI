@@ -58,6 +58,8 @@ data class RegistrosUiState(
     /** Un filtro por tabla: cambiar de pestaña no pierde la búsqueda ni el filtro de las otras. */
     val filtros: Map<TipoRegistro, FiltroRegistros> = emptyMap(),
     val vista: EstadoCarga<VistaRegistro> = EstadoCarga.Cargando,
+    /** Hay un filtro pendiente de consultar para la tabla actual; las filas previas siguen visibles. */
+    val buscando: Boolean = false,
     val ficha: FichaRegistro? = null,
     val hojaFiltro: Boolean = false,
     /** Prompt 14: hoja «Exportar PDF o Excel» abierta. */
@@ -121,32 +123,46 @@ class RegistrosViewModel @Inject constructor(
     val eventos: Flow<EventoRegistros> = eventosCh.receiveAsFlow()
 
     private data class Consulta(val tipo: TipoRegistro?, val filtro: FiltroRegistros, val intento: Int)
+    private data class VistaConsultada(val consulta: Consulta, val estado: EstadoCarga<VistaRegistro>)
 
     /**
-     * La vista recuerda de qué tabla es: al cambiar de pestaña se muestra «Cargando» (nunca filas de otra
-     * tabla) y al escribir en el buscador la lista anterior sigue visible hasta que llega la nueva (sin parpadeo).
+     * Al cambiar de tabla se muestra Cargando (nunca filas de otra tabla). Al cambiar sus filtros, las filas previas
+     * siguen visibles y [RegistrosUiState.buscando] anuncia la consulta hasta que llega el resultado nuevo.
      */
-    private val vista: StateFlow<Pair<TipoRegistro?, EstadoCarga<VistaRegistro>>> =
+    private val vista: StateFlow<VistaConsultada> =
         combine(local, intento) { l, i -> Consulta(l.tipo, l.filtro, i) }
             .distinctUntilChanged()
-            // 0.30.0 (F1): escribir en el buscador no dispara una consulta por tecla (8 pulsaciones = 1);
-            // pestañas, tipo y «Reintentar» (texto vacío) no esperan. El texto que ve la pantalla es inmediato.
+            // 0.30.0 (F1): agrupa pulsaciones; pestañas, filtros no textuales y reintentos sin texto pasan al instante.
             .debounce { c -> if (c.filtro.texto.isEmpty()) 0L else debounceBusqueda }
             .flatMapLatest { c ->
-                val tipo = c.tipo ?: return@flatMapLatest flowOf<Pair<TipoRegistro?, EstadoCarga<VistaRegistro>>>(null to EstadoCarga.Idle)
+                val tipo = c.tipo ?: return@flatMapLatest flowOf(VistaConsultada(c, EstadoCarga.Idle))
                 val sinFiltro = c.filtro.texto.isBlank() && c.filtro.activos == 0
                 observarRegistro(tipo, c.filtro, zona)
-                    .map<VistaRegistro, Pair<TipoRegistro?, EstadoCarga<VistaRegistro>>> { v ->
-                        tipo to (if (v.cantidad == 0 && sinFiltro) EstadoCarga.Vacio(v) else EstadoCarga.Exito(v))
+                    .map<VistaRegistro, VistaConsultada> { v ->
+                        VistaConsultada(c, if (v.cantidad == 0 && sinFiltro) EstadoCarga.Vacio(v) else EstadoCarga.Exito(v))
                     }
-                    .catch { e -> if (e is CancellationException) throw e else emit(tipo to EstadoCarga.Error(TextosRegistros.ERROR_CARGA)) }
+                    .catch { e ->
+                        if (e is CancellationException) throw e
+                        emit(VistaConsultada(c, EstadoCarga.Error(TextosRegistros.ERROR_CARGA)))
+                    }
             }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null to EstadoCarga.Cargando)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), VistaConsultada(Consulta(null, FiltroRegistros(), 0), EstadoCarga.Cargando))
 
     private val vendedores = observarRegistro.vendedores().catch { e -> if (e is CancellationException) throw e else emit(emptyList()) }
 
-    val state: StateFlow<RegistrosUiState> = combine(local, vista, vendedores) { l, (tipo, v), vs ->
-        l.copy(vista = if (tipo == l.tipo) v else EstadoCarga.Cargando, vendedores = vs)
+    val state: StateFlow<RegistrosUiState> = combine(local, vista, vendedores, intento) { l, v, vs, i ->
+        val consultaActual = Consulta(l.tipo, l.filtro, i)
+        val mismaTabla = v.consulta.tipo == l.tipo
+        val vistaActual = when {
+            mismaTabla -> v.estado
+            l.tipo == null -> EstadoCarga.Idle
+            else -> EstadoCarga.Cargando
+        }
+        l.copy(
+            vista = vistaActual,
+            buscando = l.tipo != null && mismaTabla && v.consulta != consultaActual,
+            vendedores = vs,
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RegistrosUiState())
 
     // ---------------- Pestañas, buscador y filtro ----------------

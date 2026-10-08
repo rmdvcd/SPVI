@@ -1,6 +1,6 @@
 # SPVI — Interfaz, experiencia e interacción (UI · UX · IX)
 
-Decisiones de diseño de la versión **0.19.3**: sistema de diseño, criterios de experiencia e interacción, cambios respecto a versiones anteriores y lo que queda pendiente. La referencia de tokens y componentes está en [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
+Referencia de interfaz vigente para **0.30.0**, con decisiones acumuladas desde 0.19.3. Algunas secciones describen pantallas históricas; para el comportamiento actual consulta [README.md](README.md) y [MANUAL_USUARIO.md](MANUAL_USUARIO.md). La referencia de tokens y componentes está en [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
 
 **Usuario objetivo:** dueño o empleado de un pequeño negocio en Cuba, sin conocimientos técnicos, con un teléfono Android de gama media o baja y conexión cara o inestable.
 
@@ -18,9 +18,9 @@ Módulo `:designsystem`. **Regla única: ninguna pantalla define colores, tamañ
 | Espaciado | Rejilla de 8dp: 8 / 16 / 24 / 32, sin valores intermedios |
 | Radios | 8 (chips, campos) · 12 (botones) · 16 (cards) · 24 (hojas y diálogos) |
 | Tamaños | Botones 40–48dp de alto (sin máximo con letra grande), campos 56dp, área táctil ≥ 48dp, iconos 24/18dp, QR 240dp, miniatura 88dp, hueco del FAB 88dp, ancho máximo de formularios 600dp |
-| Movimiento | 200 / 250 / 300 ms, `FastOutSlowInEasing`. Fundido entre las 5 pestañas; al abrir un detalle la pantalla entra desde la derecha (1/10 + fundido) y al volver, al revés. Filas de listas con `spviAnimateItem()`; gráfico de área que crece desde abajo sin recalcular el trazo (`drawWithCache`) |
+| Movimiento | Fundidos de 150–250 ms; los cambios de tamaño y posición usan muelles sin rebote. Las 5 pestañas combinan fundido y zoom sutil; la navegación direccional entra desde la derecha o izquierda (1/4 + fundido). Filas de listas con `spviAnimateItem()`; gráfico de área que crece desde abajo sin recalcular el trazo (`drawWithCache`) |
 | Iconos | Siempre rellenos y con nombre de negocio (`SpviIcons.Venta`…). Las pantallas no importan `Icons.*` |
-| Componentes | Botones (primario, secundario, de texto, solo icono), campo de texto con borrado y acción del teclado (`imeAction`), card, fila de lista con indicador de color, chip, **pestañas** (`SpviTabs`), **cabecera de asistente** (`SpviStepper`), **banner de estado** (`SpviStatusBanner`: Info / Aviso / Crítico), contador de alerta, snackbar con vibración breve, diálogo con logo, hoja inferior con pie fijo y protección de cambios, FAB simple y expandible, progreso, barra inferior, barra superior, estado vacío con Ayuda y gráficos de barras, dona y área. Vibración: `SpviHaptics` (sin permiso VIBRATE) |
+| Componentes | Botones (primario, secundario, de texto, solo icono), campo de texto con borrado y acción del teclado (`imeAction`), card, fila de lista con indicador de color, chip, **pestañas** (`SpviTabs`), **cabecera de asistente** (`SpviStepper`), **banner de estado** (`SpviStatusBanner`: Info / Aviso / Crítico), contador de alerta, snackbar con vibración breve, diálogo centrado sin logo, ventana con pie fijo y protección de cambios, panel lista-detalle en ventanas medianas/expandidas, FAB simple, progreso, barras de navegación, estado vacío con Ayuda y gráficos de barras, dona y área. Vibración: `SpviHaptics` (sin permiso VIBRATE) |
 | Catálogo | `SpviCatalog.kt` (Previews claro y oscuro) y, en debug, **Ajustes → Design system** |
 | Verificación | `ContrastTest` falla el build si un par de colores baja del mínimo AA |
 
@@ -33,7 +33,7 @@ Módulo `:designsystem`. **Regla única: ninguna pantalla define colores, tamañ
 | **5 destinos en la barra inferior**, solo iconos con resaltado invertido | Requisito de SPVI.txt. El nombre sale en el tooltip y en TalkBack |
 | **Nada bloquea salvo la licencia** | El asistente se puede omitir paso a paso o entero; lo pendiente se retoma en *Ajustes → Completar configuración* |
 | **Valores recomendados** si se omiten los avisos: 5 (bajo) / 1 (crítico) | El usuario no tiene que entender los umbrales para empezar |
-| **Permisos en contexto:** cámara al tocar Escanear, con explicación previa; internet con consentimiento propio (*Preguntar / Permitidas / Nunca*) | Pedir solo cuando se entiende para qué; siempre hay alternativa manual |
+| **Permisos en contexto:** cámara al vincular una app mediante QR o al tomar una foto, con explicación previa | Pedir solo cuando se entiende para qué; los productos se registran manualmente |
 | **Sin turno no se vende**, con bloqueo explicado y botón «Abrir turno» | Las cuentas del turno cuadran; abrir siempre es una acción explícita |
 | **Venta en pasos cortos:** carrito → comprobante (efectivo) o QR → datos del cliente (transferencia). La venta se registra solo al confirmar | Se puede cancelar sin dejar rastro |
 | **Un Elaborado se vende directamente desde sus insumos** (0.16.0): sin paso de producción ni existencias propias; se muestra «Alcanza para N» | El vendedor no prepara nada antes en la app; ve de un vistazo cuántos puede vender |
@@ -59,9 +59,9 @@ Módulo `:designsystem`. **Regla única: ninguna pantalla define colores, tamañ
 | **Estados completos:** Cargando, Vacío (con acción), Sin resultados (con Quitar filtros), Error (con Reintentar) | Todas las listas |
 | **Confirmación solo en lo destructivo o irreversible:** cerrar turno, eliminar, descartar venta, importar, borrar teléfono (escribiendo BORRAR) | — |
 | **Preguntar antes de salir** con cambios sin guardar (flecha, botón atrás del sistema; en hojas, también deslizar o tocar fuera). Cancelar en el pie de una hoja es explícito y no pregunta | Perfil, Producto, Insumo, hojas de Precios y de Pago electrónico; Venta («¿Descartar la venta?») |
-| **Validación con una sola regla (A16):** el error de un campo aparece cuando lo has **editado y sales de él**, o al pulsar Guardar/Siguiente; desde ese momento se actualiza en tiempo real y desaparece en cuanto el valor es válido. Mientras escribes no hay rojo; un campo vacío solo se marca al guardar. Los botones − / + cuentan como edición terminada. Implementada en `SpviTextField` (`validarAlSalir`, `forzarError`) | Producto, Insumo, Perfil, Pago electrónico, Precios, Venta→Cliente, Onboarding, Licencia, Respaldo, Escáner |
+| **Validación con una sola regla (A16):** el error de un campo aparece cuando lo has **editado y sales de él**, o al pulsar Guardar/Siguiente; desde ese momento se actualiza en tiempo real y desaparece en cuanto el valor es válido. Mientras escribes no hay rojo; un campo vacío solo se marca al guardar. Los botones − / + cuentan como edición terminada. Implementada en `SpviTextField` (`validarAlSalir`, `forzarError`) | Producto, Insumo, Perfil, Pago electrónico, Precios, Venta→Cliente, Onboarding, Licencia, Respaldo |
 | **Teclado que avanza:** «Siguiente» pasa al campo siguiente y «Listo» en el último guarda (o confirma) | Producto, Insumo, Perfil, datos de Licencia, contraseñas del Respaldo |
-| **Vibración breve** al leer un código, al terminar una venta y con cada snackbar; respeta el ajuste del sistema | Escáner, Venta, todos los mensajes |
+| **Vibración breve** al leer el QR de vinculación, al terminar una venta y con cada snackbar; respeta el ajuste del sistema | Vinculación, Venta, todos los mensajes |
 | **Asistentes en la misma pantalla** con `SpviStepper` («Paso N de M: título» + barra): Licencia 3 pasos; Respaldo Exportar 3 (Contraseña → Destino → Respaldo listo) e Importar 4 (Elegir → Comprobar → Contraseña → Confirmar); Onboarding; Migrar 4 (la cabecera indica el paso en curso; las 4 tarjetas siguen visibles) | Licencia, Respaldo, Onboarding, Migrar |
 | **Progreso de la operación por etapas** («Etapa 1 de 3 · Reuniendo los datos…»), con las demás acciones deshabilitadas. «Etapa», no «Paso», para no confundirlo con el asistente | Respaldo |
 | **Pegar solo al tocar «Pegar»**; compartir a SPVI desde otras apps (SMS, `.spvi`) | Venta, Licencia, Respaldo |
@@ -120,7 +120,7 @@ Los textos que no coincidían con la interfaz (Ayuda y aviso de turno cerrado) s
 - **Fotos fuera del respaldo:** en otro teléfono los productos importados aparecen sin foto.
 - **Contenido de la Ayuda en la app:** 10 temas fijos en `AyudaContenido`; no hay búsqueda ni imágenes.
 - **Deshacer:** las acciones destructivas usan confirmación, no «Deshacer» en el snackbar. Decisión confirmada al cerrar el Prompt 18 (pregunta 4, opción 2): más simple y sin estados intermedios en la base de datos.
-- **Tests de interfaz e integración:** compilados, pero no ejecutados en dispositivo dentro de este entorno. El esquema de Room se comprueba con `EsquemaTest` (Prompt 17); las bases v1/v2 se recrean (`fallbackToDestructiveMigrationFrom(1, 2)`).
+- **Verificación:** la última CI completa confirmada aprobó 836 tests JVM; los instrumentados solo se compilaron, no se ejecutaron en dispositivo. El árbol tiene 142 PNG por tema para 144 casos de captura; dos esperan generación y revisión. Los cambios posteriores siguen pendientes de OpenCode CLI; ver [docs/VERIFICACION.md](docs/VERIFICACION.md). El esquema de Room se comprueba con `EsquemaTest`; las bases v1/v2 se recrean (`fallbackToDestructiveMigrationFrom(1, 2)`).
 - **Medir recomposiciones:** no hay un test automático que cuente recomposiciones; el banner y los gráficos usan claves estables y `drawWithCache`, revisado a mano.
 
 ## 5. Cierre del plan del Prompt 18 (respuestas a las preguntas de la auditoría)
@@ -141,7 +141,7 @@ Botones solo icono (en 0.15.1 también «Nueva venta»), todas las ventanas cent
 
 ## Ajustes 0.15.1
 
-- **Nueva venta:** solo icono (carrito relleno), centrada junto a Escanear (tonal), con 24dp entre ellas. Ya no hay ningún botón con texto.
+- **Nueva venta:** solo icono (carrito relleno), centrada. Los productos se registran manualmente.
 - **Período:** `SpviComboBox` con aspecto de tarjeta tonal, igual que los accesos de Inicio. El icono va en un círculo y encima se ve la etiqueta con el valor en negrita; la flecha gira al abrir. El menú tiene radio 16dp y la opción elegida resaltada con ✓.
 - **Guardar = Confirmar (✓):** un solo icono para «aceptar» en toda la app (Jakob).
 - **Registros identificados por fecha:** Ventas «01/10/2026 14:32», Transferencias fecha + cliente, Movimientos fecha + artículo, Turnos «30/09/2026» + horas · persona. Los títulos pasan a «Venta del …», «Transferencia del …», «Movimiento del …» y «Turno del …». Ningún id interno se muestra, se comparte ni se exporta. El Nº de transacción bancario sí se mantiene: es un dato del banco.

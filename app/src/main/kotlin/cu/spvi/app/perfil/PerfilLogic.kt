@@ -13,7 +13,6 @@ object TextosPerfil {
     const val ERROR_CI = "Entre 5 y 20 letras o números"
     const val GUARDADO = "Datos guardados"
     const val ERROR_GENERICO = "No se pudo guardar. Inténtalo de nuevo."
-    const val DESCARTAR_TITULO = "¿Salir sin guardar?"
     const val DESCARTAR_TEXTO = "Los cambios en tus datos personales se perderán."
 }
 

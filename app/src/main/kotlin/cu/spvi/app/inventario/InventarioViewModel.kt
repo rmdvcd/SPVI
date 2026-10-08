@@ -54,7 +54,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -70,6 +69,8 @@ sealed interface ConfirmarEliminar {
 data class InventarioUiState(
     val vista: EstadoCarga<VistaInventario> = EstadoCarga.Cargando,
     val filtro: FiltroInventario = FiltroInventario(),
+    /** La consulta actual no ha devuelto resultados todavía; se conserva la lista anterior y se muestra progreso. */
+    val buscando: Boolean = false,
     val seleccion: Set<Long> = emptySet(),
     val ficha: FichaProducto? = null,
     /** P29: ficha de un insumo (fila con id negativo). */
@@ -136,27 +137,29 @@ class InventarioViewModel @Inject constructor(
     private val eventosCh = Channel<EventoInventario>(Channel.BUFFERED)
     val eventos: Flow<EventoInventario> = eventosCh.receiveAsFlow()
 
+    private data class Consulta(val filtro: FiltroInventario, val intento: Int)
+    private data class VistaConsultada(val consulta: Consulta, val estado: EstadoCarga<VistaInventario>)
+
     /**
-     * 0.30.0 (F1): el filtro que alimenta la consulta. Lo que no es texto (alertas, tipo, «quitar filtros») pasa al
-     * instante; el texto espera [debounceBusqueda] para que escribir «refresco» no dispare una consulta por tecla
-     * (8 pulsaciones = 1 consulta). El filtro que ve la pantalla (`state.filtro`) sigue siendo inmediato: el campo
-     * de texto no se retrasa. Con el texto vacío el retardo es 0, así que abrir la pantalla no espera nada.
+     * 0.30.0 (F1): lo que no es texto pasa al instante; el texto espera [debounceBusqueda] para evitar una consulta
+     * por tecla. El valor del campo es inmediato. Con texto vacío, abrir la pantalla no espera.
      */
     private val filtroConsultado: Flow<FiltroInventario> = filtro.debounce { f -> if (f.texto.isEmpty()) 0L else debounceBusqueda }
 
-    /**
-     * 0.30.0 (F1): [filtroConsultado] + [intento] (Reintentar) disparan la consulta. Cada cambio de filtro
-     * vuelve a suscribir a `observarInventario` (por flatMapLatest), por eso el debounce funciona como se espera:
-     * escribiendo rápido solo llega el último valor. El estado inicial es Cargando, igual que antes.
-     */
-    private val consulta = combine(intento, filtroConsultado) { _, f -> f }.distinctUntilChanged()
+    /** El resultado conserva el filtro que lo produjo: mientras llega el nuevo, la lista anterior queda visible. */
+    private val consulta = combine(intento, filtroConsultado) { i, f -> Consulta(f, i) }.distinctUntilChanged()
 
-    private val vista: StateFlow<EstadoCarga<VistaInventario>> = consulta.flatMapLatest { f ->
-        observarInventario(flowOf(f))
-            .map<VistaInventario, EstadoCarga<VistaInventario>> { if (it.total == 0) EstadoCarga.Vacio(it) else EstadoCarga.Exito(it) }
-            .onStart { emit(EstadoCarga.Cargando) }
-            .catch { emit(EstadoCarga.Error(TextosInventario.ERROR_CARGA)) }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EstadoCarga.Cargando)
+    private val vista: StateFlow<VistaConsultada> = consulta.flatMapLatest { c ->
+        observarInventario(flowOf(c.filtro))
+            .map<VistaInventario, VistaConsultada> {
+                VistaConsultada(c, if (it.total == 0) EstadoCarga.Vacio(it) else EstadoCarga.Exito(it))
+            }
+            .catch { emit(VistaConsultada(c, EstadoCarga.Error(TextosInventario.ERROR_CARGA))) }
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5_000),
+        VistaConsultada(Consulta(filtro.value, intento.value), EstadoCarga.Cargando),
+    )
 
     /**
      * Todos los productos activos + los insumos (id negativo, P29): la selección sobrevive a búsquedas/filtros y se
@@ -168,8 +171,15 @@ class InventarioViewModel @Inject constructor(
         .catch { emit(emptyMap()) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
-    val state: StateFlow<InventarioUiState> = combine(vista, filtro, seleccion, todos, local) { v, f, s, t, l ->
-        l.copy(vista = v, filtro = f, seleccion = if (t.isEmpty()) emptySet() else s.filterTo(mutableSetOf()) { it in t })
+    private val consultaActual = combine(filtro, intento) { f, i -> Consulta(f, i) }
+
+    val state: StateFlow<InventarioUiState> = combine(vista, consultaActual, seleccion, todos, local) { v, c, s, t, l ->
+        l.copy(
+            vista = v.estado,
+            filtro = c.filtro,
+            buscando = v.consulta != c,
+            seleccion = if (t.isEmpty()) emptySet() else s.filterTo(mutableSetOf()) { it in t },
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InventarioUiState(filtro = filtro.value))
 
     /** «Enviar» y «Guardar como» (P17 S5): el formato pendiente espera la URI del selector del sistema. */

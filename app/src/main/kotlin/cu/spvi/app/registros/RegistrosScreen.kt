@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.size
 import cu.spvi.designsystem.token.SpviSize
 import androidx.compose.material3.Icon
 import cu.spvi.app.common.LocalPermisosApp
+import cu.spvi.app.common.calculateListDetailPaneWidth
 import cu.spvi.designsystem.component.FiltroEntrada
 import cu.spvi.designsystem.component.SpviTextoAjustable
 import androidx.compose.ui.text.style.TextAlign
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -17,8 +19,10 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -40,7 +44,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -189,6 +196,9 @@ fun RegistrosContent(
     accionesClientes: AccionesClientes = AccionesClientes(),
 ) {
     val tipo = state.tipo
+    val anchoPanelDetalle = calculateListDetailPaneWidth()
+    val panelDeDetalle = anchoPanelDetalle != null && tipo != null && state.ficha != null
+    BackHandler(enabled = panelDeDetalle) { acciones.onCerrarFicha() }
     Scaffold(
         topBar = {
             SpviTopBar(title = TextosRegistros.TITULO, actions = {
@@ -214,15 +224,33 @@ fun RegistrosContent(
             if (state.exportando) {
                 SpviLinearProgress(Modifier.testTag(RegistrosTags.EXPORTANDO).semantics { contentDescription = TextosRegistros.EXPORTANDO })
             }
+            if (state.buscando) {
+                SpviLinearProgress(
+                    Modifier.fillMaxWidth().testTag(RegistrosTags.BUSCANDO)
+                        .semantics {
+                            contentDescription = TextosRegistros.BUSCANDO
+                            liveRegion = LiveRegionMode.Polite
+                        },
+                )
+            }
             Pestanas(state.pestana, acciones, pestanasVisibles(LocalPermisosApp.current))
             when {
                 state.pestana == PestanaRegistros.CLIENTES -> ClientesFijosTab(clientes, accionesClientes, zona)
                 tipo == null -> Turnos(turnos, acciones, zona)
+                tipo != null && panelDeDetalle -> Row(
+                    Modifier.weight(1f).fillMaxWidth().padding(horizontal = SpviSpacing.xs),
+                    horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
+                ) {
+                    Box(Modifier.weight(1f).fillMaxHeight()) { Tabla(state, tipo, acciones, zona) }
+                    Box(Modifier.width(anchoPanelDetalle ?: 280.dp).fillMaxHeight()) {
+                        state.ficha?.let { Ficha(it, acciones, zona, enPanel = true) }
+                    }
+                }
                 else -> Tabla(state, tipo, acciones, zona)
             }
         }
     }
-    state.ficha?.let { Ficha(it, acciones, zona) }
+    if (!panelDeDetalle) state.ficha?.let { Ficha(it, acciones, zona) }
     // 0.21.0 (C8): en la secundaria solo están los registros de su empleado: sin filtro «Vendedor».
     val vendedores = if (LocalPermisosApp.current.esSecundaria) emptyList() else state.vendedores
     if (state.hojaFiltro && tipo != null) HojaFiltro(state.filtro, tipo, acciones, vendedores)
@@ -422,7 +450,7 @@ private fun ListaTurnos(turnos: List<Turno>, onTurno: (Long) -> Unit, zona: Zone
 // ---------------- Ventana del elemento ----------------
 
 @Composable
-private fun Ficha(f: FichaRegistro, acciones: AccionesRegistros, zona: ZoneId) {
+private fun Ficha(f: FichaRegistro, acciones: AccionesRegistros, zona: ZoneId, enPanel: Boolean = false) {
     val (titulo, campos) = when (f) {
         is FichaRegistro.DeVenta -> TablasExport.tituloVenta(f.venta, zona) to TablasExport.camposVenta(f.venta, zona)
         is FichaRegistro.DeTransferencia -> TablasExport.tituloTransaccion(f.transaccion, zona) to TablasExport.camposTransaccion(f.transaccion, zona)
@@ -431,6 +459,7 @@ private fun Ficha(f: FichaRegistro, acciones: AccionesRegistros, zona: ZoneId) {
     SpviBottomSheet(
         onDismiss = acciones.onCerrarFicha,
         title = titulo,
+        enPanel = enPanel,
     ) {
         // P28: el total (o el importe de la transferencia) va UNA vez, centrado arriba; no se repite en la tabla.
         val total = campos.firstOrNull { it.first == "Total" || it.first == "Importe" }

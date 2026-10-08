@@ -74,12 +74,6 @@ class IdentificacionTest {
         assertEquals(setOf(2L), Identificacion.productosPorDiferenciar(productos.items.value.values.toList()))
     }
 
-    @Test fun elEscanerPuedeCambiarLaCaducidadSinExigirla() = runTest {
-        productos.put(producto(1, "Ron"), producto(2, "Ron"))
-        val r = guardar(producto(1, "Ron").copy(fechaCaducidad = LocalDate.of(2027, 1, 1)), null, exigirDiferenciar = false)
-        assertTrue(r is AppResult.Ok)
-    }
-
     @Test fun descripcionDeUnaLineaYHasta40Caracteres() {
         assertNull(Validadores.descripcion("Lata 350 ml Superior"))
         assertEquals(AppError.Regla.RANGO, Validadores.descripcion("x".repeat(Validadores.MAX_DESCRIPCION + 1))?.regla)

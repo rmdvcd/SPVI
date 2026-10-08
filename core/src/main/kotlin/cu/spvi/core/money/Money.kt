@@ -43,7 +43,7 @@ object Money {
     private val FORMAT = ThreadLocal.withInitial { DecimalFormat("#,##0.00", DecimalFormatSymbols(Locale.US)) }
     private val INPUT = Regex("^-?[0-9]{1,3}(,[0-9]{3})*(\\.[0-9]{1,2})?$|^-?[0-9]+(\\.[0-9]{1,2})?$")
 
-    fun format(amount: Cup): String = "${FORMAT.get()!!.format(amount.toBigDecimal())} CUP"
+    fun format(amount: Cup): String = "${FORMAT.get().format(amount.toBigDecimal())} CUP"
     fun cup(pesos: Long): String = format(Cup.ofPesos(pesos))
 
     /**
@@ -62,7 +62,7 @@ object Percent {
     private val FORMAT = ThreadLocal.withInitial { DecimalFormat("0.##", DecimalFormatSymbols(Locale.US)) }
     fun format(puntosBasicos: Int): String {
         val sign = if (puntosBasicos > 0) "+" else ""
-        return "$sign${FORMAT.get()!!.format(BigDecimal.valueOf(puntosBasicos.toLong(), 2))} %"
+        return "$sign${FORMAT.get().format(BigDecimal.valueOf(puntosBasicos.toLong(), 2))} %"
     }
 
     /** "12.5" / "-5" / "+10" → puntos básicos. Máximo 2 decimales. */

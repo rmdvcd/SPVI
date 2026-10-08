@@ -55,7 +55,8 @@ object ServicioFormLogic {
     /** Servicio + insumos listos para [cu.spvi.domain.usecase.GuardarServicio], o null si hay errores. */
     fun aServicio(f: ServicioForm, ahora: Instant): Pair<Servicio, List<RecetaLinea>>? {
         if (validar(f).isNotEmpty()) return null
-        return servicio(f, Money.parse(f.importe)!!, f.creadoEn ?: ahora) to lineasValidas(f)
+        val importe = Money.parse(f.importe) ?: return null
+        return servicio(f, importe, f.creadoEn ?: ahora) to lineasValidas(f)
     }
 
     fun desde(s: Servicio, lineas: List<RecetaLinea>, insumos: Map<Long, Insumo>) = ServicioForm(

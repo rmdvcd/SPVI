@@ -4,10 +4,10 @@ Capturas **reales** de la interfaz de SPVI generadas en la JVM con **Robolectric
 
 | | |
 |---|---|
-| Código | `app/src/test/kotlin/cu/spvi/app/capturas/` (6 clases + `Capturas.kt`) |
-| Casos | 153 → **306 PNG** (P24: +2, pestañas Ventas e Inventario del detalle del turno; P26: −3, sin diálogo Producir ni su snackbar; P28: −2, sin la ventana de Pago electrónico de Inicio, 06a y 06b) |
+| Código | `app/src/test/kotlin/cu/spvi/app/capturas/` (7 clases + `Capturas.kt`) |
+| Casos | **147** → 294 PNG esperados (claro/oscuro). Hay 142 PNG por tema (284); faltan 5 casos por tema: dos nuevos de Ajustes y tres tablet. |
 | Salida | `app/capturas/claro/ID.png` y `app/capturas/oscuro/ID.png` |
-| Pantalla de referencia | 360 × 800 dp a xhdpi (720 × 1600 px). Formularios y pantallas largas: 360 × 1600 dp |
+| Pantalla de referencia | Teléfono: 360 × 800 dp a xhdpi (720 × 1600 px). Largas: 360 × 1600 dp. Tableta: 800 × 1280 dp |
 | Tema | `SpviTheme(darkTheme = false/true)`; se cambia sin recrear la actividad |
 
 ## 1. Generarlas
@@ -52,12 +52,23 @@ Los ID coinciden con los de las maquetas HTML del Prompt 23 cuando representan l
 
 | Clase | Casos | Contenido |
 |---|---|---|
-| `InicioCapturas` | 9 | Inicio con datos (pantalla y captura larga), vacío, cargando con banner Aviso, error con banner Crítico, banner Crítico, diálogos «Nueva venta» y «¿Cerrar el turno?», snackbar de turno cerrado. Gráficos de barras/área/donut y Top 3. |
-| `InventarioCapturas` | 33 | Lista con niveles, cargando, vacío, sin resultados, error, filtro por alerta, selección, diálogo eliminar, ficha (normal y Elaborado con receta), hojas Agregar/Filtrar/Exportar/Compartir, modo venta, snackbar. Formulario de producto: nuevo, errores, editar, Elaborado con receta, hoja de insumos, Elaborado sin receta, diálogo «¿Salir sin guardar?». Escáner: permiso (explicar, denegado, bloqueado, sin cámara), listo, consentimiento de red, buscando, encontrado, sin conexión, ya existe. |
-| `ServiciosCapturas` | 5 | (0.18.0, sustituye a `ElaboracionCapturas`) Servicios: lista, vacío, modo venta, ficha con insumos y formulario. |
-| `RegistrosCapturas` | 21 | Tablas de Ventas, Transferencias, Movimientos y Turnos; cargando, vacío, sin resultados, error; ventanas de venta, transferencia y movimiento; hojas de filtro y exportar (con aviso de datos de clientes); exportando; detalle de turno abierto, cerrado, sin actividad y error. |
-| `VentaCapturas` | 26 | Venta sin turno, carrito vacío/lleno/transferencia/Elaborado, error de stock, comprobante, QR, QR sin tarjeta, datos del cliente (errores y completo), diálogo descartar. Pago electrónico (hoja de Inicio, errores, lista, vacía, editar, nuevo con error, eliminar, snackbar). Precios (lista, vacío, sin productos, formulario, errores, eliminar). |
-| `AjustesCapturas` | 48 | Ajustes (pendiente y completa) y diálogo «Consultas en internet»; Perfil (normal, cambios, errores, «¿Salir sin guardar?», snackbar); Licencia (prueba pasos 1–3, errores, perfil vacío, activa, perpetua, vencida, prueba terminada, fecha incorrecta, sin clave del emisor); Respaldo (pasos, errores, progreso, listo, comprobando, importar, contraseña incorrecta, importando, importado, incompleto, versión nueva, snackbar PDF); Migrar (paso 1, ID con error, rechazada, autorizada, diálogo borrar sin y con «BORRAR»); Ayuda; Soporte; asistente de configuración (carga, bienvenida, datos, errores, avisos, errores, prueba, retomar). |
+| `InicioCapturas` | 13 | Inicio con datos (pantalla y captura larga), vacío, cargando y errores con banners, diálogos y snackbar; gráficos de barras/área/donut y Top 3. |
+| `InventarioCapturas` | 24 | Lista con niveles, estados vacíos/error, filtro, selección, eliminar, fichas normal/Elaborado y **detalle lateral en tableta**; hojas Exportar/Compartir, modo venta y snackbar. Formularios de producto, insumos y descarte. |
+| `ServiciosCapturas` | 6 | Servicios: lista, vacío, modo venta, ficha con insumos, **detalle lateral en tableta** y formulario. |
+| `RegistrosCapturas` | 26 | Tablas de Ventas, Transferencias, Movimientos y Turnos; estados vacíos/error; fichas, incluyendo **detalle lateral en tableta**; filtros, exportación y detalle de turno. |
+| `VentaCapturas` | 24 | Venta sin turno, carritos, errores de stock, comprobantes/QR, datos del cliente; hojas de pago electrónico y Precios. |
+| `AjustesCapturas` | 50 | Ajustes, Perfil, Licencia, Respaldo (incluida exportación explícita sin contraseña con advertencia), Migrar, Ayuda, Soporte y asistente de configuración. |
+| `VinculacionCapturas` | 4 | Vinculación y pantallas de QR; la cámara real se valida en dispositivo, no en Robolectric. |
+
+### Tablet (T4.2)
+
+`Captura.TABLETA` usa 800 × 1280 dp; con `WindowSizeClass.Medium` debe mantener la lista junto al detalle seleccionado en:
+
+- `02q_inventario_tableta_detalle`
+- `04u_registros_tableta_detalle`
+- `09f_servicios_tableta_detalle`
+
+Las tres capturas claro/oscuro están pendientes de generar y revisar con OpenCode CLI en el PC del propietario.
 
 ### Letra grande (0.27.0, T2)
 
@@ -84,11 +95,11 @@ Límites del arnés:
 
 ## 4. Límites conocidos
 
-- **Vista de cámara**: CameraX no funciona en Robolectric; el estado «cámara encendida» (`08c_escaner_camara`) solo existe como maqueta.
+- **Vista de cámara para leer un QR**: CameraX no funciona en Robolectric; se comprueba en un teléfono real siguiendo [PRUEBAS_DISPOSITIVO.md](PRUEBAS_DISPOSITIVO.md).
 - **Barra de navegación inferior**: la pinta `MainScaffold`, no los `*Content`; en las capturas reales de Inicio, Inventario, Servicios, Registros y Ajustes no aparece.
 - **Estados que dependen de escribir o de un selector del sistema** (filtro con importes inválidos, selector de fecha abierto, activación rechazada, menú desplegado del FAB): solo como maqueta.
 - **Fuentes**: Robolectric usa las fuentes de su Android 15; puede haber diferencias mínimas de interletra respecto a un teléfono.
-- Las capturas **no se generaron en el entorno de desarrollo de esta entrega** (no hay Gradle ni Android SDK; ver Pendiente.md §1). El código de capturas se **compiló** con kotlinc contra los jars reales de Roborazzi 1.38.0, Robolectric 4.14.1 y Compose 1.7.6.
+- Para esta revisión hay 142 PNG por tema; faltan cinco baselines por tema (dos casos de Ajustes y las tres capturas tablet). El agente no ejecuta Gradle ni Roborazzi: el propietario los generará con OpenCode CLI en su PC y revisará las imágenes. Ver [Pendiente.md](Pendiente.md).
 
 ## Maquetas PDF (P44)
 
@@ -97,8 +108,8 @@ Límites del arnés:
 ```bash
 pip install qrcode pymupdf
 npm i playwright && npx playwright install chromium   # y fonts-roboto en el sistema
-python3 tools/capturas/generar.py /tmp/caps 25         # 13 páginas, numeradas desde el 25
+python3 tools/capturas/generar.py /tmp/caps 25         # 80 páginas, numeradas desde el 25
 node tools/capturas/render.js /tmp/caps                # pNN.pdf (842.88 × 595.92 pt)
 ```
 
-La portada está en `tools/capturas/portada.html`. La entrega actual es `SPVI_0.26.0_capturas_y_exportaciones.pdf` (127 páginas), en la raíz del proyecto (excluido de git): portada, **índice enlazado** (y marcadores del PDF), pantallas nº 1–108 y exportaciones E1–E16 (0.26.0: sin textos). Nº 1–24 son de la 0.18.4 (paleta anterior); nº 25–67, de la 0.19 a la 0.23.1 (apps vinculadas, cierre pedido, recorrido inicial, escáner, licencia por texto); nº 68–69, Descripción (0.24.0); nº 70–88, 0.25.0 (arqueo, anular, respaldo, actualizaciones, recuperación); nº 89–96, 0.25.1 (compartir turno, modificar venta completa, recuperación con licencia vencida, «Ahora no» en el conteo, destinatario de cada exportación). Nº 97–108, 0.26.0 (respaldo solo .spvi, «+» en la esquina, seminegrita, fondo asignado por el encargado, actualización obligatoria y permiso de fotos para que la prueba no se reinicie al reinstalar). Las exportaciones salen de `tools/exportaciones/generar.sh` (TablasExport y XlsxWriter reales; el PDF y los PNG replican PdfWriter/DisenoPdf, ImagenTabla y Tarjetas) y `paginas.py`; el PDF se arma con `tools/capturas/ensamblar.py`. El QR de la página de vinculación lleva un texto de ejemplo y no vincula nada.
+La portada está en `tools/capturas/portada.html`. El PDF archivado local `SPVI_0.26.0_capturas_y_exportaciones.pdf` (127 páginas, excluido de Git) contiene pantallas nº 1–108 y exportaciones E1–E16; es histórico, no una guía del comportamiento actual. Nº 1–24 son de la 0.18.4 (paleta anterior); nº 25–67, de la 0.19 a la 0.23.1 (apps vinculadas, cierre pedido, recorrido inicial y licencia por texto); nº 68–69, Descripción (0.24.0); nº 70–88, 0.25.0 (arqueo, anular, respaldo, actualizaciones, recuperación); nº 89–96, 0.25.1 (compartir turno, modificar venta completa, recuperación con licencia vencida, «Ahora no» en el conteo, destinatario de cada exportación). Nº 97–108, 0.26.0 (respaldo solo .spvi, «+» en la esquina, seminegrita, fondo asignado por el encargado, actualización obligatoria y permiso de fotos para que la prueba no se reinicie al reinstalar). Las exportaciones salen de `tools/exportaciones/generar.sh` (TablasExport y XlsxWriter reales; el PDF y los PNG replican PdfWriter/DisenoPdf, ImagenTabla y Tarjetas) y `paginas.py`; el PDF se arma con `tools/capturas/ensamblar.py`. El QR de la página de vinculación lleva un texto de ejemplo y no vincula nada.

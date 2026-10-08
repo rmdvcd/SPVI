@@ -164,8 +164,7 @@ def p_ajustes_principal():
         fila("Pago electrónico", "Teléfonos y cuentas para cobrar por transferencia", "CreditCard"),
         fila("Precios", "Ajustes de precio por pago o por importe", "AttachMoney"),
         fila("Avisos de inventario", "Cuándo avisar de stock bajo o crítico", "WarningAmber"),
-        fila("Consultas de códigos en internet", "Preguntar cada vez", "Language"),
-        fila("Permisos del teléfono", "Cámara: se pide solo al escanear o al hacer una foto", "PhotoCamera"),
+        fila("Permisos del teléfono", "Cámara: se pide solo al leer el QR de vinculación o al hacer una foto", "PhotoCamera"),
         fila("Respaldo", "Copia cifrada de todo e importar", "Backup"),
         fila("Migrar a otro teléfono", "Pasar datos y licencia, con autorización del desarrollador", "PhonelinkSetup"),
     ]
@@ -175,8 +174,7 @@ def p_ajustes_principal():
 def p_ajustes_secundaria():
     filas = [
         '<div class="resalta">' + fila("Apps vinculadas", "Secundaria de Barbería Mayra", "Devices") + "</div>",
-        fila("Consultas de códigos en internet", "Preguntar cada vez", "Language"),
-        fila("Permisos del teléfono", "Cámara: se pide solo al escanear o al hacer una foto", "PhotoCamera"),
+        fila("Permisos del teléfono", "Cámara: se pide solo al leer el QR de vinculación o al hacer una foto", "PhotoCamera"),
         fila("Ayuda", "Manual breve de uso", "Help"),
         fila("Soporte", "Datos de contacto del desarrollador", "SupportAgent"),
     ]
@@ -325,8 +323,7 @@ def turno_card(abierto, desde="Desde las 08:30"):
 
 def accesos(activos):
     cls = "" if activos else "off"
-    return (f'<div class="br {cls}"><span class="bt bt-filled">{icono("AddShoppingCart")}</span>'
-            f'<span class="bt bt-tonal">{icono("QrCodeScanner")}</span></div>')
+    return f'<div class="br {cls}"><span class="bt bt-filled">{icono("AddShoppingCart")}</span></div>'
 
 
 def alerta(etiqueta, n, tono):
@@ -495,17 +492,6 @@ def fila_foto(titulo, sub, foto=True):
             f'<div class="li-sub">{e(sub)}</div></div></div>')
 
 
-def p_inventario_fab():
-    tabs = '<div class="tabs"><span class="sel">Productos</span><span>Insumos</span></div>'
-    filas = (fila_foto("Refresco de lata", "24 u · 150.00 CUP") + fila_foto("Galletas", "Sin existencia · 120.00 CUP") +
-             fila_foto("Café molido 250 g", "8 u · 450.00 CUP", False) + fila_foto("Jabón de baño", "15 u · 90.00 CUP"))
-    menu = ('<div class="scrim" style="background:rgba(0,0,0,.25)"></div><div class="fabcol">'
-            f'<div class="fabrow">{icono("QrCodeScanner", 20)}<span class="fablbl">Escanear</span></div>'
-            f'<div class="fabrow">{icono("Edit", 20)}<span class="fablbl">Escribir</span></div>'
-            f'<div class="fabmain">{icono("Add")}</div></div>')
-    return barra_sup("Inventario", atras=False) + f'<div class="ct">{tabs}{filas}</div>' + nav(1) + menu
-
-
 def dona():
     """0.21.1 (H5): paleta de gráficos sin los tonos de las alertas. Leyenda con nombre y porcentaje (el color no es lo único)."""
     import math
@@ -562,34 +548,6 @@ def p_movimientos_hecho():
                      ("09:05", "Ajuste −1 · Galletas · Ana")))
     return barra_sup("Registros", atras=False) + f'<div class="ct">{tabs}{filas}</div>' + nav(3)
 
-
-
-def escaner_resultado(codigo, aviso=None, nombre="", fuente=None, imagen="Sin imagen. Podrás elegir una foto al completar el producto."):
-    """0.21.4/0.21.5: tarjeta de resultado del escáner (mismo orden que EscanerScreen.Resultado)."""
-    av = f'<div class="bm ancho">{e(aviso)}</div>' if aviso else ""
-    tf = campo("Nombre", nombre) if nombre else (f'<div class="tf"><span class="tf-l">Nombre</span><span class="tf-v"></span></div>'
-                                                 '<div class="bs ancho">Escribe el nombre para continuar.</div>')
-    fu = f'<div class="bs ancho">Nombre e imagen de {e(fuente)}. Revísalos antes de guardar.</div>' if fuente else ""
-    fecha = (f'<div class="tf"><span class="tf-l">Fecha de caducidad</span><span class="tf-v"></span>'
-             f'<span class="tf-x">{icono("CalendarMonth", 20)}</span></div><div class="bs ancho">Opcional.</div>')
-    cuerpo = (f'<div class="bs ancho">Código: {e(codigo)}</div>{av}<div class="form fe">{tf}</div>{fu}<div class="bs ancho">{e(imagen)}</div>'
-              f'<div class="form fe">{fecha}</div><div class="cen bs">Luego completas precio, cantidad y categoría.</div>'
-              + fila_botones(boton("QrCodeScanner", "tonal"), boton("Check", "filled", "" if nombre else "off")))
-    return barra_sup("Escanear producto") + '<div class="ct" style="padding:8px 16px;gap:12px">' + tarjeta("Producto nuevo", cuerpo) + "</div>"
-
-
-def p_escaner_encontrado():
-    return escaner_resultado("12345670", nombre="Galletas María 200 g", fuente="Open Food Facts", imagen="Descargando la imagen…")
-
-
-def p_escaner_qr():
-    return escaner_resultado("https://spvi.cu/p?id=7", aviso="Este código no sirve como código de producto (tiene símbolos o es muy "
-                             "largo). Escribe el nombre y, si quieres, otro código al guardar.")
-
-
-def p_escaner_balanza():
-    return escaner_resultado("2012345678903", aviso="Este código es interno de una tienda o no es un EAN/UPC de producto, así que no "
-                             "se busca en internet. Escribe el nombre.")
 
 
 # ── 0.22.0/0.23.0: licencia corta cifrada, QR por WhatsApp y renovar sin perder días ──
@@ -720,8 +678,8 @@ def p_caja_turno():
                  '<div class="li-txt"><div class="li-t">Turno abierto</div><div class="li-sub">Desde las 08:30</div></div>'
                  '<span class="sw on"><i></i></span></div></div>')
     acc = (f'<div class="br"><span class="bt bt-filled">{icono("AddShoppingCart")}</span>'
-           f'<span class="bt bt-tonal">{icono("QrCodeScanner")}</span><span class="bt bt-tonal">{icono("Payments")}</span></div>'
-           '<div class="cen bs" style="margin-top:-6px">Nueva venta · Escanear · Entrada / salida de efectivo</div>')
+           f'<span class="bt bt-tonal">{icono("Payments")}</span></div>'
+           '<div class="cen bs" style="margin-top:-6px">Nueva venta · Entrada / salida de efectivo</div>')
     als = '<div class="als">' + alerta("Stock inventario bajo", 3, "bajo") + alerta("Stock insumo bajo", 1, "insb") + "</div>"
     return pantalla_inicio(tarjeta_t + acc + als)
 
@@ -1149,15 +1107,11 @@ PAGINAS = [
     ("0.21.0 · Secundaria: el empleado escribe su teléfono y escanea el código del dueño", p_tour_secundaria),
     ("0.21.0 · Licencia: apps secundarias y total (base + importe por cada secundaria)", p_licencia_secundarias),
     ("0.21.0 · Ajustes → Perfil: «Tu negocio» para activar o quitar Ventas, Inventario y Servicios", p_perfil_modulos),
-    ("0.21.0 · Inventario: miniaturas de las fotos y menú + con «Escanear» y «Escribir» en vertical", p_inventario_fab),
     ("0.21.0 · Inicio de la principal: solicitudes de cierre; «Sin existencia» relleno junto a «Stock crítico» (0.21.1)", p_inicio_solicitud),
     ("0.21.0 · Apps vinculadas → empleado que pide cerrar: Rechazar (✕) o Aprobar (✓)", p_aprobar_cierre),
     ("0.21.0 · Secundaria: el interruptor del turno solicita el cierre; nada se cierra solo", p_solicitar_cierre),
-    ("0.21.0 · Inicio de la secundaria: turno, Nueva venta, Escanear y alertas; cierre pendiente", p_secundaria_solicitada),
+    ("0.21.0 · Inicio de la secundaria: turno, Nueva venta y alertas; cierre pendiente", p_secundaria_solicitada),
     ("0.21.0 · Registros → Movimientos: quién hizo cada uno (también en Excel/PDF)", p_movimientos_hecho),
-    ("0.21.4/0.21.5 · Escáner: nombre limpio, imagen que se descarga aparte; 8 dígitos EAN-8/UPC-E resueltos", p_escaner_encontrado),
-    ("0.21.4 · Escáner: un QR con una URL no sirve como código de producto (se guarda sin código)", p_escaner_qr),
-    ("0.21.4 · Escáner: etiqueta de balanza o código interno, no se busca en internet", p_escaner_balanza),
     # 0.22.0 / 0.23.0
     ("0.23.1 · Licencia → Activar: solo Pegar y Activar (sin QR); «Renovar igual» con el precio", p_licencia_activar_qr),
     ("0.23.1 · Renovar igual por WhatsApp o SMS: solo texto; renovar antes de que venza no pierde días", p_licencia_renovar),
@@ -1329,11 +1283,6 @@ html,body{width:1123.84px;height:794.56px;font-family:Roboto,sans-serif;backgrou
 .form.fe{align-self:stretch}.form.fe .tf-l{background:var(--surface)}.ancho{align-self:stretch}.bt.off{opacity:.38}
 .thumb{width:40px;height:40px;border-radius:8px;flex:none;background:linear-gradient(135deg,var(--pc),var(--sc))}
 .thumb.v{background:var(--cont);display:flex;align-items:center;justify-content:center;color:var(--onVar)}
-.fabcol{position:absolute;bottom:96px;right:44px;width:0;display:flex;flex-direction:column;align-items:center;gap:16px}
-.fabrow{position:relative;width:40px;height:40px;border-radius:12px;background:var(--tc);color:var(--onTc);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,.3)}
-.fablbl{position:absolute;right:52px;white-space:nowrap;background:var(--contHigh);color:var(--on);font-size:14px;font-weight:500;padding:6px 8px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.25)}
-.fabmain{width:56px;height:56px;border-radius:16px;background:var(--primary);color:var(--onPrimary);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 6px rgba(0,0,0,.3)}
-.fabmain svg{transform:rotate(45deg)}
 .stp{display:flex;align-items:center;justify-content:center;gap:24px;padding:8px 0}.stp b{font-size:22px;font-weight:500;min-width:120px;text-align:center}
 .wz{padding:8px 24px;display:flex;flex-direction:column;gap:12px;flex:1}
 .wz-p{font-size:13px;color:var(--onVar);text-align:center}.wz-t{font-size:24px;text-align:center}

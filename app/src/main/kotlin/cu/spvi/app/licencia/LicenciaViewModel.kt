@@ -148,7 +148,6 @@ object TextosRecuperacion {
         "mismo vencimiento y secundarias. El teléfono anterior se bloquea, borra sus datos y pide desinstalar SPVI."
     const val CAMPO = "ID de la licencia anterior (opcional)"
     const val ID_INVALIDO = "El ID de la licencia anterior no es válido. Cópialo del mensaje de licencia (ID: …)."
-    const val DESDE_RESPALDO = "Rellenado con la licencia del respaldo importado."
 }
 
 /** Rellena el ID a recuperar con el del respaldo importado ([cu.spvi.domain.model.EstadoApp.licenciaRecuperable]). */

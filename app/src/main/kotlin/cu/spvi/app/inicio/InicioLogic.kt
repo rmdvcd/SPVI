@@ -219,7 +219,9 @@ fun descripcionPeriodo(g: GraficosPeriodo, opcion: OpcionPeriodo, zone: ZoneId):
     return when {
         g.sinTurnos -> "Aún no hay turnos: se muestran las ventas de hoy"
         t != null && t.abierto -> "Turno actual, desde las ${Dates.time(t.abiertoEn, zone)}"
-        t != null -> "Último turno: ${Dates.dayMonthTime(t.abiertoEn, zone)} a ${Dates.time(t.cerradoEn!!, zone)}"
+        t != null -> t.cerradoEn?.let { cerrado ->
+            "Último turno: ${Dates.dayMonthTime(t.abiertoEn, zone)} a ${Dates.time(cerrado, zone)}"
+        } ?: "Último turno: ${Dates.dayMonthTime(t.abiertoEn, zone)}"
         else -> opcion.etiqueta()
     }
 }

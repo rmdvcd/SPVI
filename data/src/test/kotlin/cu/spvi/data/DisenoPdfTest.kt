@@ -55,8 +55,8 @@ class DisenoPdfTest {
     }
 
     /** 0.26.0 (§5): importes, cantidades y fechas en seminegrita; también el Valor de las tablas Dato/Valor. */
-    @Test fun codigoDeBarrasNoDestacado() {
-        val inv = TablaExport("Inventario", listOf("Nombre", "Código", "Cantidad"),
+    @Test fun identificadorNumericoLargoNoDestacado() {
+        val inv = TablaExport("Inventario", listOf("Nombre", "Referencia", "Cantidad"),
             listOf(listOf("Galletas", "7501031311309", "40"), listOf("Café", "", "8"), listOf("Jabón", "85000012", "15")))
         assertFalse(DisenoPdf.destacada(TablaExport("T", listOf("Teléfono"), listOf(listOf("+5352345678"))), 0))
         assertFalse(DisenoPdf.destacada(inv, 1))

@@ -1,6 +1,6 @@
 # PLAN 0.26.0 (48) — ocho cambios pedidos tras la 0.25.1
 
-Estado: **propuesta, sin aplicar**. No se toca código hasta tu confirmación (regla de P17).
+> **Documento histórico:** la propuesta se implementó en la 0.26.0 (Prompt 73, `docs/HISTORIAL_DESARROLLO.md`). Ya no es una lista de pendientes: decisiones posteriores pueden sustituirla. En particular, el usuario confirmó después que la exportación sin contraseña permanece como opción explícita con advertencia; y en la 0.30.0 se retiraron el escáner de productos y el FAB expandible. Esta página conserva el diseño original por trazabilidad.
 
 ## Respuestas ya dadas
 

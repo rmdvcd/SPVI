@@ -189,8 +189,8 @@ class GestorActualizacion @Inject constructor(
             mensajes.trySend(
                 when {
                     r == null || r.error -> TextosActualizacion.ERROR_RED
-                    r.aviso != null -> TextosActualizacion.disponible(r.aviso!!.version, r.aviso!!.bytes)
-                    else -> TextosActualizacion.SIN_NOVEDADES
+                    else -> r.aviso?.let { aviso -> TextosActualizacion.disponible(aviso.version, aviso.bytes) }
+                        ?: TextosActualizacion.SIN_NOVEDADES
                 },
             )
         }

@@ -72,6 +72,13 @@ class InventarioUiTest {
         assertEquals(1L, abierto)
     }
 
+    @Test fun progresoDeBusquedaEsAccesibleYNoOcultaLaLista() {
+        inventario(lista().copy(buscando = true))
+        rule.onNodeWithTag(InventarioTags.BUSCANDO).assertIsDisplayed()
+        rule.onNode(hasContentDescription(TextosInventario.BUSCANDO)).assertIsDisplayed()
+        rule.onNodeWithTag(InventarioTags.LISTA).assertIsDisplayed()
+    }
+
     @Test fun barraDeSeleccionConEliminarYExportar() {
         var eliminar = false
         inventario(lista(seleccion = setOf(1, 2)), AccionesInventario(onEliminarSeleccion = { eliminar = true }))

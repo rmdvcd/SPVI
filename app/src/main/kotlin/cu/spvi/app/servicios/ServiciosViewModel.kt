@@ -41,7 +41,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -57,6 +56,8 @@ sealed interface ConfirmarEliminarServicio {
 data class ServiciosUiState(
     val vista: EstadoCarga<VistaServicios> = EstadoCarga.Cargando,
     val filtro: FiltroServicios = FiltroServicios(),
+    /** La consulta actual no ha devuelto resultados todavía; se conserva la lista anterior y se muestra progreso. */
+    val buscando: Boolean = false,
     val seleccion: Set<Long> = emptySet(),
     val ficha: ServicioDisponible? = null,
     val hoja: HojaServicios? = null,
@@ -109,26 +110,41 @@ class ServiciosViewModel @Inject constructor(
     /** Retardo del buscador (0.30.0, F1). Los tests lo bajan a 0 para no depender del reloj virtual. */
     internal var debounceBusqueda: Long = 250
 
-    /** 0.30.0 (F1, ver `InventarioViewModel`): el texto del buscador espera [debounceBusqueda]; el resto, al instante. */
+    private data class Consulta(val filtro: FiltroServicios, val intento: Int)
+    private data class VistaConsultada(val consulta: Consulta, val estado: EstadoCarga<VistaServicios>)
+
+    /** 0.30.0 (F1): texto con debounce; los demás filtros se consultan al instante. */
     private val filtroConsultado: Flow<FiltroServicios> = filtro.debounce { f -> if (f.texto.isEmpty()) 0L else debounceBusqueda }
 
-    /** 0.30.0 (F1, ver `InventarioViewModel`): filtro + intento (Reintentar) disparan la consulta. */
-    private val consulta = combine(intento, filtroConsultado) { _, f -> f }.distinctUntilChanged()
+    /** El resultado conserva su filtro para señalar la espera sin ocultar la lista anterior. */
+    private val consulta = combine(intento, filtroConsultado) { i, f -> Consulta(f, i) }.distinctUntilChanged()
 
-    private val vista: StateFlow<EstadoCarga<VistaServicios>> = consulta.flatMapLatest { f ->
-        observarServicios(flowOf(f))
-            .map<VistaServicios, EstadoCarga<VistaServicios>> { if (it.total == 0) EstadoCarga.Vacio(it) else EstadoCarga.Exito(it) }
-            .onStart { emit(EstadoCarga.Cargando) }
-            .catch { emit(EstadoCarga.Error(TextosServicios.ERROR_CARGA)) }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EstadoCarga.Cargando)
+    private val vista: StateFlow<VistaConsultada> = consulta.flatMapLatest { c ->
+        observarServicios(flowOf(c.filtro))
+            .map<VistaServicios, VistaConsultada> {
+                VistaConsultada(c, if (it.total == 0) EstadoCarga.Vacio(it) else EstadoCarga.Exito(it))
+            }
+            .catch { emit(VistaConsultada(c, EstadoCarga.Error(TextosServicios.ERROR_CARGA))) }
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5_000),
+        VistaConsultada(Consulta(filtro.value, intento.value), EstadoCarga.Cargando),
+    )
 
     /** Todos los activos: la selección sobrevive a búsquedas/filtros y se poda si se borran. */
     private val todos: StateFlow<Map<Long, ServicioDisponible>> = observarServicios.disponibles()
         .catch { emit(emptyMap()) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
-    val state: StateFlow<ServiciosUiState> = combine(vista, filtro, seleccion, todos, local) { v, f, s, t, l ->
-        l.copy(vista = v, filtro = f, seleccion = if (t.isEmpty()) emptySet() else s.filterTo(linkedSetOf()) { it in t })
+    private val consultaActual = combine(filtro, intento) { f, i -> Consulta(f, i) }
+
+    val state: StateFlow<ServiciosUiState> = combine(vista, consultaActual, seleccion, todos, local) { v, c, s, t, l ->
+        l.copy(
+            vista = v.estado,
+            filtro = c.filtro,
+            buscando = v.consulta != c,
+            seleccion = if (t.isEmpty()) emptySet() else s.filterTo(linkedSetOf()) { it in t },
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ServiciosUiState(modoVenta = modoVenta))
 
     private val exportador = ExportadorArchivos<FormatoSalida>(archivos)

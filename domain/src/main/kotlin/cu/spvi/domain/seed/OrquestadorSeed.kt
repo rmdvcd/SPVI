@@ -116,11 +116,18 @@ class OrquestadorSeed @Inject constructor(
             plan.ventas.forEachIndexed { n, v ->
                 val fechaVenta = apertura.plusSeconds((n + 1) * SEGUNDOS_JORNADA / (plan.ventas.size + 1))
                 val lineas = v.lineas.map { l ->
-                    val id = if (l.clase == ClaseArticulo.SERVICIO) idsServicios[l.clave]!! else idsProductos[l.clave]!!
+                    val id = if (l.clase == ClaseArticulo.SERVICIO) {
+                        idsServicios.getValue(l.clave)
+                    } else {
+                        idsProductos.getValue(l.clave)
+                    }
                     LineaSolicitada(id, l.cantidad, l.clase)
                 }
                 val transferencia = if (v.metodo == MetodoPago.TRANSFERENCIA) {
-                    DatosTransferencia(datosCliente(v.clienteClave!!), v.numeroTransaccion, v.clienteFijo)
+                    DatosTransferencia(
+                        datosCliente(checkNotNull(v.clienteClave) { "La transferencia de ejemplo ${v.numeroTransaccion} no tiene cliente" }),
+                        v.numeroTransaccion, v.clienteFijo,
+                    )
                 } else null
                 when (val r = validarTransferencia(v.metodo, transferencia)) {
                     is AppResult.Err -> return r
@@ -175,7 +182,7 @@ class OrquestadorSeed @Inject constructor(
             PreajustePrecios(
                 nombre = "Fines de semana +5%",
                 puntosBasicos = 500,
-                productoIds = CatalogoBodega.PRODUCTOS.take(5).map { idsProductos[it.clave]!! }.toSet(),
+                productoIds = CatalogoBodega.PRODUCTOS.take(5).map { idsProductos.getValue(it.clave) }.toSet(),
                 activo = true,
             ),
         )) {
@@ -237,9 +244,14 @@ class OrquestadorSeed @Inject constructor(
         CatalogoBodega.PRODUCTOS.forEach { s ->
             val elaborado = CatalogoBodega.esElaborado(s.clave)
             val receta = if (elaborado) {
-                Receta(0, CatalogoBodega.RECETAS[s.clave]!!.map { RecetaLinea(idsInsumos[it.insumo]!!, Cantidad(it.milesimas)) })
+                Receta(
+                    0,
+                    CatalogoBodega.RECETAS.getValue(s.clave).map {
+                        RecetaLinea(idsInsumos.getValue(it.insumo), Cantidad(it.milesimas))
+                    },
+                )
             } else null
-            // El elaborado no admite existencias (ni foto, caducidad, código ni niveles).
+            // El elaborado no admite existencias, foto, caducidad ni niveles.
             val cantidad = if (elaborado) 0 else maxOf(50, (demanda[s.clave] ?: 0) * 120 / 100)
             val id = when (val r = productos.crear(
                 Producto(
@@ -265,7 +277,7 @@ class OrquestadorSeed @Inject constructor(
         CatalogoBodega.SERVICIOS.forEach { s ->
             val id = when (val r = servicios.crear(
                 Servicio(0, s.nombre, s.tipo, Cup.ofPesos(s.importePesos), creadoEn = creadoEn),
-                s.insumos.map { RecetaLinea(idsInsumos[it.insumo]!!, Cantidad(it.milesimas)) },
+                s.insumos.map { RecetaLinea(idsInsumos.getValue(it.insumo), Cantidad(it.milesimas)) },
             )) {
                 is AppResult.Err -> return r
                 is AppResult.Ok -> r.value

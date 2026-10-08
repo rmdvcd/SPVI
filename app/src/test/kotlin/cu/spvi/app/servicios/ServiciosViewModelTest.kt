@@ -24,11 +24,14 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -85,6 +88,23 @@ class ServiciosViewModelTest {
         assertEquals(listOf("Corte"), vm.state.value.items.map { it.servicio.nombre })
         vm.quitarFiltros()
         assertEquals(2, vm.state.value.items.size)
+    }
+
+    @Test fun busquedaConservaLaListaYAnunciaElProgresoHastaElResultado() = runTest {
+        poner(servicio(1, "Corte") to emptyList(), servicio(2, "Manicura", tipo = "Uñas") to emptyList())
+        val vm = vm()
+        eventos(vm)
+        vm.debounceBusqueda = 250
+
+        vm.buscar("mani")
+        runCurrent()
+        assertTrue(vm.state.value.buscando)
+        assertEquals(listOf("Corte", "Manicura"), vm.state.value.items.map { it.servicio.nombre })
+
+        advanceTimeBy(300)
+        runCurrent()
+        assertFalse(vm.state.value.buscando)
+        assertEquals(listOf("Manicura"), vm.state.value.items.map { it.servicio.nombre })
     }
 
     @Test fun seleccionSobreviveALaBusquedaYSeBorraEnBloque() = runTest {

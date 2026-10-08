@@ -33,6 +33,9 @@ object Captura {
     /** Para pantallas largas (formularios, Inicio completo): misma anchura, más alto para ver todo sin desplazar. */
     const val LARGA = "+h1600dp"
 
+    /** Tableta de referencia para verificar las pantallas adaptativas (WindowSizeClass Medium/Expanded). */
+    const val TABLETA = "+w800dp-h1280dp"
+
     val ZONA: ZoneId = ZoneId.of("America/Havana")
     val AHORA: Instant = Instant.parse("2026-10-01T16:30:00Z")
 }

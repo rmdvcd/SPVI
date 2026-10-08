@@ -151,7 +151,11 @@ data class NivelesForm(
 
     fun aNiveles(): NivelesMinimos? {
         if (errores().isNotEmpty()) return null
-        return NivelesMinimos(entero(productoBajo)!!, entero(productoCritico)!!, cantidad(insumoBajo)!!, cantidad(insumoCritico)!!)
+        val productoBajoValor = entero(productoBajo) ?: return null
+        val productoCriticoValor = entero(productoCritico) ?: return null
+        val insumoBajoValor = cantidad(insumoBajo) ?: return null
+        val insumoCriticoValor = cantidad(insumoCritico) ?: return null
+        return NivelesMinimos(productoBajoValor, productoCriticoValor, insumoBajoValor, insumoCriticoValor)
     }
 
     companion object {

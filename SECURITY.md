@@ -4,7 +4,7 @@ Cómo protege SPVI los datos del negocio y la licencia en el teléfono. Estado d
 
 ## 1. Principios
 
-1. **Todo en el dispositivo.** No hay servidor, cuentas, nube propia, Firebase, analítica, telemetría ni anuncios.
+1. **Datos del negocio en el dispositivo.** No hay cuentas ni nube propia, Firebase, analítica, telemetría ni anuncios. La app principal puede abrir un servidor temporal solo en la red local para sincronizar las secundarias.
 2. **Cifrado en reposo de todo dato persistente** (base de datos, preferencias, licencia), con claves atadas al Android Keystore.
 3. **Permisos mínimos:** solo `CAMERA`, `INTERNET` y `POST_NOTIFICATIONS` (desde la 0.18.0, autorizado por el usuario), más `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE` y `CHANGE_NETWORK_STATE` (desde la 0.19.2, autorizados por el usuario, solo para el servicio de la app principal con secundarias), y desde la 0.25.0 `REQUEST_INSTALL_PACKAGES` (instalar la actualización descargada) y `REQUEST_DELETE_PACKAGES` (pedir la desinstalación en el teléfono cuya licencia se recuperó en otro), los dos autorizados por el usuario, y desde la 0.26.0 `READ_MEDIA_IMAGES` (Android 13+), `READ_EXTERNAL_STORAGE` (hasta Android 12) y `WRITE_EXTERNAL_STORAGE` (hasta Android 9), autorizados por el usuario solo para el registro de la prueba (encontrar tras reinstalar la imagen cifrada de Imágenes/SPVI), y desde la 0.27.0 `USE_BIOMETRIC` y `USE_FINGERPRINT` (normales, sin diálogo; los añade `androidx.biometric`), autorizados por el usuario solo para el acceso con clave opcional. Cada uno está limitado a una función.
 4. **Mensajes genéricos:** los errores de licencia y de cifrado no dicen qué comprobación falló.

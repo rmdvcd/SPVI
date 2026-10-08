@@ -52,6 +52,8 @@ class ServiciosCapturas {
     @Test fun vacio() = servicios("09b_servicios_vacio", ServiciosUiState(vista = EstadoCarga.Vacio(VistaServicios(emptyList(), 0, emptyList()))))
     @Test fun modoVenta() = servicios("09c_servicios_venta", lista.copy(modoVenta = true, seleccion = setOf(1L)))
     @Test fun ficha() = servicios("09d_servicios_ficha", lista.copy(ficha = items[1]))
+    @Test @Config(qualifiers = Captura.TABLETA) fun fichaTableta() =
+        servicios("09f_servicios_tableta_detalle", lista.copy(ficha = items[1]))
 
     @Test fun formulario() = rule.capturar("09e_servicio_form") {
         ServicioFormContent(

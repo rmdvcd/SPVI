@@ -81,6 +81,13 @@ class RegistrosUiTest {
         assertEquals(12L, abierta)
     }
 
+    @Test fun progresoDeBusquedaEsAccesibleYConservaLaTabla() {
+        pantalla(ventas().copy(buscando = true))
+        rule.onNodeWithTag(RegistrosTags.BUSCANDO).assertIsDisplayed()
+        rule.onAllNodesWithContentDescription(TextosRegistros.BUSCANDO).assertCountEquals(1)
+        rule.onNodeWithTag(RegistrosTags.LISTA).assertIsDisplayed()
+    }
+
     @Test fun pestanasBuscadorFiltroYCompartir() {
         val hechos = mutableListOf<String>()
         pantalla(

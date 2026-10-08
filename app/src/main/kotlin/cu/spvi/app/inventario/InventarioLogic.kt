@@ -14,7 +14,8 @@ import cu.spvi.domain.model.TipoArticulo
 
 object TextosInventario {
     const val TITULO = "Inventario"
-    const val BUSCAR = "Buscar por nombre, categoría o código"
+    const val BUSCAR = "Buscar por nombre, descripción o categoría"
+    const val BUSCANDO = "Buscando en el inventario…"
     const val VACIO_TITULO = "Tu inventario está vacío"
     const val VACIO_DETALLE = "Toca + para agregar tu primer producto."
     const val SIN_RESULTADOS_TITULO = "Sin resultados"
@@ -49,6 +50,7 @@ object InventarioTags {
     const val CONTINUAR_VENTA = "inventario_continuar_venta"
     const val LISTA = "inventario_lista"
     const val BUSCAR = "inventario_buscar"
+    const val BUSCANDO = "inventario_busqueda_progreso"
     const val FILTRO = "inventario_filtro"
     const val EXPORTAR = "inventario_exportar"
     const val AGREGAR = "inventario_agregar"

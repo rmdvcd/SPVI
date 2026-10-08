@@ -194,20 +194,25 @@ class AlmacenSync @Inject constructor(
     // ================================================================== secundaria
 
     suspend fun lotePendiente(): Lote {
-        val turnos = sync.turnosPendientes().filter { it.uuid != null }
+        val turnos = sync.turnosPendientes().mapNotNull { turno ->
+            val uuid = turno.uuid ?: return@mapNotNull null
+            TurnoSync(uuid, turno.toDomain().toDto())
+        }
         val uuidTurno = mutableMapOf<Long, String>()
         val ventas = sync.ventasPendientes().filter { it.venta.uuid != null }
         val movs = if (ventas.isEmpty()) emptyMap() else
             ventas.map { it.venta.id }.chunked(500).flatMap { sync.movimientosDeVentas(it) }.groupBy { it.ventaId }
         val ventasSync = ventas.mapNotNull { v ->
+            val uuid = v.venta.uuid ?: return@mapNotNull null
             val tu = uuidTurno.getOrPut(v.venta.turnoId) { db.turnoDao().obtener(v.venta.turnoId)?.uuid ?: return@mapNotNull null }
-            VentaSync(v.venta.uuid!!, tu, v.toDomain().toDto(), movs[v.venta.id].orEmpty().map { it.toDomain().toDto() })
+            VentaSync(uuid, tu, v.toDomain().toDto(), movs[v.venta.id].orEmpty().map { it.toDomain().toDto() })
         }
-        val caja = db.cajaDao().pendientes().filter { it.uuid != null }.mapNotNull { m ->
+        val caja = db.cajaDao().pendientes().mapNotNull { m ->
+            val uuid = m.uuid ?: return@mapNotNull null
             val tu = uuidTurno.getOrPut(m.turnoId) { db.turnoDao().obtener(m.turnoId)?.uuid ?: return@mapNotNull null }
-            CajaSync(m.uuid!!, tu, MovimientoCajaDto(0, 0, m.fecha, m.tipo, m.importeCent, m.motivo, m.hechoPor, m.uuid))
+            CajaSync(uuid, tu, MovimientoCajaDto(0, 0, m.fecha, m.tipo, m.importeCent, m.motivo, m.hechoPor, uuid))
         }
-        return Lote(turnos.map { TurnoSync(it.uuid!!, it.toDomain().toDto()) }, ventasSync, caja)
+        return Lote(turnos, ventasSync, caja)
     }
 
     /**

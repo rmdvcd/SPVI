@@ -81,6 +81,8 @@ object SpviSize {
     val campoCantidad = 112.dp
     /** P18 (A22): ancho máximo de lectura de formularios y asistentes en tablet u horizontal. */
     val contentMaxWidth = 600.dp
+    /** Ancho mínimo de las ventanas emergentes para que acciones y formularios no queden comprimidos. */
+    val dialogMinWidth = 280.dp
     /** 0.27.0 (T3): círculo de las medallas del Top 3. */
     val medalla = 30.dp
     /** 0.27.0 (T13): foto del artículo arriba del formulario. */

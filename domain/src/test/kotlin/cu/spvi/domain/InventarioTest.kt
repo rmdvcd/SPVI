@@ -23,7 +23,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class EscanerInventarioTest {
+class InventarioTest {
 
     // ---------------- Tabla del Inventario ----------------
 
@@ -76,13 +76,11 @@ class EscanerInventarioTest {
         assertTrue(clientes.contains("Caducidad" to "01/09/2026"))
         val texto = clientes.joinToString { "${it.first}: ${it.second}" }
         assertFalse(texto.contains("90.00")); assertFalse(texto.contains("Cantidad")); assertFalse(texto.contains("Nivel"))
-        assertFalse(texto.contains("Código")) // sin código de barras: la ficha no lo muestra
         val pdf = TablasExport.ficha(f)
         assertEquals(listOf("Campo", "Valor"), pdf.columnas)
         assertTrue(pdf.filas.contains(listOf("Precio costo", "90.00 CUP")))
         assertTrue(pdf.filas.contains(listOf("Nivel bajo", "5")))
         assertFalse(pdf.filas.any { it[0] == "Nivel crítico" }) // sin dato, no aparece
-        assertFalse(pdf.filas.any { it[0] == "Código" }) // sin código de barras: la ficha no lo muestra
     }
 
     @Test fun fichaDeElaboradoResuelveLaReceta() = runBlocking<Unit> {

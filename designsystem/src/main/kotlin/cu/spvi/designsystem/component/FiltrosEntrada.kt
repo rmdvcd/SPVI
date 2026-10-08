@@ -33,8 +33,6 @@ enum class FiltroEntrada(val teclado: KeyboardOptions, val maximo: Int) {
     DECIMAL(KeyboardOptions(keyboardType = KeyboardType.Decimal), 12),
     /** Importes en CUP: dígitos y UN separador decimal, hasta 2 decimales. */
     DINERO(KeyboardOptions(keyboardType = KeyboardType.Decimal), 12),
-    /** Código de barras / QR del producto: letras, dígitos y - . sin espacios. */
-    CODIGO(KeyboardOptions(keyboardType = KeyboardType.Ascii, capitalization = KeyboardCapitalization.Characters), 64),
     /** Nº de transacción de Transfermóvil: letras y dígitos, en mayúsculas. */
     TRANSACCION(KeyboardOptions(keyboardType = KeyboardType.Ascii, capitalization = KeyboardCapitalization.Characters), 30),
     /** Porcentaje entero 0–100 (ajustes de precio). */
@@ -50,7 +48,6 @@ enum class FiltroEntrada(val teclado: KeyboardOptions, val maximo: Int) {
         TARJETA, CARNE, ENTERO, PORCENTAJE -> s.filter { it in '0'..'9' }
         DECIMAL -> decimal(s, 3)
         DINERO -> decimal(s, 2)
-        CODIGO -> s.filter { it.isLetterOrDigit() && it.code < 128 || it == '-' || it == '.' || it == '_' } // = dominio (3–64)
         TRANSACCION -> s.filter { it.isLetterOrDigit() && it.code < 128 }.uppercase()
     }.take(maximo)
 

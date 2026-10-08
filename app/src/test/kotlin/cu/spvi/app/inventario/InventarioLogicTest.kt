@@ -51,6 +51,7 @@ class InventarioLogicTest {
         assertEquals("3 de 10 productos", TextosInventario.contador(3, 10))
         assertEquals("1 producto", TextosInventario.contador(1, 1))
         assertEquals("¿Eliminar 1 producto?", TextosInventario.eliminarVarios(1))
+        assertFalse(TextosInventario.BUSCAR.contains("código", ignoreCase = true))
     }
 
     /** P26: la fila de un Elaborado dice cuánto alcanza con sus insumos; 0 se marca como peligro (con texto). */

@@ -36,7 +36,7 @@
 
     <!-- ML Kit arrastra la telemetría de Google (datatransport), que añade ACCESS_NETWORK_STATE y componentes
          que envían métricas de uso. v2 prohíbe la telemetría: se eliminan en la fusión del manifiesto.
-         El escáner funciona igual (modelo empaquetado, sin descargas); los registros de ML Kit se descartan. -->
+         La lectura de QR funciona con el modelo empaquetado, sin descargas; los registros de ML Kit se descartan. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
 
     <application

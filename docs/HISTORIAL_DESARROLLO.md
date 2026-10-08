@@ -1364,3 +1364,15 @@ Primera vez que el repositorio se verifica solo: GitHub Actions ejecuta Gradle r
   `Estadisticas` como autoridad en los tests y comparando SQL vs memoria.
 - CI: **826 tests JVM, 0 fallos** (+1, el test nuevo del debounce); lint 0/95; R8 limpio; permisos OK; API 26 OK.
   Corrida verde: [37704972362](https://github.com/rmdvcd/SPVI/actions/runs/37704972362).
+
+## 2026-10-08 — F1.4, F2 y coherencia documental
+
+- **T1.4:** la agregación por ventanas SQL quedó implementada conservando la firma pública de `ObtenerGraficosPeriodo`. La paridad SQL/memoria y los casos Room se verificaron en la CI [37766967443](https://github.com/rmdvcd/SPVI/actions/runs/37766967443), commit `cc30f77`.
+- **Verificación de referencia:** la última CI completa confirmada, [37834591679](https://github.com/rmdvcd/SPVI/actions/runs/37834591679), commit `3bf4fc1`, aprobó 836 tests JVM y 5/5 jobs; los instrumentados solo se compilaron. La corrida [37836886846](https://github.com/rmdvcd/SPVI/actions/runs/37836886846) de `43cc5df` quedó con resultado final desconocido.
+- **T2.4/T2.5:** caché del registro de prueba y aviso por falta de respuesta reciente de GitHub implementados en `43cc5df`; los tests/capturas añadidos y los cambios posteriores esperan OpenCode CLI. No se infiere que la CI parcial los aprobara.
+- **Documentación e higiene:** se actualizan README, guía del usuario/dispositivo, registro de pendientes y estado de verificación; se añade un índice de decisiones duraderas y una comprobación estática de enlaces, versión y esquema Room con su job de CI. Se retiran las maquetas obsoletas de búsqueda de productos, manteniendo los QR de vinculación y licencias.
+- Se añade `.kotlin/` a `.gitignore`, se retira el archivo de sesión del control de versiones y, en la limpieza posterior, se eliminan los `!!` de todo el código Kotlin de producción (`core`, `domain`, `data`, `designsystem` y `app`), sustituyéndolos por invariantes explícitas o descarte seguro.
+- Se quitan `SpviExpandableFab` y helpers sin usos, y el parámetro `exigirDiferenciar`, que solo mantenía un bypass del escáner de productos. La cobertura de inventario del test mixto `EscanerInventarioTest` se conserva bajo `InventarioTest`; se elimina solo la prueba del bypass y se retiran comprobaciones redundantes del campo de código inexistente.
+- `docs/PLAN_0.26.md` queda marcado como histórico y aplicado; las decisiones y cambios posteriores prevalecen.
+- **Decisiones de producto confirmadas:** se conserva la exportación sin contraseña como opción explícita con advertencia; la barra inferior permanece con iconos sin etiquetas; se autorizan por fases las cuatro áreas F5, pendientes de reglas detalladas.
+- **Validación pendiente:** el agente no ejecuta builds, app, tests, adb ni Roborazzi. Los cambios documentales, de higiene y de workflow de esta revisión aún no tienen resultado observado.

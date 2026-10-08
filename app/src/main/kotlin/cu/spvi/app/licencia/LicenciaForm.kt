@@ -141,7 +141,7 @@ fun Licencia.detalle(ahora: Instant, zone: ZoneId = ZoneId.systemDefault()): Lis
 }
 
 fun Licencia.tiempoRestante(ahora: Instant, zone: ZoneId = ZoneId.systemDefault()): String = when (val e = estado) {
-    is LicenseState.Trial, is LicenseState.Active -> e.bannerText(ahora, zone)!!.substringAfter(": ")
+    is LicenseState.Trial, is LicenseState.Active -> e.bannerText(ahora, zone)?.substringAfter(": ") ?: "No disponible"
     is LicenseState.Perpetual -> "Ilimitado"
     is LicenseState.Expired, LicenseState.TrialExpired -> "Vencida"
     LicenseState.Revoked -> "Revocada"

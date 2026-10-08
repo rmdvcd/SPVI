@@ -37,6 +37,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -123,28 +124,25 @@ class InventarioViewModelTest {
         assertTrue(vm.state.value.items.isEmpty())
     }
 
-    /**
-     * 0.30.0 (F1): escribir rápido no dispara una consulta por tecla.
-     *
-     * Se cuentan las **reconsultas de verdad** (cada re-suscripción a `ObservarInventario` emite «Cargando»): el
-     * estado de la pantalla cambia con cada tecla —el campo de texto no se retrasa—, pero la consulta a Room no.
-     * Ocho pulsaciones seguidas = una sola consulta, y con el resultado de la palabra completa.
-     */
-    @Test fun elBuscadorAgrupaLasPulsaciones() = runTest {
+    /** 0.30.0 (F1): las pulsaciones se agrupan y la lista actual permanece visible hasta recibir el nuevo resultado. */
+    @Test fun elBuscadorAgrupaLasPulsacionesYMantieneLaListaDuranteLaConsulta() = runTest {
         cargar()
         val vm = vm()
         vm.debounceBusqueda = 250 // el retardo real de la app
         var consultas = 0
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            vm.state.map { it.vista }.distinctUntilChanged().collect { v -> if (v is EstadoCarga.Cargando) consultas++ }
+            vm.state.map { it.buscando }.distinctUntilChanged().collect { buscando -> if (buscando) consultas++ }
         }
         val antesDeEscribir = consultas
         listOf("r", "re", "ref", "refr", "refre", "refres", "refresc", "refresco").forEach { vm.buscar(it) }
         runCurrent()
-        assertEquals("mientras se escribe, ninguna consulta nueva", antesDeEscribir, consultas)
+        assertEquals("las pulsaciones solo activan una búsqueda", antesDeEscribir + 1, consultas)
+        assertTrue(vm.state.value.buscando)
+        assertEquals("la lista anterior se conserva durante el debounce", listOf(1L, 2L, 3L), vm.state.value.items.map { it.producto.id })
         advanceTimeBy(300)
         runCurrent()
-        assertEquals("las 8 pulsaciones producen una sola consulta", antesDeEscribir + 1, consultas)
+        assertEquals("una consulta para las 8 pulsaciones", antesDeEscribir + 1, consultas)
+        assertFalse(vm.state.value.buscando)
         assertEquals(listOf(1L), vm.state.value.items.map { it.producto.id })
     }
 

@@ -17,11 +17,9 @@ import java.time.LocalDate
 data class LineaRecetaForm(val insumoId: Long, val nombre: String, val simbolo: String, val precio: Cup, val cantidad: String = "1")
 
 /**
- * Formulario de producto con los atributos EXACTOS del Prompt Maestro, en su orden:
- * categoría, foto (no Elaborado), nombre, descripción, receta (solo Elaborado), fecha de caducidad (no Elaborado),
- * precio costo, precio venta, cantidad, nivel bajo, nivel crítico, código (no Elaborado).
- * P26: un Elaborado no tiene existencias ni niveles propios (se vende mientras alcancen los insumos), así que
- * no pide cantidad ni niveles y se guarda con cantidad 0 y niveles vacíos.
+ * Formulario de producto: categoría, foto (no Elaborado), nombre, descripción, receta (solo Elaborado), fecha de
+ * caducidad (no Elaborado), precio de costo, precio de venta, cantidad y niveles de stock. Un Elaborado no tiene
+ * existencias ni niveles propios (se vende mientras alcancen los insumos), así que se guarda con cantidad 0.
  */
 data class ProductoForm(
     val id: Long = 0,
@@ -106,10 +104,18 @@ object ProductoFormLogic {
     /** Producto listo para guardar, o null si el formulario tiene errores. */
     fun aProducto(f: ProductoForm, ahora: Instant): Pair<Producto, Receta?>? {
         if (validar(f).isNotEmpty()) return null
-        val costo = if (f.esElaborado) costoReceta(f.receta)!! else Money.parse(f.precioCosto)!!
-        val p = producto(f, costo, Money.parse(f.precioVenta)!!, if (f.esElaborado) 0 else entero(f.cantidad)!!, f.creadoEn ?: ahora)
-        val receta = if (f.esElaborado) Receta(f.id, f.receta.map { RecetaLinea(it.insumoId, Cantidad.parse(it.cantidad)!!) }) else null
-        return p to receta
+        val costo = (if (f.esElaborado) costoReceta(f.receta) else Money.parse(f.precioCosto)) ?: return null
+        val venta = Money.parse(f.precioVenta) ?: return null
+        val cantidad = if (f.esElaborado) 0L else (entero(f.cantidad) ?: return null)
+        val receta = if (f.esElaborado) {
+            val lineas = ArrayList<RecetaLinea>(f.receta.size)
+            for (linea in f.receta) {
+                val cantidadLinea = Cantidad.parse(linea.cantidad) ?: return null
+                lineas += RecetaLinea(linea.insumoId, cantidadLinea)
+            }
+            Receta(f.id, lineas)
+        } else null
+        return producto(f, costo, venta, cantidad, f.creadoEn ?: ahora) to receta
     }
 
     fun desde(p: Producto, receta: Receta?, insumos: Map<Long, Insumo>): ProductoForm = ProductoForm(
@@ -168,8 +174,8 @@ object ProductoFormLogic {
     fun unaLinea(v: String): String = v.replace(Regex("[\r\n]+"), " ")
 
     /**
-     * Limpia lo que llega por la ruta (antes lo hacía el escáner): decodifica entidades básicas, colapsa el
-     * espacio en blanco, quita la puntuación colgada al final y corta a [max].
+     * Limpia un nombre recibido como parámetro de navegación: decodifica entidades básicas, colapsa el espacio
+     * en blanco, quita la puntuación colgada al final y corta a [max].
      */
     fun limpiarNombre(v: String, max: Int): String = v
         .replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"").replace("&#39;", "'")

@@ -48,7 +48,7 @@ designsystem/src/main/kotlin/cu/spvi/designsystem/
 
 **Un significado por color (0.21.1):**
 - `secondaryContainer` (naranja claro) = **solo avisos** (`BannerTone.Aviso`).
-- `tertiaryContainer` (petróleo claro) = acciones secundarias: `IconActionStyle.Tonal` (✕ Cancelar, Escanear, − / +) y los mini botones del menú +.
+- `tertiaryContainer` (petróleo claro) = acciones secundarias: `IconActionStyle.Tonal` (✕ Cancelar, leer QR de vinculación, − / +) y los mini botones del menú +.
 - `primary` = acción principal, chip elegido e indicador de la barra inferior. `error` = destructivo y «Sin existencia».
 
 **Colores extendidos** (`SpviTheme.colors`):
@@ -145,14 +145,14 @@ No hay valores intermedios (4, 12, 20…).
   - `fotoFormulario` = 112dp (0.27.0): foto centrada al principio de Nuevo producto/servicio (`SelectorFoto`).
   - Medalla del Top 3: 28–32dp (`SpviMedalla`).
   - Trazos internos (P19): `strokeHairline` = 1dp (línea base de gráficos), `strokeRegular` = 2dp (área y spinner), `chartBarMax` = 28dp.
-  - `fabClearance` = 88dp (hueco al final de las listas con FAB), `qr` = 240dp, `fotoMiniatura` = 88dp, `campoCantidad` = 112dp, `contentMaxWidth` = 600dp (ancho máximo de formularios, con `Modifier.spviContentWidth()`).
+  - `fabClearance` = 88dp (hueco al final de las listas con FAB), `qr` = 240dp, `fotoMiniatura` = 88dp, `campoCantidad` = 112dp, `contentMaxWidth` = 600dp (formularios y ventanas), `dialogMinWidth` = 280dp.
 - **Motion** (`SpviMotion`). **0.27.0 (T4/N4):** todo sale de aquí; nada de bucles con `delay(16)`, la animación sigue el refresco real de la pantalla (60/90/120 Hz) y respeta «Quitar animaciones» del sistema.
   - Duraciones: `FAST` 150, `SHORT` 200, `MEDIUM` 250 y `LONG` 250 ms (antes 300).
   - `muelle()`: `spring(DampingRatioNoBouncy, StiffnessMediumLow)` para lo que cambia de tamaño o posición (botones con `loading`, barra inferior).
   - `ventanaEntra`/`ventanaSale` (N4): diálogos y hojas suben desde abajo hasta el centro con fundido (muelle) y, al cerrarse, bajan con fundido (200 ms); el velo aparece detrás.
   - Curva: `FastOutSlowInEasing`.
-  - Entre las 5 pestañas: `screenEnter`/`screenExit` (fundido).
-  - Hacia un detalle y de vuelta: `screenForwardEnter/Exit` y `screenBackEnter/Exit` (deslizamiento de 1/10 + fundido).
+  - Entre las 5 pestañas: `screenEnter`/`screenExit` (fundido + zoom sutil).
+  - Hacia un detalle y de vuelta: `screenForwardEnter/Exit` y `screenBackEnter/Exit` (deslizamiento de 1/4 + fundido).
   - Filas de listas: `listFade` y `listPlacement`, aplicados con `spviAnimateItem()`.
   - Formularios, modales y FAB: `enterVertical`/`exitVertical` (deslizamiento de ¼ + fundido).
 
@@ -173,13 +173,12 @@ No hay valores intermedios (4, 12, 20…).
 | `SpviMedalla` | **0.27.0 (T3):** número del puesto (1, 2, 3) dentro de un círculo oro, plata o bronce (`MEDALLA_ORO/PLATA/BRONCE`, iguales en claro y oscuro) con el número en el tono oscuro de su familia (≥ 4.5:1, `ContrastTest`). Peso de dato. TalkBack: «Primer/Segundo/Tercer puesto». |
 | `SpviChip` | FilterChip con `supportingLabel` (por ejemplo, el precio). |
 | `SpviSnackbarHost` | Snackbar sobre `inverseSurface`, con vibración breve al aparecer. |
-| `SpviDialog` | **Centrado**; **0.27.0 (T1):** sin logo, título centrado arriba del todo; Cancelar y Confirmar (iconos) **centrados con 16dp entre ellos**; la confirmación va rellena (Von Restorff). Con `destructive` se pinta en el color de error. **P24:** `confirmEnabled`, `confirmLoading` (spinner), `confirmTag` y `confirmIcon` evitan meter botones extra dentro del diálogo. |
-| `SpviBottomSheet` | **P24: ya no es una hoja inferior sino una ventana centrada** (92 % del ancho, máx. 560dp; alto máx. 90 %), con contenido desplazable y **pie fijo** centrado. Tocar fuera cierra. Con `sinGuardar = true`, tocar fuera o atrás preguntan «¿Salir sin guardar?». Se mantiene el nombre para no tocar las llamadas. |
+| `SpviDialog` | **Centrado**; **0.27.0 (T1):** sin logo, título centrado arriba del todo; Cancelar y Confirmar (iconos) **centrados con 16dp entre ellos**; la confirmación va rellena (Von Restorff). Con `destructive` se pinta en el color de error. **P24:** `confirmEnabled`, `confirmLoading` (spinner), `confirmTag` y `confirmIcon` evitan meter botones extra dentro del diálogo. El ancho y alto se ajustan al contenido (`IntrinsicSize`) con límites mínimos/máximos del viewport. |
+| `SpviBottomSheet` | **P24: ya no es una hoja inferior sino una ventana centrada**, con contenido desplazable y **pie fijo** centrado. Su tamaño es intrínseco al contenido (`IntrinsicSize`), limitado al viewport y al teclado. Tocar fuera cierra. Con `sinGuardar = true`, tocar fuera o atrás preguntan «¿Salir sin guardar?». `enPanel = true` presenta una ficha como panel persistente junto a la lista en ventanas medianas/expandidas. Se mantiene el nombre para no tocar las llamadas. |
 | `SpviComboBox` | **P24:** lista desplegable de solo lectura para elegir UNA opción (Período en Inicio). **P25:** aspecto de tarjeta tonal (radio 16dp, icono en círculo `primaryContainer`, etiqueta + valor en negrita, flecha que gira); menú con radio 16dp y la opción elegida resaltada con ✓. |
 | `SpviTextoAjustable` | **P24:** texto que no se parte ni se corta: si no cabe, reduce la letra hasta 11sp; solo por debajo aparece «…». Importes de filas y celdas de Inicio. |
 | `SpviIlustracionImagen` + `SpviIlustracion` | **P24:** 9 ilustraciones vectoriales (Error, SinResultados, Inventario, Elaboracion, Carrito, Registros, Precios, SinTurno, NoExiste) de **unDraw** (paquete npm `undraw-svg` 2.0.0, MIT), dentro del APK. El acento toma el `primary` del tema; en oscuro los grises se invierten. Decorativas (TalkBack no las lee). |
-| `SpviExpandableFab` + `SpviFabAction` | FAB que rota 45° y despliega acciones con su etiqueta. **0.26.0 (P73):** va abajo a la derecha (`FabPosition.End`), como pide Material; revierte el centrado de la 0.18.1 (P24). Cada mini botón queda justo sobre el principal, con la etiqueta a su izquierda. **0.18.2:** cada fila (`FilaAccionFab`) se mide sola con un ancho simétrico respecto al mini botón, sin `fillMaxWidth` ni pesos (con ellos la etiqueta podía quedar sin ancho). La pantalla pone un velo (`scrim` al 32 %) bajo el menú abierto; tocar fuera o Atrás lo cierra. |
-| `SpviFab` | FAB de una sola acción (p. ej. «Agregar servicio»), mismos colores y elevación que el expandible. **0.26.0:** abajo a la derecha en Inventario, Servicios y Precios (antes, centrado). |
+| `SpviFab` | FAB de una sola acción (p. ej. «Agregar servicio»), con colores y elevación del tema. **0.26.0:** abajo a la derecha en Inventario, Servicios y Precios (antes, centrado). |
 | `SpviLoading` / `SpviLinearProgress` | Progreso circular (con descripción accesible) y lineal, determinado o indeterminado. |
 | `SpviNavigationBar` + `SpviNavItem` | Barra inferior de 5 ítems, **solo iconos rellenos** y **resaltado invertido**: el ítem seleccionado tiene fondo primary e icono onPrimary. El nombre sale como tooltip y en TalkBack. |
 | `SpviTopBar` | **0.27.0 (T1):** `CenterAlignedTopAppBar`: título centrado (máx. 2 líneas, nunca tapa las acciones), flecha atrás y acciones a los lados; sin logo (`showLogo` eliminado). Con `marca = true` (Inicio) el título «SPVI» usa la fuente de marca. |
@@ -243,10 +242,10 @@ Para ver el catálogo completo hay dos opciones:
 
 | Ley | Cómo se aplica |
 |---|---|
-| **Fitts** | Acciones principales abajo y grandes: botón flotante para crear, abajo a la derecha (Inventario, Servicios, **Precios**; 0.26.0), `SpviBarraAcciones` fija en los formularios, botones de 48dp. «Nueva venta» centrada en Inicio y Escanear a su derecha. |
+| **Fitts** | Acciones principales abajo y grandes: botón flotante para crear, abajo a la derecha (Inventario, Servicios, **Precios**; 0.26.0), `SpviBarraAcciones` fija en los formularios, botones de 48dp. «Nueva venta» centrada en Inicio. |
 | **Hick** | Menos opciones a la vista: un solo botón flotante por pestaña, sin acciones repetidas en los estados vacíos, filas con un solo dato, Período en combobox. |
 | **Jakob** | Patrones de Android: crear = botón flotante, orden Cancelar → Confirmar, pestañas para varias tablas, selector de fecha del sistema. |
-| **Proximidad** | Cada botón junto a lo que afecta (pegar SMS con su explicación, Escanear de nuevo junto a Guardar); acciones del diálogo agrupadas y centradas. |
+| **Proximidad** | Cada botón junto a lo que afecta (pegar SMS con su explicación, leer el QR dentro del flujo de vinculación); acciones del diálogo agrupadas y centradas. |
 | **Von Restorff** | «Nueva venta» es el único botón relleno de la tarjeta del turno (P25: también solo icono); la confirmación de cada diálogo va rellena y el resto sin fondo. |
 
 - **Botones:** solo icono, sin excepciones desde P25. El texto queda como descripción para TalkBack y tooltip.

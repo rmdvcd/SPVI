@@ -234,3 +234,13 @@ jobs:
       - name: Resultado legible (API mínima)
         if: success()
         run: python3 tools/verificacion/resumen_ok.py api-min /tmp/salida.log
+
+  # Verificación estática de enlaces, versión y esquema documentado; no necesita SDK ni Gradle.
+  docs:
+    name: Enlaces y esquema del README
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Comprobar documentación
+        run: python3 tools/verificacion/documentacion.py

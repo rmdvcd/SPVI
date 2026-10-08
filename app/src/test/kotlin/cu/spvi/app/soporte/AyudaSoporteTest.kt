@@ -18,6 +18,11 @@ class AyudaSoporteTest {
         )
     }
 
+    @Test fun ayudaDeRegistrosNombraLaAccionDeExportarDeLaPantalla() {
+        val tema = AyudaContenido.temas.single { it.titulo == "Ver lo vendido" }
+        assertTrue(tema.pasos.any { it.contains("Exportar") && it.contains("PDF o Excel") })
+    }
+
     @Test fun manualBreveYCompleto() {
         val temas = AyudaContenido.temas
         assertTrue(temas.size in 6..12)

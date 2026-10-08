@@ -12,6 +12,7 @@ import cu.spvi.domain.model.ServicioDisponible
 object TextosServicios {
     const val TITULO = "Servicios"
     const val BUSCAR = "Buscar servicio por nombre o tipo"
+    const val BUSCANDO = "Buscando servicios…"
     const val VACIO_TITULO = "Aún no tienes servicios"
     const val VACIO_DETALLE = "Arreglos, entregas, cortes de pelo… lo que ofreces además de tus productos."
     const val SIN_RESULTADOS_TITULO = "Sin resultados"
@@ -51,6 +52,7 @@ object TextosServicios {
 object ServiciosTags {
     const val LISTA = "serv_lista"
     const val BUSCAR = "serv_buscar"
+    const val BUSCANDO = "serv_busqueda_progreso"
     const val FILTRO = "serv_filtro"
     const val EXPORTAR = "serv_exportar"
     const val AGREGAR = "serv_agregar"
@@ -68,7 +70,7 @@ object ServiciosTags {
     fun formato(f: FormatoSalida) = "serv_formato_${f.name}"
 }
 
-/** Exportar la lista de servicios: PDF, Excel o texto. */
+/** Exportar la lista de servicios en PDF o Excel. */
 val FORMATOS_EXPORTAR_SERVICIOS = listOf(FormatoSalida.PDF, FormatoSalida.EXCEL)
 
 /** Reglas puras de la lista. */

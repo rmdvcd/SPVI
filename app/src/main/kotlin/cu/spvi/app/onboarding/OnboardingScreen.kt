@@ -226,17 +226,18 @@ private fun BarraSuperior(state: OnboardingUiState, acciones: OnboardingAcciones
         Spacer(Modifier.statusBarsPadding())
         return
     }
+    val paso = state.paso ?: return
     Column(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = SpviSpacing.md, vertical = SpviSpacing.xs)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             if (state.totalPasos <= 1) {
                 Text(
-                    state.paso!!.titulo, style = MaterialTheme.typography.titleSmall, textAlign = TextAlign.Center,
+                    paso.titulo, style = MaterialTheme.typography.titleSmall, textAlign = TextAlign.Center,
                     modifier = Modifier.weight(1f).testTag(OnboardingTags.PROGRESO).semantics { liveRegion = LiveRegionMode.Polite },
                 )
             } else {
                 // P18 (L9): misma cabecera que Licencia y Respaldo. Atrás/Siguiente siguen abajo, con texto.
                 SpviStepper(
-                    actual = state.numeroPaso, total = state.totalPasos, titulo = state.paso!!.titulo,
+                    actual = state.numeroPaso, total = state.totalPasos, titulo = paso.titulo,
                     modifier = Modifier.weight(1f).testTag(OnboardingTags.PROGRESO),
                 )
             }

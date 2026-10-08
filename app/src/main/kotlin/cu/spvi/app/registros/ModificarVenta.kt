@@ -100,7 +100,6 @@ object TextosModificar {
     const val CLIENTE = "Datos de la transferencia"
     const val TRANSFERENCIA_INCOMPLETA = "Completa los datos de la transferencia (el número de transacción es obligatorio)."
     const val SIN_CAMBIOS = "No hay cambios que guardar."
-    const val NUEVO = "Nuevo"
     fun total(t: Cup) = "Total estimado: ${Money.format(t)}"
 }
 

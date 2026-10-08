@@ -26,10 +26,6 @@ class FiltroEntradaTest {
         assertEquals("Pan de bono", FiltroEntrada.NOMBRE.aplicar("Pan\tde   bono"))
         assertEquals("línea 1\nlínea 2", FiltroEntrada.TEXTO.aplicar("línea 1\nlínea 2\u0007"))
         assertEquals(500, FiltroEntrada.TEXTO.aplicar("x".repeat(900)).length)
-        assertEquals("ABC-12.3", FiltroEntrada.CODIGO.aplicar("ABC-12.3 ñ"))
-        // 0.21.4 (E7): mismo formato que el dominio: «_» admitido y hasta 64 caracteres
-        assertEquals("LOTE_7", FiltroEntrada.CODIGO.aplicar("LOTE_7"))
-        assertEquals(64, FiltroEntrada.CODIGO.aplicar("A".repeat(70)).length)
         assertEquals("MM10040FEJ987", FiltroEntrada.TRANSACCION.aplicar("mm10040fej987 "))
         assertEquals(5000, FiltroEntrada.LIBRE.aplicar("y".repeat(5000)).length)
     }

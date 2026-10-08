@@ -12,9 +12,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.DialogWindowProvider
 import android.view.WindowManager
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -38,14 +39,12 @@ import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,7 +53,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
@@ -65,9 +63,6 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import kotlin.math.max
-import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import cu.spvi.designsystem.icon.SpviIcons
@@ -163,8 +158,8 @@ fun SpviDialog(
  * P18 (A03): con [sinGuardar] = true, cerrar SIN querer (tocar fuera o el botón atrás) no descarta lo escrito:
  * pregunta «¿Salir sin guardar?». El botón Cancelar del pie es una decisión explícita y cierra directamente.
  *
- * P24: todas las ventanas emergentes de la app son centradas. Ancho del 92 % de la pantalla (máximo 560dp) y alto
- * máximo del 90 %; con el teclado abierto se encoge para que los campos sigan visibles.
+ * P24: todas las ventanas emergentes de la app son centradas. Ancho y alto intrínsecos al contenido, con límites
+ * mínimos/máximos del viewport; con el teclado abierto se encoge para que los campos sigan visibles.
  */
 @Composable
 fun SpviBottomSheet(
@@ -172,6 +167,7 @@ fun SpviBottomSheet(
     title: String? = null,
     footer: (@Composable RowScope.() -> Unit)? = null,
     sinGuardar: Boolean = false,
+    enPanel: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     var preguntar by rememberSaveable { mutableStateOf(false) }
@@ -186,6 +182,15 @@ fun SpviBottomSheet(
             destructive = true,
         )
     }
+    if (enPanel) {
+        SpviDetailPane(
+            title = title,
+            onClose = { if (sinGuardar) preguntar = true else onDismiss() },
+            footer = footer,
+            content = content,
+        )
+        return
+    }
     SpviVentana(
         onDismiss = { if (sinGuardar) preguntar = true else onDismiss() },
         title = title,
@@ -193,6 +198,56 @@ fun SpviBottomSheet(
         animarCierre = !sinGuardar,
         content = content,
     )
+}
+
+/**
+ * Panel persistente de detalle para ventanas medianas/expandidas. Conserva el mismo contenido y acciones que la hoja
+ * modal, pero deja la lista visible al lado y reserva el desplazamiento solo para el contenido.
+ */
+@Composable
+private fun SpviDetailPane(
+    title: String?,
+    onClose: () -> Unit,
+    footer: (@Composable RowScope.() -> Unit)?,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val cs = MaterialTheme.colorScheme
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        shape = RoundedCornerShape(SpviRadius.xl),
+        color = cs.surfaceContainerHigh,
+        tonalElevation = SpviElevation.mid,
+        shadowElevation = SpviElevation.high,
+    ) {
+        Column(Modifier.fillMaxSize()) {
+            Row(
+                Modifier.fillMaxWidth().padding(start = SpviSpacing.md, end = SpviSpacing.xs, top = SpviSpacing.xs),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                title?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f).semantics { heading() },
+                    )
+                }
+                SpviIconAction(SpviIcons.Cancelar, SpviSheetTextos.CERRAR_DETALLE, onClose)
+            }
+            HorizontalDivider(color = cs.outlineVariant)
+            Column(
+                Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
+                    .padding(horizontal = SpviSpacing.md, vertical = SpviSpacing.md),
+                verticalArrangement = Arrangement.spacedBy(SpviSpacing.md),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                CompositionLocalProvider(LocalSpviCentrado provides true) { content() }
+            }
+            footer?.let {
+                HorizontalDivider(color = cs.outlineVariant)
+                SpviButtonRow(Modifier.padding(horizontal = SpviSpacing.md, vertical = SpviSpacing.xs)) { it(this) }
+            }
+        }
+    }
 }
 
 /**
@@ -250,7 +305,8 @@ private fun SpviVentana(
             ) {
                 Surface(
                     modifier = modifier.animateEnterExit(enter = SpviMotion.ventanaEntra, exit = SpviMotion.ventanaSale)
-                        .fillMaxWidth(ANCHO_VENTANA).widthIn(max = SpviSize.contentMaxWidth).heightIn(max = alto * ALTO_VENTANA)
+                        .width(IntrinsicSize.Max).widthIn(min = SpviSize.dialogMinWidth, max = SpviSize.contentMaxWidth)
+                        .height(IntrinsicSize.Min).heightIn(max = alto)
                         .pointerInput(Unit) { detectTapGestures { } },
                     shape = RoundedCornerShape(SpviRadius.xl),
                     color = cs.surfaceContainerHigh,
@@ -288,19 +344,16 @@ private fun SpviVentana(
 /** Opacidad del velo que oscurece la pantalla detrás de una ventana emergente (la del oscurecido de Material). */
 private const val ALFA_VELO = 0.32f
 
-/** Fracción del ancho y del alto de la pantalla que puede ocupar una ventana emergente. */
-private const val ANCHO_VENTANA = 0.92f
-private const val ALTO_VENTANA = 0.9f
-
 /** Textos de la confirmación al cerrar una hoja con cambios. */
 object SpviSheetTextos {
+    const val CERRAR_DETALLE = "Cerrar detalle"
     const val SALIR_TITULO = "¿Salir sin guardar?"
     const val SALIR_TEXTO = "Se perderán los cambios que escribiste."
     const val SALIR = "Salir sin guardar"
     const val SEGUIR = "Seguir editando"
 }
 
-/** FAB de una sola acción (p. ej. "Agregar insumo"): mismos colores y elevación que [SpviExpandableFab]. */
+/** Botón flotante de acción principal con los colores y elevación del tema. */
 @Composable
 fun SpviFab(
     icon: ImageVector,
@@ -317,120 +370,3 @@ fun SpviFab(
         elevation = FloatingActionButtonDefaults.elevation(SpviElevation.mid, SpviElevation.high),
     ) { Icon(icon, contentDescription = contentDescription) }
 }
-
-@Immutable
-data class SpviFabAction(val icon: ImageVector, val label: String, val onClick: () -> Unit)
-
-/**
- * FAB expandible: el principal rota 45° (graphicsLayer) y las acciones entran con slide + fade.
- * Cada acción: icono con descripción + etiqueta corta visible (oculta a TalkBack para no duplicar).
- */
-@Composable
-fun SpviExpandableFab(
-    actions: List<SpviFabAction>,
-    expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-    icon: ImageVector = SpviIcons.Agregar,
-    contentDescription: String = "Acciones rápidas",
-) {
-    val cs = MaterialTheme.colorScheme
-    BloquearGestos(expanded) // 0.27.0 (T5): con el menú del «+» abierto no se desliza entre secciones
-    val rotation by animateFloatAsState(if (expanded) 45f else 0f, SpviMotion.muelle(), label = "fabRotation")
-    // P30/P31: el FAB va centrado abajo. 0.21.0 (C13): las acciones se apilan en vertical y TODOS los botones
-    // (mini y principal) comparten el mismo eje vertical; las etiquetas quedan a la izquierda (ver [EjeFab]).
-    EjeFab(modifier, SpviSpacing.md) {
-        actions.forEach { action ->
-            AnimatedVisibility(visible = expanded, enter = SpviMotion.enterVertical, exit = SpviMotion.exitVertical) {
-                FilaAccionFab(action) { onExpandedChange(false); action.onClick() }
-            }
-        }
-        FloatingActionButton(
-            onClick = { onExpandedChange(!expanded) },
-            containerColor = cs.primary,
-            contentColor = cs.onPrimary,
-            elevation = FloatingActionButtonDefaults.elevation(SpviElevation.mid, SpviElevation.high),
-        ) {
-            Icon(
-                icon,
-                contentDescription = if (expanded) "Cerrar acciones" else contentDescription,
-                modifier = Modifier.graphicsLayer { rotationZ = rotation },
-            )
-        }
-    }
-}
-
-/**
- * 0.21.0 (C13): columna cuyo eje es el CENTRO DEL BOTÓN, no el centro de cada fila. Cada fila de acción mide
- * simétrica respecto a su mini botón ([FilaAccionFab]); aquí se colocan todas, y el FAB principal, con ese centro en
- * la misma x, así que «Escanear», «Escribir» y Cancelar quedan exactamente alineados en vertical.
- */
-@Composable
-private fun EjeFab(modifier: Modifier, separacion: androidx.compose.ui.unit.Dp, content: @Composable () -> Unit) {
-    Layout(content = content, modifier = modifier) { medibles, restricciones ->
-        val libre = restricciones.copy(minWidth = 0, minHeight = 0)
-        // Las acciones ocultas (AnimatedVisibility cerrado) miden 0 y no reservan hueco.
-        val piezas = medibles.map { it.measure(libre) }.filter { it.height > 0 }
-        val hueco = separacion.roundToPx()
-        val ancho = piezas.maxOfOrNull { it.width } ?: 0
-        val alto = piezas.sumOf { it.height } + hueco * (piezas.size - 1).coerceAtLeast(0)
-        layout(ancho, alto) {
-            var y = 0
-            piezas.forEach { p ->
-                p.placeRelative((ancho - p.width) / 2, y)
-                y += p.height + hueco
-            }
-        }
-    }
-}
-
-/**
- * P31: una acción del FAB expandible: etiqueta visible a la izquierda y mini botón a la derecha.
- *
- * Medida propia en vez de `Row(fillMaxWidth)` + `weight`: el hueco del FAB del Scaffold no garantiza
- * un ancho acotado, y con pesos la etiqueta podía quedar con ancho 0 (se veían solo los iconos).
- * Aquí el ancho es simétrico respecto al mini botón, así que la columna centrada lo deja justo
- * encima del botón principal, tenga la etiqueta el largo que tenga.
- */
-@Composable
-private fun FilaAccionFab(action: SpviFabAction, onClick: () -> Unit) {
-    val cs = MaterialTheme.colorScheme
-    Layout(
-        content = {
-            Surface(
-                shape = RoundedCornerShape(SpviRadius.sm),
-                color = cs.surfaceContainerHigh,
-                contentColor = cs.onSurface,
-                shadowElevation = SpviElevation.low,
-                modifier = Modifier.clearAndSetSemantics { }, // TalkBack ya lee la descripción del botón
-            ) {
-                Text(
-                    action.label,
-                    style = MaterialTheme.typography.labelLarge,
-                    maxLines = 2,
-                    modifier = Modifier.padding(horizontal = SpviSpacing.xs, vertical = SpviSpacing.xs),
-                )
-            }
-            SmallFloatingActionButton(
-                onClick = onClick,
-                containerColor = cs.tertiaryContainer, // 0.21.1 (H2): como el botón tonal; el naranja es solo para avisos
-                contentColor = cs.onTertiaryContainer,
-            ) { Icon(action.icon, contentDescription = action.label) }
-        },
-    ) { medibles, restricciones ->
-        val libre = restricciones.copy(minWidth = 0, minHeight = 0)
-        val boton = medibles[1].measure(libre)
-        val separacion = SpviSpacing.xs.roundToPx()
-        val maxEtiqueta = if (restricciones.hasBoundedWidth) {
-            ((restricciones.maxWidth - boton.width) / 2 - separacion).coerceAtLeast(0)
-        } else Constraints.Infinity
-        val etiqueta = medibles[0].measure(libre.copy(maxWidth = maxEtiqueta))
-        val mitad = max(boton.width / 2 + separacion + etiqueta.width, boton.width / 2)
-        val alto = max(boton.height, etiqueta.height)
-        layout(mitad * 2, alto) {
-            boton.placeRelative(mitad - boton.width / 2, (alto - boton.height) / 2)
-            etiqueta.placeRelative(mitad - boton.width / 2 - separacion - etiqueta.width, (alto - etiqueta.height) / 2)
-        }
-    }
-}
-

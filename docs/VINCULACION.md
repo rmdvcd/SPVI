@@ -8,9 +8,11 @@ Desde la 0.19.0, cada instalación de SPVI es una **app principal** o una **app 
 | Base de datos | La general: catálogo, todas las ventas y todos los turnos (también los de las secundarias) | Una copia del catálogo y solo sus propios turnos y ventas |
 | Licencia | Se activa aquí (como siempre) | No se activa: la cubre la de la principal, con un máximo de **5** secundarias |
 | Si la licencia de la principal vence | Pantalla de Licencia | Pantalla «La licencia de la app principal no está activa» (solo Sincronizar o Desvincular) |
-| Ajustes visibles | Todos | Apps vinculadas, Consultas en internet, Permisos del teléfono, Ayuda, Soporte (y Precios si tiene ese permiso) |
+| Ajustes visibles | Todos | Apps vinculadas, Permisos del teléfono, Ayuda, Soporte (y Precios si tiene ese permiso) |
 
-Una instalación nueva o una actualización es **principal**. Una instalación pasa a secundaria solo al escanear el código de una principal.
+La preferencia «Consultas en internet» pertenecía al escáner de productos y se eliminó en 0.30.0; no forma parte de los Ajustes actuales.
+
+Una instalación nueva o una actualización es **principal**. Una instalación pasa a secundaria solo al escanear el código QR de una principal.
 
 ## Decisiones del usuario (P38)
 
@@ -180,7 +182,7 @@ Decisiones: docs/HISTORIAL_DESARROLLO.md (Prompts 38 a 45). Base de datos **v6**
 | H1 Vendedor | `Venta.vendedor` = `turno.abiertoPor`. Sale en la ficha (no en el texto compartido), en la columna «Vendedor» de Ventas (Excel/PDF) y en el filtro de Registros (solo con ≥ 2 vendedores). `FiltrosGuardados` pasa a 7 valores y sigue leyendo los de 6 | `TablasExport`, `VentaDaos`, `RegistrosLogic`, `HojaFiltro` |
 | H3 SMS | En la secundaria, «Pegar SMS» explica que el SMS llega al dueño: el empleado escribe el nº | `TextosVenta.PEGAR_AYUDA_SECUNDARIA` |
 | H4 Cobro | `empleado.tarjetaId/telefonoId` (null = predeterminados). La instantánea que recibe la secundaria lleva **solo** esa tarjeta y ese teléfono (`Perfil.paraEmpleado`) | `AlmacenSync`, ficha del empleado |
-| H5 Pedir cierre | `empleado.cierreSolicitadoEn`. La principal lo envía en `SincronizarOk.cerrarTurno` (campo opcional: una 0.19.x lo ignora). La secundaria lo guarda en `DatosSecundaria.cierrePendiente` y `CierreRemoto` cierra el turno cuando **no hay venta en curso** (`SesionVenta`, P43), con «Pedido desde la app principal» como quien cerró; luego sincroniza. Si ya no hay turno, la petición se olvida. Inicio desactiva Nueva venta/Escanear mientras está pedido | `CierreRemoto.decidir` (regla pura), `VentaViewModel`, `InicioViewModel` |
+| H5 Pedir cierre | `empleado.cierreSolicitadoEn`. La principal lo envía en `SincronizarOk.cerrarTurno` (campo opcional: una 0.19.x lo ignora). La secundaria lo guarda en `DatosSecundaria.cierrePendiente` y `CierreRemoto` cierra el turno cuando **no hay venta en curso** (`SesionVenta`, P43), con «Pedido desde la app principal» como quien cerró; luego sincroniza. Si ya no hay turno, la petición se olvida. Inicio desactiva Nueva venta mientras está pedido | `CierreRemoto.decidir` (regla pura), `VentaViewModel`, `InicioViewModel` |
 | H6 Negativos | `TipoAlerta.EXISTENCIAS_NEGATIVAS` (productos e insumos < 0, nunca elaborados) en Inicio e Inventario | `Stock`, `InventarioFiltro`, `InsumosFiltro` |
 | H7 Respaldo | `RespaldoDto.empleados` sin claves ni QR; al importar quedan «Sin vincular». Migrar avisa de sincronizar antes | `RespaldoRepositoryImpl`, `TextosMigrar.PASO2_EMPLEADOS` |
 
@@ -200,7 +202,7 @@ Decisiones: docs/HISTORIAL_DESARROLLO.md (Prompts 46 a 48). Base de datos **v7**
 | C5 Una principal | `agregarEmpleado`/`nuevoCodigo` devuelven `SinPermiso` en una secundaria; la UI oculta «+» y, con empleados, «Usar esta app como secundaria» | `VinculacionRepositoriesImpl.noEsSecundaria` |
 | C6 Solicitar cierre | La secundaria marca `cierreSolicitado` y lo repite en `Sincronizar.solicitaCierre` hasta que se resuelve. La principal guarda `cierrePedidoPorEmpleadoEn`; **Aprobar** reutiliza `cierreSolicitadoEn` → `SincronizarOk.cerrarTurno` (cierre con `CierreRemoto`, nunca durante una venta); **Rechazar** envía `SincronizarOk.cierreRechazado`. Nada se cierra solo | `InicioViewModel`, `SolicitudesCierreViewModel`, `VinculacionViewModel` |
 | C7/C8 Registros | `movimiento.hechoPor` (usuario actual u origen sincronizado); en la secundaria, solo lo de su empleado | `OrigenMovimiento`, `RegistrosLogic`, `TablasExport` |
-| C9 Inicio | La secundaria: turno, Nueva venta + Escanear y alertas | `InicioScreen` |
+| C9 Inicio | La secundaria: turno, Nueva venta y alertas. El acceso «Escanear» de productos se retiró en 0.30.0 | `InicioScreen` |
 | C12 Módulos | `Preferencias.modulos` viaja en la instantánea; `PermisosApp.modulos` oculta secciones | `AlmacenSync`, `MainScaffold` |
 
 **Compatibilidad:** todos los campos nuevos del protocolo son opcionales. Una 0.20.x y una 0.21.0 se entienden, pero una principal 0.20.x no ve las solicitudes de cierre ni el teléfono. Recomendación: actualizar todas a la vez.

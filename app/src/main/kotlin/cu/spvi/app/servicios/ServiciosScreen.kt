@@ -3,6 +3,8 @@ package cu.spvi.app.servicios
 import androidx.compose.foundation.layout.size
 import cu.spvi.domain.model.nombreCompleto
 import cu.spvi.app.common.LocalPermisosApp
+import cu.spvi.app.common.calculateListDetailPaneWidth
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -13,8 +15,10 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -40,7 +44,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -162,6 +169,9 @@ fun ServiciosContent(
     snackbar: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     val venta = state.modoVenta
+    val anchoPanelDetalle = calculateListDetailPaneWidth()
+    val panelDeDetalle = anchoPanelDetalle != null && !venta
+    BackHandler(enabled = panelDeDetalle && state.ficha != null) { acciones.onCerrarFicha() }
     Scaffold(
         topBar = {
             if (venta) {
@@ -187,36 +197,35 @@ fun ServiciosContent(
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             if (state.trabajando) SpviLinearProgress(Modifier.fillMaxWidth())
+            if (state.buscando) SpviLinearProgress(
+                Modifier.fillMaxWidth().testTag(ServiciosTags.BUSCANDO)
+                    .semantics {
+                        contentDescription = TextosServicios.BUSCANDO
+                        liveRegion = LiveRegionMode.Polite
+                    },
+            )
             Buscador(state, acciones)
             if (!venta && state.seleccion.isNotEmpty()) BarraSeleccion(state, acciones)
             cu.spvi.designsystem.component.BloquearGestos(state.seleccion.isNotEmpty()) // 0.27.0 (T5)
             Box(Modifier.weight(1f)) {
-                when (val v = state.vista) {
-                    EstadoCarga.Idle, EstadoCarga.Cargando -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { SpviLoading() }
-                    is EstadoCarga.Error -> SpviEmptyState(title = "Algo salió mal", detail = v.mensaje, ilustracion = SpviIlustracion.Error) {
-                        SpviSecondaryButton("Reintentar", icon = SpviIcons.Reintentar, onClick = acciones.onReintentar)
-                    }
-                    // Sin botón propio: «Agregar» ya está en el botón flotante (no se repite).
-                    is EstadoCarga.Vacio -> SpviEmptyState(
-                        title = TextosServicios.VACIO_TITULO, detail = TextosServicios.VACIO_DETALLE,
-                        ilustracion = SpviIlustracion.Servicios, ayuda = acciones.onAyuda,
-                    )
-                    is EstadoCarga.Exito -> if (v.datos.items.isEmpty()) {
-                        SpviEmptyState(title = TextosServicios.SIN_RESULTADOS_TITULO, detail = TextosServicios.SIN_RESULTADOS_DETALLE, ilustracion = SpviIlustracion.SinResultados) {
-                            SpviSecondaryButton(
-                                TextosServicios.QUITAR_FILTROS, icon = SpviIcons.QuitarFiltros, onClick = { acciones.onBuscar(""); acciones.onQuitarFiltros() },
-                                modifier = Modifier.testTag(ServiciosTags.QUITAR_FILTROS),
-                            )
+                if (panelDeDetalle && state.ficha != null) {
+                    Row(
+                        Modifier.fillMaxSize().padding(horizontal = SpviSpacing.xs),
+                        horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
+                    ) {
+                        Box(Modifier.weight(1f).fillMaxHeight()) { ContenidoLista(state, acciones) }
+                        Box(Modifier.width(anchoPanelDetalle ?: 280.dp).fillMaxHeight()) {
+                            Ficha(state.ficha, state, acciones, enPanel = true)
                         }
-                    } else {
-                        Lista(state, acciones)
                     }
+                } else {
+                    ContenidoLista(state, acciones)
                 }
             }
         }
     }
 
-    state.ficha?.let { Ficha(it, state, acciones) }
+    if (!panelDeDetalle) state.ficha?.let { Ficha(it, state, acciones) }
     when (state.hoja) {
         HojaServicios.FILTRO -> HojaFiltro(state, acciones)
         HojaServicios.EXPORTAR -> HojaExportar(state, acciones)
@@ -234,6 +243,31 @@ fun ServiciosContent(
             confirmDescription = "Eliminar",
             destructive = true,
         )
+    }
+}
+
+@Composable
+private fun ContenidoLista(state: ServiciosUiState, acciones: AccionesServicios) {
+    when (val v = state.vista) {
+        EstadoCarga.Idle, EstadoCarga.Cargando -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { SpviLoading() }
+        is EstadoCarga.Error -> SpviEmptyState(title = "Algo salió mal", detail = v.mensaje, ilustracion = SpviIlustracion.Error) {
+            SpviSecondaryButton("Reintentar", icon = SpviIcons.Reintentar, onClick = acciones.onReintentar)
+        }
+        // Sin botón propio: «Agregar» ya está en el botón flotante (no se repite).
+        is EstadoCarga.Vacio -> SpviEmptyState(
+            title = TextosServicios.VACIO_TITULO, detail = TextosServicios.VACIO_DETALLE,
+            ilustracion = SpviIlustracion.Servicios, ayuda = acciones.onAyuda,
+        )
+        is EstadoCarga.Exito -> if (v.datos.items.isEmpty()) {
+            SpviEmptyState(title = TextosServicios.SIN_RESULTADOS_TITULO, detail = TextosServicios.SIN_RESULTADOS_DETALLE, ilustracion = SpviIlustracion.SinResultados) {
+                SpviSecondaryButton(
+                    TextosServicios.QUITAR_FILTROS, icon = SpviIcons.QuitarFiltros, onClick = { acciones.onBuscar(""); acciones.onQuitarFiltros() },
+                    modifier = Modifier.testTag(ServiciosTags.QUITAR_FILTROS),
+                )
+            }
+        } else {
+            Lista(state, acciones)
+        }
     }
 }
 
@@ -350,11 +384,12 @@ private fun Fila(s: ServicioDisponible, marcado: Boolean, acciones: AccionesServ
 // ---------------- Ficha ----------------
 
 @Composable
-private fun Ficha(f: ServicioDisponible, state: ServiciosUiState, acciones: AccionesServicios) {
+private fun Ficha(f: ServicioDisponible, state: ServiciosUiState, acciones: AccionesServicios, enPanel: Boolean = false) {
     val s = f.servicio
     SpviBottomSheet(
         onDismiss = acciones.onCerrarFicha,
         title = s.nombreCompleto,
+        enPanel = enPanel,
         footer = {
             val permisos = LocalPermisosApp.current
             if (permisos.editarInventario) SpviIconAction(SpviIcons.Editar, "Editar", onClick = { acciones.onEditar(s.id) }, style = IconActionStyle.Tonal, modifier = Modifier.testTag(ServiciosTags.FICHA_EDITAR))

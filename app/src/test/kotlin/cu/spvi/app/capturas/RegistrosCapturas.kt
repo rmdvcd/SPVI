@@ -92,6 +92,8 @@ class RegistrosCapturas {
     )
     @Test fun ventasError() = reg("04h_registros_error", RegistrosUiState(vista = EstadoCarga.Error("No se pudieron cargar los registros")))
     @Test fun fichaVenta() = reg("04o_registros_ficha_venta", ventasState.copy(ficha = FichaRegistro.DeVenta(ventas[0])))
+    @Test @Config(qualifiers = Captura.TABLETA) fun fichaVentaTableta() =
+        reg("04u_registros_tableta_detalle", ventasState.copy(ficha = FichaRegistro.DeVenta(ventas[0])))
     @Test fun hojaFiltro() = reg("04i_registros_hoja_filtro", ventasState.copy(hojaFiltro = true))
     // 0.20.0 (H1): con apps secundarias, la ficha dice quién vendió y el filtro permite elegirlo.
     @Test fun fichaVentaVendedor() = reg("04o2_registros_ficha_venta_vendedor", ventasState.copy(ficha = FichaRegistro.DeVenta(ventas[0].copy(vendedor = "Luis"))))

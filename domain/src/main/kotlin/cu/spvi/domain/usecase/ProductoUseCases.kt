@@ -21,22 +21,15 @@ class ObtenerCategorias @Inject constructor(private val repo: ProductoRepository
     suspend operator fun invoke(): List<String> = Categorias.combinar(repo.categoriasEnUso())
 }
 
-/**
- * Crea o edita un producto. Normaliza campos, aplica las reglas de Elaborado (receta obligatoria,
- * costo calculado, sin foto/caducidad/código), valida y rechaza códigos duplicados.
- */
+/** Crea o edita un producto: normaliza campos, aplica las reglas de Elaborado y valida sus datos. */
 class GuardarProducto @Inject constructor(
     private val productos: ProductoRepository,
     private val insumos: InsumoRepository,
     private val clock: Clock,
 ) {
-    /**
-     * [cantidadLeida]: existencia mostrada al abrir la ficha (0.21.6, ver `Stock.cantidadAlGuardar`); null = manda la escrita.
-     * [exigirDiferenciar] (0.24.0): aplica las reglas de la descripción: [Identificacion] (mismo nombre →
-     * descripción distinta) y su formato (una línea, 40 caracteres). Solo el escáner lo apaga al actualizar la caducidad de un producto existente sin tocar su nombre ni su descripción.
-     */
+    /** [cantidadLeida]: existencia mostrada al abrir la ficha; null = manda la cantidad escrita. */
     suspend operator fun invoke(
-        producto: Producto, receta: Receta?, cantidadLeida: Long? = null, exigirDiferenciar: Boolean = true,
+        producto: Producto, receta: Receta?, cantidadLeida: Long? = null,
     ): AppResult<Long> {
         val now = clock.now()
         var p = producto.copy(
@@ -48,16 +41,16 @@ class GuardarProducto @Inject constructor(
         if (p.esElaborado) {
             // P26: sin existencias ni niveles propios (se vende mientras alcancen los insumos).
             p = p.copy(categoria = Categorias.ELABORADO, fotoUri = null, fechaCaducidad = null, cantidad = 0, nivelBajo = null, nivelCritico = null)
-            Validadores.receta(receta).toResult().let { if (it is AppResult.Err) return it }
-            r = receta!!.copy(productoId = p.id)
+            val recetaEntrada = receta ?: return AppResult.Err(AppError.Validacion("receta", AppError.Regla.REQUERIDO))
+            Validadores.receta(recetaEntrada).toResult().let { if (it is AppResult.Err) return it }
+            r = recetaEntrada.copy(productoId = p.id)
             val costo = Recetas.costo(r, insumos.obtenerVarios(r.lineas.map { it.insumoId }).associateBy { it.id })
             p = p.copy(precioCosto = (costo as? AppResult.Ok)?.value ?: return costo as AppResult.Err)
         } else {
             r = null
         }
-        // Sin exigir: una descripción anterior a 0.24.0 (más larga o de varias líneas) no impide guardar otro cambio.
-        Validadores.producto(p).filter { exigirDiferenciar || it.campo != "descripcion" }.toResult().let { if (it is AppResult.Err) return it }
-        if (exigirDiferenciar) errorIdentificacion(p.id, p.nombre, p.descripcion, productos.observarTodos().first().map { it.identidad })
+        Validadores.producto(p).toResult().let { if (it is AppResult.Err) return it }
+        errorIdentificacion(p.id, p.nombre, p.descripcion, productos.observarTodos().first().map { it.identidad })
             ?.let { return AppResult.Err(it) }
 
         return if (p.id == 0L) {

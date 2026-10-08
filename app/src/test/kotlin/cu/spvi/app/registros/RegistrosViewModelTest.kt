@@ -32,7 +32,9 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -108,6 +110,22 @@ class RegistrosViewModelTest {
         assertEquals(listOf(4L), ids(vm))
         vm.pestana(PestanaRegistros.VENTAS)
         assertEquals("CAFE", vm.state.value.filtro.texto) // se conserva al volver
+        assertEquals(listOf(1L), ids(vm))
+    }
+
+    @Test fun busquedaMantieneLasFilasYAnunciaProgresoHastaLaNuevaConsulta() = runTest {
+        cargar()
+        val vm = vm()
+        vm.debounceBusqueda = 250
+
+        vm.buscar("CAFE")
+        runCurrent()
+        assertTrue(vm.state.value.buscando)
+        assertEquals(listOf(3L, 2L, 1L), ids(vm))
+
+        advanceTimeBy(300)
+        runCurrent()
+        assertFalse(vm.state.value.buscando)
         assertEquals(listOf(1L), ids(vm))
     }
 

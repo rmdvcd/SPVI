@@ -18,7 +18,7 @@ plugins {
 /**
  * Tests JVM SIN RED: cualquier conexión a un host externo se envía a un proxy inexistente (127.0.0.1:9) y falla al
  * instante, así un test que dependiera de internet se detecta en vez de pasar "por suerte". Solo se permite el
- * bucle local (MockWebServer de EscanerRedTest), incluido el nombre canónico que MockWebServer usa para "localhost".
+ * bucle local (MockWebServer), incluido el nombre canónico que MockWebServer usa para "localhost".
  */
 val hostLocal: String = runCatching { java.net.InetAddress.getByName("localhost").canonicalHostName }.getOrDefault("localhost")
 subprojects {

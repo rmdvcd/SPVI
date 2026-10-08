@@ -1,6 +1,6 @@
 # SPVI — Formatos de respaldo y de exportación
 
-Formatos de archivo que SPVI escribe y lee en la versión **0.27.0** (contenedor `.spvi` v4, se leen v3 y v4; contenido `RespaldoDto` v4, se importan v3 y v4).
+Formatos de archivo que SPVI escribe y lee en la versión **0.30.0** (contenedor `.spvi` v4, se leen v3 y v4; contenido `RespaldoDto` v4, se importan v3 y v4).
 
 | Formato | Extensión | Tipo MIME | Cifrado | Se importa |
 |---|---|---|---|---|
@@ -110,7 +110,7 @@ Cualquier error deja los datos como estaban.
 | Versión más nueva | «Respaldo de una versión más nueva» |
 | Versión 1 o 2 (anterior a la 0.13.0) | «Se creó con una versión muy antigua de SPVI que esta versión ya no abre.» |
 
-Tras importar un respaldo v4 con bloque `licencia` en un teléfono sin licencia instalada, Licencia muestra el ID ya escrito para **Recuperar** (MANUAL §9). Exportar un respaldo pone a cero el recordatorio mensual de Inicio.
+Tras importar un respaldo v4 con bloque `licencia` en un teléfono sin licencia instalada, Licencia muestra el ID ya escrito para **Recuperar** (ver [MANUAL_USUARIO.md §8](MANUAL_USUARIO.md#8-licencia-actualizaciones-y-ayuda)). Exportar un respaldo pone a cero el recordatorio mensual de Inicio.
 | Contraseña incorrecta | «Contraseña incorrecta» (el diálogo queda abierto para reintentar) |
 
 **Cómo llega el archivo:** «Importar» → selector del sistema; **Compartir** a SPVI desde otra app; o **Abrir con → SPVI**. En los dos últimos casos se copia a `cacheDir/compartir` (solo `content://`, máx. 128 MB, se borra a las 24 h) y siempre se piden contraseña y confirmación.

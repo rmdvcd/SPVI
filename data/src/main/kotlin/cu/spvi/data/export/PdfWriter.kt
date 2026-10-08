@@ -74,19 +74,21 @@ object PdfWriter {
             pagina = null
         }
 
+        private fun canvasActual() = checkNotNull(pagina) { "No hay una página PDF abierta" }.canvas
+
         fun cerrar() { if (pagina == null) nueva(); cerrarPagina() }
 
         fun tabla(t: TablaExport) {
             val cambia = orientacion(DisenoPdf.horizontal(t))
             if (pagina == null || cambia || y > H - M - FILA * 4) nueva() else y += FILA
-            val c = pagina!!.canvas
+            val c = canvasActual()
             c.drawText(t.titulo, M, y + 14f, titulo)
             y += 26f
             val anchos = DisenoPdf.anchos(t, W - 2 * M) { s, negrita -> (if (negrita) cabecera else texto).measureText(s) }
             val derecha = BooleanArray(t.columnas.size) { DisenoPdf.derecha(t, it) }
             val pinceles = Array(t.columnas.size) { if (DisenoPdf.destacada(t, it)) dato else texto }
             fun filaCabecera() {
-                val cv = pagina!!.canvas
+                val cv = canvasActual()
                 cv.drawRect(M, y, W - M, y + FILA, fondo)
                 celdas(t.columnas, anchos, derecha) { cabecera }
             }
@@ -94,18 +96,18 @@ object PdfWriter {
             t.filas.forEach { f ->
                 if (y + FILA > H - M - FILA) { nueva(); filaCabecera() }
                 celdas(f, anchos, derecha) { pinceles.getOrElse(it) { texto } }
-                pagina!!.canvas.drawLine(M, y, W - M, y, linea)
+                canvasActual().drawLine(M, y, W - M, y, linea)
             }
             t.pie.forEach { p ->
                 if (y + FILA > H - M - FILA) nueva()
-                pagina!!.canvas.drawText(p, M, y + 12f, cabecera)
+                canvasActual().drawText(p, M, y + 12f, cabecera)
                 y += FILA
             }
         }
 
         private fun celdas(valores: List<String>, anchos: FloatArray, derecha: BooleanArray, pincel: (Int) -> TextPaint) {
             var x = M
-            val cv = pagina!!.canvas
+            val cv = canvasActual()
             valores.forEachIndexed { i, v ->
                 val w = anchos.getOrElse(i) { 0f }
                 val paint = pincel(i)

@@ -43,7 +43,9 @@ class KeystoreAead @Inject constructor(@ApplicationContext private val context: 
     @Synchronized
     private fun key(): SecretKey {
         (ks.getKey(ALIAS, null) as? SecretKey)?.let { return it }
-        return generate(strongBox = StrongBox.available(context)) ?: generate(strongBox = false)!!
+        return generate(strongBox = StrongBox.available(context))
+            ?: generate(strongBox = false)
+            ?: error("Android Keystore no devolvió una clave AES")
     }
 
     private fun generate(strongBox: Boolean): SecretKey? = try {

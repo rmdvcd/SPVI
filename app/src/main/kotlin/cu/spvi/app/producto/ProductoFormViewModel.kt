@@ -38,12 +38,12 @@ data class ProductoFormUiState(
     val tocados: Set<String> = emptySet(),
     /** Tras pulsar Guardar se muestran todos los errores. */
     val intentado: Boolean = false,
-    /** Errores que solo se conocen al guardar (p. ej. código duplicado). */
+    /** Errores que solo se conocen al guardar (p. ej. identidad repetida). */
     val erroresGuardado: Map<String, String> = emptyMap(),
     val categorias: List<String> = Categorias.PREDEFINIDAS,
     val insumos: List<Insumo> = emptyList(),
     val hojaInsumos: Boolean = false,
-    /** La fecha se completó sola con la recordada para ese código (escáner). */
+    /** La ficha solicitada por identificador no existe en el repositorio. */
     val noEncontrado: Boolean = false,
     /** P18 (A03): el usuario cambió algo desde que se abrió: salir sin guardar pide confirmación. */
     val cambios: Boolean = false,

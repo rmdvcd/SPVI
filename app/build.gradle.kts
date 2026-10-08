@@ -133,6 +133,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.compose.material3.windowsizeclass)
     implementation(libs.androidx.splashscreen)
     implementation(libs.androidx.biometric)          // 0.27.0 (T11): añade USE_BIOMETRIC y USE_FINGERPRINT (permisos normales)
     implementation(libs.androidx.fragment)           // 0.27.0 (T11): MainActivity es FragmentActivity (BiometricPrompt)
@@ -140,7 +141,7 @@ dependencies {
     implementation(libs.androidx.profileinstaller)   // 0.27.0 (T4): perfiles de Compose en release
     implementation(libs.kotlinx.serialization.core)
 
-    // Inventario: escáner (CameraX + ML Kit con modelo empaquetado, sin Play Services) y fotos (Coil, solo archivos locales).
+    // Vinculación por QR: cámara (CameraX + ML Kit local, sin Play Services); fotos locales (Coil).
     implementation(libs.camerax.core)
     implementation(libs.camerax.camera2)
     implementation(libs.camerax.lifecycle)

@@ -59,7 +59,7 @@ dependencies {
     implementation(libs.sqlcipher.android)
 
     implementation(libs.fastexcel)
-    // Escáner: única red de la app (bases públicas de productos) y fotos re-codificadas.
+    // Cliente HTTP para GitHub; la sincronización entre teléfonos usa la red local.
     implementation(libs.okhttp)
     implementation(libs.androidx.exifinterface)
 

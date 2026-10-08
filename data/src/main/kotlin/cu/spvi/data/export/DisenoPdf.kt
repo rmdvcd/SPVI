@@ -18,7 +18,7 @@ object DisenoPdf {
 
     private val NUMERO = Regex("""^[-+−]?[\d.,]+(\s?(CUP|%|[\p{L}]{1,6}))?$""")
     private val FECHA = Regex("""^\d{2}/\d{2}/\d{4}( \d{2}:\d{2})?$""")
-    /** Códigos de barras, CI (también oculto «••••345»), teléfonos y números de transacción: sin espacios internos. */
+    /** Identificadores, CI (también oculto «••••345»), teléfonos y números de transacción: sin espacios internos. */
     private val CODIGO = Regex("""^[+•\dA-Z][\dA-Z•\-]{2,24}$""")
 
     fun horizontal(t: TablaExport): Boolean = t.columnas.size > MAX_COLUMNAS_VERTICAL
@@ -34,11 +34,11 @@ object DisenoPdf {
      */
     fun destacada(t: TablaExport, c: Int): Boolean {
         if (t.columnas.size == 2 && c == 1 && t.columnas[1] == "Valor") return true
-        return valores(t, c).let { v -> v.isNotEmpty() && v.all { (NUMERO.matches(it) && !CODIGO_BARRAS.matches(it)) || FECHA.matches(it) } }
+        return valores(t, c).let { v -> v.isNotEmpty() && v.all { (NUMERO.matches(it) && !IDENTIFICADOR_NUMERICO_LARGO.matches(it)) || FECHA.matches(it) } }
     }
 
-    /** 0.26.0: un código de barras o un teléfono (8 o más cifras seguidas) no es un importe: no va destacado. */
-    private val CODIGO_BARRAS = Regex("""^\+?\d{8,}$""")
+    /** Los identificadores numéricos largos y los teléfonos no son importes: no van destacados. */
+    private val IDENTIFICADOR_NUMERICO_LARGO = Regex("""^\+?\d{8,}$""")
 
     /** No se corta nunca. */
     fun compacta(t: TablaExport, c: Int): Boolean =

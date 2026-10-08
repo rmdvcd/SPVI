@@ -1,12 +1,10 @@
 # SPVI — Plan de correcciones propuesto
 
-> Estado: **F0 en verde**, **F1.1–F1.4 verificadas**, **T2.1–T2.3 implementadas con CI verde** (2026-10-08).
-> CI más reciente: [37834591679](https://github.com/rmdvcd/SPVI/actions/runs/37834591679) — 5/5 trabajos, 836 tests JVM sin fallos;
-> incluye compilar (no ejecutar) instrumentados. Pendientes: capturas de T2.1 y prueba de tres teléfonos de T2.2.
-> El detalle está en [docs/VERIFICACION.md](docs/VERIFICACION.md). **T1.5 sigue NO VERIFICADO**: aún no se ejecutan instrumentados ni se mide teléfono/Perfetto.
+> Estado al 2026-10-08: F0 y T1.1–T1.4 tienen evidencia histórica; la última CI completa confirmada es [37834591679](https://github.com/rmdvcd/SPVI/actions/runs/37834591679), commit `3bf4fc1`, 5/5 trabajos y 836 tests JVM aprobados. La CI [37836886846](https://github.com/rmdvcd/SPVI/actions/runs/37836886846) de `43cc5df` quedó con resultado final desconocido; no contarla como verde.
+> T2.1–T2.5 están implementadas en el código, pero T2.4/T2.5 y los cambios posteriores aún requieren ejecutar los tests desde OpenCode CLI en el PC del propietario. T1.5 y las capturas T2.1/T2.5 siguen pendientes. La prueba manual de tres teléfonos T2.2 fue dispensada por solicitud del propietario; no cuenta como validada. Los instrumentados solo se compilaron en la última CI completa.
+> La evidencia y las cifras están en [docs/VERIFICACION.md](docs/VERIFICACION.md). Por instrucción del propietario, el agente no ejecuta builds, app, tests, adb ni capturas.
 >
-> El historial inicial de F0 fue empujado a `arena/3c116bea-spvi` (`8c48aa3` → `f480e50`/`531cab3`). La
-> continuación de este ciclo está en `arena/c64c3dc9-spvi`; no hay PR abierto.
+> Rama de trabajo de esta sesión: `arena/c64c3dc9-spvi`.
 
 ---
 
@@ -25,8 +23,7 @@ Consecuencia directa: **el respaldo `.spvi` «sin contraseña» ya no protege de
 `SECURITY.md` describe como *«riesgo aceptado: cualquiera con SPVI (o que extraiga el secreto del APK) puede
 abrir ese archivo»* es hoy una afirmación optimista: **no hace falta el APK, ni SPVI, ni ingeniería inversa; el
 secreto está publicado.** Cualquiera con el archivo (WhatsApp reenviado, Drive compartido, tarjeta SD) y veinte
-líneas de Python lee ventas, clientes con carné y teléfono, y el ID de la licencia. Y está **activado por
-defecto** (la casilla «Proteger con contraseña» viene apagada).
+líneas de Python lee ventas, clientes con carné y teléfono, y el ID de la licencia. La exportación actual protege con contraseña **por defecto**, pero el usuario aún puede desactivarla expresamente; los archivos antiguos y las nuevas copias exportadas sin contraseña siguen sin confidencialidad.
 
 Lo bueno, y lo digo claro para que no cunda el pánico:
 
@@ -46,27 +43,20 @@ terceros (los clientes del negocio).
 
 ---
 
-## 1. Cómo se verifica (esto define la forma del plan)
+## 1. Flujo de validación acordado
 
-Hecho comprobado en este entorno: **solo tengo salida a GitHub, npm y PyPI**. `dl.google.com`, Maven Central y
-Adoptium responden `HTTP 000` (bloqueados), y no hay JDK ni Android SDK instalados. Es decir: **ya no puedo
-limitar el trabajo a leer código; pero tampoco puedo compilar ni ejecutar un test aquí.** Hay tres formas de
-cerrar esa brecha, y la elección cambia el calendario:
+El propietario indicó que **OpenCode CLI en su PC** ejecuta compilación, aplicación y pruebas. El agente de Arena solo analiza y modifica el proyecto; no ejecuta Gradle, adb, emuladores, tests ni Roborazzi, y no continúa el seguimiento de una CI remota que haya quedado sin resultado observado.
 
-| Opción | Cómo | Ventaja | Coste / riesgo |
-|---|---|---|---|
-| **A. CI en GitHub Actions** (recomendada) | Añado `.github/workflows/ci.yml` al repo (el README **ya dice** que existe y no existe), empujo a `arena/3c116bea-spvi` y leo los registros con `gh run view --log` | Repositorio **público** → minutos gratis e ilimitados; yo itero solo (push → log → arreglo → push) sin molestarte; queda para siempre como red de seguridad | El token que tengo autenticado puede **no** tener permiso para subir archivos de `.github/workflows/` (GitHub lo exige aparte). Si falla, ese único archivo lo creas tú desde la web (1 minuto) y el resto sigue igual |
-| **B. Tú ejecutas y me pegas el log** | `./gradlew spviCheck` en tu equipo con Android Studio | Cero dependencias de mi entorno | Fricción en cada iteración; el bucle de corrección pasa por ti |
-| **C. Me habilitas red** | Abrir `dl.google.com`, `repo1.maven.org` y `api.adoptium.net` | `tools/verificacion/verificar.sh` compila los 6 módulos y corre los tests JVM aquí (~15–25 min por pasada) | No cubre lint, R8 ni APK; sigue sin sustituir a A |
-
-**Recomendación: A, y C si es fácil (A cubre todo, C da iteración rápida en los tests JVM).**
-
----
+- No se declara una tarea verificada hasta recibir el resultado de OpenCode CLI para el commit exacto.
+- La compilación de instrumentados no demuestra que esos tests se ejecutaron. Generar capturas tampoco sustituye su revisión visual.
+- La CI de GitHub sigue configurada; el último run completo confirmado es `37834591679` para `3bf4fc1`.
+- Run `37836886846` de `43cc5df`: última observación parcial con algunos trabajos aprobados y Release/R8 en curso; conclusión final desconocida. No se infiere el resultado.
+- Los comandos y el formato del informe están en [PRUEBAS_DISPOSITIVO.md](PRUEBAS_DISPOSITIVO.md); los resultados, en [docs/VERIFICACION.md](docs/VERIFICACION.md).
 
 ## 2. Reglas de trabajo durante todo el plan
 
 1. **Un PR por fase**, con su entrada en `docs/HISTORIAL_DESARROLLO.md` (regla del propio proyecto).
-2. **Nada avanza sin CI verde.** Si un paso no se puede verificar, se marca `NO VERIFICADO` y no se cierra.
+2. **No se declara validado sin evidencia.** El propietario ejecuta el flujo desde OpenCode CLI en su PC; si falta un resultado para el commit exacto, la tarea se marca `NO VERIFICADO` y no se cierra. El agente de Arena no compila ni corre tests.
 3. **No se toca** lo que el proyecto declaró intocable: lista de permisos, claves de GL fijadas, ausencia de
    telemetría, protocolo de sincronización **v1** (compatibilidad con secundarias 0.24–0.27 ya instaladas),
    DTO de respaldo v4 y archivo `.spvi` v4 (se sigue leyendo lo anterior).
@@ -82,11 +72,11 @@ cerrar esa brecha, y la elección cambia el calendario:
 
 | Fase | Qué | Estado |
 |---|---|---|
-| F0 | CI y verdad documental | **VERDE** (última CI 37832730353, 5/5) |
-| F1 | Rendimiento | **T1.1–T1.4 en verde**; T1.5 **NO VERIFICADO** (instrumentados compilados, pero no ejecutados ni medidos); T1.6 opcional |
-| F2 | Seguridad | **T2.1–T2.3 implementadas y CI verde**; falta actualizar/verificar captura de T2.1 y hacer prueba real de tres teléfonos para T2.2. T2.4–T2.5 pendientes |
-| F3 | Coherencia documental | Pendiente; el README/schema y enlaces están en revisión |
-| F6 | Higiene | Pendiente |
+| F0 | CI y verdad documental | **Evidencia histórica verde** hasta `3bf4fc1` / run `37834591679`; resultado posterior `43cc5df` desconocido. Cambios actuales sin validación |
+| F1 | Rendimiento | **T1.1–T1.4 con evidencia**; T1.5 **NO VERIFICADO** (instrumentados compilados, no ejecutados ni medidos); T1.6 opcional |
+| F2 | Seguridad | T2.1–T2.3 implementadas; T2.4–T2.5 implementadas en `43cc5df`; tests de los últimos cambios no ejecutados. Faltan capturas T2.1/T2.5. La prueba manual de tres teléfonos T2.2 se dispensó a solicitud del propietario; no se considera validación |
+| F3 | Coherencia documental | README/esquema, manual, guía de dispositivo e índices actualizados; script y job de docs añadidos, pendientes de ejecutar |
+| F6 | Higiene | `.kotlin/` ignorada, `!!` retirados de Kotlin de producción e índice de referencias duraderas añadido; pruebas instrumentadas siguen pendientes |
 
 
 Esfuerzos en **días de trabajo**; entre paréntesis, quién verifica en el teléfono cuando hace falta (tú).
@@ -97,11 +87,11 @@ Esfuerzos en **días de trabajo**; entre paréntesis, quién verifica en el tel�
 
 | ID | Tarea | Dónde | Hecho cuando |
 |---|---|---|---|
-| T0.1 | Workflow de CI: JDK 17 Temurin + SDK 35 + caché de Gradle; trabajos separados: `tests` (`spviTests` + compilar los instrumentados de `:data` y `:app`), `lint` (`:app:lintDebug`), `release` (`:app:assembleRelease` sin firmar + comprobar que `app/build/outputs/mapping/release/missing_rules.txt` está **vacío** = «R8 sin clases ausentes»), `permisos` (`spviPermisos`), `api-min` (`tools/verificacion/api_minima.py`), `docs` (T3.6 cuando exista) | Los 5 trabajos en verde sobre `arena/3c116bea-spvi` |
-| T0.2 | **Arreglar los 3 archivos de test que no compilan** (D2): `RepositoriosRoomTest` (quitar `codigo`/`porCodigo`), `ConfiguracionInicialInstrumentedTest` y `RespaldoRoomTest` (quitar `ConsentimientoRed`/`guardarConsultasEnLinea`/`consultasEnLinea`) | `data/src/androidTest` | `:data:compileDebugAndroidTestKotlin` pasa |
-| T0.3 | Arreglar lo que destape la primera corrida: Room/KSP, Hilt, **lint** (regenerar `lint-baseline.xml` **una vez**, revisando el diff: se corrigen los *errores* — `NewApi`, `WrongThread` y similares — y se basilinan solo los avisos estilísticos), reglas R8 que falten para `kotlinx.serialization`, `api_minima.py` | varios | `spviCheck` verde |
-| T0.4 | Congelar la versión: decidir si esto se publica como **0.30.0** (lo que el código ya contiene) y subir `versionCode` 50 → 51, o revertir el trabajo no publicado | `app/build.gradle.kts` | `versionName` y README coinciden con el binario |
-| T0.5 | `docs/VERIFICACION.md`: estado real, comando, salida y fecha de cada comprobación (la única fuente de verdad), y corregir la contradicción README ↔ `AGENTS.md` | 3 archivos | Un solo relato verificable |
+| T0.1 | Workflow de CI con JDK 17, SDK 35 y trabajos independientes de tests JVM/compilación instrumentada, lint, release/R8, permisos, API mínima y documentación | `.github/workflows/ci.yml` | Cinco trabajos originales pasaron en `3bf4fc1`; el job de documentación es nuevo y aún no se ha ejecutado |
+| T0.2 | Corregir los instrumentados obsoletos para que vuelvan a compilar | `data/src/androidTest` y `app/src/androidTest` | Compilaron en la CI `37834591679`; no se ejecutaron |
+| T0.3 | Resolver fallos de Room/KSP, Hilt, lint, R8 y API mínima que salieran en la primera corrida | varios | Los cinco jobs originales pasaron en `37834591679`; los cambios posteriores aún no se han comprobado |
+| T0.4 | Congelar la versión 0.30.0 (`versionCode` 51) | `app/build.gradle.kts`, `README.md` | Configuración fijada; build binario posterior no validado |
+| T0.5 | Mantener `docs/VERIFICACION.md` y alinear README/AGENTS con la evidencia | README, `AGENTS.md`, `docs/VERIFICACION.md` | Estado histórico actualizado; job automático de docs nuevo, sin ejecución observada |
 | T0.6 | *(tú)* Instalar el APK debug y el release firmado en un teléfono y abrirlo; probar dos teléfonos (principal + secundaria) vendiendo | teléfono | Primera evidencia de que la app **existe** fuera del compilador |
 
 **Riesgo y contingencia:** tras meses sin ejecutarse, la primera corrida puede destapar más de lo previsto.
@@ -127,35 +117,37 @@ vs. la versión de Compose), lo arreglo antes de tocar nada de lógica.
 
 ### F2 · Seguridad — **2–3 días**
 
-| ID | Tarea | Dónde | Hecho cuando |
+| ID | Tarea | Dónde | Estado / condición para cerrar |
 |---|---|---|---|
-| T2.1 | **Respaldo sin contraseña**: pasa a «Proteger con contraseña» **activado por defecto**; el modo sin contraseña queda como acción explícita con advertencia que ya no puede ser tibia («cualquiera que consiga este archivo puede leer tus ventas y los datos de tus clientes»). **Decisión tuya** si se elimina del todo en la próxima versión y se deja solo para *importar* | `respaldo/`, `RespaldoScreen` | Tests de `BackupCipher` actualizados + captura nueva; `FORMATOS.md`/`SECURITY.md` al día |
-| T2.2 | **DoS de la sesión LAN** (D5): la sesión anterior solo se cierra cuando la nueva **descifra su primer mensaje**; añado límite de conexiones por empleado/IP y espera creciente. **Sin cambiar el protocolo** (siguen conectando las secundarias 0.24–0.27) | `data/sync/ServidorSync.kt` | Test `sesionNoSeCierraSinPruebaDeClave` + prueba real de 3 teléfonos *(tú)* |
-| T2.3 | Menos oráculo: respuesta uniforme ante `Hola`, sin distinguir «negocio desconocido» de «empleado desconocido», y límite de intentos en `vincular` | `ServidorSync`, `Protocolo` | Tests del protocolo actualizados |
-| T2.4 | **Cache del registro de prueba**: no consultar `MediaStore` 3 veces en cada `onResume`; invalidar solo si cambió el día, es instalación nueva o pasaron N horas | `RegistroPruebaAndroid`, `LicenseManager` | Test que cuente las lecturas por evaluación |
-| T2.5 | Visibilidad de la revocación: recordar la fecha de la última consulta correcta y avisar en Ajustes si llevan N días sin poder comprobarla (hoy un bloqueo silencioso de la descarga pasa inadvertido) | `actualizacion/`, `ajustes/` | Texto nuevo + captura |
+| T2.1 | Respaldo con protección por contraseña activada por defecto; el modo sin contraseña es explícito y muestra una advertencia clara | `respaldo/`, `RespaldoScreen`, `FORMATOS.md`, `SECURITY.md` | Código, textos y pruebas añadidos; decisión del propietario: conservar la opción explícita con advertencia. Falta que OpenCode CLI ejecute los tests y generar/revisar `09m_respaldo_sin_contrasena` |
+| T2.2 | Protección de sesiones LAN: no sustituir la sesión previa hasta autenticar la primera trama cifrada; límites y espera creciente; protocolo v1 sin cambios | `data/sync/ServidorSync.kt` | Tests incluidos en la CI completa `37834591679`; la prueba manual de tres teléfonos se dispensó por solicitud del propietario y no cuenta como evidencia |
+| T2.3 | Respuesta uniforme ante `Hola`, sin distinguir negocio/empleado desconocido, y límites de intentos en `vincular` | `ServidorSync`, `Protocolo` | Implementado; tests incluidos en `37834591679`. Sin cambio del protocolo |
+| T2.4 | Caché en memoria del registro de prueba, TTL de seis horas e invalidación al cambiar día local o contexto del permiso; escrituras propias actualizan la caché | `RegistroPruebaAndroid`, `CacheLecturas` | Implementado en `43cc5df` con cinco tests nuevos; quedan sin validación local hasta recibir OpenCode CLI |
+| T2.5 | Recordar la última respuesta correcta de GitHub y advertir en Ajustes después de 14 días, si nunca respondió o si retrocedió el reloj (solo con repositorio configurado) | `actualizacion/`, `ajustes/`, `EstadoApp` | Implementado en `43cc5df` con tests de estado/texto y captura `07t_ajustes_actualizaciones_atrasadas`; tests y captura pendientes de ejecución/revisión local |
 
 ### F3 · Coherencia documental y de producto — **2–3 días**
 
-| ID | Tarea | Dónde |
-|---|---|---|
-| T3.1 | Quitar el **escáner de códigos de barras** de todo lo que lo menciona: README, `SECURITY.md`, `AGENTS.md`, **`AyudaContenido`** (es lo que ve el cliente) y el comentario de `data/build.gradle.kts` | 6 archivos |
-| T3.2 | Repasar la tabla del esquema contra `Entities.kt` **campo por campo** (hoy: Room **v11**, sin `codigo`, con `cliente_fijo`, `movimiento_caja`, `servicio`) | README |
-| T3.3 | Reparar el UTF-8 de `docs/HISTORIAL_DESARROLLO.md` (mojibake desde 0.29.2) y comprobar que no haya más archivos dañados | 1–N archivos |
-| T3.4 | Reponer los documentos que el README enlaza y no existen: **`MANUAL_USUARIO.md`** (el que ve tu cliente, lo escribo yo a partir de la app real), `PRUEBAS_DISPOSITIVO.md`, `Pendiente.md`; y quitar del README `Pruebas.md`, `opencode.json` si ya no usas OpenCode | README + 2–3 docs nuevos |
-| T3.5 | Actualizar el encabezado de versión de `UI_UX_IX.md` (dice 0.19.3) y `SECURITY.md` (dice 0.26.0) | 2 docs |
-| T3.6 | **Prueba automática de documentación** (`tools/verificacion/docs.sh`, en el CI): falla si el README enlaza un archivo inexistente, si la versión del README ≠ `versionName`, o si la tabla del esquema no coincide con `Entities.kt` | nuevo + CI |
+| ID | Tarea | Dónde | Estado / validación pendiente |
+|---|---|---|---|
+| T3.1 | Retirar las menciones vigentes a la búsqueda de productos por cámara, conservar la cámara solo para QR de vinculación/fotos y quitar el código de entrada sin uso | README, `AGENTS.md`, `SECURITY.md`, `UI_UX_IX.md`, `CAPTURAS.md`, Ayuda, `data/build.gradle.kts`, Design System, pruebas antiguas y herramientas | Cambios aplicados en el árbol. Se eliminó `tools/escaner/` y el filtro muerto, y se retiraron las maquetas de búsqueda por producto de `tools/capturas/generar.py`; se conservan los QR de vinculación y licencias. `EscanerInventarioTest` se renombró `InventarioTest`, conservando sus casos generales; queda sin validación ejecutable local |
+| T3.2 | Documentar campo por campo las entidades de Room v11 | README | Tabla reescrita con 18 entidades. El comparador estático de esquema está añadido, aún no ejecutado |
+| T3.3 | Revisar la codificación del historial y los documentos actuales | `docs/HISTORIAL_DESARROLLO.md` y docs vigentes | El historial se leyó como UTF-8 válido y no contiene U+FFFD ni secuencias habituales de mojibake; no necesitó reescritura |
+| T3.4 | Reponer manual de usuario, pruebas de dispositivo y lista de pendientes; limpiar enlaces inexistentes | `MANUAL_USUARIO.md`, `PRUEBAS_DISPOSITIVO.md`, `Pendiente.md`, README y AGENTS | Añadidos/actualizados. Los enlaces del README esperan la ejecución de `tools/verificacion/documentacion.py` |
+| T3.5 | Alinear encabezados de versión | `UI_UX_IX.md`, `SECURITY.md` | Encabezado UI/UX actualizado a 0.30.0; SECURITY ya declaraba 0.30.0 |
+| T3.6 | Comprobar enlaces, versión y esquema del README automáticamente | `tools/verificacion/documentacion.py`, `.github/workflows/ci.yml` | Script y job añadidos; no se han ejecutado localmente ni por CI |
 
-### F4 · Accesibilidad, IX y adaptatividad — **3–5 días** (requiere 2 decisiones tuyas)
+### F4 · Accesibilidad, IX y adaptatividad — **3–5 días**
 
 | ID | Tarea |
 |---|---|
-| T4.1 | **Etiquetas en la barra inferior** (texto bajo el icono) o no: es la decisión que más afecta a la adopción con personal nuevo |
-| T4.2 | `WindowSizeClass`: patrón lista-detalle en ≥ 600 dp (Inventario, Registros, Servicios), diálogos dimensionados por contenido (`IntrinsicSize`) y no por fracción de pantalla (`Overlays.kt`), capturas Roborazzi con cualificador de tablet |
-| T4.3 | Revisar los 27 objetos `Textos*` contra la interfaz (extendiendo los tests de textos que ya existen) y **arreglar la Ayuda**, que hoy describe funciones eliminadas |
-| T4.4 | Señal de progreso en la búsqueda (hoy solo se conserva la lista anterior, sin indicar que está trabajando) |
+| T4.1 | **Resuelta:** mantener los cinco destinos con solo iconos, sin etiquetas de texto |
+| T4.2 | **Implementada en el árbol; validación pendiente:** `WindowSizeClass` activa lista-detalle desde 600 dp en Inventario, Registros y Servicios; fichas en panel persistente y diálogos con tamaño intrínseco (`IntrinsicSize`) limitado por el viewport. Tres capturas Roborazzi `w800dp` añadidas; OpenCode CLI debe compilar y generar/revisar baselines |
+| T4.3 | Auditar los 27 objetos `Textos*` contra la interfaz (ampliando los tests existentes) y mantener la Ayuda alineada. Pasada estática de referencias realizada; se retiraron 8 constantes sin uso y se corrigieron textos/comentarios desfasados en Inventario, Servicios y el formulario de producto, además del comentario de CameraX/ML Kit para conservar explícito su uso en QR de vinculación. Ayuda de Registros alineada con «Exportar» y PDF/Excel, con aserción; falta revisión visual/semántica completa |
+| T4.4 | **Implementada en el árbol; validación pendiente:** señal de progreso accesible en Inventario, Servicios y Registros mientras la búsqueda conserva la vista anterior; cobertura unitaria y de UI añadida |
 
-### F5 · Versatilidad y producto — **a decidir, no lo toco sin ti**
+### F5 · Versatilidad y producto — **autorizado por el propietario, implementar por fases**
+
+El propietario autorizó las cuatro áreas. Como son reglas de negocio que afectan importes, impuestos, devoluciones y permisos locales, antes de modificar el esquema o cerrar una implementación hay que acordar el detalle funcional de cada fase; la autorización de alcance no sustituye esas reglas.
 
 | ID | Tarea | Coste |
 |---|---|---|
@@ -166,12 +158,12 @@ vs. la versión de Compose), lo arreglo antes de tocar nada de lógica.
 
 ### F6 · Higiene continua — **1 día, permanente**
 
-- `.kotlin/` a `.gitignore` y fuera del control de versiones.
-- Mover las referencias «P37/P68b/P74/§5.4» a un `docs/DECISIONES.md` indexado.
-- Reducir los `!!` de UI y ViewModels sustituyéndolos por comprobaciones con mensaje.
-- **Ejecutar los 136 tests instrumentados** (emulador en CI o tu teléfono) al menos en cada release; hoy no se
-  ejecutan nunca.
-- Registrar en `docs/VERIFICACION.md` la comprobación de cada release (lo que hoy es la línea 122 del README).
+- `.kotlin/` está añadido a `.gitignore` y el archivo de sesión rastreado se retiró del índice.
+- El índice [docs/DECISIONES.md](docs/DECISIONES.md) reúne las referencias técnicas duraderas P37/P68b/P74/§5.4.
+- Se retiraron las aserciones `!!` de Kotlin de producción en `core`, `domain`, `data`, `designsystem` y `app`; las invariantes usan accesos explícitos (`getValue`, `checkNotNull`/`requireNotNull`) o descarte seguro.
+- Se quitaron `SpviExpandableFab` y sus helpers por falta de usos, más `exigirDiferenciar`, que solo servía al flujo de escaneo de productos ya retirado. No se ejecutaron pruebas.
+- **Pendiente:** ejecutar `./gradlew spviInstrumentedTests` en el PC del propietario con teléfono/emulador; el agente no lo ejecuta.
+- `docs/VERIFICACION.md` registra solo resultados observados; la nueva revisión no se añade como aprobada hasta recibir los resultados locales.
 
 ---
 
@@ -181,14 +173,14 @@ vs. la versión de Compose), lo arreglo antes de tocar nada de lógica.
 |---|---|---|---|
 | **F0** Verificación y verdad | 2–4 días (+1–2 de contingencia) | Tu aprobación de CI y de la versión | CI + tú (APK) |
 | **F1** Rendimiento | 2–3 días | F0 verde | Test de umbral + tú en gama baja |
-| **F2** Seguridad | 2–3 días | F0 | Tests + tú (3 teléfonos) |
+| **F2** Seguridad | 2–3 días | F0 | Tests; la prueba manual T2.2 fue dispensada por solicitud del propietario |
 | **F3** Documentación | 2–3 días | F0 (para el CI de docs) | CI |
 | **F4** IX y adaptatividad | 3–5 días | 2 decisiones tuyas | Capturas nuevas |
 | **F5** Producto | 3–6 semanas | Decisión de negocio | Tú |
 | **F6** Higiene | 1 día | — | CI |
 
 **Total de lo urgente y barato (F0+F1+F2+F3+F6): 9–14 días de trabajo**, de los cuales tú solo tienes que
-invertir minutos en T0.6 y T2.2 (probarlos en los teléfonos).
+invertir minutos en T0.6 (probarlo en el teléfono); la prueba manual T2.2 fue dispensada.
 
 ---
 
@@ -206,18 +198,11 @@ invertir minutos en T0.6 y T2.2 (probarlos en los teléfonos).
 
 ---
 
-## 6. Decisiones que necesito de ti antes de empezar
+## 6. Decisiones confirmadas y bloqueos restantes
 
-1. **CI en GitHub Actions** (repo público, minutos gratis): ¿lo añado yo y empujo a `arena/3c116bea-spvi`, o no
-   se toca el remoto y verificas tú?
-2. **Versión**: el código ya contiene 0.28–0.30 (sin el escáner). ¿El próximo release es **0.30.0** con lo que
-   hay dentro, o se revierte lo no publicado y se sigue desde 0.27.1?
-3. **Respaldo sin contraseña**: ¿lo dejo con «Proteger con contraseña» activado por defecto, o **lo elimino** en
-   la próxima versión (dejando solo el *poder importarlos*)? Mi recomendación: eliminarlo para exportar.
-4. **Alcance de este ciclo**: ¿hago F0–F3 + F6 (lo urgente y barato) y dejamos F4/F5 para después, o quieres
-   F4 incluido ya?
-5. **Barra inferior**: ¿etiquetas visibles bajo los iconos, o mantenemos los 5 iconos desnudos?
-6. **Multi-moneda (MLC/USD)**: ¿entra en la hoja de ruta de este trimestre? Cambia por completo el orden de F5.
+- **T2.1:** conservar el modo explícito de exportación sin contraseña con advertencia. La protección por contraseña sigue activada por defecto.
+- **T4.1:** conservar los cinco iconos sin etiquetas en la barra inferior.
+- **F5:** el alcance de las cuatro áreas está autorizado y debe dividirse en fases. Falta especificar las reglas de negocio antes de cambiar precios, impuestos, reembolsos, usuarios o el esquema de Room.
+- **Validación física:** T0.6, T1.5, las capturas Roborazzi y el smoke test de release requieren OpenCode CLI y dispositivos del propietario. La prueba manual T2.2 de tres teléfonos fue dispensada por solicitud del propietario y no se contará como realizada. El agente no puede sustituir las observaciones físicas ni ejecutar las pruebas.
 
-Con tus respuestas a 1–4 empiezo por F0 y te enseño el primer registro de CI (verde o rojo, con lo que salga)
-antes de tocar una sola línea de lógica.
+El código/documentación pueden quedar implementados mientras sus pruebas sigan marcadas como pendientes; no se cierra una tarea sin evidencia del commit exacto en [docs/VERIFICACION.md](docs/VERIFICACION.md).

@@ -24,7 +24,7 @@ value class Cantidad(val milesimas: Long) : Comparable<Cantidad> {
         fun enteras(n: Long) = Cantidad(Math.multiplyExact(n, 1000L))
 
         private val FORMAT = ThreadLocal.withInitial { DecimalFormat("#,##0.###", DecimalFormatSymbols(Locale.US)) }
-        fun format(c: Cantidad): String = FORMAT.get()!!.format(BigDecimal.valueOf(c.milesimas, 3))
+        fun format(c: Cantidad): String = FORMAT.get().format(BigDecimal.valueOf(c.milesimas, 3))
 
         /** "1.25" / "3" → milésimas. Máximo 3 decimales, sin negativos. */
         fun parse(text: String): Cantidad? = runCatching {
