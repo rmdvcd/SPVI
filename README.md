@@ -158,7 +158,7 @@ SPVI es **cliente** del contrato v1 de GL, sin cambiarlo. Detalle completo en [L
 | **PDF y Excel** | Con su icono en todas las hojas de exportar |
 | **Textos llanos** | Sin versiones, nombres técnicos ni explicaciones de la licencia o del registro de la prueba |
 | **Principal ≠ secundaria** | Una app principal nunca puede pasar a secundaria; para cambiar el tipo hay que exportar el respaldo y borrar los datos de SPVI |
-| **Respaldo sin contraseña** | «Proteger con contraseña» es opcional y viene apagado; el archivo `.spvi` v4 indica si la lleva. Se siguen abriendo los v3 |
+| **Respaldo protegido por defecto** | «Proteger con contraseña» viene activado; desactivarlo es una elección explícita y muestra una advertencia sobre ventas y datos de clientes. El `.spvi` v4 sigue distinguiendo si lleva contraseña y se importan también los v3 |
 | **Acceso con clave** | Opcional (recorrido inicial y Ajustes): huella o PIN/patrón del teléfono al abrir la app y tras 10 minutos o más en segundo plano. No va en el respaldo |
 | **Soporte** | Datos del desarrollador con icono |
 | **Foto primero** | Nuevo producto y Nuevo servicio empiezan por la foto, con botones Cámara y Galería (selector de fotos del sistema, sin permisos) |
@@ -177,7 +177,7 @@ Base de datos v10 (`MIGRACION_9_10`): tabla `cliente_fijo` y `transaccion.client
 | **Fondo de los empleados** | El encargado asigna en Apps vinculadas el fondo de caja de cada turno de una secundaria («Fondo del próximo turno» → Asignar fondo; puede ser 0). Sin él la secundaria no abre turno: toca «Pedir fondo» y lo recibe al sincronizar, sin poder cambiarlo. Sirve para un solo turno. Inicio de la principal avisa «Luis pide abrir turno» |
 | **Apps de empleados antiguas** | Una secundaria 0.25.x sigue abriendo turno con su propio fondo; la principal muestra «Actualiza la app de X» |
 | **Actualizaciones obligatorias** | Si hay una versión nueva, «Más tarde» la aplaza (hasta 30 días, con la fecha límite visible). Vencido el plazo, la app se bloquea con «Actualiza SPVI para seguir» y solo deja Actualizar, Exportar respaldo y cerrar el turno abierto. La búsqueda semanal ya no se desactiva (Ajustes → Actualizaciones → Buscar ahora) |
-| **Respaldo solo cifrado** | Respaldo guarda solo el archivo `.spvi` con contraseña; se quitó el «Documento PDF» |
+| **Respaldo solo en `.spvi`** | Respaldo guarda solo el archivo cifrado `.spvi` (contraseña activada por defecto; se puede desactivar con advertencia); se quitó el «Documento PDF» |
 | **Sin exportaciones de texto** | Registros, Inventario, Servicios y las fichas exportan PDF y Excel (e Imagen/Tarjetas en Inventario); solo la licencia se envía como texto |
 | **«+» en la esquina** | El botón «+» va abajo a la derecha en Inventario, Servicios, Precios y Apps vinculadas |
 | **La prueba no se reinicia al reinstalar** | La fecha de inicio de la prueba se guarda cifrada (AES-GCM, clave derivada de ANDROID_ID) en una imagen pequeña en Imágenes/SPVI y en copias en Download y Documents, que quedan al desinstalar. Recién instalada, SPVI pide **una vez** el acceso a fotos para encontrar la de una instalación anterior; gana la fecha más antigua. Una copia ilegible se ignora (no bloquea). La fecha atrasada se detecta además con el reloj monótono del teléfono ([docs/PLAN_ANTIREINSTALACION.md](docs/PLAN_ANTIREINSTALACION.md)) |

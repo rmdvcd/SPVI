@@ -11,11 +11,11 @@ import java.time.ZoneId
 
 object TextosRespaldo {
     const val TITULO = "Respaldo"
-    const val EXPLICACION = "Guarda una copia cifrada de todo el negocio. Si la proteges con contraseña, nadie puede abrirla sin ella, ni siquiera el desarrollador."
-    /** 0.27.0 (T10): contraseña opcional, apagada por defecto. */
+    const val EXPLICACION = "Guarda una copia de todo el negocio. La contraseña está activada por defecto: solo quien la conozca podrá abrir la copia."
+    /** La exportación queda protegida por contraseña de forma predeterminada; se puede desactivar explícitamente. */
     const val PROTEGER = "Proteger con contraseña"
-    const val SIN_CONTRASENA_AVISO = "Sin contraseña, cualquiera con SPVI podrá abrir este archivo."
-    const val LISTO_SIN_CONTRASENA = "Ahora elige dónde guardar el respaldo."
+    const val SIN_CONTRASENA_AVISO = "Sin contraseña, cualquiera que consiga este archivo puede leer tus ventas y los datos personales de tus clientes."
+    const val LISTO_SIN_CONTRASENA = "Sin contraseña, cualquiera que consiga este archivo podrá leer tus ventas y los datos personales de tus clientes. Ahora elige dónde guardar el respaldo."
     const val SIN_LICENCIA = "La licencia no viaja en el respaldo: en otro teléfono hace falta una licencia nueva."
     const val ERROR_CONTRASENA = "Mínimo ${Validadores.MIN_CONTRASENA} caracteres"
     const val ERROR_REPETIR = "Las contraseñas no coinciden"
@@ -43,10 +43,10 @@ fun nombreRespaldo(fecha: LocalDate): String = "SPVI_respaldo_$fecha.${TextosRes
 
 /**
  * Contraseña de exportación (se repite: si se olvida o se escribe mal, el respaldo es irrecuperable).
- * 0.27.0 (T10): [conContrasena] apagado por defecto; apagado no se valida nada y se exporta sin contraseña.
+ * El respaldo nuevo queda protegido por defecto; se puede elegir explícitamente el formato heredado sin contraseña.
  */
 data class ExportForm(
-    val conContrasena: Boolean = false,
+    val conContrasena: Boolean = true,
     val contrasena: String = "",
     val repetir: String = "",
     val mostrarErrores: Boolean = false,
@@ -179,15 +179,15 @@ fun exitoRespaldo(r: ResumenRespaldo, importado: Boolean, nombre: String?, conCo
 
 /**
  * P18 (A09) + pregunta 3 (opción 1: asistente de 3 o 4 pasos en la misma pantalla). Solo presentación; los casos de uso no cambian.
- * - Exportar: 1 Proteger (opcional, 0.27.0) → 2 Destino (guardar o enviar) → 3 Hecho («Respaldo listo», con «Hacer otro respaldo»).
- *   El paso 2 solo se muestra con una contraseña válida.
+ * - Exportar: 1 revisar la protección (contraseña activada por defecto) → 2 destino (guardar o enviar) → 3 hecho («Respaldo listo»).
+ *   El paso 2 solo se muestra con una contraseña válida o después de desactivar explícitamente la protección.
  * - Importar: 1 Elegir archivo → 2 Comprobar (formato e integridad, sin contraseña) → 3 Contraseña → 4 Confirmar
  *   (reemplaza los datos). Los pasos 3 y 4 se hacen en el diálogo de importación.
  */
 object PasosRespaldo {
     const val TOTAL_EXPORTAR = 3
     const val TOTAL_IMPORTAR = 4
-    const val EXPORTAR_1 = "Protégelo (opcional)"
+    const val EXPORTAR_1 = "Revisa la protección"
     const val EXPORTAR_2 = "Elige dónde guardarlo"
     const val EXPORTAR_3 = "Respaldo listo"
     const val IMPORTAR_1 = "Elige el archivo .spvi"

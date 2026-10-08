@@ -169,7 +169,7 @@ fun RespaldoContent(
                     modifier = Modifier.testTag(RespaldoTags.STEPPER),
                 )
                 if (paso == 1) {
-                    // 0.27.0 (T10): contraseña opcional, apagada por defecto.
+                    // Protección por contraseña activada de forma predeterminada; al apagarla se muestra el riesgo explícito.
                     SpviListItem(
                         title = TextosRespaldo.PROTEGER,
                         indicatorColor = null,

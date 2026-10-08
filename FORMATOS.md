@@ -20,7 +20,7 @@ Implementación: `data/.../respaldo/BackupCipher.kt` (contenedor cifrado), `data
 
 ### 1.1 Contenedor binario v4 (0.27.0; se leen también los v3)
 
-Desde la 0.27.0 se escribe la **v4**, que añade un byte indicador (con o sin contraseña). Los archivos **v3** (0.13.0–0.26.0, siempre con contraseña) se siguen abriendo: son iguales sin ese byte (cabecera de 88 B, AAD de 56 B). Todos los enteros van en **big-endian**.
+Desde la 0.27.0 se escribe la **v4**, que añade un byte indicador (con o sin contraseña). Desde la 0.30.0 la exportación usa contraseña por defecto; si el usuario la desactiva, la app advierte del riesgo de exponer ventas y datos personales. Los archivos **v3** (0.13.0–0.26.0, siempre con contraseña) se siguen abriendo: son iguales sin ese byte (cabecera de 88 B, AAD de 56 B). Todos los enteros van en **big-endian**.
 
 | Desplazamiento | Bytes | Campo | Valor |
 |---|---|---|---|
@@ -35,7 +35,7 @@ Desde la 0.27.0 se escribe la **v4**, que añade un byte indicador (con o sin co
 | 57 | 32 | SHA-256 del cifrado | Suma de control |
 | 89 | largo | Cifrado | `AES-256-GCM( gzip(JSON UTF-8) )` + tag de 16 B |
 
-- **Clave:** `PBKDF2WithHmacSHA256(contraseña, salt, iteraciones, 256 bits)`. **Sin contraseña** (indicador `0`), la «contraseña» es un secreto interno ofuscado de la app: el archivo sigue cifrado y protegido contra alteraciones, pero **cualquiera con SPVI puede abrirlo** (riesgo aceptado, SECURITY.md §4 ter).
+- **Clave:** `PBKDF2WithHmacSHA256(contraseña, salt, iteraciones, 256 bits)`. **Sin contraseña** (indicador `0`), la «contraseña» es un secreto ofuscado que está publicado junto al código: el archivo sigue teniendo formato cifrado y protección contra alteraciones, pero **cualquiera que lo obtenga puede leerlo sin SPVI ni el APK** (riesgo documentado, SECURITY.md §4 ter).
 - **El indicador** se lee sin contraseña y va dentro del AAD: cambiarlo invalida el tag. Así la app sabe si debe pedir la contraseña al importar.
 - **AAD de GCM:** los **57 primeros bytes** en v4 (56 en v3), es decir, todo salvo la suma de control. Si se cambia la fecha, las iteraciones, el salt, el IV o el largo, el tag deja de ser válido.
 - **El largo y el SHA-256 no aportan seguridad:** cualquiera puede recalcularlos, y la integridad la da GCM. Sirven para saber **sin contraseña** si el archivo llegó **cortado** o **dañado**, y no confundirlo con una contraseña incorrecta.
@@ -91,7 +91,7 @@ Nombre: `SPVI_respaldo_<fecha>.spvi`.
 
 1. *Leyendo el archivo…* (máx. 128 MB).
 2. *Comprobando que el archivo esté completo…*: magia, versión, iteraciones, largo y SHA-256, **sin contraseña**.
-3. *Comprobando la contraseña…*: AES-GCM. Si el indicador dice «sin contraseña» (v4), no se pide: se importa tras la confirmación.
+3. *Comprobando la contraseña…*: AES-GCM. Si el indicador dice «sin contraseña» (v4 anterior o exportado expresamente así), no se pide; se importa tras la confirmación.
 4. Validación **antes de escribir nada**:
    - `formato` correcto y `version` no superior a la soportada;
    - ids únicos, y tarjetas y teléfonos sin repetir;

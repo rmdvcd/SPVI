@@ -21,11 +21,11 @@ import javax.crypto.spec.SecretKeySpec
  * "SPVIBAK" (7) | versión (1) = 4 | indicador (1) | creadoEn ms (8) | iteraciones (4) | salt (16) | iv (12)
  *   | largo del cifrado (8) | SHA-256 del cifrado (32) | AES-256-GCM( gzip(json) ) + tag(16)
  * ```
- * - Indicador: 1 = con contraseña del usuario; 0 = sin contraseña (la clave sale de un secreto interno ofuscado de la
- *   app, con [ITERACIONES_SIN_CONTRASENA]). **Riesgo aceptado** (SECURITY.md): sin contraseña, cualquiera con SPVI
- *   puede abrir el archivo; el cifrado solo evita que se lea o se altere con otras herramientas.
+ * - Indicador: 1 = con contraseña del usuario; 0 = sin contraseña (la clave sale de un secreto ofuscado con
+ *   [ITERACIONES_SIN_CONTRASENA], publicado junto al código). Sin contraseña no hay confidencialidad; quien obtenga
+ *   el archivo puede leerlo sin SPVI ni APK. La interfaz protege por defecto y advierte si el usuario desactiva la clave.
  * - v3 (P17) se sigue leyendo: igual que v4 pero sin el byte de indicador y siempre con contraseña.
- * - Contraseña vacía al cifrar = sin contraseña.
+ * - Contraseña vacía al cifrar = sin contraseña (se conserva para compatibilidad e importación).
  * - KDF: PBKDF2-HMAC-SHA256, 310 000 iteraciones por defecto (OWASP 2023), salt aleatorio por archivo.
  * - AAD = los primeros [AAD] bytes (todo salvo la suma de control): alterar fecha, iteraciones, salt, iv o
  *   largo invalida el tag.

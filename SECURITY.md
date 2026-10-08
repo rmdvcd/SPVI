@@ -1,6 +1,6 @@
 # SPVI — Seguridad
 
-Cómo protege SPVI los datos del negocio y la licencia en el teléfono. Describe la versión **0.26.0** (lo nuevo de la 0.25.0 está en el §4 bis; la 0.26.0 añade el registro cifrado de la prueba, ver punto 3 y «Almacenamiento externo»). Cada afirmación remite al código que la implementa.
+Cómo protege SPVI los datos del negocio y la licencia en el teléfono. Estado del producto: **0.30.0**. Cada afirmación remite al código que la implementa; el formato de respaldo v4 y sus importaciones anteriores se describen por separado en [FORMATOS.md](FORMATOS.md).
 
 ## 1. Principios
 
@@ -20,7 +20,7 @@ Cómo protege SPVI los datos del negocio y la licencia en el teléfono. Describe
 | Clave de firma de GL | ECDSA P-256, pública | **Fijada en el build** (`LicenseTrust.SIGN_KEYS`, lista) con su huella SHA-256 | Verificar que la licencia la emitió GL. Es el ancla de confianza | `licencia/.../LicenseTrust.kt` |
 | Clave ECDH de GL | P-256, pública | **Fijada en el build** (`LicenseTrust.ECDH_KEY`) con su huella. No se puede cambiar desde la app: desde la 0.13.0 ya no existe la pantalla *Clave del emisor* | Cifrar la solicitud de licencia hacia GL | `licencia/.../LicenseTrust.kt` |
 | Claves efímeras | P-256 | Solo en memoria, una por solicitud | ECIES de la solicitud y su firma | `licencia/.../crypto/` |
-| Clave del respaldo | AES-256 derivada | Nunca se guarda: PBKDF2 a partir de la contraseña del usuario o, si el respaldo no tiene contraseña (0.27.0), de un secreto interno ofuscado de la app (10 000 iteraciones) | Cifrar el archivo `.spvi` | `data/.../respaldo/BackupCipher.kt` |
+| Clave del respaldo | AES-256 derivada | Nunca se guarda: PBKDF2 a partir de la contraseña del usuario o, en el modo opcional heredado sin contraseña, de un secreto ofuscado que ya está publicado en el repositorio (10 000 iteraciones; no protege la confidencialidad) | Cifrar el archivo `.spvi` | `data/.../respaldo/BackupCipher.kt` |
 
 **Reglas:**
 - **Ninguna clave de GL se puede configurar desde la app.** Si se pudiera cambiar la de firma, cualquiera podría firmarse licencias. Un build sin la ECDH fijada no puede pedir licencias, y `LicenseTrustTest` comprueba que la clave está fijada y coincide con su huella.
@@ -38,7 +38,7 @@ Cómo protege SPVI los datos del negocio y la licencia en el teléfono. Describe
 | Licencia recibida | Verificación ECDSA con la clave de firma de GL sobre `epk‖iv‖ct‖tag`, ECDH con la clave del dispositivo, HKDF (`gl-lic-v1`), AES-256-GCM con AAD `1|alg|<licenseId>` | `licencia/.../crypto/GlCodec.kt`, `LicenseValidator.kt` |
 | Red | Solo HTTPS (`usesCleartextTraffic=false` y un interceptor que rechaza cualquier petición no HTTPS, también tras redirecciones) | `data/.../network/Red.kt` (OkHttp, sin Retrofit desde la 0.13.0) |
 
-**Contraseñas:** desde la 0.27.0 la contraseña del respaldo es **opcional** («Proteger con contraseña», apagado por defecto); si se activa, exige 8 caracteres como mínimo, repetidos. La contraseña llega al caso de uso como `CharArray` y se borra al terminar; el JSON en claro se sobrescribe con ceros tras cifrarlo.
+**Contraseñas de respaldo (0.30.0):** «Proteger con contraseña» está **activado por defecto** y exige 8 caracteres como mínimo, escritos dos veces. Se puede desactivar explícitamente, pero la pantalla advierte que cualquiera que consiga el archivo podrá leer las ventas y los datos personales de los clientes. La contraseña llega al caso de uso como `CharArray` y se borra al terminar; el JSON en claro se sobrescribe con ceros tras cifrarlo. Los v4 sin contraseña anteriores se siguen pudiendo importar; su secreto de cifrado está publicado y no aporta confidencialidad.
 
 ## 4. Superficie expuesta
 
@@ -70,11 +70,11 @@ Cómo protege SPVI los datos del negocio y la licencia en el teléfono. Describe
 | **Respaldo v4** | Lleva el ID, tipo, secundarias, vencimiento y CI de la licencia (datos que ya figuran en el mensaje de licencia), no la licencia ni ninguna clave |
 | **Licencia compartida a SPVI** | `SEND text/plain` con `SPVI2:` abre Licencia y la activa; la verificación criptográfica es la de siempre |
 
-## 4 ter. Novedades de la 0.27.0
+## 4 ter. Respaldo sin contraseña y novedades incorporadas desde la 0.27.0
 
 | Área | Medida |
 |---|---|
-| **Respaldo sin contraseña** | Formato `.spvi` v4 con un byte indicador autenticado. Sin contraseña la clave sale de un secreto interno que **está publicado en el repositorio público del proyecto** (XOR no es protección): cualquiera que tenga el archivo `.spvi` puede abrirlo con un guion de veinte líneas, **sin necesidad de SPVI ni del APK**. **Riesgo aceptado a sabiendas** por el dueño (2026-10-07) y documentado aquí en vez de disimulado. La app lo avisa al exportar. Con contraseña, igual que antes (310 000 iteraciones) |
+| **Respaldo sin contraseña (modo opcional)** | El formato v4 sigue aceptando indicador `0` por compatibilidad: la clave sale de un secreto ofuscado **publicado en el repositorio**, así que quien obtenga el archivo puede leerlo sin SPVI ni APK. Desde esta corrección la exportación protege con contraseña por defecto y al desactivarla muestra una advertencia explícita. Importar los v4 anteriores sigue permitido. **Pendiente de decisión del propietario:** eliminar la exportación sin contraseña en una versión futura |
 | **Acceso con clave** | Opcional. `BiometricPrompt` con biometría o PIN/patrón **del teléfono** (`BIOMETRIC_WEAK` + `DEVICE_CREDENTIAL` en API 30+). SPVI no guarda ninguna clave. Se pide al abrir en frío y tras ≥ 10 min en segundo plano (`elapsedRealtime`, nunca la hora). Pantalla de bloqueo superpuesta con `FLAG_SECURE`; no destruye el estado. La preferencia es del teléfono y no va en el respaldo. No es un cifrado adicional: protege de un curioso con el teléfono desbloqueado, no de quien tenga acceso root |
 | **Foto con la cámara** | `CAMERA` se pide justo antes de abrir la cámara; la galería usa el selector de fotos del sistema, sin permisos. `READ_MEDIA_IMAGES` sigue siendo solo del registro de la prueba |
 | **Principal → secundaria** | Bloqueado en la interfaz y en `VinculacionViewModel` (`PRINCIPAL_NO_SECUNDARIA`) |
@@ -96,7 +96,7 @@ Cómo protege SPVI los datos del negocio y la licencia en el teléfono. Describe
 | **Reutilizar la licencia tras recuperarla en otro teléfono** (0.25.0) | GL revoca la anterior y la publica en la lista firmada; el teléfono antiguo la aplica en su consulta semanal, borra los datos y se bloquea | Si el teléfono antiguo nunca se conecta a internet, sigue funcionando hasta que venza su licencia |
 | **Reutilizar la licencia tras migrar** | Se registra `lic.migrated_at` y se rechaza toda licencia emitida antes | Sin conexión, nadie obliga a ejecutar el borrado en el teléfono viejo |
 | **APK modificado** (parche que salta la comprobación) | R8 sube el coste | **No se puede impedir** con una licencia offline |
-| **Respaldo robado** | AES-256-GCM con clave PBKDF2 (310 000 iteraciones) | Una contraseña débil se puede adivinar por fuerza bruta. **Sin contraseña (0.27.0) no hay protección ninguna**: el secreto de ofuscación está publicado, así que basta tener el archivo. Riesgo aceptado a sabiendas (decisión del dueño, 2026-10-07): se mantiene para no romper los respaldos ya hechos |
+| **Respaldo robado** | AES-256-GCM con clave PBKDF2 (310 000 iteraciones); contraseña exigida por defecto al exportar | Una contraseña débil se puede adivinar por fuerza bruta. Si se desactiva la protección, no hay confidencialidad: el secreto de ofuscación está publicado. Los respaldos v4 sin contraseña existentes se siguen importando; aún está pendiente decidir si se elimina la exportación sin contraseña |
 | **Respaldo alterado o cortado** | Cabecera autenticada, largo y SHA-256 del cifrado; todo se valida antes de escribir y la importación es una sola transacción | — |
 | **Archivo malicioso recibido** («zip bomb», archivo enorme) | Tope de 128 MB al copiar y al descomprimir; solo `content://` | — |
 | **Interceptación de red** | Solo HTTPS, sin redirecciones a HTTP; no se envía ningún dato personal | Las bases públicas ven la IP y el código consultado |

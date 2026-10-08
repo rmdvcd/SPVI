@@ -94,9 +94,9 @@ object AyudaContenido {
             "Guardar una copia",
             listOf(
                 "Ajustes → Respaldo → Exportar y toca Siguiente.",
-                "Opcional: activa Proteger con contraseña, escríbela dos veces y anótala.",
-                "Toca Guardar en el teléfono o Enviar a otra app (Drive, Telegram…).",
-                "Para recuperarla: Respaldo → Elegir archivo (y la contraseña, si la tiene).",
+                "Proteger con contraseña viene activado. Escribe una contraseña de 8 caracteres o más dos veces y anótala.",
+                "Si eliges continuar sin contraseña, cualquiera que consiga el archivo podrá leer tus ventas y los datos personales de tus clientes.",
+                "Toca Guardar en el teléfono o Enviar a otra app (Drive, Telegram…). Para recuperarla: Respaldo → Elegir archivo.",
             ),
         ),
         TemaAyuda(
