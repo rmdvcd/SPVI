@@ -19,7 +19,7 @@ import java.io.OutputStream
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Semaphore
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
@@ -68,17 +68,14 @@ class ServidorSync @Inject constructor(
     private val _estado = MutableStateFlow(EstadoPrincipal())
     val estado: StateFlow<EstadoPrincipal> = _estado.asStateFlow()
 
-    private val sesiones = ConcurrentHashMap<Long, Sesion>()
+    private val sesiones = SesionesActivas()
+    private val controlConexiones = ControlConexiones(clock)
+    /** Tope global adicional: los límites por IP/empleado no bastan ante muchas IP distintas. */
+    private val conexionesPendientes = Semaphore(MAX_CONEXIONES_PENDIENTES)
     private val vinculando = Mutex()
     private val avisos = Channel<Unit>(Channel.CONFLATED)
     private var trabajo: Job? = null
     @Volatile private var socket: ServerSocket? = null
-
-    private class Sesion(val empleadoId: Long, val socket: Socket, val canal: CanalCifrado) {
-        val escritura = Mutex()
-        suspend fun enviar(m: Mensaje) = escritura.withLock { withContext(Dispatchers.IO) { canal.enviar(m) } }
-        fun cerrar() { runCatching { socket.close() }; canal.borrarClaves() }
-    }
 
     private val observador = object : InvalidationTracker.Observer(arrayOf(
         "producto", "insumo", "servicio", "receta_linea", "servicio_insumo", "preajuste", "preajuste_producto",
@@ -103,7 +100,11 @@ class ServidorSync @Inject constructor(
             try {
                 while (isActive) {
                     val s = withContext(Dispatchers.IO) { ss.accept() }
-                    launch { atender(s) }
+                    if (!conexionesPendientes.tryAcquire()) {
+                        runCatching { s.close() }
+                        continue
+                    }
+                    launch { atender(s) }.invokeOnCompletion { conexionesPendientes.release() }
                 }
             } catch (e: IOException) {
                 // socket cerrado al detener
@@ -111,8 +112,7 @@ class ServidorSync @Inject constructor(
                 db.invalidationTracker.removeObserver(observador)
                 red.dejarDeAnunciar()
                 runCatching { ss.close() }
-                sesiones.values.forEach { it.cerrar() }
-                sesiones.clear()
+                sesiones.cerrarTodas()
                 _estado.value = EstadoPrincipal()
             }
         }
@@ -131,7 +131,7 @@ class ServidorSync @Inject constructor(
 
     /** El dueño quitó esta secundaria: si está conectada se le dice ahora; si no, al volver a conectar. */
     fun expulsar(empleadoId: Long) {
-        val s = sesiones.remove(empleadoId) ?: return
+        val s = sesiones.quitar(empleadoId) ?: return
         scope.launch {
             runCatching { s.enviar(Quitada) }
             s.cerrar()
@@ -161,21 +161,27 @@ class ServidorSync @Inject constructor(
     private suspend fun repartirAvisos() {
         for (u in avisos) {
             delay(800) // agrupa ráfagas (una venta toca varias tablas)
-            sesiones.values.toList().forEach { s -> runCatchingCancelable { s.enviar(Aviso) }.onFailure { s.cerrar() } }
+            sesiones.todas().forEach { s -> runCatchingCancelable { s.enviar(Aviso) }.onFailure { s.cerrar() } }
         }
     }
 
     // ---------------------------------------------------------------- conexión
 
     private suspend fun atender(socket: Socket) {
+        val ip = socket.inetAddress?.hostAddress ?: "desconocida"
+        val intento = controlConexiones.iniciar(ip) ?: run { runCatching { socket.close() }; return }
         try {
             socket.tcpNoDelay = true
-            socket.soTimeout = LECTURA_MS
+            socket.soTimeout = SALUDO_MS
             val input = BufferedInputStream(socket.getInputStream())
             val output = BufferedOutputStream(socket.getOutputStream())
-            when (val s = withContext(Dispatchers.IO) { Saludos.recibir(input) }) {
-                is Vincular -> { vincular(s, output); socket.close() }
-                is Hola -> sesion(s, socket, input, output)
+            when (val saludo = withContext(Dispatchers.IO) { Saludos.recibir(input) }) {
+                is Vincular -> {
+                    if (!intento.identificar(saludo.empleado)) return
+                    vincular(saludo, output, intento)
+                    socket.close()
+                }
+                is Hola -> sesion(saludo, socket, input, output, intento)
                 else -> socket.close()
             }
         } catch (e: CancellationException) {
@@ -183,10 +189,13 @@ class ServidorSync @Inject constructor(
             throw e
         } catch (e: Exception) {
             runCatching { socket.close() }
+        } finally {
+            intento.fallar() // no-op si ya se autenticó; si no, impone el enfriamiento creciente
+            runCatching { socket.close() }
         }
     }
 
-    private suspend fun vincular(v: Vincular, out: OutputStream) = vinculando.withLock {
+    private suspend fun vincular(v: Vincular, out: OutputStream, intento: ControlConexiones.Intento) = vinculando.withLock {
         val rechazar = { motivo: String -> Saludos.enviar(out, Rechazo(motivo)) }
         if (v.v != VERSION_PROTOCOLO) return@withLock rechazar(Rechazo.VERSION)
         // 0.21.0 (C5): una sola principal por negocio; una secundaria nunca acepta vínculos.
@@ -211,16 +220,21 @@ class ServidorSync @Inject constructor(
         withContext(Dispatchers.IO) {
             Saludos.enviar(out, VincularOk(CriptoSync.enc(pubS), CriptoSync.enc(CriptoSync.macVinculoPrincipal(token, pubS, pubC)), nombreNegocio()))
         }
+        intento.autenticar()
     }
 
-    private suspend fun sesion(h: Hola, socket: Socket, input: InputStream, out: OutputStream) {
+    private suspend fun sesion(h: Hola, socket: Socket, input: InputStream, out: OutputStream, intento: ControlConexiones.Intento) {
         val nonceC = CriptoSync.dec(h.nonce)
         if (h.v != VERSION_PROTOCOLO) return Saludos.enviar(out, Rechazo(Rechazo.VERSION)).also { socket.close() }
         if (config.tipo.first() != TipoApp.PRINCIPAL) return Saludos.enviar(out, Rechazo(Rechazo.DESCONOCIDA)).also { socket.close() } // C5
-        if (nonceC.size != CriptoSync.NONCE_BYTES) return socket.close()
-        if (h.negocio != config.negocioId()) return Saludos.enviar(out, Rechazo(Rechazo.OTRO_NEGOCIO)).also { socket.close() }
+        if (!intento.identificar(h.empleado)) return socket.close()
+        if (nonceC.size != CriptoSync.NONCE_BYTES) return Saludos.enviar(out, Rechazo(Rechazo.DESCONOCIDA)).also { socket.close() }
+        // Se consulta la fila incluso si el identificador del negocio no coincide, y ambos casos usan el mismo rechazo.
+        val negocioCoincide = h.negocio == config.negocioId()
         val e = db.syncDao().empleado(h.empleado)
-        val clave = e?.clave?.let(CriptoSync::dec)
+        val clave = e?.clave?.let { runCatching { CriptoSync.dec(it) }.getOrNull() }
+        val rechazo = rechazoIdentidadHola(negocioCoincide, e != null && clave != null)
+        if (rechazo != null) return Saludos.enviar(out, rechazo).also { socket.close() }
         if (e == null || clave == null) return Saludos.enviar(out, Rechazo(Rechazo.DESCONOCIDA)).also { socket.close() }
         if (!e.activo) {
             val mac = CriptoSync.enc(CriptoSync.macRechazo(clave, nonceC, Rechazo.QUITADA))
@@ -230,12 +244,18 @@ class ServidorSync @Inject constructor(
         withContext(Dispatchers.IO) { Saludos.enviar(out, HolaOk(CriptoSync.enc(nonceS), comandosUnicos = true)) }
         val canal = CanalCifrado.paraPrincipal(input, out, CriptoSync.clavesSesion(clave, nonceC, nonceS))
         clave.fill(0)
-        val s = Sesion(e.id, socket, canal)
-        sesiones.put(e.id, s)?.cerrar() // la misma app reconectando: se queda la conexión nueva
+        val s = SesionActiva(e.id, socket, canal)
+        // No se toca la conexión anterior hasta que AES-GCM autentique el primer mensaje de esta.
+        socket.soTimeout = PRUEBA_CLAVE_MS
+        val primero = sesiones.recibirYReemplazar(s) { withContext(Dispatchers.IO) { canal.recibir() } }
+        socket.soTimeout = LECTURA_MS
+        intento.autenticar()
         _estado.update { it.copy(conectadas = it.conectadas + e.id) }
         try {
+            var pendiente: Mensaje? = primero
             while (true) {
-                val m = withContext(Dispatchers.IO) { canal.recibir() }
+                val m = pendiente ?: withContext(Dispatchers.IO) { canal.recibir() }
+                pendiente = null
                 val actual = db.syncDao().empleado(e.id)
                 if (actual == null || !actual.activo) { runCatching { s.enviar(Quitada) }; break }
                 when (m) {
@@ -248,7 +268,7 @@ class ServidorSync @Inject constructor(
             }
         } finally {
             s.cerrar()
-            if (sesiones.remove(e.id, s)) _estado.update { it.copy(conectadas = it.conectadas - e.id) }
+            if (sesiones.quitarSiActual(s)) _estado.update { it.copy(conectadas = it.conectadas - e.id) }
         }
     }
 
@@ -336,6 +356,10 @@ class ServidorSync @Inject constructor(
 
     companion object {
         const val PUERTO = 47_811
+        const val MAX_CONEXIONES_PENDIENTES = 32
+        /** Plazo corto para no retener recursos con clientes que no completan el saludo o su prueba de clave. */
+        const val SALUDO_MS = 15_000
+        const val PRUEBA_CLAVE_MS = 15_000
         /** La secundaria hace ping cada 30 s; sin noticias en 90 s se da la conexión por perdida. */
         const val LECTURA_MS = 90_000
     }

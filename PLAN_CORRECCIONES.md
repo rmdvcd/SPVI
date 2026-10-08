@@ -1,9 +1,9 @@
 # SPVI — Plan de correcciones propuesto
 
-> Estado: **F0 en verde** y **F1.1–F1.4 implementadas/verificadas** (2026-10-08). CI:
-> [37766967443](https://github.com/rmdvcd/SPVI/actions/runs/37766967443) — 5/5 trabajos verdes; 831 tests JVM,
-> incluidos SQL-vs-memoria sobre el seed. El detalle está en [docs/VERIFICACION.md](docs/VERIFICACION.md).
-> **T1.5 sigue NO VERIFICADO**: el CI compila androidTest, pero no ejecuta instrumentados ni mide teléfono/Perfetto.
+> Estado: **F0 en verde**, **F1.1–F1.4 implementadas/verificadas**, y **T2.1 implementado con CI verde; captura aún pendiente**
+> (2026-10-08). CI más reciente: [37832730353](https://github.com/rmdvcd/SPVI/actions/runs/37832730353) — 5/5 trabajos verdes,
+> 832 tests JVM sin fallos; incluye compilar (no ejecutar) instrumentados. El detalle está en [docs/VERIFICACION.md](docs/VERIFICACION.md).
+> **T1.5 sigue NO VERIFICADO**: aún no se ejecutan instrumentados ni se mide teléfono/Perfetto.
 >
 > El historial inicial de F0 fue empujado a `arena/3c116bea-spvi` (`8c48aa3` → `f480e50`/`531cab3`). La
 > continuación de este ciclo está en `arena/c64c3dc9-spvi`; no hay PR abierto.
@@ -82,10 +82,10 @@ cerrar esa brecha, y la elección cambia el calendario:
 
 | Fase | Qué | Estado |
 |---|---|---|
-| F0 | CI y verdad documental | **VERDE** (corridas 37656256703, 37657849682, 37704972362) |
-| F1 | Rendimiento | **T1.1–T1.4 en verde**; T1.5 **NO VERIFICADO** (instrumentados compilados, pero no ejecutados en dispositivo); T1.6 opcional |
-| F2 | Seguridad | Pendiente |
-| F3 | Coherencia documental | Pendiente |
+| F0 | CI y verdad documental | **VERDE** (última CI 37832730353, 5/5) |
+| F1 | Rendimiento | **T1.1–T1.4 en verde**; T1.5 **NO VERIFICADO** (instrumentados compilados, pero no ejecutados ni medidos); T1.6 opcional |
+| F2 | Seguridad | **T2.1 implementado y CI verde**; falta actualizar/verificar capturas. T2.2–T2.5 pendientes |
+| F3 | Coherencia documental | Pendiente; el README/schema y enlaces están en revisión |
 | F6 | Higiene | Pendiente |
 
 

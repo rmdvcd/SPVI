@@ -131,6 +131,7 @@ app/common/PermisosLocales.kt         LocalPermisosApp (oculta botones según pe
    - La clave del empleado se guarda en el DataStore cifrado con el Keystore en la secundaria, y en la BD SQLCipher en la principal.
    - Nunca va a logs (`DatosSecundaria.toString()` la oculta), ni al respaldo, ni a la copia de Android (`allowBackup=false`).
 6. **Permisos de Android:** `INTERNET`, que ya estaba, cubre los sockets de red local. NSD no pide permisos. Desde 0.19.2, la principal añade los tres permisos normales del servicio en primer plano (ver §Limitaciones). Las secundarias no los usan.
+7. **Saludo y sesión (2026-10):** el servidor limita los saludos pendientes a 32 en total, 4 por IP y 2 por empleado; el saludo y la primera prueba de clave vencen a los 15 s. Tras un fallo aplica un enfriamiento exponencial (1 s, 2 s, 4 s… hasta 5 min). Negocio ajeno y empleado desconocido reciben el mismo `Rechazo(DESCONOCIDA)`. Una reconexión no cierra la sesión anterior hasta que la primera trama cifrada de la nueva conexión autentica correctamente. **No cambia el protocolo v1 ni sus mensajes.** Los límites y el orden de reemplazo tienen pruebas JVM; la comprobación entre tres teléfonos sigue pendiente.
 
 ## Limitaciones
 

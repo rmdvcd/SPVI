@@ -7,12 +7,14 @@ import cu.spvi.domain.model.PermisoEmpleado
 import cu.spvi.licencia.LicenseState
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.net.Socket
 import java.time.Instant
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
@@ -129,6 +131,49 @@ class SyncProtocoloTest {
         assertEquals(PermisoEmpleado.CAMBIAR_PRECIOS, EjecutorComandos.permisoDe(EliminarPreajuste(1)))
         assertEquals(PermisoEmpleado.EDITAR_INVENTARIO, EjecutorComandos.permisoDe(EliminarProducto(1)))
         assertEquals(PermisoEmpleado.EDITAR_INVENTARIO, EjecutorComandos.permisoDe(AjustarStockInsumo(1, 1000)))
+    }
+
+    @Test fun sesionNoSeCierraSinPruebaDeClave() {
+        val clavesBuenas = claves()
+        val trama = ByteArrayOutputStream().also { out ->
+            CanalCifrado.paraSecundaria(vacio, out, clavesBuenas.copiar()).enviar(Ping(17))
+        }.toByteArray()
+        val registro = SesionesActivas()
+        val socketAnterior = Socket()
+        val anterior = SesionActiva(
+            7, socketAnterior,
+            CanalCifrado.paraPrincipal(vacio, ByteArrayOutputStream(), clavesBuenas.copiar()),
+        )
+        registro.poner(anterior)
+
+        val socketInvalido = Socket()
+        val candidatoInvalido = SesionActiva(
+            7, socketInvalido,
+            CanalCifrado.paraPrincipal(ByteArrayInputStream(trama), ByteArrayOutputStream(), claves()),
+        )
+        falla { kotlinx.coroutines.runBlocking { registro.recibirYReemplazar(candidatoInvalido) { candidatoInvalido.canal.recibir() } } }
+        assertSame("un Hola sin prueba de clave no reemplaza la sesión", anterior, registro.actual(7))
+        assertFalse("la sesión válida sigue conectada", socketAnterior.isClosed)
+        candidatoInvalido.cerrar()
+
+        val socketValido = Socket()
+        val candidatoValido = SesionActiva(
+            7, socketValido,
+            CanalCifrado.paraPrincipal(ByteArrayInputStream(trama), ByteArrayOutputStream(), clavesBuenas.copiar()),
+        )
+        assertEquals(Ping(17), kotlinx.coroutines.runBlocking {
+            registro.recibirYReemplazar(candidatoValido) { candidatoValido.canal.recibir() }
+        })
+        assertSame(candidatoValido, registro.actual(7))
+        assertTrue("la sesión anterior se cierra tras autenticar la nueva", socketAnterior.isClosed)
+        registro.cerrarTodas()
+    }
+
+    @Test fun saludoNoDistingueNegocioAjenoDeEmpleadoDesconocido() {
+        val mismoRechazo = Rechazo(Rechazo.DESCONOCIDA)
+        assertEquals(mismoRechazo, rechazoIdentidadHola(negocioCoincide = false, empleadoConClave = true))
+        assertEquals(mismoRechazo, rechazoIdentidadHola(negocioCoincide = true, empleadoConClave = false))
+        assertNull(rechazoIdentidadHola(negocioCoincide = true, empleadoConClave = true))
     }
 
     @Test fun datosSecundariaNoMuestranLaClave() {

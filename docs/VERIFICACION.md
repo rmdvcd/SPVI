@@ -1,8 +1,8 @@
 # SPVI — Verificación real
 
 > **Única fuente de verdad** del estado de verificación del proyecto: lo que diga este archivo es lo que se ha
-> medido; lo que no esté aquí, no está verificado. Última actualización: **2026-10-08**; código verificado en
-> `cc30f77` (`arena/c64c3dc9-spvi`).
+> medido; lo que no esté aquí, no está verificado. Última actualización: **2026-10-08**; última CI completa: `e687bbb`
+> (`arena/c64c3dc9-spvi`, corrida [37832730353](https://github.com/rmdvcd/SPVI/actions/runs/37832730353)).
 >
 > Regla permanente (F6 del plan de correcciones): cada release añade o actualiza una fila de la tabla de
 > corridas. El README ya no lleva historial de verificaciones: apunta aquí.
@@ -37,6 +37,7 @@ legible desde la API de GitHub y no solo desde la interfaz web.
 
 | Fecha | Commit | Corrida | Trabajos | Resultado |
 |---|---|---|---|---|
+| 2026-10-08 | `e687bbb` | [37832730353](https://github.com/rmdvcd/SPVI/actions/runs/37832730353) | 5/5 | **Todo en verde**; 832 tests JVM (0 fallidos/errores/omitidos), lint 0 errores, R8 sin clases ausentes, API mínima 3431 clases/0 llamadas no permitidas |
 | 2026-10-08 | `cc30f77` | [37766967443](https://github.com/rmdvcd/SPVI/actions/runs/37766967443) | 5/5 | **Todo en verde**; 831 tests JVM, 3431 clases API mínima; incluye T1.4 SQL-vs-memoria |
 | 2026-10-07 | `531cab3` | [37656256703](https://github.com/rmdvcd/SPVI/actions/runs/37656256703) | 5/5 | Todo en verde (~11 min), con `--no-configuration-cache` |
 | 2026-10-07 | `f480e50` | [37653496967](https://github.com/rmdvcd/SPVI/actions/runs/37653496967) | 5/5 | Todo en verde (~11 min) |
@@ -44,7 +45,7 @@ legible desde la API de GitHub y no solo desde la interfaz web.
 Las corridas de 2026-10-07 dieron las mismas cifras; la del 2026-10-08 vuelve a pasar con el bytecode y las pruebas
 nuevas de T1.4. Las métricas actuales se detallan a continuación.
 
-### Detalle de la corrida del 2026-10-08
+### Detalle histórico de `cc30f77` (T1.4)
 
 | Comprobación | Resultado medido |
 |---|---|
@@ -56,6 +57,19 @@ nuevas de T1.4. Las métricas actuales se detallan a continuación.
 | APK debug | `app-debug.apk` de 58,7 MB (sha256 `de00d4eadec6335c…`) |
 | Permisos | Manifiesto fusionado (debug y release) dentro de la lista autorizada |
 | API mínima | **3431 clases revisadas, 0 llamadas no permitidas** |
+
+### Detalle de `e687bbb` — corrección T2.1
+
+La corrida [37832730353](https://github.com/rmdvcd/SPVI/actions/runs/37832730353) terminó **5/5 jobs en verde**:
+
+| Comprobación | Resultado medido |
+|---|---|
+| Tests JVM | **832 ejecutados, 0 fallidos, 0 errores, 0 omitidos** |
+| Compilación instrumentada | `:data:compileDebugAndroidTestKotlin` y `:app:compileDebugAndroidTestKotlin` pasan; no se ejecutó ningún test instrumentado |
+| Lint | **0 errores, 95 avisos** |
+| R8 y APK | `assembleRelease`/`assembleDebug` pasan; sin clases ausentes |
+| Permisos y API mínima | manifiestos dentro de la lista autorizada; **3431 clases, 0 llamadas no permitidas** |
+| T2.1 | El código y los tests JVM pasan; las capturas de referencia todavía están pendientes, así que no se declara T2.1 cerrado |
 
 Los artefactos se descargan desde la página de la corrida: `apk` (debug + release sin firmar, 30 días) e
 `informe-lint` (14 días).
