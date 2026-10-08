@@ -1,5 +1,6 @@
 package cu.spvi.data
 
+import android.app.Application
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -29,7 +30,7 @@ import org.robolectric.annotation.Config
 
 /** SQL real de los gráficos: límites, anulaciones, cubos vacíos, centavos y turnos. */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35])
+@Config(application = Application::class, sdk = [35])
 class VentaAgregadosRoomTest {
 
     private val db = Room.inMemoryDatabaseBuilder(

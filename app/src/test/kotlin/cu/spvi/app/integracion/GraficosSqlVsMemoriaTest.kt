@@ -1,5 +1,6 @@
 package cu.spvi.app.integracion
 
+import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import cu.spvi.core.result.AppResult
@@ -24,7 +25,7 @@ import org.robolectric.annotation.Config
 
 /** T1.4: compara la agregación Room/SQL con la referencia pura sobre el seed completo de 548 días. */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35])
+@Config(application = Application::class, sdk = [35])
 class GraficosSqlVsMemoriaTest {
 
     private val zona = ZoneId.of("America/Havana")
