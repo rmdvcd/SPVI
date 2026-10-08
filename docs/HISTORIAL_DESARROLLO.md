@@ -1364,3 +1364,19 @@ Primera vez que el repositorio se verifica solo: GitHub Actions ejecuta Gradle r
   `Estadisticas` como autoridad en los tests y comparando SQL vs memoria.
 - CI: **826 tests JVM, 0 fallos** (+1, el test nuevo del debounce); lint 0/95; R8 limpio; permisos OK; API 26 OK.
   Corrida verde: [37704972362](https://github.com/rmdvcd/SPVI/actions/runs/37704972362).
+
+## 0.30.0 — Corrección del seed: recetas en gramos/mL, no en kg/L (2026-10-08)
+
+- La BD de prueba mostraba Ganancia Neta muy negativa (p. ej. costo 544 550 CUP contra ventas de 10 130 CUP
+  en un turno): las recetas de `CatalogoBodega` estaban escritas ×1000 (200_000 milésimas = 200 kg de harina
+  por pan con lechón, 500 L de gasolina por entrega a domicilio). `LineaRecetaSeed` documenta «cantidad en
+  milésimas de su unidad» (1000 = 1 kg/L/unidad) y el costo real sale de la receta
+  (`Recetas.costo`: Σ precio × milésimas / 1000), no del costo declarado.
+- Recetas corregidas: pan con lechón 200 g harina / 150 g carne / 20 mL aceite / 5 g sal (levadura 10 g, ya
+  estaba bien porque su unidad es el gramo); dulce de coco 60/50/20 g (además era antieconómico: costaba 320
+  contra venta de 150; ahora 64); entrega a domicilio 0,3 L de gasolina (90 < 150); lavado 100 mL de
+  detergente (40 < 120). El hilo (1 bobina por arreglo, 150 < 250) no se tocó.
+- `CatalogoBodegaTest` nuevo: todos los productos con costo declarado < venta, y toda receta de elaborado o
+  servicio con costo de receta < venta/importe (matemática entera en milésimas-pesos, sin redondeo).
+- Solo afecta al seed de debug («Generar datos de prueba»): sin cambio de esquema, versión ni permisos.
+  Suite local: **828 tests JVM, 0 fallos** (+2).

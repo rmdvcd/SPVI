@@ -100,24 +100,24 @@ object CatalogoBodega {
     /** Recetas de los 2 elaborados (clave producto → líneas). Cantidades en milésimas. */
     val RECETAS: Map<String, List<LineaRecetaSeed>> = mapOf(
         "pan-lechon" to listOf(
-            LineaRecetaSeed("harina-trigo", 200_000),
+            LineaRecetaSeed("harina-trigo", 200),
             LineaRecetaSeed("levadura", 10_000),
-            LineaRecetaSeed("carne-cerdo", 150_000),
-            LineaRecetaSeed("aceite-vegetal", 20_000),
-            LineaRecetaSeed("sal-fina", 5_000),
+            LineaRecetaSeed("carne-cerdo", 150),
+            LineaRecetaSeed("aceite-vegetal", 20),
+            LineaRecetaSeed("sal-fina", 5),
         ),
         "dulce-coco" to listOf(
-            LineaRecetaSeed("coco-rallado", 300_000),
-            LineaRecetaSeed("azucar-blanca", 250_000),
-            LineaRecetaSeed("leche-polvo", 100_000),
+            LineaRecetaSeed("coco-rallado", 60),
+            LineaRecetaSeed("azucar-blanca", 50),
+            LineaRecetaSeed("leche-polvo", 20),
         ),
     )
 
     val SERVICIOS = listOf(
         ServicioSeed("corte-pelo", "Corte de pelo", "Belleza", 300),
         ServicioSeed("arreglo-ropa", "Arreglo de ropa", "Costura", 250, listOf(LineaRecetaSeed("hilo-bobina", 1_000))),
-        ServicioSeed("entrega-domicilio", "Entrega a domicilio", "Mensajería", 150, listOf(LineaRecetaSeed("gasolina", 500_000))),
-        ServicioSeed("lavado-ropa", "Lavado de ropa (lb)", "Lavandería", 120, listOf(LineaRecetaSeed("detergente-liquido", 100_000))),
+        ServicioSeed("entrega-domicilio", "Entrega a domicilio", "Mensajería", 150, listOf(LineaRecetaSeed("gasolina", 300))),
+        ServicioSeed("lavado-ropa", "Lavado de ropa (lb)", "Lavandería", 120, listOf(LineaRecetaSeed("detergente-liquido", 100))),
         ServicioSeed("afilado", "Afilado de cuchillos", "Reparación", 100),
         ServicioSeed("manicura", "Manicura", "Belleza", 350),
         ServicioSeed("planchado", "Planchado (pieza)", "Lavandería", 80),

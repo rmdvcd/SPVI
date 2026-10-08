@@ -31,4 +31,27 @@ class CatalogoBodegaTest {
         assertEquals(3, CatalogoBodega.SERVICIOS.count { it.insumos.isNotEmpty() })
         assertEquals(2, CatalogoBodega.TARJETAS.size)
     }
+
+    @Test fun productosConCostoMenorQueVenta() {
+        CatalogoBodega.PRODUCTOS.forEach {
+            assertTrue("${it.clave}: costo ${it.costoPesos} >= venta ${it.ventaPesos}", it.costoPesos < it.ventaPesos)
+        }
+    }
+
+    /**
+     * El costo real de un elaborado (o de un servicio con insumos) sale de su receta
+     * (Σ precio × milésimas / 1000), no del costo declarado: la receta también debe dar ganancia.
+     */
+    @Test fun recetasConCostoMenorQueVenta() {
+        val precio = CatalogoBodega.INSUMOS.associate { it.clave to it.precioPesos }
+        fun costoMilesimas(lineas: List<LineaRecetaSeed>) = lineas.sumOf { precio[it.insumo]!! * it.milesimas }
+        CatalogoBodega.PRODUCTOS.filter { it.categoria == Categorias.ELABORADO }.forEach {
+            val costo = costoMilesimas(CatalogoBodega.RECETAS[it.clave]!!)
+            assertTrue("${it.clave}: receta $costo/1000 >= venta ${it.ventaPesos}", costo < it.ventaPesos * 1000)
+        }
+        CatalogoBodega.SERVICIOS.filter { it.insumos.isNotEmpty() }.forEach {
+            val costo = costoMilesimas(it.insumos)
+            assertTrue("${it.clave}: insumos $costo/1000 >= importe ${it.importePesos}", costo < it.importePesos * 1000)
+        }
+    }
 }
