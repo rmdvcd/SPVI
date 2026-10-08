@@ -16,6 +16,8 @@ import cu.spvi.domain.model.Producto
 import cu.spvi.domain.model.Receta
 import cu.spvi.domain.model.ResumenTurno
 import cu.spvi.domain.model.Turno
+import cu.spvi.domain.model.TotalesCubo
+import cu.spvi.domain.model.VentanaCubo
 import cu.spvi.domain.model.Venta
 import cu.spvi.domain.repository.InsumoRepository
 import cu.spvi.domain.repository.LicenciaRepository
@@ -220,6 +222,20 @@ class VentaRepo : VentaRepository {
     override suspend fun deTurno(turnoId: Long): List<Venta> {
         if (fallar) error("disco")
         return ventas.filter { it.turnoId == turnoId }
+    }
+    override suspend fun totalesPorCubos(ventanas: List<VentanaCubo>, turnoId: Long?): List<TotalesCubo> {
+        if (fallar) error("disco")
+        return ventanas.map { ventana ->
+            val validas = ventas.filter { venta ->
+                (turnoId == null || venta.turnoId == turnoId) && venta.anulacion == null &&
+                    venta.fecha >= ventana.desde && venta.fecha < ventana.hasta
+            }
+            TotalesCubo(
+                inicio = ventana.inicio,
+                ventas = validas.fold(Cup.ZERO) { total, venta -> total + venta.total },
+                costo = validas.fold(Cup.ZERO) { total, venta -> total + venta.costoTotal },
+            )
+        }
     }
 
     /** 0.25.0. */

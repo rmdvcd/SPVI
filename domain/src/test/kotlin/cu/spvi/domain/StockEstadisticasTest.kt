@@ -106,6 +106,23 @@ class StockEstadisticasTest {
         assertEquals(LocalDate.of(2026, 3, 9).atStartOfDay(habana).toInstant(), hoy.hasta)
     }
 
+    @Test fun `ventanas horarias distinguen la hora repetida al atrasar el reloj en Cuba`() {
+        var transicion = habana.rules.nextTransition(Instant.parse("2025-01-01T00:00:00Z"))
+        while (transicion != null && !transicion.isOverlap) {
+            transicion = habana.rules.nextTransition(transicion.instant.plusNanos(1))
+        }
+        val cambio = requireNotNull(transicion).instant
+        val desde = cambio.minusSeconds(3_600)
+        val hasta = cambio.plusSeconds(3_600)
+
+        val ventanas = Estadisticas.ventanas(desde, hasta, habana)
+
+        assertEquals(Granularidad.HORA, Estadisticas.granularidad(desde, hasta))
+        assertEquals(3, ventanas.size)
+        assertTrue(ventanas[0].inicio != ventanas[1].inicio)
+        assertEquals(ventanas[0].inicio.atZone(habana).toLocalDateTime(), ventanas[1].inicio.atZone(habana).toLocalDateTime())
+    }
+
     @Test fun `serie continua por hora dia o mes`() {
         val hoyR = Estadisticas.rango(PeriodoPreset.HOY, Instant.parse("2026-09-01T15:30:00Z"), habana)
         assertEquals(Duration.ofHours(24), Duration.between(hoyR.desde, hoyR.hasta))

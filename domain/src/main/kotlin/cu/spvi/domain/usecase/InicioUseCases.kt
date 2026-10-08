@@ -13,6 +13,7 @@ import cu.spvi.domain.model.GraficosPeriodo
 import cu.spvi.domain.model.OpcionPeriodo
 import cu.spvi.domain.model.Periodo
 import cu.spvi.domain.model.ResumenGeneral
+import cu.spvi.domain.model.Serie
 import cu.spvi.domain.model.PeriodoPreset
 import cu.spvi.domain.repository.InsumoRepository
 import cu.spvi.domain.repository.PreferenciasRepository
@@ -21,6 +22,7 @@ import cu.spvi.domain.repository.TurnoRepository
 import cu.spvi.domain.repository.VentaRepository
 import cu.spvi.domain.service.Estadisticas
 import cu.spvi.domain.service.Stock
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import cu.spvi.domain.model.Preferencias
@@ -88,9 +90,8 @@ class ObtenerGraficosPeriodo @Inject constructor(
     @IoDispatcher private val io: CoroutineDispatcher,
 ) {
     /**
-     * 0.30.0 (F1): con el período «Año» esto carga miles de ventas con sus líneas, las convierte a dominio y las
-     * agrupa por cubo; antes todo eso ocurría en el hilo que llamaba (el Main del ViewModel) y la pantalla se
-     * congelaba. [io] lo saca del hilo principal sin cambiar ninguna firma ni el resultado.
+     * 0.30.0 (F1): las ventanas se calculan en el dominio y Room suma los totales por cubo; no materializa miles de
+     * ventas, líneas y transacciones para el gráfico. El trabajo sigue fuera del hilo principal mediante [io].
      */
     suspend operator fun invoke(periodo: Periodo, pedidoTurno: Boolean = false, zone: ZoneId = ZoneId.systemDefault()): AppResult<GraficosPeriodo> =
         withContext(io) {
@@ -98,17 +99,24 @@ class ObtenerGraficosPeriodo @Inject constructor(
                 is Periodo.DeTurno -> {
                     val t = turnos.obtener(periodo.turnoId) ?: return@withContext AppResult.Err(AppError.NoEncontrado)
                     val hasta = maxOf(t.cerradoEn ?: clock.now(), t.abiertoEn.plusSeconds(1))
-                    AppResult.Ok(GraficosPeriodo(periodo, Estadisticas.serie(ventas.deTurno(t.id).validas(), t.abiertoEn, hasta, zone), turno = t))
+                    AppResult.Ok(GraficosPeriodo(periodo, obtenerSerie(t.abiertoEn, hasta, zone, t.id), turno = t))
                 }
                 is Periodo.Rango -> AppResult.Ok(
                     GraficosPeriodo(
                         periodo = periodo,
-                        serie = Estadisticas.serie(ventas.entre(periodo.desde, periodo.hasta).validas(), periodo.desde, periodo.hasta, zone),
+                        serie = obtenerSerie(periodo.desde, periodo.hasta, zone),
                         sinTurnos = pedidoTurno,
                     ),
                 )
             }
         }
+
+    private suspend fun obtenerSerie(desde: Instant, hasta: Instant, zone: ZoneId, turnoId: Long? = null): Serie {
+        val granularidad = Estadisticas.granularidad(desde, hasta)
+        val ventanas = Estadisticas.ventanas(desde, hasta, zone)
+        val totales = ventas.totalesPorCubos(ventanas, turnoId)
+        return Estadisticas.serieAgregada(granularidad, ventanas, totales)
+    }
 }
 
 /**

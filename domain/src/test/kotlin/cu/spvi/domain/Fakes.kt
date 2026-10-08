@@ -19,6 +19,8 @@ import cu.spvi.domain.model.TipoMovimiento
 import cu.spvi.domain.model.TipoEntidad
 import cu.spvi.domain.model.Turno
 import cu.spvi.domain.model.ElaboradoEnVenta
+import cu.spvi.domain.model.TotalesCubo
+import cu.spvi.domain.model.VentanaCubo
 import cu.spvi.domain.model.Venta
 import cu.spvi.domain.repository.InsumoRepository
 import cu.spvi.domain.repository.PerfilRepository
@@ -187,6 +189,18 @@ class FakeVentas(private val productos: FakeProductos, private val turnos: FakeT
     override suspend fun obtener(id: Long) = ventas.firstOrNull { it.id == id }
     override suspend fun entre(desde: Instant, hasta: Instant) = ventas.filter { it.fecha >= desde && it.fecha < hasta }
     override suspend fun deTurno(turnoId: Long) = ventas.filter { it.turnoId == turnoId }
+    override suspend fun totalesPorCubos(ventanas: List<VentanaCubo>, turnoId: Long?): List<TotalesCubo> =
+        ventanas.map { ventana ->
+            val validas = ventas.filter { venta ->
+                (turnoId == null || venta.turnoId == turnoId) && venta.anulacion == null &&
+                    venta.fecha >= ventana.desde && venta.fecha < ventana.hasta
+            }
+            TotalesCubo(
+                inicio = ventana.inicio,
+                ventas = validas.fold(Cup.ZERO) { total, venta -> total + venta.total },
+                costo = validas.fold(Cup.ZERO) { total, venta -> total + venta.costoTotal },
+            )
+        }
 
     /** 0.25.0: imita la anulación de :data (turno abierto, marca y devolución de existencias). */
     override suspend fun anular(ventaId: Long, anulacion: cu.spvi.domain.model.Anulacion): AppResult<Unit> {

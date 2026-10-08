@@ -154,6 +154,8 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.room.runtime)
 
     // Tests de Compose sin Hilt: se prueban los *Content sin estado.
     androidTestImplementation(platform(libs.compose.bom))

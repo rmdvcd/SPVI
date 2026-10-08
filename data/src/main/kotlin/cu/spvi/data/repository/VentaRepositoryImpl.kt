@@ -1,20 +1,24 @@
 package cu.spvi.data.repository
 
-import cu.spvi.domain.model.ClaseArticulo
+import androidx.sqlite.db.SimpleSQLiteQuery
+import cu.spvi.core.money.Cup
 import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
 import cu.spvi.data.db.SpviDatabase
 import cu.spvi.data.db.abortar
+import cu.spvi.data.db.dao.registrar
 import cu.spvi.data.db.entity.MovimientoEntity
 import cu.spvi.data.db.tx
-import cu.spvi.data.db.dao.registrar
 import cu.spvi.data.mapper.toDomain
 import cu.spvi.data.mapper.toEntity
-import cu.spvi.domain.model.ElaboradoEnVenta
 import cu.spvi.domain.model.Anulacion
+import cu.spvi.domain.model.ClaseArticulo
+import cu.spvi.domain.model.ElaboradoEnVenta
 import cu.spvi.domain.model.MovimientoInventario
 import cu.spvi.domain.model.TipoEntidad
 import cu.spvi.domain.model.TipoMovimiento
+import cu.spvi.domain.model.TotalesCubo
+import cu.spvi.domain.model.VentanaCubo
 import cu.spvi.domain.model.Venta
 import cu.spvi.domain.repository.VentaRepository
 import java.time.Instant
@@ -197,6 +201,58 @@ class VentaRepositoryImpl @Inject constructor(private val db: SpviDatabase) : Ve
 
     override suspend fun deTurno(turnoId: Long): List<Venta> = ventas.deTurno(turnoId).map { it.toDomain() }.conVendedoresDb()
 
+    /**
+     * Calcula los totales en SQL sin materializar VentaCompleta, detalles ni transacciones. Las ventanas ya vienen
+     * con el ZoneId resuelto por el dominio; solo se enlazan epoch millis a la consulta.
+     */
+    override suspend fun totalesPorCubos(ventanas: List<VentanaCubo>, turnoId: Long?): List<TotalesCubo> {
+        if (ventanas.isEmpty()) return emptyList()
+        val filas = mutableListOf<cu.spvi.data.db.entity.VentaCuboRow>()
+        for (lote in ventanas.chunked(MAX_CUBOS_POR_CONSULTA)) {
+            filas += ventas.totalesPorCubos(consultaPorCubos(lote, turnoId))
+        }
+        return filas.map { fila ->
+            TotalesCubo(
+                inicio = Instant.ofEpochMilli(fila.inicio),
+                ventas = Cup(fila.ventasCent),
+                costo = Cup(fila.costoCent),
+            )
+        }
+    }
+
+    private fun consultaPorCubos(ventanas: List<VentanaCubo>, turnoId: Long?): SimpleSQLiteQuery {
+        val valores = ventanas.joinToString(", ") { "(?, ?, ?)" }
+        val filtroTurno = if (turnoId == null) "" else "AND v.turnoId = ?"
+        val sql = """
+            WITH cubos(inicio, desde, hasta) AS (VALUES $valores)
+            SELECT c.inicio AS inicio,
+                   COALESCE(SUM(v.totalCent), 0) AS ventasCent,
+                   COALESCE(SUM(v.costoCent), 0) AS costoCent
+            FROM cubos AS c
+            LEFT JOIN venta AS v
+              ON v.fecha >= c.desde
+             AND v.fecha < c.hasta
+             AND v.anuladaEn IS NULL
+             $filtroTurno
+            GROUP BY c.inicio
+            ORDER BY c.inicio
+        """.trimIndent()
+        val argumentos = ArrayList<Any?>(ventanas.size * 3 + if (turnoId == null) 0 else 1)
+        ventanas.forEach { ventana ->
+            argumentos += ventana.inicio.toEpochMilli()
+            argumentos += ventana.desde.aMilisegundoTecho()
+            argumentos += ventana.hasta.aMilisegundoTecho()
+        }
+        if (turnoId != null) argumentos += turnoId
+        return SimpleSQLiteQuery(sql, argumentos.toTypedArray())
+    }
+
+    /** Las fechas de venta se guardan en milisegundos; el techo preserva comparaciones Instant [desde, hasta). */
+    private fun Instant.aMilisegundoTecho(): Long {
+        val millis = toEpochMilli()
+        return if (nano % 1_000_000 == 0) millis else Math.addExact(millis, 1L)
+    }
+
     /** Lee el mapa venta→vendedor en una sola consulta (lista vacía = sin consulta). */
     private suspend fun List<Venta>.conVendedoresDb(): List<Venta> =
         if (isEmpty()) this else conVendedores(ventas.vendedoresDe(map { it.id }).associate { it.ventaId to it.vendedor })
@@ -212,3 +268,5 @@ internal fun List<Venta>.conVendedores(mapa: Map<Long, String>): List<Venta> =
 
 private const val MIL = 1000L
 private const val NOTA_MAX = 120
+/** 250 filas × 3 parámetros + turno: bajo el límite clásico de 999 variables de SQLite. */
+private const val MAX_CUBOS_POR_CONSULTA = 250

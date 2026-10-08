@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import cu.spvi.core.result.AppResult
 import cu.spvi.core.time.Clock
 import cu.spvi.domain.model.Periodo
+import cu.spvi.domain.model.Serie
 import cu.spvi.domain.model.validas
 import cu.spvi.domain.service.Estadisticas
 import cu.spvi.domain.seed.OrquestadorSeed
@@ -17,6 +18,7 @@ import java.time.Instant
 import java.time.ZoneId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -79,7 +81,13 @@ class RendimientoInicioTest {
             val obtenerResumen = ObtenerResumenGeneral(entorno.ventas, entorno.productos, entorno.insumos, entorno.servicios, reloj, Dispatchers.IO)
             val obtenerGraficos = ObtenerGraficosPeriodo(entorno.ventas, entorno.turnos, reloj, Dispatchers.IO)
             val tResumen = medir { obtenerResumen(zona) }
-            val tGraficos = medir { obtenerGraficos(rango, zone = zona) }
+            var serieSql: Serie? = null
+            val tGraficos = medir {
+                obtenerGraficos(rango, zone = zona).also { resultado ->
+                    if (resultado is AppResult.Ok) serieSql = resultado.value.serie
+                }
+            }
+            assertEquals("SQL debe coincidir centavo por centavo con la serie pura del seed", Estadisticas.serie(validas, desde365, ahora, zona), serieSql)
 
             val informe = """
                 |RendimientoInicioTest — 18 meses (${ventasDelAnio.size} ventas en el año, ${validas.size} válidas)

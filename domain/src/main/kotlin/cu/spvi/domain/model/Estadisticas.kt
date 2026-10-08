@@ -55,6 +55,12 @@ data class PuntoSerie(val inicio: Instant, val ventas: Cup, val costo: Cup) {
 
 data class Serie(val granularidad: Granularidad, val puntos: List<PuntoSerie>)
 
+/** Ventana temporal de un cubo de la serie. [inicio] es la etiqueta del punto; los límites son [desde, hasta). */
+data class VentanaCubo(val inicio: Instant, val desde: Instant, val hasta: Instant)
+
+/** Totales exactos en CUP de un cubo, agregados sin materializar líneas de venta. */
+data class TotalesCubo(val inicio: Instant, val ventas: Cup, val costo: Cup)
+
 /** Porción de un gráfico de dona. */
 data class Porcion(val etiqueta: String, val valor: Long, val fraccion: Double)
 

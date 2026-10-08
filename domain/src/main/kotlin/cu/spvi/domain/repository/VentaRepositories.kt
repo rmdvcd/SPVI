@@ -10,6 +10,8 @@ import cu.spvi.domain.model.TipoMovimientoCaja
 import cu.spvi.domain.model.ElaboradoEnVenta
 import cu.spvi.domain.model.Transaccion
 import cu.spvi.domain.model.Turno
+import cu.spvi.domain.model.TotalesCubo
+import cu.spvi.domain.model.VentanaCubo
 import cu.spvi.domain.model.Venta
 import java.time.Instant
 import kotlinx.coroutines.flow.Flow
@@ -29,6 +31,9 @@ interface VentaRepository {
     /** Ventas con detalle en [desde, hasta). */
     suspend fun entre(desde: Instant, hasta: Instant): List<Venta>
     suspend fun deTurno(turnoId: Long): List<Venta>
+
+    /** Totales de los cubos indicados, sin cargar detalles; [turnoId] limita la consulta a un turno si no es null. */
+    suspend fun totalesPorCubos(ventanas: List<VentanaCubo>, turnoId: Long? = null): List<TotalesCubo>
 
     /**
      * 0.25.0 (solo app principal): anula la venta de forma ATÓMICA si su turno sigue ABIERTO: la marca (no se borra),

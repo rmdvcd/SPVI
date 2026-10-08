@@ -3,13 +3,16 @@ package cu.spvi.data.db.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.RawQuery
 import androidx.room.Transaction
+import androidx.sqlite.db.SupportSQLiteQuery
 import cu.spvi.data.db.entity.ArqueoRow
 import cu.spvi.data.db.entity.DetalleVentaEntity
 import cu.spvi.data.db.entity.MovimientoCajaEntity
 import cu.spvi.data.db.entity.ResumenTurnoRow
 import cu.spvi.data.db.entity.TransaccionEntity
 import cu.spvi.data.db.entity.TurnoEntity
+import cu.spvi.data.db.entity.VentaCuboRow
 import cu.spvi.data.db.entity.VentaCompleta
 import cu.spvi.data.db.entity.VentaEntity
 import kotlinx.coroutines.flow.Flow
@@ -34,6 +37,10 @@ interface VentaDao {
     @Transaction
     @Query("SELECT * FROM venta WHERE turnoId = :turnoId ORDER BY fecha, id")
     suspend fun deTurno(turnoId: Long): List<VentaCompleta>
+
+    /** Agrega ventas por ventanas ya resueltas en JVM (sin huso local ni conversión de detalles). */
+    @RawQuery(observedEntities = [VentaEntity::class])
+    suspend fun totalesPorCubos(query: SupportSQLiteQuery): List<VentaCuboRow>
 
     /** Registros → Ventas. [texto] busca en los nombres de los artículos vendidos. */
     @Transaction

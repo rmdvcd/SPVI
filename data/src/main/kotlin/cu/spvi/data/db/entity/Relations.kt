@@ -42,3 +42,10 @@ data class MovimientosTurnoRow(
     val producto: Int,
     val insumo: Int,
 )
+
+/** Totales por cubo devueltos por la consulta SQL de los gráficos (CUP en centavos). */
+data class VentaCuboRow(
+    val inicio: Long,
+    val ventasCent: Long,
+    val costoCent: Long,
+)

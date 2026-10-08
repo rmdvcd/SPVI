@@ -1,24 +1,26 @@
 package cu.spvi.domain.service
 
-import cu.spvi.domain.model.nombreCompleto
-import cu.spvi.domain.model.TopServicios
-import cu.spvi.domain.model.Servicio
-import cu.spvi.domain.model.ClaseArticulo
 import cu.spvi.core.money.Cup
+import cu.spvi.domain.model.ClaseArticulo
 import cu.spvi.domain.model.Granularidad
+import cu.spvi.domain.model.Insumo
 import cu.spvi.domain.model.MetodoPago
 import cu.spvi.domain.model.Periodo
 import cu.spvi.domain.model.PeriodoPreset
 import cu.spvi.domain.model.Porcion
 import cu.spvi.domain.model.Producto
-import cu.spvi.domain.model.Insumo
 import cu.spvi.domain.model.PuntoSerie
 import cu.spvi.domain.model.Serie
+import cu.spvi.domain.model.Servicio
 import cu.spvi.domain.model.TipoMovimiento
 import cu.spvi.domain.model.Top3
 import cu.spvi.domain.model.TopItem
 import cu.spvi.domain.model.TopPersona
+import cu.spvi.domain.model.TopServicios
+import cu.spvi.domain.model.TotalesCubo
 import cu.spvi.domain.model.Venta
+import cu.spvi.domain.model.VentanaCubo
+import cu.spvi.domain.model.nombreCompleto
 import cu.spvi.domain.model.validas
 import java.time.Duration
 import java.time.Instant
@@ -55,35 +57,66 @@ object Estadisticas {
         }
     }
 
+    /**
+     * Ventanas exactas de la serie, incluidas las parciales al principio y al final del período.
+     * Se calculan en JVM con el mismo ZoneId que etiqueta el gráfico; SQLite no decide husos ni reglas DST.
+     */
+    fun ventanas(desde: Instant, hasta: Instant, zone: ZoneId): List<VentanaCubo> {
+        val g = granularidad(desde, hasta)
+        return buildList {
+            var z = inicioCubo(desde, g, zone)
+            while (z.toInstant() < hasta) {
+                val inicio = z.toInstant()
+                val siguiente = siguienteCubo(z, g, zone)
+                add(VentanaCubo(inicio, maxOf(desde, inicio), minOf(hasta, siguiente.toInstant())))
+                z = siguiente
+            }
+        }
+    }
+
     /** Serie continua (incluye cubos vacíos) para Ventas (barras) y Ganancia Neta (área). */
     fun serie(ventas: List<Venta>, desde: Instant, hasta: Instant, zone: ZoneId): Serie {
         val g = granularidad(desde, hasta)
-        fun cubo(i: Instant): ZonedDateTime = i.atZone(zone).let {
-            when (g) {
-                Granularidad.HORA -> it.truncatedTo(ChronoUnit.HOURS)
-                Granularidad.DIA -> it.toLocalDate().atStartOfDay(zone)
-                Granularidad.MES -> it.toLocalDate().withDayOfMonth(1).atStartOfDay(zone)
+        val ventanas = ventanas(desde, hasta, zone)
+        val agregados = ventas.asSequence()
+            .filter { it.fecha >= desde && it.fecha < hasta }
+            .groupBy { inicioCubo(it.fecha, g, zone).toInstant() }
+            .map { (inicio, vs) ->
+                TotalesCubo(
+                    inicio = inicio,
+                    ventas = vs.fold(Cup.ZERO) { total, v -> total + v.total },
+                    costo = vs.fold(Cup.ZERO) { total, v -> total + v.costoTotal },
+                )
             }
+        return serieAgregada(g, ventanas, agregados)
+    }
+
+    /**
+     * Convierte los resultados de una consulta agregada (p. ej. SQL) en una serie. Es pura y comparte el
+     * calendario de cubos con [serie], que continúa siendo la referencia de memoria para comparar el repositorio.
+     */
+    fun serieAgregada(granularidad: Granularidad, ventanas: List<VentanaCubo>, totales: List<TotalesCubo>): Serie {
+        val porInicio = totales.associateBy { it.inicio }
+        val puntos = ventanas.map { ventana ->
+            val total = porInicio[ventana.inicio]
+            PuntoSerie(ventana.inicio, total?.ventas ?: Cup.ZERO, total?.costo ?: Cup.ZERO)
         }
-        // 0.21.6: el cubo siguiente sale de la fecha, igual que [cubo] (ver [rango]): con plusDays, tras el cambio de
-        // hora de Cuba (00:00 → 01:00) los cubos quedaban a la 01:00 y las ventas de los días siguientes no se sumaban.
-        fun siguiente(z: ZonedDateTime) = when (g) {
-            Granularidad.HORA -> z.plusHours(1)
-            Granularidad.DIA -> z.toLocalDate().plusDays(1).atStartOfDay(zone)
-            Granularidad.MES -> z.toLocalDate().withDayOfMonth(1).plusMonths(1).atStartOfDay(zone)
+        return Serie(granularidad, puntos)
+    }
+
+    private fun inicioCubo(i: Instant, granularidad: Granularidad, zone: ZoneId): ZonedDateTime = i.atZone(zone).let {
+        when (granularidad) {
+            Granularidad.HORA -> it.truncatedTo(ChronoUnit.HOURS)
+            Granularidad.DIA -> it.toLocalDate().atStartOfDay(zone)
+            Granularidad.MES -> it.toLocalDate().withDayOfMonth(1).atStartOfDay(zone)
         }
-        val agregados = ventas.filter { it.fecha >= desde && it.fecha < hasta }
-            .groupBy { cubo(it.fecha).toInstant() }
-            .mapValues { (_, vs) -> vs.fold(Cup.ZERO to Cup.ZERO) { (t, c), v -> (t + v.total) to (c + v.costoTotal) } }
-        val puntos = buildList {
-            var z = cubo(desde)
-            while (z.toInstant() < hasta) {
-                val (t, c) = agregados[z.toInstant()] ?: (Cup.ZERO to Cup.ZERO)
-                add(PuntoSerie(z.toInstant(), t, c))
-                z = siguiente(z)
-            }
-        }
-        return Serie(g, puntos)
+    }
+
+    // 0.21.6: días y meses salen de la fecha local, no de sumar 24/30 h. En Cuba la medianoche puede saltar a la 01:00.
+    private fun siguienteCubo(z: ZonedDateTime, granularidad: Granularidad, zone: ZoneId) = when (granularidad) {
+        Granularidad.HORA -> z.plusHours(1)
+        Granularidad.DIA -> z.toLocalDate().plusDays(1).atStartOfDay(zone)
+        Granularidad.MES -> z.toLocalDate().withDayOfMonth(1).plusMonths(1).atStartOfDay(zone)
     }
 
     /**
