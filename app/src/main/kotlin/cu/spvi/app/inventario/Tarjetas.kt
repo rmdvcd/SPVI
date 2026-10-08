@@ -16,7 +16,7 @@ import android.text.TextPaint
 import android.text.TextUtils
 import cu.spvi.app.common.ArchivosApp
 import cu.spvi.core.money.Money
-import cu.spvi.data.di.IoDispatcher
+import cu.spvi.domain.di.IoDispatcher
 import cu.spvi.domain.model.Producto
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File

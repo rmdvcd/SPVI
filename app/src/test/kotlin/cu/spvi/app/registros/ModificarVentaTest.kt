@@ -55,7 +55,7 @@ class ModificarVentaTest {
     private fun vm(): ModificarVentaViewModel {
         val cotizar = CotizarVenta(productos, PreciosRepo(), insumos, servicios)
         return ModificarVentaViewModel(
-            productos, ObservarElaborados(insumos, productos), insumos, ObservarServicios(servicios, insumos),
+            productos, ObservarElaborados(insumos, productos, Dispatchers.Unconfined), insumos, ObservarServicios(servicios, insumos, Dispatchers.Unconfined),
             ModificarVenta(cotizar, ventas, turnos, perfil, UsuarioActual(perfil), reloj, SecundariaRepoFake()),
         )
     }

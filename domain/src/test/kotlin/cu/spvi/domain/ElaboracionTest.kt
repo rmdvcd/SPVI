@@ -33,6 +33,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlinx.coroutines.Dispatchers
 
 class ElaboracionTest {
 
@@ -78,7 +79,7 @@ class ElaboracionTest {
         val insumos = FakeInsumos().apply { put(ins(1, "Harina", 10), ins(2, "Sal", 10)) }
         val productos = FakeProductos().apply { this.insumos = insumos }
         val filtro = MutableStateFlow(FiltroInsumos(uso = UsoInsumo.EN_RECETAS))
-        val uc = ObservarElaboracion(insumos, productos, FakePreferencias())
+        val uc = ObservarElaboracion(insumos, productos, FakePreferencias(), Dispatchers.Unconfined)
         assertTrue(uc(filtro).first().items.isEmpty())
 
         productos.crear(producto(0, "Pan", categoria = "Elaborado"), Receta(0, listOf(RecetaLinea(1, Cantidad(250)))))
@@ -166,7 +167,7 @@ class ElaboracionTest {
         val insumos = FakeInsumos().apply { put(ins(1, "Harina", 2)) }
         val productos = FakeProductos().apply { this.insumos = insumos }
         productos.crear(producto(0, "Pan", categoria = "Elaborado", cantidad = 0), Receta(0, listOf(RecetaLinea(1, Cantidad(250)))))
-        val elaborados = ObservarElaborados(insumos, productos)
+        val elaborados = ObservarElaborados(insumos, productos, Dispatchers.Unconfined)
         assertEquals(8, elaborados().first().single().alcanza)
         insumos.ajustarStock(1, Cantidad(-750), null) // p. ej., tras vender 3
         assertEquals(5, elaborados().first().single().alcanza)

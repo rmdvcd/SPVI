@@ -1,6 +1,6 @@
 # SPVI — reglas para agentes (OpenCode)
 
-App Android de punto de venta e inventario para pequeños negocios en Cuba. **Versión 0.27.1 (`versionCode 50`)**. Paquete `cu.spvi.app`. Todo el texto de la interfaz, los comentarios y la documentación están en **español**; responde en español.
+App Android de punto de venta e inventario para pequeños negocios en Cuba. **Versión 0.30.0 (`versionCode 51`)**. Paquete `cu.spvi.app`. Todo el texto de la interfaz, los comentarios y la documentación están en **español**; responde en español.
 
 **Empieza por `Contexto.md`** (resumen completo del proyecto), `Pendiente.md` (lo que falta) y `Pruebas.md` (qué probar y en qué orden); `opencode.json` carga los dos primeros en cada sesión. La referencia visual es `SPVI_0.26.0_capturas_y_exportaciones.pdf` (raíz; no se sube a git). Guía paso a paso para compilar y retocar con OpenCode Desktop: `docs/OPENCODE_DESKTOP.md`. Lee los demás documentos solo cuando la tarea los necesite:
 - arquitectura, compilación y novedades: `README.md`;
@@ -63,6 +63,12 @@ Un solo test: `./gradlew :domain:test --tests "cu.spvi.domain.Version025Test"`. 
 - Base de datos v10 (`MIGRACION_9_10`, esquema `data/schemas/…/10.json`); respaldo DTO v4 (importa v3); archivo `.spvi` v4 (lee v3). Un cambio de esquema exige migración + esquema exportado + test.
 - La firma de release debe ser **siempre la misma** (el `deviceId` de la licencia depende de ella).
 
-## Lo que nunca se ha ejecutado (verifícalo tú)
+## Qué se ha ejecutado y qué no
 
-Gradle real, lint, R8/ProGuard en release, Roborazzi, el APK en un teléfono y la prueba con dos teléfonos (principal + secundaria). Sigue `docs/OPENCODE_DESKTOP.md` §3–§6.
+Desde el **2026-10-07** el CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) ejecuta Gradle real en cada push:
+`spviTests` (825 tests JVM), `:app:lintDebug`, `:app:assembleRelease` (R8, con control de clases ausentes),
+`spviPermisos` y `tools/verificacion/api_minima.py`. El estado y los números están en
+[docs/VERIFICACION.md](docs/VERIFICACION.md).
+
+El CI **no** ejecuta (y por tanto no verifica en cada push): Roborazzi (capturas), los 136 tests instrumentados, el
+APK en un teléfono ni la prueba con dos teléfonos (principal + secundaria). Sigue `docs/OPENCODE_DESKTOP.md` §3–§6.

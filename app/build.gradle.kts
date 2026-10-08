@@ -46,8 +46,8 @@ android {
         applicationId = "cu.spvi.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 50
-        versionName = "0.27.1"
+        versionCode = 51
+        versionName = "0.30.0"
         // 0.25.0 (P70): «propietario/repositorio» PÚBLICO de GitHub con las Releases (APK) y la lista de
         // licencias revocadas. Vacío = sin configurar: la app no consulta nada. Se puede pasar con -PspviGithubRepo=…
         buildConfigField("String", "GITHUB_REPO", "\"${(project.findProperty("spviGithubRepo") as String?).orEmpty()}\"")
@@ -110,6 +110,8 @@ android {
         abortOnError = true
         checkDependencies = true
         warningsAsErrors = false
+        // El XML siempre se escribe: el CI lo publica en el resumen del fallo (tools/verificacion/resumen_fallos.sh).
+        xmlReport = true
     }
 
     packaging {

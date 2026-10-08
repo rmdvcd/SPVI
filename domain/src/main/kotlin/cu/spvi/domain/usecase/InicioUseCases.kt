@@ -1,6 +1,7 @@
 package cu.spvi.domain.usecase
 
 import cu.spvi.core.time.Dates
+import cu.spvi.domain.di.IoDispatcher
 import cu.spvi.domain.model.validas
 
 import cu.spvi.domain.repository.ServicioRepository
@@ -24,21 +25,30 @@ import java.time.LocalDate
 import java.time.ZoneId
 import cu.spvi.domain.model.Preferencias
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 
-/** Contadores de alertas de Inicio; se recalculan al cambiar productos, insumos o niveles. */
+/**
+ * Contadores de alertas de Inicio; se recalculan al cambiar productos, insumos o niveles.
+ *
+ * 0.30.0 (F1): `Stock.conteo` recorre todos los productos e insumos y sumaba en el hilo del colector (Main, porque
+ * lo recolectan los `stateIn` de los ViewModels). Con [io] el cálculo ocurre fuera del hilo principal.
+ */
 class ObservarAlertas @Inject constructor(
     private val productos: ProductoRepository,
     private val insumos: InsumoRepository,
     private val preferencias: PreferenciasRepository,
     private val clock: Clock,
+    @IoDispatcher private val io: CoroutineDispatcher,
 ) {
     operator fun invoke(zone: ZoneId = ZoneId.systemDefault()): Flow<ConteoAlertas> =
         combine(productos.observarTodos(), insumos.observarTodos(), preferencias.preferencias) { ps, ins, pref ->
             Stock.conteo(ps, ins, pref.niveles, Dates.localDate(clock.now(), zone), Preferencias.DIAS_AVISO_CADUCIDAD)
-        }
+        }.flowOn(io)
 }
 
 /** Período por defecto del gráfico Ventas: turno abierto; si no, el último cerrado; si no hay turnos, hoy. */
@@ -75,21 +85,29 @@ class ObtenerGraficosPeriodo @Inject constructor(
     private val ventas: VentaRepository,
     private val turnos: TurnoRepository,
     private val clock: Clock,
+    @IoDispatcher private val io: CoroutineDispatcher,
 ) {
+    /**
+     * 0.30.0 (F1): con el período «Año» esto carga miles de ventas con sus líneas, las convierte a dominio y las
+     * agrupa por cubo; antes todo eso ocurría en el hilo que llamaba (el Main del ViewModel) y la pantalla se
+     * congelaba. [io] lo saca del hilo principal sin cambiar ninguna firma ni el resultado.
+     */
     suspend operator fun invoke(periodo: Periodo, pedidoTurno: Boolean = false, zone: ZoneId = ZoneId.systemDefault()): AppResult<GraficosPeriodo> =
-        when (periodo) {
-            is Periodo.DeTurno -> {
-                val t = turnos.obtener(periodo.turnoId) ?: return AppResult.Err(AppError.NoEncontrado)
-                val hasta = maxOf(t.cerradoEn ?: clock.now(), t.abiertoEn.plusSeconds(1))
-                AppResult.Ok(GraficosPeriodo(periodo, Estadisticas.serie(ventas.deTurno(t.id).validas(), t.abiertoEn, hasta, zone), turno = t))
+        withContext(io) {
+            when (periodo) {
+                is Periodo.DeTurno -> {
+                    val t = turnos.obtener(periodo.turnoId) ?: return@withContext AppResult.Err(AppError.NoEncontrado)
+                    val hasta = maxOf(t.cerradoEn ?: clock.now(), t.abiertoEn.plusSeconds(1))
+                    AppResult.Ok(GraficosPeriodo(periodo, Estadisticas.serie(ventas.deTurno(t.id).validas(), t.abiertoEn, hasta, zone), turno = t))
+                }
+                is Periodo.Rango -> AppResult.Ok(
+                    GraficosPeriodo(
+                        periodo = periodo,
+                        serie = Estadisticas.serie(ventas.entre(periodo.desde, periodo.hasta).validas(), periodo.desde, periodo.hasta, zone),
+                        sinTurnos = pedidoTurno,
+                    ),
+                )
             }
-            is Periodo.Rango -> AppResult.Ok(
-                GraficosPeriodo(
-                    periodo = periodo,
-                    serie = Estadisticas.serie(ventas.entre(periodo.desde, periodo.hasta).validas(), periodo.desde, periodo.hasta, zone),
-                    sinTurnos = pedidoTurno,
-                ),
-            )
         }
 }
 
@@ -103,12 +121,14 @@ class ObtenerResumenGeneral @Inject constructor(
     private val insumos: InsumoRepository,
     private val servicios: ServicioRepository,
     private val clock: Clock,
+    @IoDispatcher private val io: CoroutineDispatcher,
 ) {
-    suspend operator fun invoke(zone: ZoneId = ZoneId.systemDefault()): ResumenGeneral {
+    /** 0.30.0 (F1): consulta de 30 días y cinco agregaciones: fuera del hilo de UI, igual que [ObtenerGraficosPeriodo]. */
+    suspend operator fun invoke(zone: ZoneId = ZoneId.systemDefault()): ResumenGeneral = withContext(io) {
         val manana = clock.now().atZone(zone).toLocalDate().plusDays(1) // 0.21.6: por fecha (cambio de hora a las 00:00)
         val lista = ventas.entre(manana.minusDays(DIAS.toLong()).atStartOfDay(zone).toInstant(), manana.atStartOfDay(zone).toInstant()).validas()
         val inventario = productos.observarTodos().first()
-        return ResumenGeneral(
+        ResumenGeneral(
             categorias = Estadisticas.distribucionCategorias(inventario, insumos.observarTodos().first()),
             metodosPago = Estadisticas.distribucionMetodos(lista),
             top3 = Estadisticas.top3(lista, inventario),

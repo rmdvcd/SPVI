@@ -25,10 +25,14 @@ import cu.spvi.domain.usecase.ObservarInventario
 import cu.spvi.domain.usecase.ObtenerFichaProducto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -57,7 +61,7 @@ class InventarioViewModelTest {
     private fun TestScope.vm(alerta: String? = null): InventarioViewModel {
         val vm = InventarioViewModel(
             saved = SavedStateHandle(if (alerta != null) mapOf("alerta" to alerta) else emptyMap()),
-            observarInventario = ObservarInventario(productos, insumosInv, prefs, reloj),
+            observarInventario = ObservarInventario(productos, insumosInv, prefs, reloj, Dispatchers.Unconfined),
             productosRepo = productos,
             obtenerFicha = ObtenerFichaProducto(productos, InsRepo(), prefs, reloj),
             eliminarProductos = EliminarProductos(productos),
@@ -72,6 +76,8 @@ class InventarioViewModelTest {
             clock = reloj,
             limpiarFotos = LimpiarFotos(productos, FakeFotos(), cu.spvi.app.ServRepo()),
         )
+        // 0.30.0 (F1): en la app el buscador espera 250 ms; los tests no quieren depender del reloj virtual.
+        vm.debounceBusqueda = 0
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.eventos.collect { eventos += it } }
         return vm
@@ -115,6 +121,31 @@ class InventarioViewModelTest {
         vm.buscar("zzz")
         assertTrue(vm.state.value.vista is EstadoCarga.Exito) // hay productos: "Sin resultados", no "vacío"
         assertTrue(vm.state.value.items.isEmpty())
+    }
+
+    /**
+     * 0.30.0 (F1): escribir rápido no dispara una consulta por tecla.
+     *
+     * Se cuentan las **reconsultas de verdad** (cada re-suscripción a `ObservarInventario` emite «Cargando»): el
+     * estado de la pantalla cambia con cada tecla —el campo de texto no se retrasa—, pero la consulta a Room no.
+     * Ocho pulsaciones seguidas = una sola consulta, y con el resultado de la palabra completa.
+     */
+    @Test fun elBuscadorAgrupaLasPulsaciones() = runTest {
+        cargar()
+        val vm = vm()
+        vm.debounceBusqueda = 250 // el retardo real de la app
+        var consultas = 0
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            vm.state.map { it.vista }.distinctUntilChanged().collect { v -> if (v is EstadoCarga.Cargando) consultas++ }
+        }
+        val antesDeEscribir = consultas
+        listOf("r", "re", "ref", "refr", "refre", "refres", "refresc", "refresco").forEach { vm.buscar(it) }
+        runCurrent()
+        assertEquals("mientras se escribe, ninguna consulta nueva", antesDeEscribir, consultas)
+        advanceTimeBy(300)
+        runCurrent()
+        assertEquals("las 8 pulsaciones producen una sola consulta", antesDeEscribir + 1, consultas)
+        assertEquals(listOf(1L), vm.state.value.items.map { it.producto.id })
     }
 
     @Test fun seleccionSobreviveALaBusquedaYMarcarTodoAlterna() = runTest {

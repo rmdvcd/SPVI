@@ -27,11 +27,14 @@ import cu.spvi.domain.model.ItemMovimiento
 import cu.spvi.domain.model.TipoEntidad
 import cu.spvi.domain.model.VistaRegistro
 import cu.spvi.domain.service.RegistrosFiltro
+import cu.spvi.domain.di.IoDispatcher
 import java.time.LocalDate
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 
 // ---------------- Registros ----------------
 
@@ -45,10 +48,15 @@ class ObservarRegistro @Inject constructor(
     private val registros: RegistroRepository,
     private val insumos: InsumoRepository,
     private val clock: Clock,
+    @IoDispatcher private val io: CoroutineDispatcher,
 ) {
     /** 0.20.0 (H1): opciones del filtro «Vendedor» (la hoja lo muestra solo con más de un nombre). */
     fun vendedores(): Flow<List<String>> = registros.vendedores()
 
+    /**
+     * 0.30.0 (F1): el filtro de texto recorre todas las filas del período (hasta un año de registros) y esto se
+     * ejecutaba en el hilo del colector (Main). [io] lo saca de ahí; la firma y el resultado no cambian.
+     */
     operator fun invoke(tipo: TipoRegistro, filtro: FiltroRegistros, zona: ZoneId = ZoneId.systemDefault()): Flow<VistaRegistro> {
         val consulta = RegistrosFiltro.consulta(filtro, tipo, Dates.localDate(clock.now(), zona), zona)
         return when (tipo) {
@@ -69,7 +77,7 @@ class ObservarRegistro @Inject constructor(
                         .filter { RegistrosFiltro.coincide(it, filtro.texto) },
                 )
             }
-        }
+        }.flowOn(io)
     }
 }
 

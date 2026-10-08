@@ -9,7 +9,7 @@ import androidx.exifinterface.media.ExifInterface
 import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
 import cu.spvi.core.time.Clock
-import cu.spvi.data.di.IoDispatcher
+import cu.spvi.domain.di.IoDispatcher
 import cu.spvi.domain.repository.FotoRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.ByteArrayInputStream

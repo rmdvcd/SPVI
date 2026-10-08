@@ -5,7 +5,7 @@ import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
 import cu.spvi.data.db.SpviDatabase
 import cu.spvi.data.db.tx
-import cu.spvi.data.di.IoDispatcher
+import cu.spvi.domain.di.IoDispatcher
 import cu.spvi.domain.model.Preferencias
 import cu.spvi.domain.repository.MantenimientoRepository
 import cu.spvi.domain.repository.PreferenciasRepository

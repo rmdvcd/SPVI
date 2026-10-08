@@ -1,6 +1,7 @@
 package cu.spvi.domain.usecase
 
 import cu.spvi.core.time.Dates
+import cu.spvi.domain.di.IoDispatcher
 import cu.spvi.domain.repository.ServicioRepository
 import cu.spvi.domain.service.Recetas
 import cu.spvi.core.result.AppError
@@ -25,9 +26,11 @@ import java.time.LocalDate
 import java.time.ZoneId
 import cu.spvi.domain.model.Preferencias
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 
 /** Tabla del Inventario reactiva: productos × preferencias (niveles, días de aviso) × filtro. */
 class ObservarInventario @Inject constructor(
@@ -35,11 +38,16 @@ class ObservarInventario @Inject constructor(
     private val insumos: InsumoRepository,
     private val preferencias: PreferenciasRepository,
     private val clock: Clock,
+    @IoDispatcher private val io: CoroutineDispatcher,
 ) {
+    /**
+     * 0.30.0 (F1): [InventarioFiltro.aplicar] recorre, cruza y ordena todos los productos (y usa una `LocalDate`),
+     * y esto se recalculaba en el hilo del colector —el Main del ViewModel— cada vez que cambiaba cualquier flujo.
+     */
     operator fun invoke(filtro: Flow<FiltroInventario>, zone: ZoneId = ZoneId.systemDefault()): Flow<VistaInventario> =
         combine(productos.observarTodos(), alcanceElaborados(productos, insumos), insumos.observarTodos(), preferencias.preferencias, filtro) { ps, al, xs, pref, f ->
             InventarioFiltro.aplicar(ps, f, pref.niveles, Dates.localDate(clock.now(), zone), Preferencias.DIAS_AVISO_CADUCIDAD, al, xs)
-        }
+        }.flowOn(io)
 }
 
 /** Ficha al tocar un producto: datos + receta resuelta (Elaborado) + indicadores. */

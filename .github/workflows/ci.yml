@@ -1,0 +1,236 @@
+# Verificación real de SPVI (T0.1 del PLAN_CORRECCIONES.md).
+# Repositorio público: los minutos de Actions son gratis e ilimitados.
+# Cada trabajo corresponde a un comando del proyecto; si uno se pone rojo, el log dice exactamente dónde.
+#
+# La imagen ubuntu-24.04 ya trae el SDK de Android completo y sus variables:
+#   ANDROID_HOME=/usr/local/lib/android/sdk, platform android-35, build-tools 35.0.0 y 35.0.1.
+# Por eso no se usa ninguna acción de terceros para instalarlo (la que se probó, android-actions/setup-android@v3,
+# falló en los 5 trabajos) ni se descarga nada: el paso «SDK de Android» solo comprueba que está lo que hace falta.
+#
+# Cada comando se ejecuta con `tee` y, si falla, `tools/verificacion/resumen_fallos.sh` publica lo esencial como
+# anotaciones (los registros del CI, en Azure Blob, no siempre son descargables).
+#
+# Todos los comandos usan --no-configuration-cache: el 2026-10-07 el trabajo de lint murió con «Configuration cache
+# entry discarded due to serialization error», y en el CI la reproducibilidad pesa más que el tiempo que ahorra.
+name: CI
+
+on:
+  push:
+    branches: [main, "arena/**"]
+  pull_request:
+  workflow_dispatch: # a mano, para comprobar una rama suelta
+
+# Un push nuevo sobre la misma rama cancela la corrida anterior (no gasta minutos en lo ya obsoleto).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# El token del CI no necesita permisos de escritura: solo leer el código.
+permissions:
+  contents: read
+
+jobs:
+  # ./gradlew spviTests + compilar los tests instrumentados de :data y :app (los que hoy no compilaban, D2).
+  tests:
+    name: Tests JVM y compilación de instrumentados
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: SDK de Android
+        run: |
+          test -d "$ANDROID_HOME/platforms/android-35" || { echo "Falta $ANDROID_HOME/platforms/android-35"; exit 1; }
+          test -d "$ANDROID_HOME/build-tools/35.0.0" || { echo "Faltan build-tools 35.0.0"; exit 1; }
+          echo "SDK: $ANDROID_HOME (android-35 y build-tools 35.0.0 presentes)"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: spviTests + compilar androidTest
+        run: |
+          set -o pipefail
+          ./gradlew spviTests :data:compileDebugAndroidTestKotlin :app:compileDebugAndroidTestKotlin \
+            --continue --stacktrace --console=plain --no-configuration-cache 2>&1 | tee /tmp/salida.log
+      - name: Resumen del fallo
+        if: failure()
+        run: bash tools/verificacion/resumen_fallos.sh /tmp/salida.log
+      - name: Resultado legible (tests)
+        if: success()
+        run: python3 tools/verificacion/resumen_ok.py tests
+      - name: Informes de test (solo si falla)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informes-tests
+          path: "**/build/reports/tests/**"
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # ./gradlew :app:lintDebug — baseline vacío a propósito: cualquier error de lint rompe el trabajo y ningún aviso
+  # queda tapado por el baseline (warningsAsErrors sigue en false: los avisos se ven, no rompen).
+  lint:
+    name: Lint (baseline)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: SDK de Android
+        run: |
+          test -d "$ANDROID_HOME/platforms/android-35" || { echo "Falta $ANDROID_HOME/platforms/android-35"; exit 1; }
+          test -d "$ANDROID_HOME/build-tools/35.0.0" || { echo "Faltan build-tools 35.0.0"; exit 1; }
+          echo "SDK: $ANDROID_HOME (android-35 y build-tools 35.0.0 presentes)"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: lintDebug
+        run: |
+          set -o pipefail
+          ./gradlew :app:lintDebug --no-configuration-cache --stacktrace --console=plain 2>&1 | tee /tmp/salida.log
+      - name: Resumen del fallo
+        if: failure()
+        run: bash tools/verificacion/resumen_fallos.sh /tmp/salida.log
+      - name: Resultado legible (lint)
+        if: success()
+        run: python3 tools/verificacion/resumen_ok.py lint
+      - name: Informe de lint
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informe-lint
+          path: "app/build/reports/lint-results-*"
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # R8 de verdad: assembleRelease (sin firmar en CI; la firma es local con keystore.properties) y el APK debug
+  # para instalarlo en el teléfono (T0.6).
+  release:
+    name: Release (R8) y APK debug
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: SDK de Android
+        run: |
+          test -d "$ANDROID_HOME/platforms/android-35" || { echo "Falta $ANDROID_HOME/platforms/android-35"; exit 1; }
+          test -d "$ANDROID_HOME/build-tools/35.0.0" || { echo "Faltan build-tools 35.0.0"; exit 1; }
+          echo "SDK: $ANDROID_HOME (android-35 y build-tools 35.0.0 presentes)"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: assembleRelease + assembleDebug
+        run: |
+          set -o pipefail
+          # -Pkotlin.compiler.execution.strategy=in-process: el demonio de Kotlin se cayó al arrancar en este trabajo
+          # («the daemon has terminated unexpectedly on startup»); compilando dentro del demonio de Gradle no hay carrera.
+          ./gradlew :app:assembleRelease :app:assembleDebug --continue --stacktrace --console=plain --no-configuration-cache \
+            -Pkotlin.compiler.execution.strategy=in-process "-Dorg.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8" --no-configuration-cache 2>&1 | tee /tmp/salida.log
+      - name: Resumen del fallo
+        if: failure()
+        run: bash tools/verificacion/resumen_fallos.sh /tmp/salida.log
+      - name: R8 sin clases ausentes
+        run: |
+          set -uo pipefail
+          archivo=app/build/outputs/mapping/release/missing_rules.txt
+          echo "== salida de R8 (app/build/outputs/mapping/release) =="
+          ls -la app/build/outputs/mapping/release/ 2>/dev/null || echo "(no hay directorio de mapping)"
+          fallo=0
+          # La prueba que manda es el propio aviso de R8; missing_rules.txt solo se escribe si hay clases ausentes.
+          if grep -qi "Missing classes detected while running R8" /tmp/salida.log; then
+            echo "R8 avisó de clases ausentes:" | tee -a /tmp/salida.log
+            grep -i -A 12 "Missing classes detected while running R8" /tmp/salida.log | tee -a /tmp/salida.log || true
+            fallo=1
+          fi
+          if [ -f "$archivo" ]; then
+            if [ -s "$archivo" ]; then
+              { echo "R8 dejó reglas ausentes en $archivo:"; cat "$archivo"; } | tee -a /tmp/salida.log
+              fallo=1
+            else
+              echo "$archivo existe y está vacío: R8 no echó de menos ninguna clase." | tee -a /tmp/salida.log
+            fi
+          else
+            echo "missing_rules.txt no se generó; el log de R8 no menciona clases ausentes, así que no hay reglas que añadir." | tee -a /tmp/salida.log
+            echo "::notice::R8: sin clases ausentes (missing_rules.txt no generado)"
+          fi
+          exit $fallo
+      - name: Resumen del fallo (R8)
+        if: failure()
+        run: bash tools/verificacion/resumen_fallos.sh /tmp/salida.log
+      - name: Resultado legible (APK)
+        if: success()
+        run: python3 tools/verificacion/resumen_ok.py apk
+      - name: APK debug y APK release sin firmar
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
+          if-no-files-found: ignore
+          retention-days: 30
+
+  # ./gradlew spviPermisos — el manifiesto FUSIONADO de debug y release no pide nada fuera de la lista autorizada.
+  permisos:
+    name: Permisos del manifiesto fusionado
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: SDK de Android
+        run: |
+          test -d "$ANDROID_HOME/platforms/android-35" || { echo "Falta $ANDROID_HOME/platforms/android-35"; exit 1; }
+          test -d "$ANDROID_HOME/build-tools/35.0.0" || { echo "Faltan build-tools 35.0.0"; exit 1; }
+          echo "SDK: $ANDROID_HOME (android-35 y build-tools 35.0.0 presentes)"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: spviPermisos
+        run: |
+          set -o pipefail
+          ./gradlew spviPermisos --no-configuration-cache --stacktrace --console=plain 2>&1 | tee /tmp/salida.log
+      - name: Resumen del fallo
+        if: failure()
+        run: bash tools/verificacion/resumen_fallos.sh /tmp/salida.log
+
+  # python3 tools/verificacion/api_minima.py — ninguna clase compilada llama a una API posterior a la 26 sin
+  # comprobar la versión, tampoco en core/domain/licencia (que lint no analiza).
+  api-min:
+    name: API mínima 26
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: SDK de Android
+        run: |
+          test -f "$ANDROID_HOME/platforms/android-35/data/api-versions.xml" || { echo "Falta api-versions.xml de android-35"; exit 1; }
+          echo "SDK: $ANDROID_HOME (platform android-35 con api-versions.xml)"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compilar todo el bytecode (debug)
+        run: |
+          set -o pipefail
+          ./gradlew :app:assembleDebug --no-configuration-cache --stacktrace --console=plain 2>&1 | tee /tmp/salida.log
+      - name: Resumen del fallo
+        if: failure()
+        run: bash tools/verificacion/resumen_fallos.sh /tmp/salida.log
+      - name: Revisar API mínima
+        run: |
+          set -o pipefail
+          test -n "$ANDROID_HOME" || { echo "ANDROID_HOME vacío"; exit 1; }
+          python3 tools/verificacion/api_minima.py 2>&1 | tee -a /tmp/salida.log
+      - name: Resumen del fallo (API mínima)
+        if: failure()
+        run: bash tools/verificacion/resumen_fallos.sh /tmp/salida.log
+      - name: Resultado legible (API mínima)
+        if: success()
+        run: python3 tools/verificacion/resumen_ok.py api-min /tmp/salida.log

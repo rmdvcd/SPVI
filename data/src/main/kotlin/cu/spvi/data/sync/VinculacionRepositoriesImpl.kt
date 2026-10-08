@@ -5,7 +5,7 @@ import cu.spvi.core.result.AppResult
 import cu.spvi.core.time.Clock
 import cu.spvi.data.db.SpviDatabase
 import cu.spvi.data.db.entity.EmpleadoEntity
-import cu.spvi.data.di.IoDispatcher
+import cu.spvi.domain.di.IoDispatcher
 import cu.spvi.domain.model.CodigoVinculacion
 import cu.spvi.domain.model.Empleado
 import cu.spvi.domain.model.EstadoPrincipal

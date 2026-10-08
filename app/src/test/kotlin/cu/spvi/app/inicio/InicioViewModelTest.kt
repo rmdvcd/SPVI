@@ -63,10 +63,11 @@ class InicioViewModelTest {
     private val saved = SavedStateHandle()
 
     private fun vm() = InicioViewModel(
-        saved, lic, ObservarAlertas(productos, insumos, prefs, reloj), perfil,
+        saved, lic, ObservarAlertas(productos, insumos, prefs, reloj, Dispatchers.Unconfined), perfil,
         precios, turnos, productos,
         ResolverPeriodo(PeriodoPorDefecto(turnos, reloj), RangoDePreset(reloj)),
-        ObtenerGraficosPeriodo(ventas, turnos, reloj), ObtenerResumenGeneral(ventas, productos, insumos, cu.spvi.app.ServRepo(), reloj),
+        ObtenerGraficosPeriodo(ventas, turnos, reloj, Dispatchers.Unconfined),
+        ObtenerResumenGeneral(ventas, productos, insumos, cu.spvi.app.ServRepo(), reloj, Dispatchers.Unconfined),
         AbrirTurno(turnos, UsuarioActual(perfil), reloj), CerrarTurno(turnos, UsuarioActual(perfil), reloj), reloj,
         secundaria,
     )

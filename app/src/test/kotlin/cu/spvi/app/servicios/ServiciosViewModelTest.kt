@@ -55,13 +55,15 @@ class ServiciosViewModelTest {
     }
 
     private fun vm(saved: SavedStateHandle = SavedStateHandle()) = ServiciosViewModel(
-        saved, ObservarServicios(servicios, insumos), servicios, ObtenerFichaServicio(servicios, insumos),
+        saved, ObservarServicios(servicios, insumos, Dispatchers.Unconfined), servicios, ObtenerFichaServicio(servicios, insumos),
         EliminarServicios(servicios), ExportarTablas(FakeExportador()), FakeArchivos(), RelojFijo(),
     )
 
     private fun TestScope.eventos(vm: ServiciosViewModel): MutableList<EventoServicios> {
         val l = mutableListOf<EventoServicios>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.eventos.collect { l += it } }
+        // 0.30.0 (F1): retardo del buscador a 0 para no depender del reloj virtual.
+        vm.debounceBusqueda = 0
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect { } }
         return l
     }

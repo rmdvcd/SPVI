@@ -34,6 +34,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlinx.coroutines.Dispatchers
 
 /** Mismas reglas que las consultas de :data: fecha en [desde, hasta), importe inclusivo, más recientes primero. */
 class FakeRegistros : RegistroRepository {
@@ -145,7 +146,7 @@ class RegistrosTest {
         val ayer = Instant.parse("2026-09-29T16:00:00Z")
         val hoyI = Instant.parse("2026-09-30T15:00:00Z")
         repo.ventas.value = listOf(venta(1, 100, ayer), venta(2, 500, hoyI, nombre = "Pan"), venta(3, 50, hoyI.plusSeconds(60)))
-        val uc = ObservarRegistro(repo, FakeInsumos(), reloj)
+        val uc = ObservarRegistro(repo, FakeInsumos(), reloj, Dispatchers.Unconfined)
 
         val todas = uc(TipoRegistro.VENTAS, FiltroRegistros(), habana).first() as VistaRegistro.Ventas
         assertEquals(listOf(3L, 2L, 1L), todas.items.map { it.id }) // más recientes primero
@@ -165,7 +166,7 @@ class RegistrosTest {
             mov(1, TipoMovimiento.CONSUMO, TipoEntidad.INSUMO, "Harina", -500, 9500),
             mov(2, TipoMovimiento.VENTA, TipoEntidad.PRODUCTO, "Pan", -2, 8, T0.plusSeconds(60)),
         )
-        val v = ObservarRegistro(repo, insumos, FixedClock())(TipoRegistro.MOVIMIENTOS, FiltroRegistros(importeMin = Cup.ofPesos(1))).first() as VistaRegistro.Movimientos
+        val v = ObservarRegistro(repo, insumos, FixedClock(), Dispatchers.Unconfined)(TipoRegistro.MOVIMIENTOS, FiltroRegistros(importeMin = Cup.ofPesos(1))).first() as VistaRegistro.Movimientos
         assertEquals(listOf("", "kg"), v.items.map { it.simbolo }) // el producto 1 no toma la unidad del insumo 1
         assertNull(repo.consultas.last().importeMin)
     }

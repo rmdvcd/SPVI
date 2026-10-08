@@ -36,6 +36,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -103,8 +106,17 @@ class ServiciosViewModel @Inject constructor(
     private val eventosCh = Channel<EventoServicios>(Channel.BUFFERED)
     val eventos: Flow<EventoServicios> = eventosCh.receiveAsFlow()
 
-    private val vista: StateFlow<EstadoCarga<VistaServicios>> = intento.flatMapLatest {
-        observarServicios(filtro)
+    /** Retardo del buscador (0.30.0, F1). Los tests lo bajan a 0 para no depender del reloj virtual. */
+    internal var debounceBusqueda: Long = 250
+
+    /** 0.30.0 (F1, ver `InventarioViewModel`): el texto del buscador espera [debounceBusqueda]; el resto, al instante. */
+    private val filtroConsultado: Flow<FiltroServicios> = filtro.debounce { f -> if (f.texto.isEmpty()) 0L else debounceBusqueda }
+
+    /** 0.30.0 (F1, ver `InventarioViewModel`): filtro + intento (Reintentar) disparan la consulta. */
+    private val consulta = combine(intento, filtroConsultado) { _, f -> f }.distinctUntilChanged()
+
+    private val vista: StateFlow<EstadoCarga<VistaServicios>> = consulta.flatMapLatest { f ->
+        observarServicios(flowOf(f))
             .map<VistaServicios, EstadoCarga<VistaServicios>> { if (it.total == 0) EstadoCarga.Vacio(it) else EstadoCarga.Exito(it) }
             .onStart { emit(EstadoCarga.Cargando) }
             .catch { emit(EstadoCarga.Error(TextosServicios.ERROR_CARGA)) }

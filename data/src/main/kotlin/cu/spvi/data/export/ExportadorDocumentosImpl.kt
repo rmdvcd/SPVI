@@ -3,7 +3,7 @@ package cu.spvi.data.export
 import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
 import cu.spvi.core.result.appCatching
-import cu.spvi.data.di.IoDispatcher
+import cu.spvi.domain.di.IoDispatcher
 import cu.spvi.domain.repository.ExportadorDocumentos
 import cu.spvi.domain.service.FormatoExport
 import cu.spvi.domain.service.TablaExport
