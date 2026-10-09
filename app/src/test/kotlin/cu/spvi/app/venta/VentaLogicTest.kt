@@ -1,5 +1,6 @@
 package cu.spvi.app.venta
 
+import cu.spvi.domain.model.ClienteFijo
 import cu.spvi.domain.model.Producto
 import cu.spvi.domain.model.EstadoCaducidad
 import cu.spvi.domain.model.NivelStock

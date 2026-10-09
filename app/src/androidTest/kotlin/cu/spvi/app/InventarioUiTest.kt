@@ -13,7 +13,6 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.fetchSemanticsNode
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import cu.spvi.app.inicio.EstadoCarga
@@ -80,8 +79,8 @@ class InventarioUiTest {
         rule.onNodeWithTag(InventarioTags.FIJADOS).assertIsDisplayed()
         rule.onNodeWithTag(InventarioTags.fila(1)).assertIsDisplayed()
         rule.onAllNodesWithTag(InventarioTags.fila(1)).assertCountEquals(1)
-        val arriba = rule.onNodeWithTag(InventarioTags.FIJADOS).fetchSemanticsNode().boundsInRoot.top
-        val buscador = rule.onNodeWithTag(InventarioTags.BUSCAR).fetchSemanticsNode().boundsInRoot.top
+        val arriba = rule.onAllNodesWithTag(InventarioTags.FIJADOS).fetchSemanticsNodes().single().boundsInRoot.top
+        val buscador = rule.onAllNodesWithTag(InventarioTags.BUSCAR).fetchSemanticsNodes().single().boundsInRoot.top
         assertTrue("la selección debe quedar sobre el buscador", arriba < buscador)
     }
 

@@ -2,7 +2,6 @@ package cu.spvi.app
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.fetchSemanticsNode
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -39,8 +38,8 @@ class PreciosUiTest {
         rule.onNodeWithTag(PreciosTags.FIJADOS).assertIsDisplayed()
         rule.onNodeWithTag(PreciosTags.BUSCAR).assertIsDisplayed()
         rule.onAllNodesWithTag(PreciosTags.producto(1)).assertCountEquals(1)
-        val fijados = rule.onNodeWithTag(PreciosTags.FIJADOS).fetchSemanticsNode().boundsInRoot.top
-        val buscador = rule.onNodeWithTag(PreciosTags.BUSCAR).fetchSemanticsNode().boundsInRoot.top
+        val fijados = rule.onAllNodesWithTag(PreciosTags.FIJADOS).fetchSemanticsNodes().single().boundsInRoot.top
+        val buscador = rule.onAllNodesWithTag(PreciosTags.BUSCAR).fetchSemanticsNodes().single().boundsInRoot.top
         assertTrue("la selección debe quedar encima del buscador", fijados < buscador)
     }
 }

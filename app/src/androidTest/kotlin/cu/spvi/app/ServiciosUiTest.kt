@@ -2,7 +2,6 @@ package cu.spvi.app
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.fetchSemanticsNode
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -62,8 +61,8 @@ class ServiciosUiTest {
         rule.onNodeWithTag(ServiciosTags.FIJADOS).assertIsDisplayed()
         rule.onNodeWithTag(ServiciosTags.fila(1)).assertIsDisplayed()
         rule.onAllNodesWithTag(ServiciosTags.fila(1)).assertCountEquals(1)
-        val arriba = rule.onNodeWithTag(ServiciosTags.FIJADOS).fetchSemanticsNode().boundsInRoot.top
-        val buscador = rule.onNodeWithTag(ServiciosTags.BUSCAR).fetchSemanticsNode().boundsInRoot.top
+        val arriba = rule.onAllNodesWithTag(ServiciosTags.FIJADOS).fetchSemanticsNodes().single().boundsInRoot.top
+        val buscador = rule.onAllNodesWithTag(ServiciosTags.BUSCAR).fetchSemanticsNodes().single().boundsInRoot.top
         assertTrue("la selección debe quedar sobre el buscador", arriba < buscador)
     }
 
