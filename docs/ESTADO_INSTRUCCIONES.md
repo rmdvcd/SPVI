@@ -1,10 +1,18 @@
 # SPVI — Estado de las instrucciones de sesiones anteriores
 
-> **Comprobación:** 2026-10-09 · **Base:** `main` @ `82672fd` · **Rama de la sesión:** `arena/cb554258-spvi`
+> **Comprobación:** 2026-10-08 · **Base:** `main` @ `82672fd` (movida a `8ef4842` después, ver la novedad) · **Rama de la sesión:** `arena/cb554258-spvi`
 >
 > **Método.** Lectura del código y de la documentación de `main` y de las ramas remotas `arena/*`, búsquedas en el árbol y consulta de la CI con `gh`. **No se ha compilado ni ejecutado nada**: la sesión no tiene Android SDK ni acceso a Maven o Google (solo GitHub, npm y PyPI).
 >
 > **Leyenda.** ✅ está en el código (no significa que funcione) · 🟡 parcial · ❌ no está · 🔀 está solo en otra rama, no en `main` · ⚠️ conflicto que necesita tu decisión · ⏳ sin empezar · 🧪 **NO VERIFICADO**: requiere ejecutar (Gradle, Roborazzi, dispositivo) o mirar la pantalla.
+
+> **Novedad: `main` cambió después de esta comprobación.** El dueño fusionó la PR #4 (`arena/1c545bdc-spvi`) en `main` con el commit `8ef4842`, el 2026-10-08 a las 20:56 (hora local). Esa fusión trae:
+> - `CapturaSmsPagoService`: captura el SMS de PAGOxMOVIL desde las notificaciones (`NotificationListenerService`). Solo actúa si el usuario activa el acceso en Ajustes y mientras hay una venta por transferencia esperando el pago. No lee el buzón ni pide `READ_SMS`.
+> - `spviGithubRepo=rmdvcd/SPVI` en `gradle.properties`, que la app usa para consultar GitHub.
+>
+> Choca con la regla 3 de `AGENTS.md` («SMS solo pegando o compartiendo (nunca leer SMS ni el portapapeles en segundo plano)») y con «vacío = no consulta nada» (D2 y D7). La CI de `8ef4842` estaba en curso al redactar: cuatro jobs ✅ y «Release (R8) y APK debug» sin terminar.
+>
+> Esta rama sigue sobre `82672fd`. El prompt no sincroniza con `main` ni toca la PR #4. La decisión sobre la PR #4 es del dueño.
 
 ## 1. Fuentes que tomo como «instrucciones de sesiones anteriores»
 
@@ -30,7 +38,7 @@ No tengo acceso al chat de esas sesiones. Si hubo instrucciones que no quedaron 
 
 | Rama | Último commit | Qué contiene (frente a `main`) | CI del último commit |
 |---|---|---|---|
-| `main` | `82672fd` | — | ✅ `success` ([37715675514](https://github.com/rmdvcd/SPVI/actions/runs/37715675514)) |
+| `main` | `8ef4842` (PR #4 fusionada por el dueño) | — | En curso al redactar (cuatro jobs ✅). La CI de `82672fd` fue ✅ ([37715675514](https://github.com/rmdvcd/SPVI/actions/runs/37715675514)) |
 | `arena/c64c3dc9-spvi` | `9aabb7b` | 9 commits: T1.4, T2.1–T2.5, T3.1, T3.4–T3.6, T4.1–T4.4 y F6 | ❌ fallan Lint, Tests JVM, R8/APK y API mínima ([37856092133](https://github.com/rmdvcd/SPVI/actions/runs/37856092133)). En `43cc5df` la CI era ✅ ([37836886846](https://github.com/rmdvcd/SPVI/actions/runs/37836886846)) |
 | `arena/3c116bea-spvi` | `c2d3cf6` | Corrección del seed (recetas en g/mL, costo menor que venta) | ✅ `success` ([37857577330](https://github.com/rmdvcd/SPVI/actions/runs/37857577330)) |
 | `arena/1c545bdc-spvi` | `f7ab5aa` | Tablas, pagos (logos de bancos y captura de SMS), actualizaciones | ❌ en `b9559b2`; `f7ab5aa` estaba en curso al comprobarlo |
@@ -96,10 +104,10 @@ No he podido descargar los registros de los fallos: el servicio de GitHub respon
 
 | ID | Tarea | `main` | Otras ramas | Evidencia y notas |
 |---|---|---|---|---|
-| T3.1 | Retirar el escáner de códigos de barras | 🟡 | 🔀 `c64c3dc9` | El código ya no tiene escáner de productos (v11, 0.30.0). Quedan «escáner (CameraX + ML Kit)» en `Contexto.md`, «ML Kit (escáner)» en `AGENTS.md`, un comentario en `app/build.gradle.kts` y la carpeta `tools/escaner/`. |
+| T3.1 | Retirar el escáner de códigos de barras | 🟡 | 🔀 `c64c3dc9` | El código ya no tiene escáner de productos (v11, 0.30.0). Quedan «escáner (CameraX + ML Kit)» en `Contexto.md` (Inventario), «ML Kit (escáner)» en `AGENTS.md` (es el QR de vinculación), un comentario en `app/build.gradle.kts` (el plan dice `data/`, pero está en `app/`) y la carpeta `tools/escaner/`. CameraX y ML Kit **no se quitan**: los usa la vinculación por QR (`vinculacion/qr/CamaraEscaner.kt`). |
 | T3.2 | Esquema Room v11 en la documentación | ❌ | 🔀 README reescrito en `c64c3dc9` | La base de datos es v11 (`SpviDatabase.VERSION = 11`, `MIGRACION_10_11`, `11.json`). README, AGENTS.md y Contexto.md dicen v10. |
 | T3.3 | Codificación del historial | 🟡 | — | `HISTORIAL_DESARROLLO.md` sin mojibake (`fb82943`). Queda un carácter U+FFFD en `ANALISIS_SPVI.md`. |
-| T3.4 | Manual, guía de dispositivo y pendientes | ❌ | 🔀 `c64c3dc9` (3 archivos) · 🔀 `d7f67f1f` (2) | `main` enlaza cuatro archivos que no existen. Ver D3. |
+| T3.4 | Manual, guía de dispositivo y pendientes | ❌ | 🔀 `c64c3dc9` (3 archivos) · 🔀 `d7f67f1f` (2) | `main` enlaza cuatro archivos que no existen (ver D3). Además, AGENTS.md, Contexto.md y OPENCODE_DESKTOP.md mencionan `opencode.json` y `.opencode/commands/`, que nunca han estado en git: se comprueban en el PC del dueño (ver §7). |
 | T3.5 | Cabeceras de versión | ❌ | 🔀 `c64c3dc9` (UI/UX a 0.30.0) | `UI_UX_IX.md` dice 0.19.3 y `SECURITY.md` dice 0.26.0 en `main`. |
 | T3.6 | Chequeo automático de documentación | ❌ | 🔀 `c64c3dc9` (`tools/verificacion/documentacion.py` y job `docs`) | Añadido, pero no ejecutado. |
 
@@ -136,15 +144,17 @@ No he podido descargar los registros de los fallos: el servicio de GitHub respon
 | Diseño de T1.4 | Pedido en el turno; implementado en `c64c3dc9` (`dda0408`) | 🔀 sin fusionar |
 | Decisiones pedidas al dueño (T1.4 y dispositivo) | Sin respuesta registrada en el repositorio | ⏳ |
 
-## 7. Decisiones que necesito de ti
+## 7. Decisiones (aceptadas el 2026-10-08)
+
+El dueño aceptó todas las recomendaciones (D1–D7). `docs/PROMPT_OPENCODE_PENDIENTE.md` (versión 2) las aplica. Añadido por el prompt, sin pregunta previa: `opencode.json` y `.opencode/commands/` nunca han estado en git (ninguna rama traída). El prompt pide comprobar en el PC del dueño: si existen, sus menciones no se tocan; si no existen, se quitan.
 
 - **D1 · Respaldo protegido por defecto.** `main` (0.27.0) lo deja apagado. El plan (T2.1) y `c64c3dc9` lo dejan encendido, con «sin contraseña» como opción explícita y con advertencia. *Recomendación:* encendido.
-- **D2 · Captura de SMS por notificaciones (`1c545bdc`).** Contradice la regla 3 de AGENTS.md. *Recomendación:* no integrarla, o cambiar esa regla de forma explícita.
+- **D2 · Captura de SMS por notificaciones (`1c545bdc`).** Contradice la regla 3 de AGENTS.md. *Recomendación:* no integrarla, o cambiar esa regla de forma explícita. **Estado:** `main` ya la contiene desde `8ef4842` (PR #4, fusionada por el dueño). Decisión pendiente del dueño (ver la novedad al principio).
 - **D3 · `Pendiente.md` y `Pruebas.md`.** `c64c3dc9` repone `Pendiente.md`; `d7f67f1f` dice que ya no forman parte del proyecto; `Pruebas.md` no existe en ninguna rama, pero AGENTS y Contexto lo exigen. *Recomendación:* reponer `Pendiente.md` y quitar la referencia a `Pruebas.md`.
 - **D4 · Versión de salida.** ¿0.30.0 (51) o 0.31.0 (52)? *Recomendación:* no subir la versión hasta que F1 y F2 estén en verde.
 - **D5 · F5** (multimoneda, descuentos, usuarios locales, `strings.xml`). *Recomendación:* no empezar sin reglas de negocio.
 - **D6 · Dispositivo de pruebas.** ¿Emulador o teléfono dedicado? Nunca el de uso diario con datos reales. Hace falta para T1.5 y para las 136 pruebas instrumentadas.
-- **D7 · Actualizaciones por defecto (`1c545bdc`).** Su `gradle.properties` fija `spviGithubRepo=rmdvcd/SPVI`, así que la app consultaría GitHub sin configurar nada. Hoy la regla es «vacío = no consulta nada» (README y Contexto). *Recomendación:* decidirlo antes de integrar esa rama.
+- **D7 · Actualizaciones por defecto (`1c545bdc`).** Su `gradle.properties` fija `spviGithubRepo=rmdvcd/SPVI`, así que la app consultaría GitHub sin configurar nada. Hoy la regla es «vacío = no consulta nada» (README y Contexto). **Estado:** `main` ya lo tiene desde `8ef4842`: decisión pendiente del dueño. *Recomendación:* decidirlo antes de integrar esa rama.
 
 ## 8. Riesgos de integración
 
@@ -162,4 +172,5 @@ No he podido descargar los registros de los fallos: el servicio de GitHub respon
 
 ## 10. Siguiente paso
 
-Responde a D1–D7 y ejecuta [PROMPT_OPENCODE_PENDIENTE.md](PROMPT_OPENCODE_PENDIENTE.md) en OpenCode, en tu PC, desde la carpeta del repositorio.
+1. **Decisión del dueño sobre la PR #4 en `main`** (ver la novedad al principio): revertir la fusión, retirar lo que choca en esta rama, mantenerla y cambiar la regla de SMS de `AGENTS.md`, o decidir más tarde. El prompt v2 no sincroniza con `main`; si mantienes la PR #4, hará falta un paso de sincronización, que preparo en un prompt nuevo.
+2. Ejecutar [PROMPT_OPENCODE_PENDIENTE.md](PROMPT_OPENCODE_PENDIENTE.md) (versión 2) en OpenCode, en tu PC, desde la carpeta del repositorio. Las fases van de 0 a 4.
