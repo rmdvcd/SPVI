@@ -56,7 +56,7 @@ object InsumoFormLogic {
             val pv = Money.parse(f.precioVenta)
             when {
                 pv == null -> e[CamposInsumo.PRECIO_VENTA] = ProductoFormLogic.FORMATO_IMPORTE
-                pv <= Cup.ZERO -> e[CamposInsumo.PRECIO_VENTA] = "El precio de venta debe ser mayor que 0 (o déjalo vacío)."
+                pv <= Cup.ZERO || (precio != null && pv <= precio) -> e[CamposInsumo.PRECIO_VENTA] = "El precio de venta debe superar el costo y 0 (o déjalo vacío)."
             }
         }
         if (f.nivelBajo.isNotBlank() && Cantidad.parse(f.nivelBajo) == null) e[CamposInsumo.NIVEL_BAJO] = FORMATO_CANTIDAD

@@ -83,6 +83,10 @@ object PlanificadorVenta {
                 costoUnitario = if (p.esElaborado) costosReceta[p.id] ?: p.precioCosto else p.precioCosto,
             )
         }
+        // También protege descuentos acumulados y costos de recetas que hayan cambiado.
+        if (detalles.any { it.precioUnitario <= it.costoUnitario }) {
+            return AppResult.Err(AppError.Validacion("precioVenta", AppError.Regla.RANGO))
+        }
         return AppResult.Ok(Cotizacion(metodoPago, detalles, ajustes, elaborados))
     }
 }

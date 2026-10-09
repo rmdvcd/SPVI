@@ -186,7 +186,7 @@ object ProductoFormLogic {
             }
             Campos.DESCRIPCION -> mensajeDescripcion(e.regla, "producto")
             Campos.PRECIO_COSTO -> "El precio de costo no puede ser negativo."
-            Campos.PRECIO_VENTA -> "El precio de venta debe ser mayor que 0."
+            Campos.PRECIO_VENTA -> "El precio de venta debe ser mayor que el costo y que 0."
             Campos.CANTIDAD -> "La cantidad no puede ser negativa."
             Campos.NIVEL_BAJO -> "El nivel bajo no puede ser negativo."
             Campos.NIVEL_CRITICO -> "El nivel crítico debe ser 0 o más y no mayor que el nivel bajo."

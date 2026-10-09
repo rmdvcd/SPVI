@@ -23,8 +23,8 @@ enum class FiltroEntrada(val teclado: KeyboardOptions, val maximo: Int) {
     BUSQUEDA(KeyboardOptions(capitalization = KeyboardCapitalization.None), 60),
     /** Móvil cubano sin prefijo: solo dígitos, 8. */
     TELEFONO(KeyboardOptions(keyboardType = KeyboardType.Phone), 8),
-    /** Tarjeta bancaria: solo dígitos, 16. */
-    TARJETA(KeyboardOptions(keyboardType = KeyboardType.Number), 16),
+    /** Tarjeta o cuenta bancaria: solo dígitos, hasta 20 (igual que el dominio). */
+    TARJETA(KeyboardOptions(keyboardType = KeyboardType.Number), 20),
     /** Carné de identidad: solo dígitos, 11. */
     CARNE(KeyboardOptions(keyboardType = KeyboardType.Number), 11),
     /** Cantidades y niveles enteros (sin signo). */
@@ -53,6 +53,23 @@ enum class FiltroEntrada(val teclado: KeyboardOptions, val maximo: Int) {
         CODIGO -> s.filter { it.isLetterOrDigit() && it.code < 128 || it == '-' || it == '.' || it == '_' } // = dominio (3–64)
         TRANSACCION -> s.filter { it.isLetterOrDigit() && it.code < 128 }.uppercase()
     }.take(maximo)
+
+    /** Rechaza entradas numéricas ambiguas sin convertir, por ejemplo, «-1.2» en «12».
+     * Permite estados parciales mientras se escribe; el dominio valida el valor final.
+     */
+    fun aceptar(anterior: String, escrito: String): String {
+        val valido = when (this) {
+            DINERO, DECIMAL -> {
+                val cifras = if (this == DINERO) 2 else 3
+                escrito.length <= maximo && Regex("[0-9]*(?:[.,][0-9]{0,$cifras})?").matches(escrito)
+            }
+            ENTERO -> escrito.length <= maximo && escrito.all { it in '0'..'9' }
+            PORCENTAJE -> escrito.isEmpty() ||
+                (escrito.length <= maximo && escrito.all { it in '0'..'9' } && (escrito.toIntOrNull() ?: 101) <= 100)
+            else -> true
+        }
+        return if (valido) aplicar(escrito) else anterior
+    }
 
     companion object {
         const val MAX_TEXTO = 500

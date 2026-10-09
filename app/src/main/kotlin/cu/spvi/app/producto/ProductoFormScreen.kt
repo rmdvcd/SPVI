@@ -246,7 +246,7 @@ private fun Formulario(state: ProductoFormUiState, a: AccionesForm, modifier: Mo
         SpviTextField(
             filtro = FiltroEntrada.DINERO,
             value = f.precioVenta, onValueChange = a.onVenta, label = "Precio de venta (CUP) *", placeholder = "0.00", keyboardOptions = numero,
-            isError = Campos.PRECIO_VENTA in err, errorText = err[Campos.PRECIO_VENTA], validarAlSalir = true, forzarError = state.intentado, supportingText = "Por unidad",
+            isError = f.precioVenta.isNotBlank() && Campos.PRECIO_VENTA in err, errorText = err[Campos.PRECIO_VENTA], validarAlSalir = false, forzarError = state.intentado, supportingText = "Por unidad",
             imeAction = if (f.esElaborado) ImeAction.Done else ImeAction.Next, onImeAction = if (f.esElaborado) a.onGuardar else null,
             modifier = Modifier.fillMaxWidth().testTag(ProductoFormTags.VENTA),
         )
