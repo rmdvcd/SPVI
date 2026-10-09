@@ -257,7 +257,7 @@ private fun EdicionSheet(e: EdicionPago, guardando: Boolean, acciones: AccionesL
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     LogoBanco(banco)
-                    Column(Modifier.padding(start = SpviSpacing.sm)) {
+                    Column(Modifier.padding(start = SpviSpacing.xs)) {
                         Text(banco.nombre, style = MaterialTheme.typography.titleSmall)
                         SpviSecondaryText(TextosPago.BANCO_ESTIMADO)
                     }

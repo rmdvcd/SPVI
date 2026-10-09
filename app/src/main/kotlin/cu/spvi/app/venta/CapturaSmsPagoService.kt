@@ -31,7 +31,10 @@ class CapturaSmsPagoService : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         if (sbn.postTime < conectadoDesde || !entrada.capturaSmsAutomaticaActiva()) return
         val notificacion = sbn.notification ?: return
-        if (sbn.isGroupSummary || notificacion.category != Notification.CATEGORY_MESSAGE) return
+        if (
+            (notificacion.flags and Notification.FLAG_GROUP_SUMMARY) != 0 ||
+            notificacion.category != Notification.CATEGORY_MESSAGE
+        ) return
 
         val pago = CapturaSmsLogica.extraer(
             listOf(

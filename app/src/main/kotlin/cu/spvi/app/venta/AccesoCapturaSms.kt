@@ -7,9 +7,11 @@ import android.provider.Settings
 
 /** Estado y acceso a la habilitación especial del NotificationListenerService. */
 object AccesoCapturaSms {
+    private const val CLAVE_LISTENERS_HABILITADOS = "enabled_notification_listeners"
+
     fun concedido(context: Context): Boolean {
         val componente = ComponentName(context, CapturaSmsPagoService::class.java)
-        return Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_NOTIFICATION_LISTENERS)
+        return Settings.Secure.getString(context.contentResolver, CLAVE_LISTENERS_HABILITADOS)
             .orEmpty()
             .split(':')
             .any { ComponentName.unflattenFromString(it) == componente }
