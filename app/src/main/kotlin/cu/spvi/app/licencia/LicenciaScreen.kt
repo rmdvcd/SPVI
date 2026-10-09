@@ -48,6 +48,7 @@ import cu.spvi.designsystem.component.SpviButtonRow
 import cu.spvi.designsystem.component.SpviCard
 import cu.spvi.designsystem.component.SpviChip
 import cu.spvi.designsystem.component.SpviIconAction
+import cu.spvi.designsystem.component.SpviListItem
 import cu.spvi.designsystem.component.SpviLoading
 import cu.spvi.designsystem.component.SpviPrimaryButton
 import cu.spvi.designsystem.component.SpviSecondaryButton
@@ -172,6 +173,8 @@ object LicenciaTags {
     const val RENOVAR_IGUAL = "licencia.renovar_igual"
     const val SIN_PERDER_DIAS = "licencia.sin_perder_dias"
     const val RECUPERA = "licencia.recupera"
+    const val PRECIOS = "licencia.precios"
+    fun precio(t: TipoLicencia) = "licencia.precio_${t.name}"
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -229,6 +232,9 @@ fun LicenciaContent(
                 Text(aviso.detalle, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
             }
         }
+
+        // 0.30.1: precios de cada tipo de licencia, con lo que suma cada app secundaria.
+        PreciosLicenciaCard()
 
         SpviStepper(
             actual = paso.ordinal + 1, total = PasoLicencia.entries.size, titulo = paso.titulo,
@@ -413,6 +419,28 @@ private fun DatosForm(state: LicenciaUiState, acciones: LicenciaAcciones) {
     }
 }
 
+/**
+ * 0.30.1: Card «Precios de la licencia». Una fila por tipo: el precio base y, debajo, lo que suma cada app secundaria
+ * (empleado). Los importes salen de [TipoLicencia] (los mismos que cobra la solicitud), nunca se repiten a mano.
+ */
+@Composable
+private fun PreciosLicenciaCard() {
+    SpviCard(title = TextosLicencia.PRECIOS_TITULO, modifier = Modifier.testTag(LicenciaTags.PRECIOS)) {
+        SpviSecondaryText(TextosLicencia.PRECIOS_DETALLE)
+        Column(Modifier.fillMaxWidth()) {
+            TipoLicencia.entries.forEach { t ->
+                SpviListItem(
+                    title = t.etiqueta,
+                    value = Money.cup(t.precioCup),
+                    indicatorColor = null,
+                    subtitleResaltado = SpviTextos.resaltar(TextosLicencia.precioSecundaria(t), Money.cup(t.precioSecundariaCup)),
+                    modifier = Modifier.testTag(LicenciaTags.precio(t)),
+                )
+            }
+        }
+    }
+}
+
 /** 0.21.0 (C4): selector − [n] + de secundarias con el precio total actualizado al momento. */
 @Composable
 private fun SelectorSecundarias(form: LicenciaForm, acciones: LicenciaAcciones) {
@@ -449,6 +477,10 @@ private fun SelectorSecundarias(form: LicenciaForm, acciones: LicenciaAcciones) 
 
 /** 0.21.0 (C4): textos del selector de secundarias (puros, probados en JVM). */
 object TextosLicencia {
+    const val PRECIOS_TITULO = "Precios de la licencia"
+    val PRECIOS_DETALLE = "Cada licencia cubre tu app principal. Cada app secundaria (empleado, hasta " +
+        "${cu.spvi.licencia.contract.GlContract.SECUNDARIAS_MAX}) suma un importe fijo."
+    fun precioSecundaria(t: TipoLicencia): String = "Cada app secundaria: +${Money.cup(t.precioSecundariaCup)}"
     const val SECUNDARIAS = "Apps secundarias (empleados)"
     fun secundarias(n: Int): String = when (n) { 0 -> "Sin apps secundarias"; 1 -> "1 app secundaria"; else -> "$n apps secundarias" }
     fun precioTotal(f: LicenciaForm): String =

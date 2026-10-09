@@ -3,6 +3,7 @@ package cu.spvi.app
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -72,6 +73,19 @@ class InicioUiTest {
         rule.onNode(hasTestTag(InicioTags.LISTA)).performScrollToNode(hasTestTag(InicioTags.top(TipoTop.MAS_VENDIDO)))
         rule.onNodeWithTag(InicioTags.top(TipoTop.MAS_VENDIDO)).assertIsDisplayed()
         rule.onNodeWithTag(InicioTags.top(TipoTop.LENTO)).assertDoesNotExist()
+    }
+
+    @Test fun losAcordeonesEmpiezanCerradosYSeAbrenAlTocar() {
+        val item = TopItem(1, "Refresco", 5, Cup.ofPesos(500), Cup.ofPesos(200))
+        val r = ResumenGeneral(listOf(Porcion("Bebidas", 10, 1.0)), emptyList(), Top3(listOf(item), emptyList(), emptyList()), 30)
+        mostrar(InicioUiState(resumen = EstadoCarga.Exito(r)))
+        rule.onNode(hasTestTag(InicioTags.LISTA)).performScrollToNode(hasTestTag(InicioTags.top(TipoTop.MAS_VENDIDO)))
+        rule.onNodeWithTag(InicioTags.top(TipoTop.MAS_VENDIDO)).assertIsDisplayed()
+        rule.onNodeWithText("Refresco", substring = true).assertDoesNotExist()
+        rule.onNodeWithTag(InicioTags.top(TipoTop.MAS_VENDIDO)).performClick()
+        rule.onNodeWithText("Refresco", substring = true).assertIsDisplayed()
+        rule.onNodeWithTag(InicioTags.top(TipoTop.MAS_VENDIDO)).performClick()
+        rule.waitUntil(2_000) { rule.onAllNodesWithText("Refresco", substring = true).fetchSemanticsNodes().isEmpty() }
     }
 
     @Test fun dialogoNuevaVentaOfreceProductosYServicios() {

@@ -79,11 +79,14 @@ class InicioCapturas {
         turno = abierto, graficos = EstadoCarga.Exito(graficos), resumen = EstadoCarga.Exito(resumen),
     )
 
-    private fun inicio(id: String, s: InicioUiState) = rule.capturar(id) { InicioContent(s, acciones, zona = Captura.ZONA) }
+    private fun inicio(id: String, s: InicioUiState) = rule.capturar(id) { InicioContent(s, acciones, zona = Captura.ZONA, acordeonesAbiertos = true) }
 
     /** 0.27.0 (T2): letra al 200 % en 360 dp: nada cortado ni partido. */
     @Test @Config(qualifiers = Captura.LARGA) fun inicioLetraGrande() =
-        rule.capturar("01z_inicio_letra_200") { LetraGrande { InicioContent(completo, acciones, zona = Captura.ZONA) } }
+        rule.capturar("01z_inicio_letra_200") { LetraGrande { InicioContent(completo, acciones, zona = Captura.ZONA, acordeonesAbiertos = true) } }
+    /** 0.30.1: al entrar, los gráficos y listas posteriores al selector de período están cerrados. */
+    @Test fun inicioAcordeonesCerrados() =
+        rule.capturar("01j_inicio_acordeones_cerrados") { InicioContent(completo, acciones, zona = Captura.ZONA) }
     @Test fun inicioConDatos() = inicio("01a2_inicio_con_datos_pantalla", completo)
     @Test @Config(qualifiers = Captura.LARGA) fun inicioCompletoLargo() = inicio("01a_inicio_con_datos", completo)
     @Test fun inicioSinTurno() = inicio(
@@ -106,7 +109,7 @@ class InicioCapturas {
         completo.copy(banner = "Licencia mensual: 1 día restante", bannerTono = BannerTone.Critico),
     )
     @Test fun snackbarTurno() = rule.capturar("01g_inicio_snackbar_turno") {
-        InicioContent(completo.copy(turno = null), acciones, snackbar = snackbarCon("Turno cerrado: 23 ventas, 18,450.00 CUP."), zona = Captura.ZONA)
+        InicioContent(completo.copy(turno = null), acciones, snackbar = snackbarCon("Turno cerrado: 23 ventas, 18,450.00 CUP."), zona = Captura.ZONA, acordeonesAbiertos = true)
     }
     @Test fun dialogoNuevaVenta() = inicio("01e_inicio_dialogo_nueva_venta", completo.copy(dialogo = DialogoInicio.NuevaVenta))
     @Test fun dialogoCerrarTurno() = inicio("01f_inicio_dialogo_cerrar_turno", completo.copy(dialogo = DialogoInicio.CerrarTurno))

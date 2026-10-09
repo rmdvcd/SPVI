@@ -59,6 +59,8 @@ Los ID coinciden con los de las maquetas HTML del Prompt 23 cuando representan l
 | `VentaCapturas` | 26 | Venta sin turno, carrito vacío/lleno/transferencia/Elaborado, error de stock, comprobante, QR, QR sin tarjeta, datos del cliente (errores y completo), diálogo descartar. Pago electrónico (hoja de Inicio, errores, lista, vacía, editar, nuevo con error, eliminar, snackbar). Precios (lista, vacío, sin productos, formulario, errores, eliminar). |
 | `AjustesCapturas` | 48 | Ajustes (pendiente y completa) y diálogo «Consultas en internet»; Perfil (normal, cambios, errores, «¿Salir sin guardar?», snackbar); Licencia (prueba pasos 1–3, errores, perfil vacío, activa, perpetua, vencida, prueba terminada, fecha incorrecta, sin clave del emisor); Respaldo (pasos, errores, progreso, listo, comprobando, importar, contraseña incorrecta, importando, importado, incompleto, versión nueva, snackbar PDF); Migrar (paso 1, ID con error, rechazada, autorizada, diálogo borrar sin y con «BORRAR»); Ayuda; Soporte; asistente de configuración (carga, bienvenida, datos, errores, avisos, errores, prueba, retomar). |
 
+- `01j_inicio_acordeones_cerrados` (`InicioCapturas`, 0.30.1): Inicio tal como se ve al entrar, con los gráficos y listas cerrados. El resto de capturas de Inicio los pasan abiertos (`acordeonesAbiertos = true`) para seguir mostrando su contenido. Las imágenes de referencia de Roborazzi no se regrabaron.
+
 ### Letra grande (0.27.0, T2)
 
 Cuatro casos con `LetraGrande` (`Capturas.kt`: `fontScale = 2`, el máximo de Android 14+) para comprobar que nada se corta con «…» ni parte letras:

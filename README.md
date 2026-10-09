@@ -34,7 +34,7 @@ Los documentos de trabajo que estaban fuera del proyecto (`DECISIONES_LICENCIA_S
 
 | Área | Funciones |
 |---|---|
-| **Inicio** | Banner de licencia, turno (abrir/cerrar), **Nueva venta**, alertas de inventario (stock bajo/crítico, insumo bajo/crítico, próximo a caducar), accesos a Pago electrónico y Precios, selector de período, 4 gráficos (Ventas, Inventario, Métodos de pago, Ganancia neta) y Top 3 (más vendido, lento movimiento, rentabilidad) |
+| **Inicio** | Banner de licencia, **Nueva venta** (izquierda) y turno con su interruptor abierto/cerrado (derecha), alertas de inventario (stock bajo/crítico, insumo bajo/crítico, próximo a caducar), accesos a Pago electrónico (teléfono y tarjeta/cuenta resaltados) y Precios, selector de período y, debajo, acordeones: 4 gráficos (Ventas, Inventario, Métodos de pago, Ganancia neta) y Top 3 (más vendido, lento movimiento, rentabilidad). Los acordeones empiezan cerrados y se cierran de nuevo al cambiar de ventana |
 | **Venta** | Solo con turno abierto. Selección desde el Inventario, carrito con cantidades, **Efectivo** (comprobante) o **Transferencia** (QR de Transfermóvil con tarjeta y móvil; el total aparece debajo porque el QR oficial no lo admite). El nº de transacción se puede capturar opcionalmente desde una notificación autorizada o pegar/compartir desde el SMS de PAGOxMOVIL. Un Elaborado se vende mientras alcancen sus insumos, que se descuentan en la misma transacción |
 | **Inventario** | Lista con buscador, filtros, selección múltiple, ficha, alta manual, exportación (PDF, Excel, Imagen, Tarjetas) |
 | **QR de vinculación** | CameraX + ML Kit (modelo empaquetado). Solo lee el QR para vincular la principal con la secundaria |
@@ -139,6 +139,13 @@ SPVI es **cliente** del contrato v1 de GL, sin cambiarlo. Detalle completo en [L
 | Tipos y precios | Mensual 6,000 · Semestral 30,000 · Anual 50,000 · Perpetua 90,000 CUP |
 | Reloj | Si retrocede más de 2 h respecto a la última hora vista → bloqueo hasta corregirlo |
 | Migrar | La autorización es la licencia emitida al teléfono nuevo; el viejo cede su licencia y se borra |
+
+## Cambios de la 0.30.1 en curso (sin compilar ni probar en teléfono)
+
+- **Pago electrónico:** los logos de BPA, BANDEC y BANMET se muestran con esquinas redondeadas y el mismo tamaño (96 × 48 dp). El logo se elige por los 4 primeros dígitos de la tarjeta; es una estimación (ver [docs/LOGOS_BANCOS.md](docs/LOGOS_BANCOS.md): `9225`/`9235` los comparten varios bancos y `9226` tiene fuentes contradictorias).
+- **Inicio:** «Nueva venta» a la izquierda y, a la derecha, el turno con su interruptor de dos estados en un contenedor que mide lo que mide su contenido (con letra muy grande se apilan). En la tarjeta de Pago electrónico, el teléfono y la tarjeta/cuenta van en seminegrita. Los gráficos y listas que siguen al selector de período son acordeones: empiezan cerrados y se vuelven a cerrar al cambiar de ventana.
+- **Licencia:** una tarjeta «Precios de la licencia» lista el precio de cada tipo y lo que suma cada app secundaria.
+- **Actualizaciones:** antes de abrir el instalador SPVI guarda un respaldo completo (sin contraseña, en la carpeta privada de la app; no se exporta ni cuenta para el recordatorio mensual). Si no se puede guardar, no se actualiza. Al abrir la versión nueva se restaura y se borra; si la instalación se cancela, se borra sin restaurar. Las ventas hechas entre el respaldo y la instalación no entran en él. El texto de la actualización ya no menciona el repositorio ni su alojamiento.
 
 ## Novedades de la 0.27.1 (correcciones, [historial](docs/HISTORIAL_DESARROLLO.md))
 

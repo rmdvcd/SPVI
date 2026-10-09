@@ -99,8 +99,19 @@ object TextosActualizacion {
     const val ERROR_DESCARGA = "La descarga no terminó o el archivo no coincide. Vuelve a intentarlo."
     const val INSTALACION_CANCELADA = "La instalación no se completó. Puedes volver a tocar Actualizar."
     const val BUSCAR = "Actualizaciones"
-    const val BUSCAR_DETALLE = "Una vez por semana, al abrir la app, mira en las Releases públicas de GitHub si hay una versión nueva. No envía datos del negocio ni un identificador del teléfono. " +
+    const val BUSCAR_DETALLE = "Una vez por semana, al abrir la app, comprueba si hay una versión nueva. No envía datos del negocio ni un identificador del teléfono. " +
+        "Antes de actualizar, SPVI guarda un respaldo de tus datos y, al abrir la versión nueva, lo restaura. " +
         "Las versiones nuevas son obligatorias: puedes aplazarlas hasta 30 días."
+    const val GUARDANDO_RESPALDO = "Guardando un respaldo de tus datos antes de actualizar…"
+    const val ERROR_RESPALDO_PREVIO = "No se pudo guardar el respaldo de tus datos, así que no se actualizó. Libera espacio en el teléfono e inténtalo de nuevo."
+    const val RESPALDO_RESTAURADO = "SPVI se actualizó y tus datos se restauraron desde el respaldo."
+    const val RESPALDO_NO_RESTAURADO = "SPVI se actualizó, pero no se pudo restaurar el respaldo. Tus datos siguen como estaban; se reintentará al abrir la app."
+
+    private val LINEA_TECNICA = Regex("github|repositorio|repository|\\brepo\\b", RegexOption.IGNORE_CASE)
+
+    /** Notas de la versión para mostrar: sin las líneas que hablan del repositorio o de su alojamiento. */
+    fun notasVisibles(notas: String): String =
+        notas.lines().filterNot { LINEA_TECNICA.containsMatchIn(it) }.joinToString("\n").trim()
     const val BUSCAR_AHORA = "Buscar ahora"
 }
 
@@ -119,6 +130,7 @@ class GestorActualizacion @Inject constructor(
     private val instalador: InstaladorApk,
     private val info: InfoApp,
     private val obligatoria: EstadoActualizacionObligatoria,
+    private val respaldoPrevio: RespaldoPrevio,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val local = MutableStateFlow(EstadoActualizacion(repoConfigurado = github.repoConfigurado))
@@ -155,6 +167,12 @@ class GestorActualizacion @Inject constructor(
         if (comprobado) return
         comprobado = true
         scope.launch {
+            // Primero se restaura el respaldo guardado antes de actualizar (si la app acaba de actualizarse).
+            when (seguro { respaldoPrevio.restaurarSiCorresponde(RespaldoPrevio.clave(info)) }) {
+                RespaldoPrevio.Restauracion.RESTAURADO -> mensajes.trySend(TextosActualizacion.RESPALDO_RESTAURADO)
+                RespaldoPrevio.Restauracion.FALLO -> mensajes.trySend(TextosActualizacion.RESPALDO_NO_RESTAURADO)
+                else -> Unit
+            }
             limpiarDescargasViejas()
             seguro { comprobar(info.versionName) }
         }
@@ -201,7 +219,7 @@ class GestorActualizacion @Inject constructor(
             return
         }
         local.update { it.copy(necesitaPermiso = false) }
-        apkListo?.takeIf { it.exists() }?.let { instalar(it); return }
+        apkListo?.takeIf { it.exists() }?.let { apk -> descarga = scope.launch { instalar(apk) }; return }
         val e = estado.value
         descarga = scope.launch {
             local.update { it.copy(progreso = 0f) }
@@ -224,8 +242,20 @@ class GestorActualizacion @Inject constructor(
         }
     }
 
-    private fun instalar(apk: File) {
-        instalador.instalar(apk) { ok -> if (!ok) mensajes.trySend(TextosActualizacion.INSTALACION_CANCELADA) }
+    /**
+     * Antes de abrir el instalador se guarda un respaldo completo de los datos (se restaura al abrir la versión nueva).
+     * Sin respaldo no se instala: es lo que protege los datos si algo sale mal.
+     */
+    private suspend fun instalar(apk: File) {
+        mensajes.trySend(TextosActualizacion.GUARDANDO_RESPALDO)
+        val listo = seguro { respaldoPrevio.crear(RespaldoPrevio.clave(info)) } == true
+        if (!listo) { mensajes.trySend(TextosActualizacion.ERROR_RESPALDO_PREVIO); return }
+        instalador.instalar(apk) { ok ->
+            if (!ok) {
+                respaldoPrevio.descartar() // no se instaló: el respaldo sobra
+                mensajes.trySend(TextosActualizacion.INSTALACION_CANCELADA)
+            }
+        }
     }
 
     /** Tras actualizar, los APK descargados de versiones iguales o anteriores sobran (§6.3 paso 4). */
