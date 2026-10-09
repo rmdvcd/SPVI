@@ -106,7 +106,7 @@ class VentaFlujoTest {
 
     @Test fun ventaMixtaArticuloYElaborado() = runBlocking {
         montarPan()
-        productos.put(producto(1, "Refresco", cantidad = 5, venta = 30))
+        productos.put(producto(1, "Refresco", cantidad = 5, venta = 30, costo = 20))
         ok(AbrirTurno(turnos, UsuarioActual(perfil), clock)(Cup.ZERO))
         ok(registrar(listOf(LineaSolicitada(9, 1), LineaSolicitada(1, 2)), MetodoPago.EFECTIVO))
         assertEquals(3L, productos.obtener(1)!!.cantidad)
@@ -117,7 +117,7 @@ class VentaFlujoTest {
     /** Dos Elaborados que comparten insumo se validan por separado; juntos no alcanzan → nada se registra. */
     @Test fun insumoCompartidoQueNoAlcanzaParaAmbosNoRegistraNada() = runBlocking {
         montarPan()
-        productos.put(producto(10, "Galleta", venta = 20, categoria = Categorias.ELABORADO))
+        productos.put(producto(10, "Galleta", venta = 60, costo = 10, categoria = Categorias.ELABORADO))
         productos.recetas[10] = Receta(10, listOf(RecetaLinea(1, Cantidad.enteras(5))))
         ok(AbrirTurno(turnos, UsuarioActual(perfil), clock)(Cup.ZERO))
         // Pan ×3 = 6 de harina (alcanza), Galleta ×1 = 5 (alcanza); juntos 11 > 10.

@@ -67,7 +67,7 @@ class ProductoFormLogicTest {
         assertEquals("Elige o escribe una categoría.", e[Campos.CATEGORIA])
         assertEquals("Escribe el nombre.", e[Campos.NOMBRE])
         assertEquals(ProductoFormLogic.FORMATO_IMPORTE, e[Campos.PRECIO_COSTO])
-        assertEquals("El precio de venta debe ser mayor que 0.", e[Campos.PRECIO_VENTA])
+        assertEquals("El precio de venta debe ser mayor que el costo y que 0.", e[Campos.PRECIO_VENTA])
         assertEquals(ProductoFormLogic.FORMATO_ENTERO, e[Campos.CANTIDAD])
         assertTrue(e.getValue(Campos.NIVEL_CRITICO).contains("no mayor que el nivel bajo"))
         assertNull(ProductoFormLogic.aProducto(ProductoForm(), T0))

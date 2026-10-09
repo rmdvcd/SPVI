@@ -107,7 +107,7 @@ class TurnoUseCasesTest {
     }
 
     @Test fun `detalle del turno con vendidos e insumos agrupados`() = runBlocking {
-        productos.put(producto(1, "Refresco"), producto(2, "Pan", venta = 50))
+        productos.put(producto(1, "Refresco"), producto(2, "Pan", venta = 50, costo = 20))
         insumos.put(insumo(500, "Harina").copy(unidad = UnidadMedida.KILOGRAMO), insumo(501, "Azúcar"))
         val t = ok(abrir(Cup.ZERO))
         ok(registrar(listOf(LineaSolicitada(2, 1)), MetodoPago.EFECTIVO))

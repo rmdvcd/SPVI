@@ -63,7 +63,7 @@ class ModificarVentaTest {
     /** Venta original: 2 Refrescos a 100 (precio de entonces) en efectivo, en el turno abierto. */
     private suspend fun original(): Venta {
         turnos.abrir(T0, "Ana Pérez", Cup.ofPesos(500))
-        productos.items.value = listOf(prod(1, "Refresco", cantidad = 8, venta = 120), prod(2, "Galletas", cantidad = 1, venta = 50))
+        productos.items.value = listOf(prod(1, "Refresco", cantidad = 8, venta = 120), prod(2, "Galletas", cantidad = 1, venta = 50, costo = 20))
         val v = Venta(
             turnoId = 1, fecha = T0, metodoPago = MetodoPago.EFECTIVO,
             detalles = listOf(DetalleVenta(productoId = 1, nombre = "Refresco", categoria = "Bebidas", cantidad = 2, precioBase = Cup.ofPesos(100), precioUnitario = Cup.ofPesos(100), costoUnitario = Cup.ofPesos(60))),

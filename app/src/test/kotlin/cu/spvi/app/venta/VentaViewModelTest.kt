@@ -48,7 +48,7 @@ class VentaViewModelTest {
     private val reloj = RelojFijo()
     private val insumos = InsRepo()
     private val servicios = cu.spvi.app.ServRepo()
-    private val productos = ProdRepo().also { it.items.value = listOf(prod(1, "Refresco", cantidad = 5, venta = 100), prod(2, "Galletas", cantidad = 2, venta = 50)) }
+    private val productos = ProdRepo().also { it.items.value = listOf(prod(1, "Refresco", cantidad = 5, venta = 100), prod(2, "Galletas", cantidad = 2, venta = 50, costo = 20)) }
     private val turnos = TurnoRepo()
     private val perfil = PerfilRepo(
         Perfil(

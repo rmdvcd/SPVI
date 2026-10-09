@@ -25,6 +25,15 @@ class ValidadoresTest {
         assertEquals(setOf("nombre", "precioVenta", "cantidad", "nivelCritico"), campos(Validadores.producto(p)))
     }
 
+    @Test fun `no se vende al costo ni por debajo`() {
+        assertEquals(setOf("precioVenta"), campos(Validadores.producto(producto(1, venta = 60, costo = 60))))
+        assertEquals(setOf("precioVenta"), campos(Validadores.producto(producto(1, venta = 59, costo = 60))))
+        assertTrue(Validadores.producto(producto(1, venta = 61, costo = 60)).isEmpty())
+        val base = insumo(1, "Harina", precio = 10, cantidad = 10)
+        assertEquals(setOf("precioVenta"), campos(Validadores.insumo(base.copy(precioVenta = Cup.ofPesos(10)))))
+        assertTrue(Validadores.insumo(base.copy(precioVenta = Cup.ofPesos(11))).isEmpty())
+    }
+
     @Test fun `elaborado no admite foto ni caducidad`() {
         val p = producto(1, categoria = Categorias.ELABORADO, cantidad = 0).copy(fotoUri = "x", fechaCaducidad = LocalDate.MAX)
         val e = Validadores.producto(p)
