@@ -8,7 +8,7 @@ import org.junit.Test
 class FiltroEntradaTest {
     @Test fun numericos() {
         assertEquals("52345678", FiltroEntrada.TELEFONO.aplicar("+53 5234-5678x"))  // solo dígitos; recorta a 8
-        assertEquals("9200123412341234", FiltroEntrada.TARJETA.aplicar("9200 1234 1234 1234 99"))
+        assertEquals("920012341234123499", FiltroEntrada.TARJETA.aplicar("9200 1234 1234 1234 99"))
         assertEquals("85010112345", FiltroEntrada.CARNE.aplicar("850101-12345"))
         assertEquals("12", FiltroEntrada.ENTERO.aplicar("-1.2"))
         assertEquals("100", FiltroEntrada.PORCENTAJE.aplicar("1000%"))
@@ -20,6 +20,17 @@ class FiltroEntradaTest {
         assertEquals("2.5", FiltroEntrada.DECIMAL.aplicar("2,5"))       // 0.21.6: antes quedaba «2,5» y Cantidad.parse lo leía como 25
         assertEquals("1.250", FiltroEntrada.DECIMAL.aplicar("1.2509"))
         assertEquals("", FiltroEntrada.DINERO.aplicar("abc"))
+    }
+
+    @Test fun rechazaNumerosAmbiguosSinCambiarElValorAnterior() {
+        listOf("-12", "1,234.56", "1e3", "12abc", "2.999").forEach {
+            assertEquals("10", FiltroEntrada.DINERO.aceptar("10", it))
+        }
+        assertEquals("2.50", FiltroEntrada.DINERO.aceptar("10", "2,50"))
+        assertEquals("3", FiltroEntrada.ENTERO.aceptar("3", "-1.2"))
+        assertEquals("99", FiltroEntrada.PORCENTAJE.aceptar("99", "101"))
+        assertEquals("", FiltroEntrada.DINERO.aceptar("10", ""))
+        assertEquals("12345678901234567890", FiltroEntrada.TARJETA.aceptar("", "12345678901234567890"))
     }
 
     @Test fun textos() {

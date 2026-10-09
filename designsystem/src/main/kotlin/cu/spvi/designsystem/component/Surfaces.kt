@@ -174,7 +174,9 @@ fun SpviListItem(
                     maxLines = 3, overflow = TextOverflow.Ellipsis, // 0.27.0 (T2): con letra al 200 % no se corta antes
                 )
                 if (subtitleResaltado != null) SpviSecondaryText(subtitleResaltado, maxLines = if (apilar) maxOf(2, subtitleMaxLines) else subtitleMaxLines)
-                else subtitle?.let { SpviSecondaryText(it, maxLines = if (apilar) maxOf(2, subtitleMaxLines) else subtitleMaxLines) }
+                else subtitle?.split(" · ", "\n")?.filter { it.isNotBlank() }?.forEach { linea ->
+                    SpviSecondaryText(linea, maxLines = if (apilar) maxOf(2, subtitleMaxLines) else subtitleMaxLines)
+                }
                 if (apilar) value?.let { Text(it, style = SpviTextos.dato, color = valueColor) }
             }
             if (!apilar) {

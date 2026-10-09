@@ -85,7 +85,7 @@ fun SpviTextField(
     val errorVisible = SpviValidacion.errorVisible(isError, validarAlSalir, forzarError, salio, vacioSinFoco = value.isEmpty() && !conFoco)
     val helper = if (errorVisible && errorText != null) errorText else supportingText
     val cambiar: (String) -> Unit = { escrito ->
-        val nuevo = filtro.aplicar(escrito)
+        val nuevo = filtro.aceptar(value, escrito)
         if (nuevo != value) editado = true
         onValueChange(nuevo)
     }

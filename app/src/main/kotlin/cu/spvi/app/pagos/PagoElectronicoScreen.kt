@@ -196,7 +196,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.lista(
             onClick = { acciones.onElegir(tipo, item.id) },
             modifier = spviAnimateItem().testTag(PagoTags.opcion(tipo, item.id)), // P18 (A18)
             trailing = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(horizontalAlignment = Alignment.End) {
                     if (enUso) SpviChip(label = TextosPago.EN_USO, selected = true, onClick = {}, enabled = false)
                     SpviIconAction(SpviIcons.Editar, "Editar ${item.texto}", onClick = { acciones.onEditar(tipo, item.id) })
                     SpviIconAction(SpviIcons.Eliminar, "Eliminar ${item.texto}", onClick = { acciones.onBorrar(tipo, item.id) })
@@ -236,7 +236,7 @@ private fun EdicionSheet(e: EdicionPago, guardando: Boolean, acciones: AccionesL
         },
         footer = {
             SpviSecondaryButton("Cancelar", icon = SpviIcons.Cancelar, onClick = acciones.onCerrarEdicion)
-            SpviPrimaryButton("Guardar", icon = SpviIcons.Guardar, onClick = acciones.onGuardarEdicion, loading = guardando)
+            SpviPrimaryButton("Guardar", icon = SpviIcons.Guardar, onClick = acciones.onGuardarEdicion, loading = guardando, enabled = e.error == null)
         },
     ) {
         SpviTextField(

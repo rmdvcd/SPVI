@@ -35,6 +35,13 @@ import org.junit.Test
 class ProductoFormLogicTest {
     private val base = ProductoForm(categoria = "Bebidas", nombre = "Refresco", precioCosto = "60", precioVenta = "1,450.00", cantidad = "10")
 
+    @Test fun ventaDebeSuperarElCosto() {
+        listOf("59", "60").forEach { venta ->
+            assertTrue(Campos.PRECIO_VENTA in ProductoFormLogic.validar(base.copy(precioVenta = venta)))
+        }
+        assertFalse(Campos.PRECIO_VENTA in ProductoFormLogic.validar(base.copy(precioVenta = "60.01")))
+    }
+
     @Test fun formularioValidoProduceProducto() {
         assertTrue(ProductoFormLogic.validar(base).isEmpty())
         val (p, receta) = ProductoFormLogic.aProducto(base.copy(descripcion = "  "), T0)!!

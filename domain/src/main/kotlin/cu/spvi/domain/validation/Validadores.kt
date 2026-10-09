@@ -38,7 +38,7 @@ object Validadores {
         if (Categorias.esInsumos(p.categoria)) add(Validacion("categoria", Regla.NO_PERMITIDO)) // P29: reservada
         descripcion(p.descripcion)?.let(::add)
         if (p.precioCosto.isNegative) add(Validacion("precioCosto", Regla.RANGO))
-        if (p.precioVenta <= Cup.ZERO) add(Validacion("precioVenta", Regla.RANGO))
+        if (p.precioVenta <= Cup.ZERO || p.precioVenta <= p.precioCosto) add(Validacion("precioVenta", Regla.RANGO))
         if (p.cantidad < 0) add(Validacion("cantidad", Regla.RANGO))
         niveles(p.nivelBajo, p.nivelCritico).forEach(::add)
         if (p.esElaborado) {
@@ -53,7 +53,7 @@ object Validadores {
         texto("nombre", i.nombre, MAX_NOMBRE)?.let(::add)
         if (i.precio.isNegative) add(Validacion("precio", Regla.RANGO))
         if (i.cantidad.isNegative) add(Validacion("cantidad", Regla.RANGO))
-        if (i.precioVenta?.isNegative == true) add(Validacion("precioVenta", Regla.RANGO))
+        if (i.precioVenta?.let { it <= Cup.ZERO || it <= i.precio } == true) add(Validacion("precioVenta", Regla.RANGO))
         niveles(i.nivelBajo?.milesimas, i.nivelCritico?.milesimas).forEach(::add)
     }
 

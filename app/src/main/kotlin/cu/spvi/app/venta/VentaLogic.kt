@@ -237,7 +237,7 @@ object TextosVenta {
         is AppError.Validacion -> when (e.campo) {
             "receta" -> "Un elaborado no tiene receta: no se puede vender."
             "lineas" -> if (e.regla == AppError.Regla.NO_PERMITIDO) "Vende los servicios aparte de los productos." else CARRITO_VACIO_TITULO + "."
-            "precioVenta" -> "Un insumo no tiene precio de venta: ponlo en Inventario."
+            "precioVenta" -> "Revisa los precios en Inventario y los descuentos: el precio de venta debe superar el costo."
             else -> "Revisa los datos marcados."
         }
         else -> mensajeSync(e) ?: ERROR

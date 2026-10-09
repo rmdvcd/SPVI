@@ -290,3 +290,7 @@ El manual para el usuario final, sin tecnicismos, está en [MANUAL_USUARIO.md](M
 El repositorio no incluye un archivo de licencia del código fuente; los derechos corresponden al desarrollador (ver Ajustes → Soporte). El documento [LICENSE_CLIENT.md](LICENSE_CLIENT.md) describe el sistema de **licencias de uso** de la app, no la licencia del código fuente.
 
 **Recursos de terceros incluidos en el APK:** iconos con trazados de Material Symbols (Apache 2.0) y, desde la 0.15.0, 9 ilustraciones de [unDraw](https://undraw.co) (licencia unDraw: uso libre, también comercial, sin atribución obligatoria) tomadas del paquete npm `undraw-svg` 2.0.0 (MIT) y convertidas a vectores Compose (`designsystem/.../ilustracion/SpviIlustraciones.kt`).
+
+### Revisión de entradas y listas (09/10/2026, pendiente de verificar)
+
+Los datos secundarios de las listas se muestran por renglones. Los campos numéricos rechazan formatos ambiguos en lugar de convertirlos silenciosamente; las cuentas bancarias admiten hasta 20 cifras. El precio de venta debe superar el costo: se valida al guardar productos/insumos y al cotizar, también después de aplicar descuentos. Los precios históricos no se modifican. La compilación y las pruebas quedan para opencode CLI en el PC del usuario: [guía de revisión](docs/REVISION_2026-10-09.md).
