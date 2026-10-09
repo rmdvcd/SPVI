@@ -73,6 +73,7 @@ class VentaViewModelTest {
          Monto: 540.00 CUP
          Nro. Transaccion: BR601ADLM8997
     """.trimIndent()
+    private val pagoSms = ExtraerNumeroTransaccion().detalle(sms)!!
 
     @Before fun antes() = Dispatchers.setMain(UnconfinedTestDispatcher())
     @After fun despues() = Dispatchers.resetMain()
@@ -293,6 +294,27 @@ class VentaViewModelTest {
         assertEquals(PasoVenta.CLIENTE, vm.state.value.paso)
         assertEquals("BR601ADLM8997", vm.state.value.cliente.numero)
         assertNull(entrada.entrada.value)                        // consumido
+    }
+
+    @Test fun smsDeNotificacionSeCapturaDentroDelPasoDeTransferencia() = runTest {
+        abrirTurno()
+        val vm = vm()
+        vm.recibirSeleccion(listOf(1))
+        assertFalse(entrada.capturaSmsAutomaticaActiva())
+        assertFalse(entrada.publicarSmsAutomatico(pagoSms))
+
+        vm.elegirMetodo(MetodoPago.TRANSFERENCIA)
+        vm.continuar()
+        assertEquals(PasoVenta.QR, vm.state.value.paso)
+        assertTrue(entrada.capturaSmsAutomaticaActiva())
+        assertTrue(entrada.publicarSmsAutomatico(pagoSms))
+        assertEquals(PasoVenta.CLIENTE, vm.state.value.paso)
+        assertEquals("BR601ADLM8997", vm.state.value.cliente.numero)
+        assertNull(entrada.entrada.value)
+
+        vm.atras() // CLIENTE -> QR
+        vm.atras() // QR -> CARRITO
+        assertFalse(entrada.capturaSmsAutomaticaActiva())
     }
 
     @Test fun smsCompartidoFueraDelCobroNoSeUsa() = runTest {

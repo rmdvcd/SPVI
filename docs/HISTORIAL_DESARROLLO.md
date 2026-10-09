@@ -1364,3 +1364,12 @@ Primera vez que el repositorio se verifica solo: GitHub Actions ejecuta Gradle r
   `Estadisticas` como autoridad en los tests y comparando SQL vs memoria.
 - CI: **826 tests JVM, 0 fallos** (+1, el test nuevo del debounce); lint 0/95; R8 limpio; permisos OK; API 26 OK.
   Corrida verde: [37704972362](https://github.com/rmdvcd/SPVI/actions/runs/37704972362).
+
+## Cambios solicitados — 2026-10-08 (pendiente de verificación)
+
+- **Avisos y tablas:** el botón de restablecer avisos usa una flecha circular antihoraria; las tablas muestran el icono Compartir para sus acciones de salida. Los filtros de Inventario, Servicios y Registros usan listas desplegables. Las filas marcadas de Inventario, Servicios y la selección de productos de Precios permanecen fijadas antes del buscador y no se duplican en la lista, incluso si una búsqueda o filtro las oculta.
+- **Gráficos:** las etiquetas de hora y mes usan los patrones breves del dispositivo; día/mes conserva el formato configurado.
+- **Transferencia:** no se inventa un campo de importe para Transfermóvil: el total de la venta se ve debajo del QR oficial. Pago electrónico presenta logotipos orientativos solo para prefijos no ambiguos; la asignación, fuentes y advertencias de licencia están en [LOGOS_BANCOS.md](LOGOS_BANCOS.md).
+- **SMS:** captura automática opcional a través de `NotificationListenerService`, solo mientras SPVI espera una transferencia, con habilitación manual de Acceso a notificaciones. No se solicita `READ_SMS`, no se consulta el buzón ni se conserva el cuerpo: al flujo de venta solo llegan el número y el importe reconocidos. Pegar o compartir el SMS sigue disponible.
+- **Actualizaciones:** `gradle.properties` fija `spviGithubRepo=rmdvcd/SPVI`; el build consulta la última Release pública del mismo repositorio (API de GitHub Releases) y descarga desde sus assets. Se puede sobrescribir para un fork. El repositorio es público, pero el 2026-10-08 aún no tenía Releases, así que falta publicar la primera APK firmada.
+- **Pruebas añadidas/actualizadas:** formatos locales del gráfico, prefijos bancarios, selección fijada, filtros desplegables y captura SMS condicional. Las imágenes binarias de Roborazzi aún no se regrabaron. Pendiente ejecutar compilación, pruebas y capturas en un entorno con JDK; en esta sesión Gradle no encontró Java.

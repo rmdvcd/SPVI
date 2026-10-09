@@ -29,7 +29,7 @@ SPVI (Sistema de Punto de Venta e Inventario) es una app Android nativa para peq
 | Área | Qué hace |
 |---|---|
 | **Inicio** | Banner de licencia, turno (abrir/cerrar), **Nueva venta** y **Escanear** centrados (solo icono, con tooltip), alertas (stock e insumos bajos o críticos, caducidad), gráficos sin rejilla y top 3. En la principal: avisos de solicitudes de cierre, de fondo pedido y de «Actualiza la app de X» |
-| **Venta** | Solo con turno abierto. **Efectivo**, o **Transferencia** con QR de Transfermóvil y el nº de transacción, que se pega o se comparte desde el SMS de PAGOxMOVIL. **Cliente fijo** (0.27.0): se guarda por carné y se sugiere al escribir el nombre (hasta 3). Un Elaborado descuenta sus insumos y muestra «Alcanza para N» |
+| **Venta** | Solo con turno abierto. **Efectivo**, o **Transferencia** con QR de Transfermóvil (el total se muestra debajo) y nº de transacción; el SMS de PAGOxMOVIL se puede pegar/compartir o capturar opcionalmente desde una notificación con permiso manual. **Cliente fijo** (0.27.0): se guarda por carné y se sugiere al escribir el nombre (hasta 3). Un Elaborado descuenta sus insumos y muestra «Alcanza para N» |
 | **Caja (arqueo)** | Fondo obligatorio al abrir, entradas y salidas con motivo, esperado = fondo + efectivo + entradas − salidas. Al cerrar se cuenta, con «Cuadra» en un toque |
 | **Inventario** | Productos, Elaborados e Insumos. Precio opcional en los insumos, en unidades enteras. Buscador, filtros, escáner (CameraX + ML Kit) y exportar a PDF, Excel, Imagen y Tarjetas |
 | **Servicios** | Tipo libre, importe, foto y descripción. Pueden gastar insumos y tienen su pestaña en Registros |
@@ -138,8 +138,8 @@ Formato exacto de cada archivo: `FORMATOS.md`.
    - `REQUEST_INSTALL_PACKAGES` y `REQUEST_DELETE_PACKAGES`;
    - `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE` (maxSdk 32) y `WRITE_EXTERNAL_STORAGE` (maxSdk 28), solo para el registro de la prueba;
    - `USE_BIOMETRIC` y `USE_FINGERPRINT` (0.27.0), solo para el acceso con clave.
-2. **Internet** solo para la red local, las consultas de códigos de barras (con consentimiento) y GitHub (actualizaciones y revocadas).
-3. **Cámara y SMS.** No se vende sin turno abierto. La cámara solo mientras se usa. El SMS solo se pega o se comparte: nunca se leen los SMS ni el portapapeles en segundo plano.
+2. **Internet** solo para la red local y GitHub Releases (`rmdvcd/SPVI`, actualizaciones y revocaciones); no se requieren claves de API.
+3. **Cámara y SMS.** No se vende sin turno abierto. La cámara solo mientras se usa. No se pide `READ_SMS` ni se consulta el buzón; la captura opcional usa Acceso a notificaciones, que el usuario habilita manualmente, y solo procesa un SMS nuevo reconocible mientras una transferencia espera el pago. El portapapeles solo se lee al tocar «Pegar SMS»; compartir el mensaje sigue disponible.
 4. **UI:**
    - Material 3 claro y oscuro, con contraste WCAG AA (`ContrastTest`).
    - `FLAG_SECURE` en las pantallas sensibles.

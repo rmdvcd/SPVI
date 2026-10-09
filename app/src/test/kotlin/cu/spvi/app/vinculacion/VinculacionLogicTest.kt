@@ -43,6 +43,11 @@ class VinculacionLogicTest {
         assertEquals("La predeterminada (•••• 1111)", VinculacionLogic.predeterminada("•••• 1111"))
     }
 
+    @Test fun aliasYNumeroDeTarjetaVanEnFilasSeparadas() {
+        assertEquals("Cuenta principal\n•••• 1234", VinculacionLogic.etiquetaTarjeta("Cuenta principal", "•••• 1234"))
+        assertEquals("•••• 1234", VinculacionLogic.etiquetaTarjeta(" ", "•••• 1234"))
+    }
+
     @Test fun textosDeConexionYPendientes() {
         assertEquals("Conectada con la app principal", VinculacionLogic.conexion(EstadoConexion.Conectada(ahora)))
         assertEquals("motivo", VinculacionLogic.conexion(EstadoConexion.SinConexion("motivo")))

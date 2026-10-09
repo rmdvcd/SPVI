@@ -37,8 +37,16 @@ data class ItemInventario(
     val nombreRepetido: Boolean = false,
 )
 
-/** [total] = productos activos antes de filtrar; [categorias] = las que existen, para el filtro. */
-data class VistaInventario(val items: List<ItemInventario>, val total: Int, val categorias: List<String>)
+/**
+ * [total] = productos activos antes de filtrar; [categorias] = las que existen, para el filtro.
+ * [elementosCompletos] conserva las filas sin filtrar para fijar las seleccionadas aunque no coincidan con el buscador.
+ */
+data class VistaInventario(
+    val items: List<ItemInventario>,
+    val total: Int,
+    val categorias: List<String>,
+    val elementosCompletos: List<ItemInventario> = items,
+)
 
 /** Línea de receta resuelta para la ficha (nombre y unidad del insumo, costo por unidad de Elaborado). */
 data class LineaFicha(val insumoId: Long, val nombre: String, val cantidad: Cantidad, val simbolo: String, val costo: Cup)

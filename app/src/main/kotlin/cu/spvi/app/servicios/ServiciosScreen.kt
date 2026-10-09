@@ -8,13 +8,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -40,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -59,6 +59,7 @@ import cu.spvi.designsystem.component.SpviBadge
 import cu.spvi.designsystem.component.SpviBottomSheet
 import cu.spvi.designsystem.component.SpviCard
 import cu.spvi.designsystem.component.SpviChip
+import cu.spvi.designsystem.component.SpviComboBox
 import cu.spvi.designsystem.component.SpviDialog
 import cu.spvi.designsystem.component.SpviEmptyState
 import cu.spvi.designsystem.component.SpviFab
@@ -169,7 +170,7 @@ fun ServiciosContent(
             } else SpviTopBar(title = TextosServicios.TITULO, actions = {
                 BotonFiltro(state, acciones)
                 if (LocalPermisosApp.current.exportar) SpviIconAction(
-                    SpviIcons.Exportar, TextosServicios.EXPORTAR, onClick = { acciones.onHoja(HojaServicios.EXPORTAR) },
+                    SpviIcons.Compartir, TextosServicios.EXPORTAR, onClick = { acciones.onHoja(HojaServicios.EXPORTAR) },
                     enabled = state.items.isNotEmpty() || state.seleccion.isNotEmpty(), modifier = Modifier.testTag(ServiciosTags.EXPORTAR),
                 )
             })
@@ -187,6 +188,7 @@ fun ServiciosContent(
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             if (state.trabajando) SpviLinearProgress(Modifier.fillMaxWidth())
+            ElementosFijados(state, acciones)
             Buscador(state, acciones)
             if (!venta && state.seleccion.isNotEmpty()) BarraSeleccion(state, acciones)
             cu.spvi.designsystem.component.BloquearGestos(state.seleccion.isNotEmpty()) // 0.27.0 (T5)
@@ -201,15 +203,19 @@ fun ServiciosContent(
                         title = TextosServicios.VACIO_TITULO, detail = TextosServicios.VACIO_DETALLE,
                         ilustracion = SpviIlustracion.Servicios, ayuda = acciones.onAyuda,
                     )
-                    is EstadoCarga.Exito -> if (v.datos.items.isEmpty()) {
-                        SpviEmptyState(title = TextosServicios.SIN_RESULTADOS_TITULO, detail = TextosServicios.SIN_RESULTADOS_DETALLE, ilustracion = SpviIlustracion.SinResultados) {
+                    is EstadoCarga.Exito -> when {
+                        v.datos.items.isEmpty() -> SpviEmptyState(title = TextosServicios.SIN_RESULTADOS_TITULO, detail = TextosServicios.SIN_RESULTADOS_DETALLE, ilustracion = SpviIlustracion.SinResultados) {
                             SpviSecondaryButton(
                                 TextosServicios.QUITAR_FILTROS, icon = SpviIcons.QuitarFiltros, onClick = { acciones.onBuscar(""); acciones.onQuitarFiltros() },
                                 modifier = Modifier.testTag(ServiciosTags.QUITAR_FILTROS),
                             )
                         }
-                    } else {
-                        Lista(state, acciones)
+                        v.datos.items.none { it.servicio.id !in state.seleccion } -> SpviEmptyState(
+                            title = TextosServicios.SELECCIONADOS_TITULO,
+                            detail = TextosServicios.SELECCIONADOS_DETALLE,
+                            ilustracion = SpviIlustracion.SinResultados,
+                        )
+                        else -> Lista(state, acciones)
                     }
                 }
             }
@@ -307,15 +313,44 @@ private fun BarraSeleccion(state: ServiciosUiState, acciones: AccionesServicios)
 }
 
 @Composable
+private fun ElementosFijados(state: ServiciosUiState, acciones: AccionesServicios) {
+    val fijados = state.elementosFijados.ifEmpty { state.items.filter { it.servicio.id in state.seleccion } }
+    if (fijados.isEmpty()) return
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = SpviSpacing.md).testTag(ServiciosTags.FIJADOS),
+        verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs / 2),
+    ) {
+        Text(
+            TextosServicios.seleccionados(fijados.size),
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.semantics { heading() },
+        )
+        LazyColumn(
+            Modifier.fillMaxWidth().heightIn(max = 240.dp),
+            contentPadding = PaddingValues(vertical = SpviSpacing.xs / 2),
+            verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs / 2),
+        ) {
+            items(fijados, key = { "fijado_${it.servicio.id}" }) { s ->
+                Fila(
+                    s, marcado = true, acciones = acciones, modoVenta = state.modoVenta,
+                    repetido = s.servicio.id in state.datos?.porDiferenciar.orEmpty(), modifier = spviAnimateItem(),
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun Lista(state: ServiciosUiState, acciones: AccionesServicios) {
+    val visibles = state.items.filterNot { it.servicio.id in state.seleccion }
     LazyColumn(
         Modifier.fillMaxSize().testTag(ServiciosTags.LISTA),
         contentPadding = PaddingValues(start = SpviSpacing.md, end = SpviSpacing.md, top = SpviSpacing.xs, bottom = SpviSize.fabClearance),
         verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs / 2),
     ) {
-        items(state.items, key = { it.servicio.id }) { s ->
+        items(visibles, key = { it.servicio.id }) { s ->
             Fila(
-                s, marcado = s.servicio.id in state.seleccion, acciones = acciones, modoVenta = state.modoVenta,
+                s, marcado = false, acciones = acciones, modoVenta = state.modoVenta,
                 repetido = s.servicio.id in state.datos?.porDiferenciar.orEmpty(), modifier = spviAnimateItem(),
             )
         }
@@ -383,23 +418,29 @@ private fun Ficha(f: ServicioDisponible, state: ServiciosUiState, acciones: Acci
 
 // ---------------- Hojas ----------------
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun HojaFiltro(state: ServiciosUiState, acciones: AccionesServicios) {
     var borrador by remember(state.filtro) { mutableStateOf(state.filtro) }
+    val tipos = (state.tipos + listOfNotNull(borrador.tipo)).distinct()
+    val opciones: List<String?> = listOf(null) + tipos
     SpviBottomSheet(
         onDismiss = acciones.onCerrarHoja,
         title = TextosServicios.FILTRAR,
         footer = {
             SpviSecondaryButton("Quitar filtros", icon = SpviIcons.QuitarFiltros, onClick = { borrador = FiltroServicios(texto = borrador.texto) })
-            SpviPrimaryButton("Aplicar", icon = SpviIcons.Aplicar, onClick = { acciones.onFiltro(borrador) })
+            SpviPrimaryButton("Aplicar", icon = SpviIcons.Aplicar, onClick = { acciones.onFiltro(borrador) }, modifier = Modifier.testTag(ServiciosTags.FILTRO_APLICAR))
         },
     ) {
-        Text("Tipo", style = MaterialTheme.typography.titleSmall, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().semantics { heading() })
-        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs, Alignment.CenterHorizontally)) {
-            SpviChip("Todos", selected = borrador.tipo == null, onClick = { borrador = borrador.copy(tipo = null) })
-            state.tipos.forEach { t -> SpviChip(t, selected = borrador.tipo == t, onClick = { borrador = borrador.copy(tipo = t) }) }
-        }
+        SpviComboBox(
+            label = "Tipo",
+            opciones = opciones,
+            seleccion = borrador.tipo,
+            etiqueta = { it ?: "Todos" },
+            onSeleccion = { borrador = borrador.copy(tipo = it) },
+            leadingIcon = SpviIcons.Lista,
+            tagOpcion = { it?.let(ServiciosTags::tipoOpcion) ?: ServiciosTags.TIPO_TODOS },
+            modifier = Modifier.fillMaxWidth().testTag(ServiciosTags.FILTRO_TIPO),
+        )
     }
 }
 

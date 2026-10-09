@@ -9,7 +9,7 @@ App Android nativa para pequeños negocios: vender en turnos, controlar inventar
 | minSdk / targetSdk / compileSdk | 26 / 35 / 35 |
 | Base de datos | Room **v10** cifrada con SQLCipher (respaldo `RespaldoDto` v4; archivo `.spvi` v4) |
 | Contrato de licencias | GL v1 (`ECIES-P256-AES256GCM-v1`) |
-| Permisos | Solo `CAMERA`, `INTERNET` y `POST_NOTIFICATIONS` (aviso «Turno abierto», Android 13+), más `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE` y `CHANGE_NETWORK_STATE` (servicio de la app principal con secundarias, 0.19.2), `REQUEST_INSTALL_PACKAGES` / `REQUEST_DELETE_PACKAGES` (actualizaciones y licencia transferida, 0.25.0) y `READ_MEDIA_IMAGES` / `READ_EXTERNAL_STORAGE` (hasta Android 12) / `WRITE_EXTERNAL_STORAGE` (hasta Android 9) para el registro de la prueba (0.26.0), y `USE_BIOMETRIC` / `USE_FINGERPRINT` (acceso con clave opcional, 0.27.0; permisos normales que añade `androidx.biometric`) |
+| Permisos | Solo `CAMERA`, `INTERNET` y `POST_NOTIFICATIONS` (aviso «Turno abierto», Android 13+), más `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE` y `CHANGE_NETWORK_STATE` (servicio de la app principal con secundarias, 0.19.2), `REQUEST_INSTALL_PACKAGES` / `REQUEST_DELETE_PACKAGES` (actualizaciones y licencia transferida, 0.25.0) y `READ_MEDIA_IMAGES` / `READ_EXTERNAL_STORAGE` (hasta Android 12) / `WRITE_EXTERNAL_STORAGE` (hasta Android 9) para el registro de la prueba (0.26.0), y `USE_BIOMETRIC` / `USE_FINGERPRINT` (acceso con clave opcional, 0.27.0; permisos normales que añade `androidx.biometric`). La captura SMS opcional requiere habilitar manualmente el Acceso especial a notificaciones; no solicita `READ_SMS`. |
 
 **Documentación**
 
@@ -35,17 +35,17 @@ Los documentos de trabajo que estaban fuera del proyecto (`DECISIONES_LICENCIA_S
 | Área | Funciones |
 |---|---|
 | **Inicio** | Banner de licencia, turno (abrir/cerrar), **Nueva venta**, alertas de inventario (stock bajo/crítico, insumo bajo/crítico, próximo a caducar), accesos a Pago electrónico y Precios, selector de período, 4 gráficos (Ventas, Inventario, Métodos de pago, Ganancia neta) y Top 3 (más vendido, lento movimiento, rentabilidad) |
-| **Venta** | Solo con turno abierto. Selección desde el Inventario, carrito con cantidades, **Efectivo** (comprobante) o **Transferencia** (QR de Transfermóvil con tarjeta y móvil + datos del cliente y nº de transacción, que se puede pegar desde el SMS de PAGOxMOVIL). Un Elaborado no tiene existencias: se vende mientras alcancen sus insumos, que se descuentan en la misma transacción |
+| **Venta** | Solo con turno abierto. Selección desde el Inventario, carrito con cantidades, **Efectivo** (comprobante) o **Transferencia** (QR de Transfermóvil con tarjeta y móvil; el total aparece debajo porque el QR oficial no lo admite). El nº de transacción se puede capturar opcionalmente desde una notificación autorizada o pegar/compartir desde el SMS de PAGOxMOVIL. Un Elaborado se vende mientras alcancen sus insumos, que se descuentan en la misma transacción |
 | **Inventario** | Lista con buscador, filtros, selección múltiple, ficha, alta manual, exportación (PDF, Excel, Imagen, Tarjetas) |
 | **QR de vinculación** | CameraX + ML Kit (modelo empaquetado). Solo lee el QR para vincular la principal con la secundaria |
 | **Servicios** | (0.18.0, sustituye a Elaboración.) Nombre, Tipo, Importe y, opcionales, foto y descripción. Pueden gastar insumos. Se venden aparte de los productos, tienen su pestaña en Registros y sus indicadores en Inicio. Los **insumos** son ahora la categoría «Insumos» del Inventario (precio de venta opcional, en unidades enteras). Los Elaborados muestran «Alcanza para N» |
 | **Registros** | Ventas, Transferencias, Movimientos, **Clientes** (clientes fijos, 0.27.0) y Turnos, con buscador y filtros de fecha e importe. Exportar a PDF/Excel (0.26.0: ya no se comparte como texto) |
-| **Ajustes** | Completar configuración, Perfil, Licencia, Pago electrónico, Precios (preajustes), Avisos de inventario, Consultas de códigos en internet, Permisos, Respaldo, Migrar a otro teléfono, Ayuda, Soporte |
+| **Ajustes** | Completar configuración, Perfil, Licencia, Pago electrónico, Precios (preajustes), Avisos de inventario, Permisos, Respaldo, Migrar a otro teléfono, Ayuda, Soporte |
 
 ### Qué no hace
 
 - No tiene servidor, cuentas de usuario, sincronización en la nube, Firebase, analítica, telemetría ni anuncios.
-- No lee SMS (`READ_SMS` no se usa): el SMS se pega o se comparte a SPVI.
+- No pide `READ_SMS` ni consulta el buzón. El SMS se puede pegar o compartir; también hay captura opcional de notificaciones nuevas mientras una venta por transferencia espera el pago (requiere habilitar manualmente el Acceso especial a notificaciones y solo usa el número e importe reconocidos, no guarda el texto completo).
 - No usa el almacenamiento compartido para tus datos: guardar y abrir archivos pasa por el selector del sistema. La única excepción (0.26.0) es el registro cifrado de la prueba en Imágenes/SPVI y Download/Documents.
 - No tiene usuarios ni contraseñas propias. Desde la 0.27.0 hay un **acceso con clave opcional** que usa la huella o el PIN/patrón **del teléfono** (SPVI no guarda ninguna clave).
 - No modifica el launcher, la barra de estado, la de navegación ni el notch (edge-to-edge estándar).
@@ -66,7 +66,8 @@ Versiones principales (`gradle/libs.versions.toml`): Kotlin 2.0.21, AGP 8.7.3, C
 3. **Contacto del desarrollador.** Teléfono `+5351815604` en una sola constante (`core/.../contact/DeveloperContact.kt`), que usan Licencia, Migrar y Soporte.
 4. **Esquema Room.** El primer build genera `data/schemas/cu.spvi.data.db.SpviDatabase/3.json` (`room.schemaLocation`). Versiónalo en git: es la base de las migraciones futuras y lo usa `EsquemaTest`.
 5. **Baseline de lint.** Se entrega vacío. La primera vez ejecuta `./gradlew :app:updateLintBaseline` y versiona `app/lint-baseline.xml`; a partir de ahí, cualquier error nuevo de lint rompe `spviCheck`.
-6. **Nada más que configurar:** no hay claves de API, `google-services.json` ni variables de entorno. UPCitemdb se usa en su modo de prueba sin clave.
+6. **Actualizaciones:** el build apunta por defecto a las Releases públicas de [`rmdvcd/SPVI`](https://github.com/rmdvcd/SPVI/releases) (`spviGithubRepo` en `gradle.properties`). Para compilar un fork, se puede sobrescribir con `-PspviGithubRepo=usuario/repositorio`; vacío desactiva las consultas.
+7. **Nada más que configurar:** no hay claves de API, `google-services.json` ni variables de entorno.
 
 ## Compilación
 

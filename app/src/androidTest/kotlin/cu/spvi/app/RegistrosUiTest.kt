@@ -147,6 +147,7 @@ class RegistrosUiTest {
     @Test fun hojaFiltroValidaImportesAntesDeAplicar() {
         var aplicado: FiltroRegistros? = null
         pantalla(ventas(hoja = true), AccionesRegistros(onAplicarFiltro = { aplicado = it }))
+        rule.onNodeWithTag(RegistrosTags.FILTRO_PERIODO).performClick()
         rule.onNodeWithTag(RegistrosTags.periodo(PeriodoRegistro.HOY)).performClick()
         rule.onNodeWithTag(RegistrosTags.FILTRO_MIN).performTextReplacement("abc")
         rule.onNodeWithTag(RegistrosTags.FILTRO_APLICAR).performClick()
@@ -155,6 +156,16 @@ class RegistrosUiTest {
         rule.onNodeWithTag(RegistrosTags.FILTRO_MIN).performTextReplacement("100")
         rule.onNodeWithTag(RegistrosTags.FILTRO_APLICAR).performClick()
         assertEquals(FiltroRegistros(periodo = PeriodoRegistro.HOY, importeMin = Cup.ofPesos(100)), aplicado)
+    }
+
+    @Test fun filtroDeVendedorUsaCombobox() {
+        var aplicado: FiltroRegistros? = null
+        val estado = ventas(hoja = true).copy(vendedores = listOf("Ana", "Luis"))
+        pantalla(estado, AccionesRegistros(onAplicarFiltro = { aplicado = it }))
+        rule.onNodeWithTag(RegistrosTags.FILTRO_VENDEDOR).performClick()
+        rule.onNodeWithTag(RegistrosTags.vendedor("Ana")).performClick()
+        rule.onNodeWithTag(RegistrosTags.FILTRO_APLICAR).performClick()
+        assertEquals("Ana", aplicado?.vendedor)
     }
 
     @Test fun hojaFiltroDeMovimientosSinImporte() {

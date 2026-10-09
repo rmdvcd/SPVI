@@ -238,8 +238,9 @@ internal fun transaccion(t: DatosTransferencia, fecha: java.time.Instant, import
 data class SmsPago(val numero: String, val importe: Cup?)
 
 /**
- * C2 (sin READ_SMS): el usuario PEGA (botón, lectura del portapapeles solo al tocarlo) o COMPARTE a SPVI el SMS de
- * PAGOxMOVIL y se extrae el nº de transacción. Formato verificado con SMS reales (BPA, 30/9/2026):
+ * C2 (sin READ_SMS ni acceso al buzón): SPVI recibe el texto cuando el usuario lo pega/comparta o cuando el servicio
+ * opcional de notificaciones lo entrega durante una transferencia activa. Este parser no accede a Android ni a SMS.
+ * Formato verificado con SMS reales (BPA, 30/9/2026):
  * "Nro. Transaccion: BR601ADLM8997" (transferencia) y "No. Transaccion: BR601AG4M9997" (pago).
  * Si se pega la conversación entera se toma la ÚLTIMA transacción (la más reciente queda abajo).
  * Si no reconoce el texto devuelve null y el usuario lo teclea.

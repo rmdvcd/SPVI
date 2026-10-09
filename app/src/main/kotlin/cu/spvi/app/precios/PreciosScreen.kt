@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -30,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -64,10 +66,13 @@ import cu.spvi.designsystem.token.SpviSize
 import cu.spvi.designsystem.token.SpviSpacing
 import cu.spvi.domain.model.MetodoPago
 import cu.spvi.domain.model.PreajustePrecios
+import cu.spvi.domain.model.Producto
 
 object PreciosTags {
     const val NUEVO = "precios_nuevo"
     const val ELEGIR_MOSTRADOS = "precios_elegir_mostrados"
+    const val FIJADOS = "precios_productos_fijados"
+    const val BUSCAR = "precios_buscar_producto"
     const val PORCENTAJE = "precios_porcentaje"
     const val IMPORTE = "precios_importe"
     const val GUARDAR = "precios_guardar"
@@ -245,12 +250,27 @@ private fun FormularioPreajuste(state: PreciosUiState, f: PreajusteForm, accione
         )
 
         Titulo("3. ¿A qué productos?")
+        val fijados = state.seleccionados
+        if (fijados.isNotEmpty()) {
+            SpviSecondaryText(
+                if (fijados.size == 1) "1 producto seleccionado" else "${fijados.size} productos seleccionados",
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().semantics { heading() },
+            )
+            LazyColumn(
+                Modifier.fillMaxWidth().heightIn(max = 240.dp).testTag(PreciosTags.FIJADOS),
+                verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs / 2),
+            ) {
+                items(fijados, key = { "fijado_${it.id}" }) { p -> ProductoPreajuste(p, true, acciones) }
+            }
+        }
         SpviTextField(
             filtro = FiltroEntrada.BUSQUEDA,
             value = f.busqueda,
             onValueChange = { v -> acciones.onCambiar { it.copy(busqueda = v) } },
             label = "Buscar producto",
             leadingIcon = SpviIcons.Buscar,
+            modifier = Modifier.testTag(PreciosTags.BUSCAR),
         )
         val visibles = state.visibles
         val todos = visibles.isNotEmpty() && visibles.all { it.id in f.productoIds }
@@ -264,17 +284,7 @@ private fun FormularioPreajuste(state: PreciosUiState, f: PreajusteForm, accione
         }
         err[CampoPrecio.PRODUCTOS]?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
         Column {
-            visibles.forEach { p ->
-                val elegido = p.id in f.productoIds
-                SpviListItem(
-                    title = p.nombreCompleto,
-                    value = Money.format(p.precioVenta),
-                    indicatorColor = null,
-                    leading = { Checkbox(checked = elegido, onCheckedChange = null) },
-                    modifier = Modifier.testTag(PreciosTags.producto(p.id))
-                        .toggleable(value = elegido, role = Role.Checkbox, onValueChange = { acciones.onProducto(p.id) }),
-                )
-            }
+            visibles.filterNot { it.id in f.productoIds }.forEach { p -> ProductoPreajuste(p, false, acciones) }
             if (visibles.size == TextosPrecios.MAX_LISTA) SpviSecondaryText("Busca para ver más.")
         }
 
@@ -295,6 +305,18 @@ private fun FormularioPreajuste(state: PreciosUiState, f: PreajusteForm, accione
             }
         }
     }
+}
+
+@Composable
+private fun ProductoPreajuste(producto: Producto, elegido: Boolean, acciones: AccionesPrecios) {
+    SpviListItem(
+        title = producto.nombreCompleto,
+        value = Money.format(producto.precioVenta),
+        indicatorColor = null,
+        leading = { Checkbox(checked = elegido, onCheckedChange = null) },
+        modifier = Modifier.testTag(PreciosTags.producto(producto.id))
+            .toggleable(value = elegido, role = Role.Checkbox, onValueChange = { acciones.onProducto(producto.id) }),
+    )
 }
 
 @Composable

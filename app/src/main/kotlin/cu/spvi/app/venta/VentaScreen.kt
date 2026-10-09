@@ -29,6 +29,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -38,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
@@ -47,8 +49,12 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cu.spvi.app.common.SecureWindow
+import cu.spvi.app.venta.AccesoCapturaSms
 import cu.spvi.app.inicio.TipoVenta
 import cu.spvi.app.registros.TextosTurno
 import cu.spvi.app.registros.hora
@@ -94,6 +100,7 @@ object VentaTags {
     const val QR = "venta_qr"
     const val PAGO_RECIBIDO = "venta_pago_recibido"
     const val PEGAR_SMS = "venta_pegar_sms"
+    const val CAPTURA_SMS_ACTIVAR = "venta_captura_sms_activar"
     const val ERROR = "venta_error"
     const val TOTAL = "venta_total"
     const val TURNO = "venta_turno"
@@ -126,6 +133,7 @@ class AccionesVenta(
     /** 0.27.0 (N2). */
     val onElegirCliente: (cu.spvi.domain.model.ClienteFijo) -> Unit = {},
     val onClienteFijo: (Boolean) -> Unit = {},
+    val onConfigurarCapturaSms: () -> Unit = {},
 )
 
 /**
@@ -146,6 +154,8 @@ fun VentaScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val clipboard = LocalClipboardManager.current
+    val context = LocalContext.current
+    val capturaSmsAutomaticaActiva = rememberAccesoCapturaSms()
     val pedirPermisoAviso = rememberPedirPermisoAviso()
     LaunchedEffect(seleccion) {
         if (seleccion != null) { viewModel.recibirSeleccion(seleccion); onSeleccionConsumida() }
@@ -177,6 +187,7 @@ fun VentaScreen(
         tipo = tipo,
         state = state,
         snackbar = snackbar,
+        capturaSmsAutomaticaActiva = capturaSmsAutomaticaActiva,
         acciones = AccionesVenta(
             onAtras = viewModel::atras, onAbrirTurno = { cajaVm.cargarSugerido(); pedirFondo = true }, onElegir = viewModel::elegirProductos,
             onCantidad = viewModel::cambiarCantidad, onQuitar = viewModel::quitar, onMetodo = viewModel::elegirMetodo,
@@ -189,6 +200,7 @@ fun VentaScreen(
             // El portapapeles se lee SOLO aquí, al tocar «Pegar SMS» (nunca en segundo plano).
             onPegarSms = { viewModel.pegarSms(clipboard.getText()?.text) },
             onConfirmarTransferencia = viewModel::confirmarTransferencia,
+            onConfigurarCapturaSms = { AccesoCapturaSms.abrirAjustes(context) },
         ),
     )
 }
@@ -200,6 +212,7 @@ fun VentaContent(
     acciones: AccionesVenta,
     snackbar: SnackbarHostState = remember { SnackbarHostState() },
     zona: ZoneId = ZoneId.systemDefault(),
+    capturaSmsAutomaticaActiva: Boolean = false,
 ) {
     val titulo = when (state.paso) {
         PasoVenta.CARRITO -> TextosVenta.titulo(tipo == TipoVenta.SERVICIO)
@@ -226,7 +239,7 @@ fun VentaContent(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = SpviSpacing.md, vertical = SpviSpacing.xs),
                             )
                         }
-                        if (state.paso != PasoVenta.CARRITO || state.lineas.isNotEmpty()) TotalVenta(state)
+                        if (state.paso != PasoVenta.QR && (state.paso != PasoVenta.CARRITO || state.lineas.isNotEmpty())) TotalVenta(state)
                         when (state.paso) {
                             PasoVenta.CARRITO -> {
                                 SpviSecondaryText(
@@ -237,8 +250,8 @@ fun VentaContent(
                                 PasoCarrito(state, acciones)
                             }
                             PasoVenta.COMPROBANTE -> PasoComprobante(state)
-                            PasoVenta.QR -> { SecureWindow(); PasoQr(state, acciones) } // P18 (A13): tarjeta del vendedor
-                            PasoVenta.CLIENTE -> { SecureWindow(); PasoCliente(state, acciones) }
+                            PasoVenta.QR -> { SecureWindow(); PasoQr(state, acciones, capturaSmsAutomaticaActiva) } // P18 (A13): tarjeta del vendedor
+                            PasoVenta.CLIENTE -> { SecureWindow(); PasoCliente(state, acciones, capturaSmsAutomaticaActiva) }
                         }
                     }
                 }
@@ -390,7 +403,7 @@ private fun TotalVenta(state: VentaUiState) {
 // ---------------- QR (transferencia) ----------------
 
 @Composable
-private fun PasoQr(state: VentaUiState, acciones: AccionesVenta) {
+private fun PasoQr(state: VentaUiState, acciones: AccionesVenta, capturaSmsAutomaticaActiva: Boolean) {
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(SpviSpacing.md),
@@ -411,7 +424,9 @@ private fun PasoQr(state: VentaUiState, acciones: AccionesVenta) {
                 }
             }
         }
+        item { TotalVenta(state) }
         item { SpviSecondaryText(TextosVenta.QR_AYUDA, textAlign = TextAlign.Center) }
+        if (state.qr is PagoQr.Resultado.Ok) item { CapturaSmsUi(capturaSmsAutomaticaActiva, acciones.onConfigurarCapturaSms) }
     }
 }
 
@@ -469,7 +484,7 @@ internal fun LazyListScope.camposCliente(
 }
 
 @Composable
-private fun PasoCliente(state: VentaUiState, acciones: AccionesVenta) {
+private fun PasoCliente(state: VentaUiState, acciones: AccionesVenta, capturaSmsAutomaticaActiva: Boolean) {
     val f = state.cliente
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -487,6 +502,7 @@ private fun PasoCliente(state: VentaUiState, acciones: AccionesVenta) {
                 )
             }
         })
+        if (state.qr is PagoQr.Resultado.Ok) item { CapturaSmsUi(capturaSmsAutomaticaActiva, acciones.onConfigurarCapturaSms) }
         item(key = "cliente_fijo") {
             SpviListItem(
                 title = TextosVenta.CLIENTE_FIJO, subtitle = TextosVenta.CLIENTE_FIJO_AYUDA, subtitleMaxLines = 3, indicatorColor = null,
@@ -512,6 +528,39 @@ private fun PasoCliente(state: VentaUiState, acciones: AccionesVenta) {
         }
         item { ErrorPaso(state.error) }
     }
+}
+
+@Composable
+private fun CapturaSmsUi(activa: Boolean, onConfigurar: () -> Unit) {
+    SpviCard(tone = CardTone.Tonal) {
+        Text(
+            if (activa) TextosVenta.CAPTURA_SMS_ACTIVA_TITULO else TextosVenta.CAPTURA_SMS_TITULO,
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.fillMaxWidth().semantics { heading() },
+        )
+        SpviSecondaryText(if (activa) TextosVenta.CAPTURA_SMS_ACTIVA else TextosVenta.CAPTURA_SMS_AYUDA)
+        SpviSecondaryButton(
+            text = if (activa) TextosVenta.CAPTURA_SMS_ADMINISTRAR else TextosVenta.CAPTURA_SMS_ACTIVAR,
+            onClick = onConfigurar,
+            icon = if (activa) SpviIcons.Configurar else SpviIcons.Sms,
+            modifier = Modifier.testTag(VentaTags.CAPTURA_SMS_ACTIVAR),
+        )
+    }
+}
+
+@Composable
+private fun rememberAccesoCapturaSms(): Boolean {
+    val context = LocalContext.current
+    val propietario = LocalLifecycleOwner.current
+    var concedido by remember(context) { mutableStateOf(AccesoCapturaSms.concedido(context)) }
+    DisposableEffect(context, propietario) {
+        val observador = LifecycleEventObserver { _, evento ->
+            if (evento == Lifecycle.Event.ON_RESUME) concedido = AccesoCapturaSms.concedido(context)
+        }
+        propietario.lifecycle.addObserver(observador)
+        onDispose { propietario.lifecycle.removeObserver(observador) }
+    }
+    return concedido
 }
 
 @Composable

@@ -77,6 +77,7 @@ object SpviIcons {
     val AgregarALista: ImageVector get() = MaterialSolido.PlaylistAdd
     val Mas: ImageVector get() = MaterialSolido.MoreVert
     val Reiniciar: ImageVector get() = MaterialSolido.RestartAlt
+    val Restablecer: ImageVector get() = MaterialSolido.Replay
     val Lista: ImageVector get() = MaterialSolido.ListAlt
     val Enviar: ImageVector get() = MaterialSolido.Send
     val Comprobante: ImageVector get() = MaterialSolido.ReceiptLong
@@ -209,6 +210,8 @@ internal object MaterialSolido {
     val PlaylistAdd: ImageVector by lazy { icono("PlaylistAdd", "M 14 10 H 3 v 2 h 11 v -2 z m 0 -4 H 3 v 2 h 11 V 6 z m 4 8 v -4 h -2 v 4 h -4 v 2 h 4 v 4 h 2 v -4 h 4 v -2 h -4 z M 3 16 h 7 v -2 H 3 v 2 z") }
     val MoreVert: ImageVector by lazy { icono("MoreVert", "M 12 8 c 1.1 0 2 -.9 2 -2 s -.9 -2 -2 -2 -2 .9 -2 2 .9 2 2 2 z m 0 2 c -1.1 0 -2 .9 -2 2 s .9 2 2 2 2 -.9 2 -2 -.9 -2 -2 -2 z m 0 6 c -1.1 0 -2 .9 -2 2 s .9 2 2 2 2 -.9 2 -2 -.9 -2 -2 -2 z") }
     val RestartAlt: ImageVector by lazy { icono("RestartAlt", "M 12 5 V 2 L 8 6 l 4 4 V 7 c 3.31 0 6 2.69 6 6 0 2.97 -2.17 5.43 -5 5.91 v 2.02 c 3.95 -.49 7 -3.85 7 -7.93 0 -4.42 -3.58 -8 -8 -8 z m -6 8 c 0 -1.65 .67 -3.15 1.76 -4.24 L 6.34 7.34 A 8.014 8.014 0 0 0 4 13 c 0 4.08 3.05 7.44 7 7.93 v -2.02 c -2.83 -.48 -5 -2.94 -5 -5.91 z") }
+    /** Flecha circular antihoraria, sin reloj ni doble giro. */
+    val Replay: ImageVector by lazy { icono("Replay", "M 12 5 V 1 L 7 6 l 5 5 V 7 c 3.31 0 6 2.69 6 6 s -2.69 6 -6 6 -6 -2.69 -6 -6 c 0 -1.01 .25 -1.97 .69 -2.8 L 4.23 8.74 A 7.93 7.93 0 0 0 3 13 c 0 4.97 4.03 9 9 9 s 9 -4.03 9 -9 -4.03 -9 -9 -9 z") }
     val ListAlt: ImageVector by lazy { icono("ListAlt", "M 19 5 v 14 H 5 V 5 h 14 m 1.1 -2 H 3.9 c -.5 0 -.9 .4 -.9 .9 v 16.2 c 0 .4 .4 .9 .9 .9 h 16.2 c .4 0 .9 -.5 .9 -.9 V 3.9 c 0 -.5 -.5 -.9 -.9 -.9 z M 11 7 h 6 v 2 h -6 V 7 z m 0 4 h 6 v 2 h -6 v -2 z m 0 4 h 6 v 2 h -6 z M 7 7 h 2 v 2 H 7 z m 0 4 h 2 v 2 H 7 z m 0 4 h 2 v 2 H 7 z") }
     val Send: ImageVector by lazy { icono("Send", "M 2.01 21 23 12 2.01 3 2 10 l 15 2 -15 2 z", espejo = true) }
     val ReceiptLong: ImageVector by lazy { icono("ReceiptLong", "M 19.5 3.5 18 2 l -1.5 1.5 L 15 2 l -1.5 1.5 L 12 2 l -1.5 1.5 L 9 2 7.5 3.5 6 2 v 14 H 3 v 3 c 0 1.66 1.34 3 3 3 h 12 c 1.66 0 3 -1.34 3 -3 V 2 l -1.5 1.5 z M 19 19 c 0 .55 -.45 1 -1 1 s -1 -.45 -1 -1 v -3 H 8 V 5 h 11 v 14 z", "M 9 7 h 6 v 2 H 9 z m 7 0 h 2 v 2 h -2 z m -7 3 h 6 v 2 H 9 z m 7 0 h 2 v 2 h -2 z") }

@@ -83,6 +83,17 @@ data class InventarioUiState(
     val items: List<ItemInventario> get() = (vista as? EstadoCarga.Exito)?.datos?.items.orEmpty()
     val total: Int get() = when (vista) { is EstadoCarga.Exito -> vista.datos.total; else -> 0 }
     val categorias: List<String> get() = (vista as? EstadoCarga.Exito)?.datos?.categorias.orEmpty()
+    /** Filas seleccionadas, en orden de marcado, aunque no coincidan con el texto o filtro actual. */
+    val elementosFijados: List<ItemInventario>
+        get() {
+            val datos = when (val carga = vista) {
+                is EstadoCarga.Exito -> carga.datos
+                is EstadoCarga.Vacio -> carga.datos
+                else -> null
+            } ?: return emptyList()
+            val porId = datos.elementosCompletos.associateBy { it.producto.id }
+            return seleccion.mapNotNull(porId::get)
+        }
     val todosVisiblesSeleccionados: Boolean get() = items.isNotEmpty() && items.all { it.producto.id in seleccion }
 }
 

@@ -472,7 +472,7 @@ private fun FormDialog(f: FormEmpleado, s: VinculacionUi, vm: AccionesVinculacio
                             seleccion = f.tarjetaId?.takeIf { id -> s.tarjetas.any { it.id == id } },
                             etiqueta = { id ->
                                 if (id == null) VinculacionLogic.predeterminada(s.tarjetaPredeterminada?.enmascarado)
-                                else s.tarjetas.first { it.id == id }.let { t -> listOfNotNull(t.alias, t.enmascarado).joinToString(" · ") }
+                                else s.tarjetas.first { it.id == id }.let { t -> VinculacionLogic.etiquetaTarjeta(t.alias, t.enmascarado) }
                             },
                             onSeleccion = vm::tarjeta,
                             leadingIcon = SpviIcons.PagoElectronico,

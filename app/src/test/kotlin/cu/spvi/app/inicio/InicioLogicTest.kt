@@ -2,6 +2,8 @@ package cu.spvi.app.inicio
 
 import cu.spvi.app.navigation.Route
 import cu.spvi.core.money.Cup
+import cu.spvi.core.time.Dates
+import cu.spvi.core.time.FormatoFecha
 import cu.spvi.designsystem.theme.AlertTone
 import cu.spvi.domain.model.ConteoAlertas
 import cu.spvi.domain.model.GraficosPeriodo
@@ -78,7 +80,8 @@ class InicioLogicTest {
             telefonos = listOf(Telefono(1, "+5351234567")), tarjetas = listOf(TarjetaBancaria(2, "9205129900001234")),
             pagoTelefonoId = 1, pagoTarjetaId = 2,
         )
-        assertEquals("Tel. +53 5123 4567 · Cuenta •••• 1234", p.pagoResumen().texto)
+        assertEquals("Tel. +53 5123 4567\nCuenta •••• 1234", p.pagoResumen().texto)
+        assertEquals("Cuenta •••• 1234", PagoResumen(null, "•••• 1234").texto)
         assertEquals("+34600111222", formatoTelefono("+34600111222"))
     }
 
@@ -100,11 +103,17 @@ class InicioLogicTest {
         assertEquals("7 días", descripcionPeriodo(GraficosPeriodo(rango, serie), OpcionPeriodo.SEMANA, zona))
     }
 
-    @Test fun etiquetasDelEjeX() {
-        val i = Instant.parse("2026-09-30T13:00:00Z")
-        assertEquals("09h", etiquetaPunto(i, Granularidad.HORA, zona))
-        assertEquals("30/09", etiquetaPunto(i, Granularidad.DIA, zona))
-        assertEquals("sep", etiquetaPunto(i, Granularidad.MES, zona))
+    @Test fun etiquetasDelEjeXRespetanElFormatoDelDispositivo() {
+        val anterior = Dates.formato
+        try {
+            Dates.formato = FormatoFecha.crear("yyyy/MM/dd", "MM-dd", "HH.mm", "'M'MM")
+            val i = Instant.parse("2026-09-30T13:00:00Z")
+            assertEquals("09.00", etiquetaPunto(i, Granularidad.HORA, zona))
+            assertEquals("09-30", etiquetaPunto(i, Granularidad.DIA, zona))
+            assertEquals("M09", etiquetaPunto(i, Granularidad.MES, zona))
+        } finally {
+            Dates.formato = anterior
+        }
     }
 
     @Test fun donaAgrupaElRestoEnOtras() {
@@ -122,7 +131,7 @@ class InicioLogicTest {
             Periodo.Rango(ahora, ahora.plusSeconds(7200)),
             Serie(Granularidad.HORA, listOf(PuntoSerie(ahora, Cup.ofPesos(100), Cup.ofPesos(60)), PuntoSerie(ahora.plusSeconds(3600), Cup.ofPesos(300), Cup.ofPesos(140)))),
         )
-        assertEquals("Gráfico de barras de ventas. Total 400.00 CUP. Mayor venta en 13h: 300.00 CUP.", descripcionVentas(g, zona))
+        assertEquals("Gráfico de barras de ventas. Total 400.00 CUP. Mayor venta en 13:00: 300.00 CUP.", descripcionVentas(g, zona))
         assertEquals("Gráfico de área. Ventas 400.00 CUP, costo 200.00 CUP, ganancia neta 200.00 CUP, margen 50 %.", descripcionGanancia(g))
     }
 

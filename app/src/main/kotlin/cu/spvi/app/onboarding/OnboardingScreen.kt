@@ -365,7 +365,7 @@ private fun PasoAlertas(state: OnboardingUiState, acciones: OnboardingAcciones) 
         CampoNivelUi("Bajo", CampoNivel.INSUMO_BAJO, state.niveles, err, forzar, sumar, acciones, decimal = true)
         CampoNivelUi("Crítico", CampoNivel.INSUMO_CRITICO, state.niveles, err, forzar, sumar, acciones, decimal = true)
     }
-    SpviTextButton(text = "Usar valores recomendados (5 y 1)", icon = SpviIcons.Recomendados, onClick = { conBotones = false; acciones.onRestablecerNiveles() })
+    SpviTextButton(text = "Usar valores recomendados (5 y 1)", icon = SpviIcons.Restablecer, onClick = { conBotones = false; acciones.onRestablecerNiveles() })
 }
 
 @Composable

@@ -33,26 +33,26 @@ object InventarioFiltro {
         val repetidos = Identificacion.productosPorDiferenciar(ps) // 0.24.0
         val activos = (ps.filterNot { it.eliminado } + insumos.map { it.comoProducto() }).sortedByDescending { it.creadoEn }
         val q = plano(f.texto)
-        val items = activos.asSequence()
-            .filter { f.categoria == null || it.categoria.equals(f.categoria, ignoreCase = true) }
+        val elementosCompletos = activos.map { p ->
+            val i = porInsumo[p.id]
+            if (i != null) ItemInventario(p, Stock.nivel(i, n), EstadoCaducidad.SIN_FECHA, insumo = i)
+            else ItemInventario(p, Stock.nivel(p, n), caducidad(p, hoy, diasAviso), if (p.esElaborado) alcanza[p.id] ?: 0 else null, nombreRepetido = p.id in repetidos)
+        }
+        val items = elementosCompletos.asSequence()
+            .filter { f.categoria == null || it.producto.categoria.equals(f.categoria, ignoreCase = true) }
             .filter {
                 when (f.tipo) {
                     TipoArticulo.TODOS -> true
-                    TipoArticulo.ARTICULOS -> !it.esElaborado && !it.esInsumo
-                    TipoArticulo.ELABORADOS -> it.esElaborado
-                    TipoArticulo.INSUMOS -> it.esInsumo
+                    TipoArticulo.ARTICULOS -> !it.producto.esElaborado && !it.producto.esInsumo
+                    TipoArticulo.ELABORADOS -> it.producto.esElaborado
+                    TipoArticulo.INSUMOS -> it.producto.esInsumo
                 }
             }
-            .filter { q.isEmpty() || coincide(it, q) }
-            .map { p ->
-                val i = porInsumo[p.id]
-                if (i != null) ItemInventario(p, Stock.nivel(i, n), EstadoCaducidad.SIN_FECHA, insumo = i)
-                else ItemInventario(p, Stock.nivel(p, n), caducidad(p, hoy, diasAviso), if (p.esElaborado) alcanza[p.id] ?: 0 else null, nombreRepetido = p.id in repetidos)
-            }
+            .filter { q.isEmpty() || coincide(it.producto, q) }
             .filter { f.alerta == null || cumpleAlerta(it, f.alerta) }
             .toList()
         val categorias = activos.map { it.categoria.trim() }.distinctBy { it.lowercase() }.sortedBy { plano(it) }
-        return VistaInventario(items, activos.size, categorias)
+        return VistaInventario(items, activos.size, categorias, elementosCompletos)
     }
 
     fun caducidad(p: Producto, hoy: LocalDate, diasAviso: Int): EstadoCaducidad {

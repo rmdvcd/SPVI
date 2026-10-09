@@ -84,7 +84,7 @@ Sigue **RELEASE.md** desde §1:
 
 1. Crea el keystore **una sola vez** y guárdalo en dos sitios.
 2. Crea `keystore.properties`.
-3. Si ya tienes el repositorio de GitHub para las actualizaciones, añade `spviGithubRepo=usuario/repositorio` en `gradle.properties`. Sin él, la app no consulta GitHub: ni actualizaciones ni revocaciones.
+3. El build ya apunta por defecto a las Releases públicas de [`rmdvcd/SPVI`](https://github.com/rmdvcd/SPVI/releases). Para un fork, sobrescribe `spviGithubRepo` con `-PspviGithubRepo=usuario/repositorio`; un valor vacío desactiva las consultas.
 4. Ejecuta `./gradlew spviRelease`.
 5. Prueba el APK **de release** en el teléfono (R8 puede romper la serialización: revisa `missing_rules.txt` y añade reglas en `app/proguard-rules.pro`).
 
@@ -92,7 +92,7 @@ Sigue **RELEASE.md** desde §1:
 
 | # | Pendiente | Dónde | Cómo |
 |---|---|---|---|
-| 1 | Repositorio GitHub de actualizaciones sin configurar | `gradle.properties` → `spviGithubRepo` | Crear el repo público y publicar la release (RELEASE.md §8) |
+| 1 | No hay aún una Release pública con APK firmado en `rmdvcd/SPVI` (comprobado 2026-10-08) | [GitHub Releases](https://github.com/rmdvcd/SPVI/releases) | Publicar una Release siguiendo RELEASE.md §8; la app ya consulta este repositorio por defecto |
 | 2 | Lint nunca ejecutado | `./gradlew :app:lintDebug` | Corregir avisos reales; no desactivar reglas en bloque |
 | 3 | R8 nunca probado | `assembleRelease` | Probar compra, respaldo, licencia y sincronización con el APK de release |
 | 4 | Capturas Roborazzi nunca generadas | §5 | Revisar textos cortados con letra al 200 % |

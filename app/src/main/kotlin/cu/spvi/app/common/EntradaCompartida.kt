@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cu.spvi.domain.usecase.SmsPago
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -14,25 +15,42 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Lo que otra app ENVÍA a SPVI con «Compartir» (el usuario lo elige; SPVI nunca lee nada por su cuenta):
- * - [Texto]: el SMS de PAGOxMOVIL compartido desde Mensajes → nº de transacción en la venta por transferencia (C2).
+ * Entradas que llegan a SPVI:
+ * - [Texto]: contenido compartido por el usuario, como el SMS de PAGOxMOVIL o una licencia.
+ * - [SmsPagoAutomatico]: SMS nuevo reconocido en una notificación, solo con acceso especial autorizado y una venta por
+ *   transferencia activa; no consulta el buzón ni guarda el cuerpo.
  * - [Archivo]: un respaldo `.spvi` compartido desde WhatsApp, Telegram, Zapya, Bluetooth o un gestor de archivos.
  *
  * Sin permisos: la URI llega con permiso de lectura temporal concedido por la app que comparte.
  */
 sealed interface Entrada {
     data class Texto(val texto: String) : Entrada
+    /** Datos mínimos extraídos de un SMS nuevo; el cuerpo completo nunca sale del listener. */
+    data class SmsPagoAutomatico(val pago: SmsPago) : Entrada
     data class Archivo(val uri: String, val nombre: String?) : Entrada
 }
 
 @Singleton
 class EntradaCompartida @Inject constructor() {
     private val estado = MutableStateFlow<Entrada?>(null)
+    private val capturaSmsActiva = AtomicBoolean(false)
     val entrada: StateFlow<Entrada?> = estado.asStateFlow()
 
     fun publicar(e: Entrada) { estado.value = e }
+
+    /** VentaViewModel habilita la lectura efímera solo en QR/Cliente durante una transferencia activa. */
+    fun habilitarCapturaSmsAutomatica(activa: Boolean) { capturaSmsActiva.set(activa) }
+
+    fun capturaSmsAutomaticaActiva(): Boolean = capturaSmsActiva.get()
+
+    /** Publica solo los campos reconocidos si el usuario dio acceso y la venta lo espera. */
+    fun publicarSmsAutomatico(pago: SmsPago): Boolean {
+        if (!capturaSmsActiva.get() || pago.numero.isBlank()) return false
+        return estado.compareAndSet(null, Entrada.SmsPagoAutomatico(pago))
+    }
 
     /** Quien la usa la consume (una sola vez). Devuelve false si ya no era la actual. */
     fun consumir(e: Entrada): Boolean = estado.compareAndSet(e, null)

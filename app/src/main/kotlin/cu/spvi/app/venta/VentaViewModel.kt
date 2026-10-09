@@ -32,6 +32,7 @@ import cu.spvi.domain.usecase.ExtraerNumeroTransaccion
 import cu.spvi.domain.usecase.ObservarPermisoVenta
 import cu.spvi.domain.usecase.ObservarPermisoVenta.Permiso
 import cu.spvi.domain.usecase.RegistrarVenta
+import cu.spvi.domain.usecase.SmsPago
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -98,7 +99,7 @@ sealed interface EventoVenta {
  * - **Sin turno abierto no se vende:** con el turno cerrado la pantalla se bloquea en CUALQUIER paso (el carrito se
  *   conserva) y los botones de confirmar se desactivan; [RegistrarVenta] y la transacción de :data lo verifican otra vez.
  * - Precios definitivos al pasar al comprobante/QR ([CotizarVenta], preajustes por método); el registro vuelve a cotizar.
- * - SMS: solo lo que el usuario pega (botón) o comparte con SPVI ([EntradaCompartida]); nunca se leen mensajes.
+ * - SMS: pega/compartir siempre disponibles; captura de notificación opcional con acceso explícito, sin READ_SMS.
  */
 @HiltViewModel
 class VentaViewModel @Inject constructor(
@@ -131,6 +132,7 @@ class VentaViewModel @Inject constructor(
     }
 
     override fun onCleared() {
+        entrada.habilitarCapturaSmsAutomatica(false)
         soltarVenta()
         super.onCleared()
     }
@@ -173,6 +175,13 @@ class VentaViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), VentaUiState(tipo = tipo))
 
     init {
+        viewModelScope.launch {
+            combine(local, perfil) { s, p ->
+                s.metodo == MetodoPago.TRANSFERENCIA &&
+                    (s.paso == PasoVenta.QR || s.paso == PasoVenta.CLIENTE) &&
+                    p?.let { PagoQr.transfermovil(it) is PagoQr.Resultado.Ok } == true
+            }.distinctUntilChanged().collect(entrada::habilitarCapturaSmsAutomatica)
+        }
         // Primera vez con turno abierto y carrito vacío → directo al Inventario (SPVI.txt: «se navega hasta Inventario»).
         viewModelScope.launch {
             permiso.filterIsInstance<Permiso.Permitido>().first()
@@ -187,15 +196,25 @@ class VentaViewModel @Inject constructor(
         viewModelScope.launch {
             secundaria.estado.map { it.cierrePendiente }.distinctUntilChanged().collect { c -> local.update { it.copy(cierrePedido = c) } }
         }
-        // SMS compartido con SPVI mientras se cobra una transferencia.
+        // SMS compartido o reconocido desde una notificación mientras se cobra una transferencia.
         viewModelScope.launch {
             entrada.entrada.filterNotNull().collect { e ->
                 val paso = local.value.paso
-                if (e is Entrada.Texto && local.value.metodo == MetodoPago.TRANSFERENCIA && (paso == PasoVenta.QR || paso == PasoVenta.CLIENTE)) {
-                    if (entrada.consumir(e)) {
+                val esperandoTransferencia = local.value.metodo == MetodoPago.TRANSFERENCIA &&
+                    (paso == PasoVenta.QR || paso == PasoVenta.CLIENTE)
+                when (e) {
+                    is Entrada.SmsPagoAutomatico -> when {
+                        !esperandoTransferencia -> entrada.consumir(e) // descarta notificaciones obsoletas
+                        entrada.consumir(e) -> {
+                            if (paso == PasoVenta.QR) local.update { it.copy(paso = PasoVenta.CLIENTE) }
+                            aplicarSms(e.pago)
+                        }
+                    }
+                    is Entrada.Texto -> if (esperandoTransferencia && entrada.consumir(e)) {
                         if (paso == PasoVenta.QR) local.update { it.copy(paso = PasoVenta.CLIENTE) }
                         pegarSms(e.texto)
                     }
+                    is Entrada.Archivo -> Unit
                 }
             }
         }
@@ -304,13 +323,18 @@ class VentaViewModel @Inject constructor(
     /** Texto pegado (botón) o compartido: extrae el nº y avisa si el importe del SMS no cuadra con el total. */
     fun pegarSms(texto: String?) {
         if (texto.isNullOrBlank()) { emitir(EventoVenta.Mensaje(TextosVenta.PORTAPAPELES_VACIO)); return }
-        val d = extraer.detalle(texto.take(EntradaCompartida.MAX_TEXTO))
-        if (d == null) { emitir(EventoVenta.Mensaje(TextosVenta.SMS_SIN_NUMERO)); return }
+        val pago = extraer.detalle(texto.take(EntradaCompartida.MAX_TEXTO))
+        if (pago == null) { emitir(EventoVenta.Mensaje(TextosVenta.SMS_SIN_NUMERO)); return }
+        aplicarSms(pago)
+    }
+
+    /** El listener solo publica estos datos reconocidos, nunca el cuerpo de la notificación. */
+    private fun aplicarSms(pago: SmsPago) {
         val total = state.value.total
         local.update {
             it.copy(
-                cliente = it.cliente.con(CampoCliente.NUMERO, d.numero),
-                avisoSms = d.importe?.takeIf { imp -> imp != total }?.let { imp -> TextosVenta.smsOtroImporte(imp, total) },
+                cliente = it.cliente.con(CampoCliente.NUMERO, pago.numero),
+                avisoSms = pago.importe?.takeIf { imp -> imp != total }?.let { imp -> TextosVenta.smsOtroImporte(imp, total) },
             )
         }
     }

@@ -51,6 +51,12 @@ class EscanerInventarioTest {
         assertEquals(listOf("Alimentos", "Bebidas", "Elaborado"), v.categorias) // sin duplicar "bebidas"
     }
 
+    @Test fun conservaLasFilasSinFiltrarParaMantenerLaSeleccion() {
+        val v = InventarioFiltro.aplicar(ps, FiltroInventario(texto = "cafe"), n, hoy, 7)
+        assertEquals(listOf(1L), v.items.map { it.producto.id })
+        assertEquals(listOf(1L, 2L, 3L, 4L), v.elementosCompletos.map { it.producto.id })
+    }
+
     @Test fun buscadorIgnoraTildes() {
         assertEquals(listOf(1L), InventarioFiltro.aplicar(ps, FiltroInventario(texto = " CAFE "), n, hoy, 7).items.map { it.producto.id })
     }
