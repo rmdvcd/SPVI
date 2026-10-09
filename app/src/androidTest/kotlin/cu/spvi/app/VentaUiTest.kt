@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -31,6 +32,7 @@ import cu.spvi.domain.usecase.ObservarPermisoVenta.Permiso
 import java.time.Instant
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -112,6 +114,9 @@ class VentaUiTest {
         // P28: el importe va una sola vez, centrado arriba, con la etiqueta «Importe a transferir».
         rule.onNodeWithText(TextosVenta.IMPORTE).assertIsDisplayed()
         rule.onNodeWithText(Money.format(Cup.ofPesos(200))).assertIsDisplayed()
+        val qrBottom = rule.onAllNodesWithTag(VentaTags.QR).fetchSemanticsNodes().single().boundsInRoot.bottom
+        val importeTop = rule.onAllNodesWithTag(VentaTags.TOTAL).fetchSemanticsNodes().single().boundsInRoot.top
+        assertTrue("el importe de transferencia debe quedar debajo del QR", importeTop >= qrBottom)
         rule.onNodeWithTag(VentaTags.PAGO_RECIBIDO).performClick()
         assertEquals(1, recibido)
     }

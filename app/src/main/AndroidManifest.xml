@@ -52,6 +52,19 @@
         android:enableOnBackInvokedCallback="true"
         android:theme="@style/Theme.SPVI.Splash">
 
+        <!-- Captura automática y opcional del SMS en notificaciones nuevas. El usuario debe habilitar Acceso a
+             notificaciones en Ajustes; Android vincula el servicio con esta autorización especial. No se declara
+             READ_SMS ni se consulta el historial del buzón. -->
+        <service
+            android:name=".venta.CapturaSmsPagoService"
+            android:label="@string/captura_sms_pago"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

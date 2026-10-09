@@ -8,6 +8,7 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -36,6 +37,7 @@ import cu.spvi.domain.model.Producto
 import cu.spvi.domain.model.VistaInventario
 import java.time.Instant
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -70,6 +72,35 @@ class InventarioUiTest {
         assertEquals(null, abierto) // el checkbox no abre la ficha
         rule.onNodeWithTag(InventarioTags.fila(1)).performClick()
         assertEquals(1L, abierto)
+    }
+
+    @Test fun seleccionadosSeFijanAntesDelBuscadorYNoSeDuplican() {
+        inventario(lista(seleccion = setOf(1)))
+        rule.onNodeWithTag(InventarioTags.FIJADOS).assertIsDisplayed()
+        rule.onNodeWithTag(InventarioTags.fila(1)).assertIsDisplayed()
+        rule.onAllNodesWithTag(InventarioTags.fila(1)).assertCountEquals(1)
+        val arriba = rule.onAllNodesWithTag(InventarioTags.FIJADOS).fetchSemanticsNodes().single().boundsInRoot.top
+        val buscador = rule.onAllNodesWithTag(InventarioTags.BUSCAR).fetchSemanticsNodes().single().boundsInRoot.top
+        assertTrue("la selección debe quedar sobre el buscador", arriba < buscador)
+    }
+
+    @Test fun filtroSeEligeConCombobox() {
+        var aplicado: cu.spvi.domain.model.FiltroInventario? = null
+        inventario(
+            lista().copy(hoja = cu.spvi.app.inventario.HojaInventario.FILTRO),
+            AccionesInventario(onFiltro = { aplicado = it }),
+        )
+        rule.onNodeWithTag(InventarioTags.FILTRO_ESTADO).performClick()
+        rule.onNodeWithTag(InventarioTags.alertaOpcion(cu.spvi.domain.model.TipoAlerta.STOCK_CRITICO)).performClick()
+        rule.onNodeWithTag(InventarioTags.FILTRO_TIPO).performClick()
+        rule.onNodeWithTag(InventarioTags.tipoOpcion(cu.spvi.domain.model.TipoArticulo.ARTICULOS)).performClick()
+        rule.onNodeWithTag(InventarioTags.FILTRO_CATEGORIA).performClick()
+        rule.onNodeWithTag(InventarioTags.categoriaOpcion("Bebidas")).performClick()
+        rule.onNodeWithTag(InventarioTags.FILTRO_APLICAR).performClick()
+        assertEquals(
+            cu.spvi.domain.model.FiltroInventario(categoria = "Bebidas", alerta = cu.spvi.domain.model.TipoAlerta.STOCK_CRITICO, tipo = cu.spvi.domain.model.TipoArticulo.ARTICULOS),
+            aplicado,
+        )
     }
 
     @Test fun barraDeSeleccionConEliminarYExportar() {

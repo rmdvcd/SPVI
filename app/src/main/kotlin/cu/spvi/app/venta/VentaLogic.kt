@@ -184,11 +184,19 @@ object TextosVenta {
     /** 0.27.0 (N2). */
     const val CLIENTE_FIJO = "Cliente fijo"
     const val CLIENTE_FIJO_AYUDA = "Guarda sus datos para rellenarlos solos la próxima vez."
-    fun sugerencia(c: cu.spvi.domain.model.ClienteFijo): String = "Carné ${c.ci} · ${c.telefono}"
-    const val QR_AYUDA = "El cliente lo escanea en Transfermóvil y escribe el importe."
+    fun sugerencia(c: cu.spvi.domain.model.ClienteFijo): String = "Carné ${c.ci}\nTel. ${c.telefono}"
+    const val QR_AYUDA = "El QR oficial no incluye el importe. El cliente debe escribir el que aparece debajo."
     const val PAGO_RECIBIDO = "Ya pagó: pedir datos"
     const val PEGAR_SMS = "Pegar SMS"
-    const val PEGAR_AYUDA = "Copia el SMS de PAGOxMOVIL y toca el botón de pegar. SPVI no lee tus mensajes."
+    const val PEGAR_AYUDA = "Si no se detectó automáticamente, comparte el SMS de PAGOxMOVIL con SPVI o pégalo."
+    const val CAPTURA_SMS_TITULO = "Captura automática opcional"
+    const val CAPTURA_SMS_ACTIVA_TITULO = "Captura automática activa"
+    const val CAPTURA_SMS_AYUDA = "Al autorizar Acceso a notificaciones en Ajustes, SPVI puede completar el número desde el SMS " +
+        "mientras esta transferencia está activa. Android da acceso a todas las notificaciones, pero SPVI solo procesa " +
+        "mensajes con una transacción reconocible; no lee el buzón ni guarda el SMS."
+    const val CAPTURA_SMS_ACTIVA = "Si el texto del SMS no aparece en la notificación, comparte el mensaje o usa «Pegar SMS»."
+    const val CAPTURA_SMS_ACTIVAR = "Activar en Ajustes"
+    const val CAPTURA_SMS_ADMINISTRAR = "Administrar en Ajustes"
     /** 0.20.0 (H3): el SMS del banco le llega al dueño; el empleado copia el nº del SMS del cliente. */
     const val SMS_SIN_NUMERO = "No se encontró un nº de transacción en el texto. Escríbelo a mano."
     const val PORTAPAPELES_VACIO = "No hay texto copiado. Copia el SMS de PAGOxMOVIL y vuelve a tocar el botón de pegar."

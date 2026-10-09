@@ -6,10 +6,29 @@ import cu.spvi.domain.validation.Validadores
 
 enum class TipoCuentaPago { TELEFONO, TARJETA }
 
+/**
+ * Bancos asociados de forma orientativa a prefijos publicados. No es una tabla oficial ni valida la titularidad.
+ * 9224 queda sin asignar porque las fuentes consultadas lo atribuyen a bancos distintos.
+ */
+enum class BancoCubano(val nombre: String, val sigla: String, val prefijos: Set<String>) {
+    BPA("Banco Popular de Ahorro", "BPA", setOf("9205")),
+    BANDEC("Banco de Crédito y Comercio", "BANDEC", setOf("9225")),
+    BANMET("Banco Metropolitano", "BANMET", setOf("9226")),
+}
+
+/** Identificación visual no autoritativa; los prefijos desconocidos o ambiguos se dejan sin logo. */
+fun bancoPorTarjeta(numero: String): BancoCubano? {
+    val digitos = numero.filter(Char::isDigit)
+    if (digitos.length < 4) return null
+    return BancoCubano.entries.firstOrNull { banco -> banco.prefijos.any(digitos::startsWith) }
+}
+
 object TextosPago {
     const val TITULO = "Pago electrónico"
     const val EXPLICACION = "Cuando un cliente paga por transferencia, el código QR lleva la tarjeta o cuenta que recibe " +
         "el dinero y el teléfono que recibe el mensaje de confirmación. Elige cuáles usar."
+    const val AVISO_BANCOS = "Los logos se estiman por el prefijo; no verifican el banco ni la titularidad. Algunos prefijos son ambiguos."
+    const val BANCO_ESTIMADO = "Identificación orientativa por prefijo"
     const val TELEFONO = "Teléfono de confirmación"
     const val TARJETA = "Tarjeta o cuenta que recibe el dinero"
     const val NINGUNO = "Ninguno"

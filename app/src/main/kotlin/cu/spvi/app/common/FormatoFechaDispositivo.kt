@@ -20,6 +20,7 @@ object FormatoFechaDispositivo {
             dia = DateFormat.getBestDateTimePattern(locale, "ddMMyyyy"),
             diaMes = DateFormat.getBestDateTimePattern(locale, "ddMM"),
             hora = DateFormat.getBestDateTimePattern(locale, if (h24) "HHmm" else "hhmma"),
+            mes = DateFormat.getBestDateTimePattern(locale, "MMM"),
         )
     }
 }

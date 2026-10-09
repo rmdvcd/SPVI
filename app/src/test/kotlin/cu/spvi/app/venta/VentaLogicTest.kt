@@ -1,5 +1,6 @@
 package cu.spvi.app.venta
 
+import cu.spvi.domain.model.ClienteFijo
 import cu.spvi.domain.model.Producto
 import cu.spvi.domain.model.EstadoCaducidad
 import cu.spvi.domain.model.NivelStock
@@ -14,6 +15,7 @@ import cu.spvi.core.money.Cup
 import cu.spvi.core.result.AppError
 import cu.spvi.domain.model.Categorias
 import cu.spvi.domain.model.TipoArticulo
+import cu.spvi.domain.usecase.SmsPago
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -82,6 +84,14 @@ class VentaLogicTest {
     }
 
     // ---------------- Formulario del cliente ----------------
+
+    @Test fun sugerenciaClienteFijoMuestraCadaDatoEnSuPropiaLinea() {
+        val cliente = ClienteFijo(
+            nombreApellidos = "Ana Díaz", ci = "85010112345", telefono = "5123 4567",
+            creadoEn = T0, actualizadoEn = T0,
+        )
+        assertEquals("Carné 85010112345\nTel. 5123 4567", TextosVenta.sugerencia(cliente))
+    }
 
     @Test fun formularioVacioTieneCuatroErroresQueSoloSeVenTrasIntentar() {
         val f = FormCliente()
@@ -152,5 +162,20 @@ class VentaLogicTest {
         assertFalse(e.consumir(t))
         assertNull(e.entrada.value)
         assertEquals(T0, T0) // (reloj de los fakes sin uso aquí)
+    }
+
+    @Test fun capturaAutomaticaSoloPublicaDatosMinimosConVentaActivaYSinOtraEntradaPendiente() {
+        val e = EntradaCompartida()
+        val pago = SmsPago("BR601ADLM8997", Cup.ofPesos(725))
+        assertFalse(e.publicarSmsAutomatico(pago))
+        e.habilitarCapturaSmsAutomatica(true)
+        assertTrue(e.publicarSmsAutomatico(pago))
+        assertEquals(Entrada.SmsPagoAutomatico(pago), e.entrada.value)
+        assertFalse(e.publicarSmsAutomatico(SmsPago("OTRO123", null))) // no pisa la entrada pendiente
+        val actual = e.entrada.value!!
+        assertTrue(e.consumir(actual))
+        assertNull(e.entrada.value)
+        e.habilitarCapturaSmsAutomatica(false)
+        assertFalse(e.publicarSmsAutomatico(SmsPago("DESPUES123", null)))
     }
 }

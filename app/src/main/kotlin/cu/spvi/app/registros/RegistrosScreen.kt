@@ -12,8 +12,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -56,6 +54,7 @@ import cu.spvi.designsystem.component.IconActionStyle
 import cu.spvi.designsystem.component.SpviBadge
 import cu.spvi.designsystem.component.SpviBottomSheet
 import cu.spvi.designsystem.component.SpviChip
+import cu.spvi.designsystem.component.SpviComboBox
 import cu.spvi.designsystem.component.SpviEmptyState
 import cu.spvi.designsystem.component.SpviIconAction
 import cu.spvi.designsystem.component.SpviLinearProgress
@@ -202,7 +201,7 @@ fun RegistrosContent(
                     }
                     val exportar = LocalPermisosApp.current.exportar
                     if (exportar) SpviIconAction(
-                        SpviIcons.Exportar, TextosRegistros.EXPORTAR, onClick = acciones.onAbrirExportar,
+                        SpviIcons.Compartir, TextosRegistros.EXPORTAR, onClick = acciones.onAbrirExportar,
                         enabled = state.puedeCompartir && !state.exportando, modifier = Modifier.testTag(RegistrosTags.EXPORTAR),
                     )
                 }
@@ -462,11 +461,12 @@ private fun Ficha(f: FichaRegistro, acciones: AccionesRegistros, zona: ZoneId) {
 
 // ---------------- Hoja Filtrar ----------------
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun HojaFiltro(actual: FiltroRegistros, tipo: TipoRegistro, acciones: AccionesRegistros, vendedores: List<String> = emptyList()) {
     var form by remember(actual) { mutableStateOf(FiltroRegistrosLogic.desde(actual)) }
     var errores by remember(actual) { mutableStateOf(emptyMap<String, String>()) }
+    val opcionesPeriodo = PeriodoRegistro.entries
+    val opcionesVendedor: List<String?> = listOf(null) + (vendedores + listOfNotNull(form.vendedor)).distinct()
     val conImporte = tipo != TipoRegistro.MOVIMIENTOS
     SpviBottomSheet(
         onDismiss = acciones.onCerrarFiltro,
@@ -485,14 +485,16 @@ private fun HojaFiltro(actual: FiltroRegistros, tipo: TipoRegistro, acciones: Ac
         },
     ) {
         Seccion("Fecha")
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
-            PeriodoRegistro.entries.forEach { p ->
-                SpviChip(
-                    etiqueta(p), selected = form.periodo == p, onClick = { form = form.copy(periodo = p); errores = errores - CamposFiltroRegistros.FECHAS },
-                    modifier = Modifier.testTag(RegistrosTags.periodo(p)),
-                )
-            }
-        }
+        SpviComboBox(
+            label = "Período",
+            opciones = opcionesPeriodo,
+            seleccion = form.periodo,
+            etiqueta = ::etiqueta,
+            onSeleccion = { form = form.copy(periodo = it); errores = errores - CamposFiltroRegistros.FECHAS },
+            leadingIcon = SpviIcons.Fecha,
+            tagOpcion = RegistrosTags::periodo,
+            modifier = Modifier.fillMaxWidth().testTag(RegistrosTags.FILTRO_PERIODO),
+        )
         if (form.periodo == PeriodoRegistro.PERSONALIZADO) {
             CampoFecha(form.desde, { form = form.copy(desde = it) }, label = "Desde", tag = RegistrosTags.FILTRO_DESDE, modifier = Modifier.fillMaxWidth())
             CampoFecha(
@@ -523,13 +525,16 @@ private fun HojaFiltro(actual: FiltroRegistros, tipo: TipoRegistro, acciones: Ac
         }
         // 0.20.0 (H1): con apps secundarias, quién vendió. Con un solo nombre no aporta nada (Hick) y no se muestra.
         if (conImporte && (vendedores.size > 1 || form.vendedor != null)) {
-            Seccion(TextosRegistros.VENDEDOR)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
-                SpviChip(TextosRegistros.TODOS_VENDEDORES, selected = form.vendedor == null, onClick = { form = form.copy(vendedor = null) })
-                (vendedores + listOfNotNull(form.vendedor)).distinct().forEach { v ->
-                    SpviChip(v, selected = form.vendedor == v, onClick = { form = form.copy(vendedor = v) }, modifier = Modifier.testTag(RegistrosTags.vendedor(v)))
-                }
-            }
+            SpviComboBox(
+                label = TextosRegistros.VENDEDOR,
+                opciones = opcionesVendedor,
+                seleccion = form.vendedor,
+                etiqueta = { it ?: TextosRegistros.TODOS_VENDEDORES },
+                onSeleccion = { form = form.copy(vendedor = it) },
+                leadingIcon = SpviIcons.Perfil,
+                tagOpcion = { it?.let(RegistrosTags::vendedor) ?: RegistrosTags.VENDEDOR_TODOS },
+                modifier = Modifier.fillMaxWidth().testTag(RegistrosTags.FILTRO_VENDEDOR),
+            )
         }
     }
 }

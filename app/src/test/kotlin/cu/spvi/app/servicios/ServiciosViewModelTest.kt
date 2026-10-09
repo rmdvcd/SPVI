@@ -94,6 +94,7 @@ class ServiciosViewModelTest {
         vm.alternar(1); vm.alternar(2)
         vm.buscar("tinte")
         assertEquals(setOf(1L, 2L), vm.state.value.seleccion)                // no se pierde al buscar
+        assertEquals(listOf(1L, 2L), vm.state.value.elementosFijados.map { it.servicio.id })
         vm.seleccionarTodo()
         assertEquals(setOf(1L, 2L, 3L), vm.state.value.seleccion)
         vm.seleccionarTodo()                                                 // segunda vez: desmarca los visibles

@@ -3,4 +3,5 @@
     <string name="app_name">SPVI</string>
     <string name="compartir_sms">SPVI: nº de transacción</string>
     <string name="importar_respaldo">Importar respaldo en SPVI</string>
+    <string name="captura_sms_pago">Captura opcional de SMS de PAGOxMOVIL</string>
 </resources>

@@ -91,6 +91,10 @@ object VinculacionLogic {
 
     fun predeterminada(etiqueta: String?): String = if (etiqueta == null) "La predeterminada" else "La predeterminada ($etiqueta)"
 
+    /** Alias y número enmascarado de la tarjeta, en filas separadas para facilitar su lectura. */
+    fun etiquetaTarjeta(alias: String?, enmascarado: String): String =
+        listOfNotNull(alias?.takeIf { it.isNotBlank() }, enmascarado).joinToString("\n")
+
     /** 0.20.0 (H5): «Turno abierto desde las 09:30» o, con el cierre pedido, «Cierre pedido · …». null = sin turno. */
     fun turnoEmpleado(e: Empleado, conectada: Boolean): String? {
         val desde = e.turnoAbiertoDesde ?: return null

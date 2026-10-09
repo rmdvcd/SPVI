@@ -304,10 +304,11 @@ defendible, pero: (a) cambiar terminología para un cliente (p. ej. «turno» �
 (b) traducir a otro idioma es un refactor; (c) `supportsRtl="true"` está declarado mientras no hay un solo
 recurso traducido y el diseño asume LTR. Prometer RTL sin probarlo es deuda silenciosa.
 
-**D18 — 🟡 Un `applicationId`, cero *flavors*, cero configuración de build.** No hay forma de compilar una
-variante demo/blanca, ni de desactivar la licencia, ni de cambiar el repositorio de actualizaciones sin recordar
-`-PspviGithubRepo=usuario/repo`. Con `GITHUB_REPO` vacío por defecto, **el APK tal cual sale del repo no puede
-actualizarse ni aplicar revocaciones**.
+**D18 — 🟡 Un `applicationId` y cero *flavors*.** No hay forma de compilar una variante demo/blanca ni de desactivar
+la licencia. El repositorio de actualizaciones sí se configura: por defecto apunta a `rmdvcd/SPVI` mediante
+`spviGithubRepo` en `gradle.properties`, y se puede sobrescribir con `-PspviGithubRepo=usuario/repo` o desactivar
+con un valor vacío. Falta publicar allí la primera APK firmada como Release para que los teléfonos reciban
+actualizaciones.
 
 **D19 — 🟠 Modelo de negocio demasiado estrecho para el mercado que dice atender.** El propio README habla de
 Cuba, pero: los importes son **CUP y nada más** (el sufijo « CUP» está incrustado en `Money.format` con

@@ -64,6 +64,8 @@ data class ServiciosUiState(
     val trabajando: Boolean = false,
     /** P29: modo «elegir qué vender» de una venta de servicios (checkbox + Continuar, sin exportar ni borrar). */
     val modoVenta: Boolean = false,
+    /** Filas seleccionadas, en orden de marcado, incluso fuera de la búsqueda actual. */
+    val elementosFijados: List<ServicioDisponible> = emptyList(),
 ) {
     val datos: VistaServicios? get() = (vista as? EstadoCarga.Exito)?.datos ?: (vista as? EstadoCarga.Vacio)?.datos
     val items: List<ServicioDisponible> get() = (vista as? EstadoCarga.Exito)?.datos?.items.orEmpty()
@@ -128,7 +130,13 @@ class ServiciosViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     val state: StateFlow<ServiciosUiState> = combine(vista, filtro, seleccion, todos, local) { v, f, s, t, l ->
-        l.copy(vista = v, filtro = f, seleccion = if (t.isEmpty()) emptySet() else s.filterTo(linkedSetOf()) { it in t })
+        val seleccionValida = if (t.isEmpty()) emptySet() else s.filterTo(linkedSetOf()) { it in t }
+        l.copy(
+            vista = v,
+            filtro = f,
+            seleccion = seleccionValida,
+            elementosFijados = seleccionValida.mapNotNull(t::get),
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ServiciosUiState(modoVenta = modoVenta))
 
     private val exportador = ExportadorArchivos<FormatoSalida>(archivos)

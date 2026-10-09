@@ -33,6 +33,13 @@ data class PreciosUiState(
 ) {
     val errores: Map<CampoPrecio, String> get() = form?.takeIf { it.mostrarErrores }?.let(::validar).orEmpty()
     val visibles: List<Producto> get() = form?.let { filtrar(productos, it.busqueda) }.orEmpty()
+    /** Productos marcados, en orden de selección, aunque no coincidan con la búsqueda. */
+    val seleccionados: List<Producto>
+        get() {
+            val ids = form?.productoIds ?: return emptyList()
+            val porId = productos.associateBy { it.id }
+            return ids.mapNotNull(porId::get)
+        }
     val vistaPrevia: String? get() = form?.let { vistaPrevia(it, productos) }
     fun existentes(p: PreajustePrecios): Int = productos.count { it.id in p.productoIds }
 }

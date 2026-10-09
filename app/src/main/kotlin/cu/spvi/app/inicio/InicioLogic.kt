@@ -183,7 +183,7 @@ fun destinoAlerta(tipo: TipoAlerta): Route = Route.Inventario(alerta = tipo.name
 data class PagoResumen(val telefono: String?, val cuenta: String?) {
     val configurado: Boolean get() = telefono != null || cuenta != null
     val texto: String get() = if (!configurado) TextosInicio.PAGO_SIN_CONFIGURAR
-    else listOfNotNull(telefono?.let { "Tel. $it" }, cuenta?.let { "Cuenta $it" }).joinToString(" · ")
+    else listOfNotNull(telefono?.let { "Tel. $it" }, cuenta?.let { "Cuenta $it" }).joinToString("\n")
 }
 
 fun Perfil.pagoResumen() = PagoResumen(telefonoPago?.numero?.let(::formatoTelefono), tarjetaPago?.enmascarado)
@@ -211,8 +211,6 @@ fun OpcionPeriodo.etiqueta(): String = when (this) {
     OpcionPeriodo.ANIO -> "Este año"
 }
 
-private val MESES = listOf("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
-
 /** Qué se está mostrando, en palabras simples. */
 fun descripcionPeriodo(g: GraficosPeriodo, opcion: OpcionPeriodo, zone: ZoneId): String {
     val t = g.turno
@@ -224,14 +222,11 @@ fun descripcionPeriodo(g: GraficosPeriodo, opcion: OpcionPeriodo, zone: ZoneId):
     }
 }
 
-/** Etiqueta del eje X según la agrupación: "08h", "12/09" o "sep". */
-fun etiquetaPunto(inicio: Instant, g: Granularidad, zone: ZoneId): String {
-    val z = inicio.atZone(zone)
-    return when (g) {
-        Granularidad.HORA -> "%02dh".format(z.hour)
-        Granularidad.DIA -> Dates.dayMonth(inicio, zone)
-        Granularidad.MES -> MESES[z.monthValue - 1]
-    }
+/** Etiqueta del eje X según la agrupación, usando los formatos de fecha, hora y mes del dispositivo. */
+fun etiquetaPunto(inicio: Instant, g: Granularidad, zone: ZoneId): String = when (g) {
+    Granularidad.HORA -> Dates.time(inicio, zone)
+    Granularidad.DIA -> Dates.dayMonth(inicio, zone)
+    Granularidad.MES -> Dates.month(inicio, zone)
 }
 
 fun Cup.enPesos(): Double = centavos / 100.0

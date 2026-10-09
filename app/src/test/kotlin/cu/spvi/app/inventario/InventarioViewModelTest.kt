@@ -130,6 +130,16 @@ class InventarioViewModelTest {
      * estado de la pantalla cambia con cada tecla —el campo de texto no se retrasa—, pero la consulta a Room no.
      * Ocho pulsaciones seguidas = una sola consulta, y con el resultado de la palabra completa.
      */
+    @Test fun losSeleccionadosSeConservanFijadosFueraDeLaBusqueda() = runTest {
+        cargar()
+        val vm = vm()
+        vm.alternar(1)
+        vm.alternar(3)
+        vm.buscar("galle")
+        assertEquals(listOf(1L, 3L), vm.state.value.elementosFijados.map { it.producto.id })
+        assertEquals(listOf(2L), vm.state.value.items.map { it.producto.id })
+    }
+
     @Test fun elBuscadorAgrupaLasPulsaciones() = runTest {
         cargar()
         val vm = vm()

@@ -99,7 +99,7 @@ object TextosActualizacion {
     const val ERROR_DESCARGA = "La descarga no terminó o el archivo no coincide. Vuelve a intentarlo."
     const val INSTALACION_CANCELADA = "La instalación no se completó. Puedes volver a tocar Actualizar."
     const val BUSCAR = "Actualizaciones"
-    const val BUSCAR_DETALLE = "Una vez por semana, al abrir la app, mira en GitHub si hay una versión nueva. No envía ningún dato. " +
+    const val BUSCAR_DETALLE = "Una vez por semana, al abrir la app, mira en las Releases públicas de GitHub si hay una versión nueva. No envía datos del negocio ni un identificador del teléfono. " +
         "Las versiones nuevas son obligatorias: puedes aplazarlas hasta 30 días."
     const val BUSCAR_AHORA = "Buscar ahora"
 }

@@ -25,10 +25,12 @@ data class FormatoFecha(
     val dia: String = "dd/MM/yyyy",
     val diaMes: String = "dd/MM",
     val hora: String = "HH:mm",
+    val mes: String = "MMM",
 ) {
     internal val fDia: DateTimeFormatter = DateTimeFormatter.ofPattern(dia)
     internal val fDiaMes: DateTimeFormatter = DateTimeFormatter.ofPattern(diaMes)
     internal val fHora: DateTimeFormatter = DateTimeFormatter.ofPattern(hora)
+    internal val fMes: DateTimeFormatter = DateTimeFormatter.ofPattern(mes)
     internal val fDiaHora: DateTimeFormatter = DateTimeFormatter.ofPattern("$dia $hora")
     internal val fDiaMesHora: DateTimeFormatter = DateTimeFormatter.ofPattern("$diaMes $hora")
 
@@ -36,8 +38,8 @@ data class FormatoFecha(
         val PREDETERMINADO = FormatoFecha()
 
         /** Formato del dispositivo; si algún patrón no es válido para java.time, se queda el predeterminado. */
-        fun crear(dia: String, diaMes: String, hora: String): FormatoFecha =
-            runCatching { FormatoFecha(dia, diaMes, hora) }.getOrDefault(PREDETERMINADO)
+        fun crear(dia: String, diaMes: String, hora: String, mes: String = "MMM"): FormatoFecha =
+            runCatching { FormatoFecha(dia, diaMes, hora, mes) }.getOrDefault(PREDETERMINADO)
     }
 }
 
@@ -56,6 +58,7 @@ object Dates {
     fun day(d: LocalDate): String = formato.fDia.format(d)
     fun dayTime(i: Instant, zone: ZoneId = ZoneId.systemDefault()): String = formato.fDiaHora.format(i.atZone(zone))
     fun time(i: Instant, zone: ZoneId = ZoneId.systemDefault()): String = formato.fHora.format(i.atZone(zone))
+    fun month(i: Instant, zone: ZoneId = ZoneId.systemDefault()): String = formato.fMes.format(i.atZone(zone))
     fun dayMonth(i: Instant, zone: ZoneId = ZoneId.systemDefault()): String = formato.fDiaMes.format(i.atZone(zone))
     fun dayMonthTime(i: Instant, zone: ZoneId = ZoneId.systemDefault()): String = formato.fDiaMesHora.format(i.atZone(zone))
 }

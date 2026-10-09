@@ -11,12 +11,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -45,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -64,6 +65,7 @@ import cu.spvi.designsystem.component.SpviBadge
 import cu.spvi.designsystem.component.SpviBottomSheet
 import cu.spvi.designsystem.component.SpviCard
 import cu.spvi.designsystem.component.SpviChip
+import cu.spvi.designsystem.component.SpviComboBox
 import cu.spvi.designsystem.component.SpviDialog
 import cu.spvi.designsystem.component.SpviEmptyState
 import cu.spvi.designsystem.component.SpviFab
@@ -89,6 +91,7 @@ import cu.spvi.domain.model.FichaProducto
 import cu.spvi.domain.model.FiltroInventario
 import cu.spvi.domain.model.ItemInventario
 import cu.spvi.domain.model.TipoArticulo
+import cu.spvi.domain.model.TipoAlerta
 import cu.spvi.domain.service.FormatoExport
 import cu.spvi.domain.service.TablasExport
 
@@ -186,7 +189,7 @@ fun InventarioContent(
             } else SpviTopBar(title = TextosInventario.TITULO, actions = {
                 BotonFiltro(state, acciones)
                 if (LocalPermisosApp.current.exportar) SpviIconAction(
-                    SpviIcons.Exportar, TextosInventario.EXPORTAR, onClick = { acciones.onHoja(HojaInventario.EXPORTAR) },
+                    SpviIcons.Compartir, TextosInventario.EXPORTAR, onClick = { acciones.onHoja(HojaInventario.EXPORTAR) },
                     enabled = state.items.isNotEmpty() || state.seleccion.isNotEmpty(), modifier = Modifier.testTag(InventarioTags.EXPORTAR),
                 )
             })
@@ -207,6 +210,7 @@ fun InventarioContent(
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             if (state.trabajando) SpviLinearProgress(Modifier.fillMaxWidth())
+            ElementosFijados(state, acciones)
             Buscador(state, acciones)
             if (venta == null && state.seleccion.isNotEmpty()) BarraSeleccion(state, acciones)
             cu.spvi.designsystem.component.BloquearGestos(state.seleccion.isNotEmpty()) // 0.27.0 (T5)
@@ -221,8 +225,8 @@ fun InventarioContent(
                         title = TextosInventario.VACIO_TITULO, detail = TextosInventario.VACIO_DETALLE, ayuda = acciones.onAyuda,
                         ilustracion = SpviIlustracion.Inventario,
                     )
-                    is EstadoCarga.Exito -> if (v.datos.items.isEmpty()) {
-                        SpviEmptyState(
+                    is EstadoCarga.Exito -> when {
+                        v.datos.items.isEmpty() -> SpviEmptyState(
                             title = TextosInventario.SIN_RESULTADOS_TITULO, detail = TextosInventario.SIN_RESULTADOS_DETALLE,
                             ilustracion = SpviIlustracion.SinResultados,
                         ) {
@@ -231,8 +235,12 @@ fun InventarioContent(
                                 modifier = Modifier.testTag(InventarioTags.QUITAR_FILTROS),
                             )
                         }
-                    } else {
-                        Tabla(state, acciones)
+                        v.datos.items.none { it.producto.id !in state.seleccion } -> SpviEmptyState(
+                            title = TextosInventario.SELECCIONADOS_TITULO,
+                            detail = TextosInventario.SELECCIONADOS_DETALLE,
+                            ilustracion = SpviIlustracion.SinResultados,
+                        )
+                        else -> Tabla(state, acciones)
                     }
                 }
             }
@@ -332,14 +340,40 @@ private fun BarraSeleccion(state: InventarioUiState, acciones: AccionesInventari
 }
 
 @Composable
+private fun ElementosFijados(state: InventarioUiState, acciones: AccionesInventario) {
+    val fijados = state.elementosFijados
+    if (fijados.isEmpty()) return
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = SpviSpacing.md).testTag(InventarioTags.FIJADOS),
+        verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs / 2),
+    ) {
+        Text(
+            TextosInventario.seleccionados(fijados.size),
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.semantics { heading() },
+        )
+        LazyColumn(
+            Modifier.fillMaxWidth().heightIn(max = 240.dp),
+            contentPadding = PaddingValues(vertical = SpviSpacing.xs / 2),
+            verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs / 2),
+        ) {
+            items(fijados, key = { "fijado_${it.producto.id}" }) { i ->
+                Fila(i, marcado = true, acciones = acciones, modoVenta = state.modoVenta != null, modifier = spviAnimateItem())
+            }
+        }
+    }
+}
+
+@Composable
 private fun Tabla(state: InventarioUiState, acciones: AccionesInventario) {
+    val visibles = state.items.filterNot { it.producto.id in state.seleccion }
     LazyColumn(
         Modifier.fillMaxSize().testTag(InventarioTags.LISTA),
         contentPadding = PaddingValues(start = SpviSpacing.md, end = SpviSpacing.md, top = SpviSpacing.xs, bottom = SpviSize.fabClearance),
         verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs / 2),
     ) {
-        items(state.items, key = { it.producto.id }) { i ->
-            Fila(i, marcado = i.producto.id in state.seleccion, acciones = acciones, modoVenta = state.modoVenta != null, modifier = spviAnimateItem())
+        items(visibles, key = { it.producto.id }) { i ->
+            Fila(i, marcado = false, acciones = acciones, modoVenta = state.modoVenta != null, modifier = spviAnimateItem())
         }
     }
 }
@@ -448,37 +482,51 @@ private fun FichaDeInsumo(f: FichaInsumo, state: InventarioUiState, acciones: Ac
 
 // ---------------- Hojas ----------------
 
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun HojaFiltro(state: InventarioUiState, acciones: AccionesInventario) {
     var borrador by remember(state.filtro) { mutableStateOf(state.filtro) }
+    val alertas: List<TipoAlerta?> = listOf(null) + ALERTAS_PRODUCTO + ALERTAS_INSUMO + ALERTAS_GENERALES
+    val categorias = (state.categorias + listOfNotNull(borrador.categoria)).distinctBy { it.lowercase() }
     SpviBottomSheet(
         onDismiss = acciones.onCerrarHoja,
         title = TextosInventario.FILTRAR,
         footer = {
             SpviSecondaryButton("Quitar filtros", icon = SpviIcons.QuitarFiltros, onClick = { borrador = FiltroInventario(texto = borrador.texto) })
-            SpviPrimaryButton("Aplicar", icon = SpviIcons.Aplicar, onClick = { acciones.onFiltro(borrador) })
+            SpviPrimaryButton("Aplicar", icon = SpviIcons.Aplicar, onClick = { acciones.onFiltro(borrador) }, modifier = Modifier.testTag(InventarioTags.FILTRO_APLICAR))
         },
     ) {
-        Seccion("Estado")
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
-            SpviChip("Todos", selected = borrador.alerta == null, onClick = { borrador = borrador.copy(alerta = null) })
-            (ALERTAS_PRODUCTO + ALERTAS_INSUMO + ALERTAS_GENERALES).forEach { a ->
-                SpviChip(etiqueta(a), selected = borrador.alerta == a, onClick = { borrador = borrador.copy(alerta = a) })
-            }
-        }
-        Seccion("Tipo")
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
-            TipoArticulo.entries.forEach { t -> SpviChip(etiqueta(t), selected = borrador.tipo == t, onClick = { borrador = borrador.copy(tipo = t) }) }
-        }
-        if (state.categorias.isNotEmpty()) {
-            Seccion("Categoría")
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
-                SpviChip("Todas", selected = borrador.categoria == null, onClick = { borrador = borrador.copy(categoria = null) })
-                state.categorias.forEach { c ->
-                    SpviChip(c, selected = borrador.categoria.equals(c, ignoreCase = true), onClick = { borrador = borrador.copy(categoria = c) })
-                }
-            }
+        SpviComboBox(
+            label = "Estado",
+            opciones = alertas,
+            seleccion = borrador.alerta,
+            etiqueta = { a -> a?.let { etiqueta(it) } ?: "Todos" },
+            onSeleccion = { borrador = borrador.copy(alerta = it) },
+            leadingIcon = SpviIcons.Alerta,
+            tagOpcion = { a -> a?.let(InventarioTags::alertaOpcion) ?: InventarioTags.ALERTA_TODAS },
+            modifier = Modifier.fillMaxWidth().testTag(InventarioTags.FILTRO_ESTADO),
+        )
+        SpviComboBox(
+            label = "Tipo",
+            opciones = TipoArticulo.entries,
+            seleccion = borrador.tipo,
+            etiqueta = ::etiqueta,
+            onSeleccion = { borrador = borrador.copy(tipo = it) },
+            leadingIcon = SpviIcons.Inventario,
+            tagOpcion = InventarioTags::tipoOpcion,
+            modifier = Modifier.fillMaxWidth().testTag(InventarioTags.FILTRO_TIPO),
+        )
+        if (categorias.isNotEmpty()) {
+            val opcionesCategoria: List<String?> = listOf(null) + categorias
+            SpviComboBox(
+                label = "Categoría",
+                opciones = opcionesCategoria,
+                seleccion = borrador.categoria,
+                etiqueta = { it ?: "Todas" },
+                onSeleccion = { borrador = borrador.copy(categoria = it) },
+                leadingIcon = SpviIcons.Lista,
+                tagOpcion = { it?.let(InventarioTags::categoriaOpcion) ?: InventarioTags.CATEGORIA_TODAS },
+                modifier = Modifier.fillMaxWidth().testTag(InventarioTags.FILTRO_CATEGORIA),
+            )
         }
     }
 }
@@ -519,11 +567,6 @@ private fun HojaCompartirFicha(acciones: AccionesInventario) {
             )
         }
     }
-}
-
-@Composable
-private fun Seccion(t: String) {
-    Text(t, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = SpviSpacing.xs).semantics { heading() })
 }
 
 /** Opacidad del velo bajo el «+» abierto (la de los diálogos de Material 3). */
