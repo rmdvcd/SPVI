@@ -117,6 +117,10 @@ Tras importar un respaldo v4 con bloque `licencia` en un teléfono sin licencia 
 
 ---
 
+### Respaldo previo a la actualización (0.30.1)
+
+Antes de abrir el instalador, la app escribe un `.spvi` **sin contraseña** con el formato normal en `filesDir/respaldo_actualizacion/previo.spvi`, más `previo.version` (`versionName/versionCode` instalada). Es privado de la app (no se comparte ni se exporta) y se borra al restaurarse o al cancelarse la instalación. Al abrir otra versión, `RespaldoPrevio` lo importa con la misma ruta que «Importar» y vuelve a dejar como estaban `ultimoRespaldo` y la licencia recuperable del estado de la app.
+
 ## 2. Exportaciones
 
 Todas las tablas salen de una misma fuente neutra, `TablaExport` (título, columnas, filas y pie), definida en `domain/.../service/TablasExport.kt`. Los escritores están en `data/.../export/`.

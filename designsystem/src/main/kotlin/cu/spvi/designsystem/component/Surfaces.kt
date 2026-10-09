@@ -3,7 +3,18 @@ package cu.spvi.designsystem.component
 import cu.spvi.designsystem.theme.SpviTextos
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -68,6 +79,8 @@ fun SpviCard(
     titleCentered: Boolean = true,
     tone: CardTone = CardTone.Default,
     onClick: (() -> Unit)? = null,
+    /** true = la card mide lo que mide su contenido (en vez de ocupar todo el ancho que le den). */
+    ajustarAlContenido: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val cs = MaterialTheme.colorScheme
@@ -101,10 +114,62 @@ fun SpviCard(
             }
         }
     }
+    val medida = if (ajustarAlContenido) modifier else modifier.fillMaxWidth()
     if (onClick != null) {
-        Surface(onClick = onClick, modifier = modifier.fillMaxWidth(), shape = shape, color = container, shadowElevation = shadow, content = body)
+        Surface(onClick = onClick, modifier = medida, shape = shape, color = container, shadowElevation = shadow, content = body)
     } else {
-        Surface(modifier = modifier.fillMaxWidth(), shape = shape, color = container, shadowElevation = shadow, content = body)
+        Surface(modifier = medida, shape = shape, color = container, shadowElevation = shadow, content = body)
+    }
+}
+
+/**
+ * Card acordeón: la cabecera (título centrado + flecha) se toca para abrir o cerrar el contenido. El estado lo lleva
+ * quien la usa ([expanded]/[onToggle]) para poder recordarlo fuera de una lista que recicla sus filas. La cabecera mide
+ * como mínimo 48 dp, avisa a TalkBack de si está expandida y no cambia de tamaño con la letra grande.
+ */
+@Composable
+fun SpviAccordionCard(
+    title: String,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+    tone: CardTone = CardTone.Default,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val giro by animateFloatAsState(if (expanded) 180f else 0f, SpviMotion.tween(SpviMotion.SHORT), label = "acordeon")
+    SpviCard(modifier = modifier, tone = tone) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = SpviSize.touchTarget)
+                .clickable(role = Role.Button, onClick = onToggle)
+                .semantics(mergeDescendants = true) {
+                    heading()
+                    stateDescription = if (expanded) "Expandido" else "Contraído"
+                },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Spacer(Modifier.size(SpviSize.icon))
+            Text(
+                title,
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f),
+            )
+            Icon(SpviIcons.Desplegar, contentDescription = null, modifier = Modifier.size(SpviSize.icon).rotate(giro))
+        }
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically(SpviMotion.tween(SpviMotion.SHORT)) + fadeIn(SpviMotion.tween(SpviMotion.SHORT)),
+            exit = shrinkVertically(SpviMotion.tween(SpviMotion.SHORT)) + fadeOut(SpviMotion.tween(SpviMotion.FAST)),
+        ) {
+            Column(
+                Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                content = content,
+            )
+        }
     }
 }
 

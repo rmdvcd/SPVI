@@ -27,3 +27,19 @@ La fuente oficial de [ETECSA sobre Transfermóvil](https://www.etecsa.cu/es/tran
 La app ignora separadores y espacios, compara los primeros cuatro dígitos y deja sin logo las tarjetas incompletas, los prefijos desconocidos y `9224`. El mapeo implementado vive en `PagoElectronicoLogic.kt`, en `BancoCubano`/`bancoPorTarjeta`. No es una comprobación de emisor, titularidad, moneda ni capacidad de transferencia.
 
 En Pago electrónico se muestra un aviso de que el logo se estima por el prefijo y no verifica el banco ni la titularidad. La confirmación real debe hacerse en Transfermóvil o con el titular, independientemente del logo mostrado.
+
+## Presentación (0.30.1)
+
+- Los tres logos se muestran en una **caja de 96 × 48 dp** (`MedidasLogoBanco`), con esquinas redondeadas del token `SpviRadius.sm` y fondo blanco, para que BPA, BANDEC y BANMET ocupen exactamente el mismo espacio en la lista y en la hoja de edición. Los PNG no se modificaron.
+- BANDEC (rojo a sangre, sin margen propio) se recorta para llenar la caja (`ContentScale.Crop`); BPA (transparente) y BANMET (fondo blanco y formato muy alargado) se ajustan completos (`ContentScale.Fit`) con 6 dp de margen, sin deformarse.
+- El recurso de cada tarjeta lo decide `recursoLogoBanco(banco)`, que parte del mismo `bancoPorTarjeta` (primeros 4 dígitos) que el resto de la pantalla; no hay una segunda tabla.
+
+## Revisión de la asignación por prefijo (0.30.1)
+
+Se volvió a contrastar el mapeo con fuentes públicas. **No existe una fuente oficial única que ligue un prefijo a un banco**, y hay discrepancias que conviene conocer:
+
+- `9225` y `9235`: las comunicaciones del BANDEC los citan para personas naturales, pero el Banco Central de Cuba pidió en 2021 que las tarjetas MLC de destino empezaran por `9225` en los **tres** bancos, y hay referencias de BPA con `9225`/`9235`. El logo de BANDEC para `9225` es por tanto una **sugerencia**, no una certeza.
+- `9226`: la fuente comercial lo asigna a Banco Metropolitano, pero comunicaciones del BANDEC lo citan para trabajadores por cuenta propia y agricultores. Puede mostrar el logo de BANMET en una tarjeta de BANDEC.
+- `9227` y otros: sin logo.
+
+Por eso el mapeo sigue siendo conservador y la pantalla de Pago electrónico mantiene el aviso de que el logo es una estimación. Si el banco confirma una tabla de BIN, se cambia solo `BancoCubano`/`bancoPorTarjeta` y sus pruebas (`PagoLogicTest`).

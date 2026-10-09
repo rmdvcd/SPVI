@@ -28,6 +28,23 @@ class PagoLogicTest {
         assertNull(bancoPorTarjeta("123"))
     }
 
+    @Test fun elLogoSeDecideSoloPorLosCuatroPrimerosDigitos() {
+        assertEquals(BancoCubano.BANDEC, bancoPorTarjeta("9225 0000 0000 1234"))
+        assertEquals(BancoCubano.BANDEC, bancoPorTarjeta("9225000000001234"))
+        assertEquals(BancoCubano.BANDEC, bancoPorTarjeta("9225"))
+        assertEquals(BancoCubano.BPA, bancoPorTarjeta(" 9205 - 1299 "))
+        assertNull(bancoPorTarjeta("9235-0000-0000-1234")) // compartido entre bancos: sin logo
+        assertNull(bancoPorTarjeta("9227-0000-0000-1234"))
+        assertNull(bancoPorTarjeta("5205-1299-0000-1234")) // el 9205 solo cuenta al inicio
+    }
+
+    @Test fun cadaBancoTieneSuPropioLogoYLosTresMidenLoMismo() {
+        val recursos = BancoCubano.entries.map { recursoLogoBanco(it) }
+        assertEquals(3, recursos.toSet().size) // ningún banco usa el logo de otro
+        assertEquals(3, recursos.size)
+        assertEquals(2f, MedidasLogoBanco.ancho.value / MedidasLogoBanco.alto.value, 0f)
+    }
+
     @Test fun enEdicionElNumeroEsObligatorio() {
         assertEquals(TextosPago.ERROR_TELEFONO, EdicionPago(TipoCuentaPago.TELEFONO).error)
         assertEquals(TextosPago.ERROR_TARJETA, EdicionPago(TipoCuentaPago.TARJETA, numero = "").error)

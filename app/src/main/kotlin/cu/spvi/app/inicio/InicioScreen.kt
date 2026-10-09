@@ -32,7 +32,9 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -58,6 +60,7 @@ import cu.spvi.core.time.Dates
 import cu.spvi.designsystem.component.CardTone
 import cu.spvi.designsystem.component.ChartSeries
 import cu.spvi.designsystem.component.IconActionStyle
+import cu.spvi.designsystem.component.SpviAccordionCard
 import cu.spvi.designsystem.component.SpviAlertCounter
 import cu.spvi.designsystem.component.SpviAreaChart
 import cu.spvi.designsystem.component.SpviBarChart
@@ -114,6 +117,18 @@ object InicioTags {
     fun periodo(o: OpcionPeriodo) = "inicio_periodo_${o.name}"
     fun top(t: TipoTop) = "inicio_top_${t.name}"
     fun tipoVenta(t: TipoVenta) = "inicio_tipo_venta_${t.name}"
+}
+
+/**
+ * Qué acordeones de Inicio están abiertos. Vive en [InicioContent] con `remember` (no `rememberSaveable`) y se crea
+ * fuera del `LazyColumn`: el estado sobrevive al desplazamiento, pero al cambiar de ventana la pantalla sale de la
+ * composición y todo vuelve a estar cerrado. [abiertosAlInicio] solo lo usan las capturas.
+ */
+@Stable
+class AcordeonesInicio(private val abiertosAlInicio: Boolean = false) {
+    private val estado = mutableStateMapOf<String, Boolean>()
+    fun abierto(clave: String): Boolean = estado[clave] ?: abiertosAlInicio
+    fun alternar(clave: String) { estado[clave] = !abierto(clave) }
 }
 
 class AccionesInicio(
@@ -239,8 +254,11 @@ fun InicioContent(
     /** 0.26.0 (P73 §4): en la principal, empleados que piden el fondo y apps 0.25.x por actualizar. */
     aperturas: List<String> = emptyList(),
     desactualizadas: List<String> = emptyList(),
+    /** Solo para capturas: abre todos los acordeones (en la app empiezan siempre cerrados). */
+    acordeonesAbiertos: Boolean = false,
 ) {
     val permisos = cu.spvi.app.common.LocalPermisosApp.current
+    val acordeones = remember { AcordeonesInicio(acordeonesAbiertos) }
     // 0.27.0 (T2): con letra grande caben menos alertas por fila (ancho de pantalla menos el relleno lateral).
     val maxAlertas = alertasPorFila(
         androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp - 2 * SpviSpacing.md.value,
@@ -351,17 +369,22 @@ fun InicioContent(
                 }
             }
             if (actualizacion.tarjetaVisible) item(key = "actualizacion") { TarjetaActualizacion(actualizacion, acciones) }
-            item(key = "turno") { TurnoCard(state, acciones, zona, permisos) }
+            item(key = "turno") { TurnoCard(state, acciones, zona, permisos, apilar = maxAlertas < 2) }
             // 0.21.0 (C12): sin Ventas ni Inventario no hay alertas de existencias.
             if (permisos.verInventario) alertas(state.alertas, acciones, maxAlertas)
             // 0.21.0 (C9): en la secundaria, solo turno, Nueva venta y alertas; los accesos y los gráficos son del dueño.
             if (!permisos.esSecundaria) item(key = "accesos") {
                 val pago: @Composable (Modifier) -> Unit = { m ->
-                    Acceso("Pago electrónico", state.pago.texto, SpviIcons.PagoElectronico, acciones.onPago, m.testTag(InicioTags.PAGO))
+                    // Teléfono y cuenta/tarjeta en seminegrita (solo los números, no «Tel.» ni «Cuenta»).
+                    Acceso(
+                        "Pago electrónico",
+                        SpviTextos.resaltar(state.pago.texto, state.pago.telefono.orEmpty(), state.pago.cuenta.orEmpty()),
+                        SpviIcons.PagoElectronico, acciones.onPago, m.testTag(InicioTags.PAGO),
+                    )
                 }
                 val precios: @Composable (Modifier) -> Unit = { m ->
                     Acceso(
-                        "Precios", textoPrecios(state.preajustesActivos, state.preajustesTotal), SpviIcons.Precios,
+                        "Precios", androidx.compose.ui.text.AnnotatedString(textoPrecios(state.preajustesActivos, state.preajustesTotal)), SpviIcons.Precios,
                         { acciones.onNavigate(Route.Precios) }, m.testTag(InicioTags.PRECIOS),
                     )
                 }
@@ -381,8 +404,8 @@ fun InicioContent(
             }
             if (!permisos.esSecundaria) {
                 item(key = "periodo") { SelectorPeriodo(state.opcion, acciones.onPeriodo) }
-                graficosPeriodo(state.graficos, state.opcion, zona, acciones.onReintentar)
-                resumenGeneral(state.resumen, acciones.onReintentar)
+                graficosPeriodo(state.graficos, state.opcion, zona, acciones.onReintentar, acordeones)
+                resumenGeneral(state.resumen, acciones.onReintentar, acordeones)
             }
         }
     }
@@ -439,7 +462,7 @@ private fun TarjetaActualizacion(a: cu.spvi.app.actualizacion.EstadoActualizacio
         )
         // 0.26.0 (§6): fecha límite en seminegrita (dato).
         a.limite?.let { Text(T.obligatoriaDesde(it), style = SpviTextos.datoEn(MaterialTheme.typography.bodyMedium)) }
-        a.disponible?.notas?.takeIf { it.isNotBlank() && a.desdePrincipal == null }?.let { SpviSecondaryText(it.take(400), maxLines = 4, textAlign = TextAlign.Start) }
+        a.disponible?.notas?.takeIf { a.desdePrincipal == null }?.let(T::notasVisibles)?.takeIf { it.isNotBlank() }?.let { SpviSecondaryText(it.take(400), maxLines = 4, textAlign = TextAlign.Start) }
         if (a.progreso != null) {
             SpviSecondaryText(T.DESCARGANDO + " ${(a.progreso * 100).toInt()} %", textAlign = TextAlign.Start)
             cu.spvi.designsystem.component.SpviLinearProgress(modifier = Modifier.fillMaxWidth(), progress = a.progreso)
@@ -462,18 +485,63 @@ private fun TarjetaActualizacion(a: cu.spvi.app.actualizacion.EstadoActualizacio
 // ---------------- Turno y Nueva venta ----------------
 
 
+/**
+ * 0.30.1: «Nueva venta» a la izquierda y, a la derecha, el turno con su interruptor de dos estados (abierto / cerrado).
+ * El contenedor del turno mide lo que mide su contenido. Con letra muy grande ([apilar]) no caben en una fila: el botón
+ * va arriba y el turno debajo, a todo el ancho.
+ */
 @Composable
-private fun TurnoCard(state: InicioUiState, acciones: AccionesInicio, zona: ZoneId, permisos: cu.spvi.domain.model.PermisosApp) {
-    val abierto = state.turnoAbierto
-    SpviCard(modifier = Modifier.testTag(InicioTags.TURNO)) {
+private fun TurnoCard(state: InicioUiState, acciones: AccionesInicio, zona: ZoneId, permisos: cu.spvi.domain.model.PermisosApp, apilar: Boolean) {
+    // 0.21.0 (C12): sin ningún tipo de venta (solo Inventario, o sin permiso de vender) no hay botón de venta.
+    if (!permisos.vender) {
+        TurnoContenedor(state, acciones, zona, ajustar = false)
+    } else if (apilar) {
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(SpviSpacing.md)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(SpviSpacing.lg, Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically,
+            ) { AccionesVenta(state, acciones) }
+            TurnoContenedor(state, acciones, zona, ajustar = false)
+        }
+    } else {
         Row(
-            Modifier.fillMaxWidth()
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(SpviSpacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) { AccionesVenta(state, acciones) }
+            Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) { TurnoContenedor(state, acciones, zona, ajustar = true) }
+        }
+    }
+}
+
+/** «Nueva venta» (solo icono + texto) y, con el turno abierto, entrada / salida de efectivo (0.25.0, §5.2). */
+@Composable
+private fun AccionesVenta(state: InicioUiState, acciones: AccionesInicio) {
+    SpviPrimaryButton(
+        "Nueva venta", onClick = acciones.onNuevaVenta, icon = SpviIcons.Venta, enabled = state.puedeEmpezarVenta,
+        loading = state.cambiandoTurno, modifier = Modifier.heightIn(min = SpviSize.touchTarget).testTag(InicioTags.NUEVA_VENTA),
+    )
+    if (state.turnoAbierto) SpviIconAction(
+        SpviIcons.Efectivo, cu.spvi.app.caja.TextosCaja.MOVIMIENTO_TITULO, onClick = acciones.onMovimientoCaja,
+        style = IconActionStyle.Tonal, modifier = Modifier.testTag(InicioTags.CAJA),
+    )
+}
+
+/** Estado del turno con su interruptor; toda la fila es el interruptor. [ajustar] = ancho del contenido. */
+@Composable
+private fun TurnoContenedor(state: InicioUiState, acciones: AccionesInicio, zona: ZoneId, ajustar: Boolean) {
+    val abierto = state.turnoAbierto
+    SpviCard(ajustarAlContenido = ajustar, modifier = Modifier.testTag(InicioTags.TURNO)) {
+        Row(
+            (if (ajustar) Modifier else Modifier.fillMaxWidth())
                 .toggleable(value = abierto, enabled = !state.cambiandoTurno, role = Role.Switch, onValueChange = acciones.onTurno),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SpviSpacing.md),
+            horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
         ) {
             Icon(SpviIcons.Turno, contentDescription = null, tint = if (abierto) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-            Column(Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite }) {
+            Column(Modifier.weight(1f, fill = !ajustar).semantics { liveRegion = LiveRegionMode.Polite }) {
                 Text(if (abierto) TextosInicio.TURNO_ABIERTO else TextosInicio.TURNO_CERRADO, style = MaterialTheme.typography.titleMedium)
                 SpviSecondaryText(
                     state.turno?.takeIf { abierto }?.let { t ->
@@ -493,23 +561,6 @@ private fun TurnoCard(state: InicioUiState, acciones: AccionesInicio, zona: Zone
                 }
             }
             Switch(checked = abierto, onCheckedChange = null, enabled = !state.cambiandoTurno)
-        }
-        // P25: «Nueva venta», solo icono, centrada (antes en pareja con Escanear, eliminado con el código de barras).
-        // 0.21.0 (C12): sin ningún tipo de venta (solo Inventario, o sin permiso de vender) no hay botón de venta.
-        if (permisos.vender) Row(
-            Modifier.fillMaxWidth().padding(top = SpviSpacing.xs),
-            horizontalArrangement = Arrangement.spacedBy(SpviSpacing.lg, Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SpviPrimaryButton(
-                "Nueva venta", onClick = acciones.onNuevaVenta, icon = SpviIcons.Venta, enabled = state.puedeEmpezarVenta,
-                loading = state.cambiandoTurno, modifier = Modifier.heightIn(min = SpviSize.touchTarget).testTag(InicioTags.NUEVA_VENTA),
-            )
-            // 0.25.0 (§5.2): entrada / salida de efectivo en el turno abierto (quien vende la puede registrar).
-            if (abierto) SpviIconAction(
-                SpviIcons.Efectivo, cu.spvi.app.caja.TextosCaja.MOVIMIENTO_TITULO, onClick = acciones.onMovimientoCaja,
-                style = IconActionStyle.Tonal, modifier = Modifier.testTag(InicioTags.CAJA),
-            )
         }
     }
 }
@@ -572,7 +623,7 @@ private fun LazyListScope.alertas(alertas: List<AlertaUi>, acciones: AccionesIni
 }
 
 @Composable
-private fun Acceso(titulo: String, detalle: String, icono: ImageVector, onClick: () -> Unit, modifier: Modifier) {
+private fun Acceso(titulo: String, detalle: androidx.compose.ui.text.AnnotatedString, icono: ImageVector, onClick: () -> Unit, modifier: Modifier) {
     SpviCard(onClick = onClick, tone = CardTone.Tonal, modifier = modifier) {
         Icon(icono, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
         // 0.27.0 (T2): con letra grande el texto pasa a varias líneas y la tarjeta crece.
@@ -600,35 +651,37 @@ private fun SelectorPeriodo(opcion: OpcionPeriodo, onPeriodo: (OpcionPeriodo) ->
 
 // ---------------- Gráficos del período ----------------
 
-private fun LazyListScope.graficosPeriodo(estado: EstadoCarga<GraficosPeriodo>, opcion: OpcionPeriodo, zona: ZoneId, onReintentar: () -> Unit) {
+private fun LazyListScope.graficosPeriodo(
+    estado: EstadoCarga<GraficosPeriodo>, opcion: OpcionPeriodo, zona: ZoneId, onReintentar: () -> Unit, ac: AcordeonesInicio,
+) {
     when (estado) {
         EstadoCarga.Idle, EstadoCarga.Cargando -> {
-            item(key = "ventas") { CardGrafico("Ventas", InicioTags.VENTAS) { Cargando() } }
-            item(key = "ganancia") { CardGrafico("Ganancia Neta", InicioTags.GANANCIA) { Cargando() } }
+            item(key = "ventas") { CardGrafico("Ventas", InicioTags.VENTAS, ac) { Cargando() } }
+            item(key = "ganancia") { CardGrafico("Ganancia Neta", InicioTags.GANANCIA, ac) { Cargando() } }
         }
         is EstadoCarga.Error -> item(key = "graficos_error") { CardError(estado.mensaje, onReintentar) }
         is EstadoCarga.Vacio -> {
             val g = estado.datos
             item(key = "ventas") {
-                CardGrafico("Ventas", InicioTags.VENTAS) {
+                CardGrafico("Ventas", InicioTags.VENTAS, ac) {
                     g?.let { Subtitulo(descripcionPeriodo(it, opcion, zona)) }
                     Vacio(TextosInicio.SIN_VENTAS)
                 }
             }
-            item(key = "ganancia") { CardGrafico("Ganancia Neta", InicioTags.GANANCIA) { Vacio(TextosInicio.SIN_VENTAS) } }
+            item(key = "ganancia") { CardGrafico("Ganancia Neta", InicioTags.GANANCIA, ac) { Vacio(TextosInicio.SIN_VENTAS) } }
         }
         is EstadoCarga.Exito -> {
             val g = estado.datos
-            item(key = "ventas") { VentasCard(g, opcion, zona) }
-            item(key = "ganancia") { GananciaCard(g) }
+            item(key = "ventas") { VentasCard(g, opcion, zona, ac) }
+            item(key = "ganancia") { GananciaCard(g, ac) }
         }
     }
 }
 
 @Composable
-private fun VentasCard(g: GraficosPeriodo, opcion: OpcionPeriodo, zona: ZoneId) {
+private fun VentasCard(g: GraficosPeriodo, opcion: OpcionPeriodo, zona: ZoneId, ac: AcordeonesInicio) {
     val puntos = g.serie.puntos
-    CardGrafico("Ventas", InicioTags.VENTAS) {
+    CardGrafico("Ventas", InicioTags.VENTAS, ac) {
         // 0.28.0: la hora o fecha del turno («Turno actual, desde las 08:30») va en seminegrita.
         val t = g.turno
         Subtitulo(
@@ -649,10 +702,10 @@ private fun VentasCard(g: GraficosPeriodo, opcion: OpcionPeriodo, zona: ZoneId) 
 }
 
 @Composable
-private fun GananciaCard(g: GraficosPeriodo) {
+private fun GananciaCard(g: GraficosPeriodo, ac: AcordeonesInicio) {
     val colores = SpviTheme.colors.chart
     val puntos = g.serie.puntos
-    CardGrafico("Ganancia Neta", InicioTags.GANANCIA) {
+    CardGrafico("Ganancia Neta", InicioTags.GANANCIA, ac) {
         // P24/P28: dos columnas del mismo ancho (Costo y Ganancia); el importe se reduce si no cabe, nunca se parte.
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
             // P28: sin «Venta»: es el mismo total que muestra la tarjeta Ventas justo encima.
@@ -673,23 +726,23 @@ private fun GananciaCard(g: GraficosPeriodo) {
 
 // ---------------- Resumen general (sin selector) ----------------
 
-private fun LazyListScope.resumenGeneral(estado: EstadoCarga<ResumenGeneral>, onReintentar: () -> Unit) {
+private fun LazyListScope.resumenGeneral(estado: EstadoCarga<ResumenGeneral>, onReintentar: () -> Unit, ac: AcordeonesInicio) {
     when (estado) {
         EstadoCarga.Idle, EstadoCarga.Cargando -> {
-            item(key = "inventario") { CardGrafico("Inventario", InicioTags.INVENTARIO) { Cargando() } }
-            item(key = "metodos") { CardGrafico("Métodos de pago", InicioTags.METODOS) { Cargando() } }
+            item(key = "inventario") { CardGrafico("Inventario", InicioTags.INVENTARIO, ac) { Cargando() } }
+            item(key = "metodos") { CardGrafico("Métodos de pago", InicioTags.METODOS, ac) { Cargando() } }
         }
         is EstadoCarga.Error -> item(key = "resumen_error") { CardError(estado.mensaje, onReintentar) }
-        is EstadoCarga.Vacio -> estado.datos?.let { resumenCon(it) } ?: item(key = "inventario") {
-            CardGrafico("Inventario", InicioTags.INVENTARIO) { Vacio(TextosInicio.SIN_INVENTARIO) }
+        is EstadoCarga.Vacio -> estado.datos?.let { resumenCon(it, ac) } ?: item(key = "inventario") {
+            CardGrafico("Inventario", InicioTags.INVENTARIO, ac) { Vacio(TextosInicio.SIN_INVENTARIO) }
         }
-        is EstadoCarga.Exito -> resumenCon(estado.datos)
+        is EstadoCarga.Exito -> resumenCon(estado.datos, ac)
     }
 }
 
-private fun LazyListScope.resumenCon(r: ResumenGeneral) {
+private fun LazyListScope.resumenCon(r: ResumenGeneral, ac: AcordeonesInicio) {
     item(key = "inventario") {
-        CardGrafico("Inventario", InicioTags.INVENTARIO) {
+        CardGrafico("Inventario", InicioTags.INVENTARIO, ac) {
             if (r.categorias.isEmpty()) Vacio(TextosInicio.SIN_INVENTARIO) else {
                 // 0.27.0 (N1): valores en milésimas (productos e insumos, cada uno en su medida) → números sin unidad.
                 val slices = porcionesUi(r.categorias) { cantidadInventario(it) }
@@ -699,7 +752,7 @@ private fun LazyListScope.resumenCon(r: ResumenGeneral) {
         }
     }
     item(key = "metodos") {
-        CardGrafico("Métodos de pago", InicioTags.METODOS) {
+        CardGrafico("Métodos de pago", InicioTags.METODOS, ac) {
             Subtitulo("Últimos ${r.dias} días")
             if (r.metodosPago.isEmpty()) Vacio(TextosInicio.SIN_PAGOS) else {
                 val slices = porcionesUi(r.metodosPago) { Money.format(Cup(it)) }
@@ -707,21 +760,24 @@ private fun LazyListScope.resumenCon(r: ResumenGeneral) {
             }
         }
     }
-    top(TipoTop.MAS_VENDIDO, r.top3.masVendidos, r.dias)
-    top(TipoTop.LENTO, r.top3.lentoMovimiento, r.dias)
-    top(TipoTop.RENTABILIDAD, r.top3.rentabilidad, r.dias)
+    top(TipoTop.MAS_VENDIDO, r.top3.masVendidos, r.dias, ac)
+    top(TipoTop.LENTO, r.top3.lentoMovimiento, r.dias, ac)
+    top(TipoTop.RENTABILIDAD, r.top3.rentabilidad, r.dias, ac)
     // P29: indicadores propios de los servicios (ocultos si no se vendió ninguno en el período).
-    top(TipoTop.SERVICIO_TOP, r.servicios.masVendidos, r.dias)
-    top(TipoTop.SERVICIO_MENOS, r.servicios.menosVendidos, r.dias)
-    topPersonas(TipoTop.EMPLEADO, r.empleados, r.dias, "venta", "ventas")
-    topPersonas(TipoTop.CLIENTE, r.clientes, r.dias, "compra", "compras")
+    top(TipoTop.SERVICIO_TOP, r.servicios.masVendidos, r.dias, ac)
+    top(TipoTop.SERVICIO_MENOS, r.servicios.menosVendidos, r.dias, ac)
+    topPersonas(TipoTop.EMPLEADO, r.empleados, r.dias, "venta", "ventas", ac)
+    topPersonas(TipoTop.CLIENTE, r.clientes, r.dias, "compra", "compras", ac)
 }
 
 /** Top 3: oculto si no hay datos (SPVI.txt). */
-private fun LazyListScope.top(tipo: TipoTop, items: List<TopItem>, dias: Int) {
+private fun LazyListScope.top(tipo: TipoTop, items: List<TopItem>, dias: Int, ac: AcordeonesInicio) {
     if (items.isEmpty()) return
     item(key = "top_${tipo.name}") {
-        SpviCard(title = tipo.titulo, titleCentered = true, modifier = Modifier.testTag(InicioTags.top(tipo)).then(spviAnimateItem())) {
+        SpviAccordionCard(
+            title = tipo.titulo, expanded = ac.abierto(InicioTags.top(tipo)), onToggle = { ac.alternar(InicioTags.top(tipo)) },
+            modifier = Modifier.testTag(InicioTags.top(tipo)).then(spviAnimateItem()),
+        ) {
             Subtitulo("Últimos $dias días")
             items.forEachIndexed { i, it ->
                 SpviListItem(
@@ -738,10 +794,13 @@ private fun LazyListScope.top(tipo: TipoTop, items: List<TopItem>, dias: Int) {
 }
 
 /** Top 3 de personas (empleados y clientes): oculto si no hay datos. */
-private fun LazyListScope.topPersonas(tipo: TipoTop, items: List<TopPersona>, dias: Int, singular: String, plural: String) {
+private fun LazyListScope.topPersonas(tipo: TipoTop, items: List<TopPersona>, dias: Int, singular: String, plural: String, ac: AcordeonesInicio) {
     if (items.isEmpty()) return
     item(key = "top_${tipo.name}") {
-        SpviCard(title = tipo.titulo, titleCentered = true, modifier = Modifier.testTag(InicioTags.top(tipo)).then(spviAnimateItem())) {
+        SpviAccordionCard(
+            title = tipo.titulo, expanded = ac.abierto(InicioTags.top(tipo)), onToggle = { ac.alternar(InicioTags.top(tipo)) },
+            modifier = Modifier.testTag(InicioTags.top(tipo)).then(spviAnimateItem()),
+        ) {
             Subtitulo("Últimos $dias días")
             items.forEachIndexed { i, it ->
                 SpviListItem(
@@ -759,8 +818,9 @@ private fun LazyListScope.topPersonas(tipo: TipoTop, items: List<TopPersona>, di
 // ---------------- Piezas comunes ----------------
 
 @Composable
-private fun CardGrafico(titulo: String, tag: String, content: @Composable () -> Unit) {
-    SpviCard(title = titulo, titleCentered = true, modifier = Modifier.testTag(tag)) { content() }
+private fun CardGrafico(titulo: String, tag: String, ac: AcordeonesInicio, content: @Composable () -> Unit) {
+    // Acordeón cerrado de inicio; la clave es el tag (único por tarjeta).
+    SpviAccordionCard(title = titulo, expanded = ac.abierto(tag), onToggle = { ac.alternar(tag) }, modifier = Modifier.testTag(tag)) { content() }
 }
 
 @Composable

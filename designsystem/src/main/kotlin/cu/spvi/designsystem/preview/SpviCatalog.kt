@@ -90,6 +90,12 @@ fun SpviCatalog() {
             SpviStatusBanner("Tu licencia vence hoy", BannerTone.Critico, detail = "Renuévala para seguir vendiendo")
             SpviEmptyState("Sin productos", "Agrega tu primer producto con el botón +", ayuda = {})
             SpviAlertCounter("Stock inventario bajo", 4, AlertTone.StockBajo, onClick = {})
+            var acordeonAbierto by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(true) }
+            cu.spvi.designsystem.component.SpviAccordionCard(
+                title = "Ventas por hora", expanded = acordeonAbierto, onToggle = { acordeonAbierto = !acordeonAbierto },
+            ) {
+                SpviSecondaryText("Contenido que se muestra al expandir")
+            }
             SpviCard(title = "Ventas", titleCentered = true, tone = CardTone.Tonal) {
                 SpviListItem("Refresco de cola", subtitle = "Bebidas", value = "1,450.00 CUP")
                 SpviListItem("Pizza napolitana", subtitle = "Elaborado", value = "900.00 CUP", indicatorColor = MaterialTheme.colorScheme.secondary)

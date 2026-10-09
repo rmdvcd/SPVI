@@ -2,7 +2,12 @@ package cu.spvi.app.pagos
 
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
@@ -53,6 +58,7 @@ import cu.spvi.designsystem.component.SpviTopBar
 import cu.spvi.designsystem.component.spviAnimateItem
 import cu.spvi.designsystem.component.spviContentWidth
 import cu.spvi.designsystem.icon.SpviIcons
+import cu.spvi.designsystem.token.SpviRadius
 import cu.spvi.designsystem.token.SpviSpacing
 
 object PagoTags {
@@ -206,19 +212,41 @@ private fun androidx.compose.foundation.lazy.LazyListScope.lista(
     }
 }
 
+/** Recurso gráfico de cada banco. El prefijo que decide el banco vive en [bancoPorTarjeta]. */
+internal fun recursoLogoBanco(banco: BancoCubano): Int = when (banco) {
+    BancoCubano.BPA -> R.drawable.logo_banco_bpa
+    BancoCubano.BANDEC -> R.drawable.logo_banco_bandec
+    BancoCubano.BANMET -> R.drawable.logo_banco_banmet
+}
+
+/** Medidas únicas de los tres logos: misma proporción (2:1) y mismo tamaño, con bordes redondeados. */
+internal object MedidasLogoBanco {
+    val ancho = 96.dp
+    val alto = 48.dp
+    val margen = 6.dp
+}
+
+/**
+ * Los tres logos se dibujan en un recuadro idéntico con las esquinas redondeadas. BANDEC trae su propio fondo y llena
+ * el recuadro; BPA y Banco Metropolitano (apaisados, sobre blanco o transparente) se ajustan dentro sin deformarse.
+ */
 @Composable
 private fun LogoBanco(banco: BancoCubano, modifier: Modifier = Modifier) {
-    val recurso = when (banco) {
-        BancoCubano.BPA -> R.drawable.logo_banco_bpa
-        BancoCubano.BANDEC -> R.drawable.logo_banco_bandec
-        BancoCubano.BANMET -> R.drawable.logo_banco_banmet
+    val llena = banco == BancoCubano.BANDEC
+    Box(
+        modifier
+            .size(width = MedidasLogoBanco.ancho, height = MedidasLogoBanco.alto)
+            .clip(RoundedCornerShape(SpviRadius.sm))
+            .background(Color.White),
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(
+            painter = painterResource(recursoLogoBanco(banco)),
+            contentDescription = banco.nombre,
+            contentScale = if (llena) ContentScale.Crop else ContentScale.Fit,
+            modifier = if (llena) Modifier.fillMaxSize() else Modifier.fillMaxSize().padding(MedidasLogoBanco.margen),
+        )
     }
-    Image(
-        painter = painterResource(recurso),
-        contentDescription = banco.nombre,
-        contentScale = ContentScale.Fit,
-        modifier = modifier.size(width = 72.dp, height = 36.dp),
-    )
 }
 
 @Composable
