@@ -1432,6 +1432,13 @@ Primera vez que el repositorio se verifica solo: GitHub Actions ejecuta Gradle r
 - Resultado: `./gradlew spviTests` en verde (856 tests JVM, 0 fallos) y `./gradlew spviCheck` en verde (lint 0 errores, 127 avisos; `spviPermisos` OK; APK debug 58,8 MB).
 - En el teléfono: Inicio y listas legibles con fuente normal y al 200 % (sin cortes); selección de Inventario fijada sobre el buscador con sus acciones; ficha de producto centrada con Compartir. Quedan `NO VERIFICADO` (requieren al dueño): dinero tecleado con coma y casos límite en el teléfono, descuentos acumulados en el dispositivo, QR de Transfermóvil con total debajo, SMS bancario real con Acceso a notificaciones, y Release firmada con sus assets (`spviGithubRepo=rmdvcd/SPVI`).
 
+## Verificación 2026-10-10 en el PC del dueño (OpenCode, main @ d2f51b4, PR #9)
+
+- **Móvil:** `./gradlew spviTests` en verde (**859 tests JVM, 0 fallos**: core 19, licencia 99, domain 243, data 86, designsystem 33, app 379) y `./gradlew spviCheck` en verde (lint 0 errores, `spviPermisos` OK; APK debug 62,5 MB). Instalado con `install -r` y abierto en el Redmi 23021RAAEG (Android 15): Inicio con acordeones, turno, alertas y Pago electrónico con cuenta enmascarada, todo legible.
+- **Paso 3 de la revisión en el teléfono:** Inicio legible con fuente normal. Con fuente al 200 % la etiqueta `Cantidad` de Nueva venta se parte en dos líneas dentro del campo (`Canti/dad`); queda anotado como pendiente de T2 (textos que no se cortan). Fuente restaurada a 1.0. Se encontró un turno abierto con un carrito ajeno (datos del dueño) y se dejó intacto: el diálogo `¿Descartar la venta?` protege la salida con BACK.
+- **Web (`desktop/`):** primera ejecución real de esta ampliación. Entorno `.venv` creado (Python 3.14.7), `requirements.txt` instalado, `unittest discover -s tests`: **84 pruebas OK** sin corregir nada. `build_windows.ps1` generó `dist/SPVI.exe` (29,3 MB, con `SPVI.exe.sha256`) y su `--self-test` interno pasó. El EXE arrancado con `--local` y carpeta temporal sirvió `http://127.0.0.1:8765` con HTTP 200 (acceso `SPVI · Mi negocio`, `Principal · Escritorio`, CSRF presente); la carpeta temporal se borró después. Sin tocar datos reales.
+- Siguen `NO VERIFICADO` (requieren al dueño): dinero con coma y casos límite tecleados en el teléfono, descuentos acumulados y QR real de Transfermóvil, SMS bancario real, Release firmada, LAN Android↔PC con GL real, HTTPS con `spvi.minegocio.cu`, y validación visual en navegador real.
+
 ### Principal web independiente — ampliación en desarrollo
 
 - Incorporados modelo canónico Android, servidor LAN principal, empleados, permisos, fondos,

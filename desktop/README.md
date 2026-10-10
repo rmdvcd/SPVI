@@ -195,6 +195,13 @@ Si retiras la aplicación, puedes quitar la CA local desde el administrador de c
 - Windows CI/EXE, validación visual y pruebas con Android real: pendientes.
 - Guía de verificación y pendientes: [VERIFICACION_PC.md](VERIFICACION_PC.md).
 
+## Estado de comprobación (2026-10-10, PC del dueño, main @ d2f51b4)
+
+- `unittest discover -s tests`: **84 pruebas OK** (Python 3.14.7). Primera ejecución real de la ampliación; sin correcciones.
+- `build_windows.ps1`: EXE `dist/SPVI.exe` (29,3 MB + `.sha256`) generado y `--self-test` interno pasado.
+- EXE con `--local` y datos temporales: HTTP 200 en `http://127.0.0.1:8765` (acceso, CSRF presente). Temporal borrado.
+- Pendientes: navegador real, HTTPS `spvi.minegocio.cu`, LAN con Android real y GL real (ver VERIFICACION_PC.md, puntos 4–10 y 15–18).
+
 ## Flujos añadidos
 
 - **Corregir:** abre Historial, selecciona una venta de turno abierto, modifica su carrito, método y
