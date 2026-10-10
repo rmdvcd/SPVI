@@ -4,6 +4,39 @@ Registro **histórico** de lo que se implementó en cada fase y de las suposicio
 
 > **Prevalece la documentación actual.** Si algo de este historial contradice a [README.md](../README.md), [SECURITY.md](../SECURITY.md), [FORMATOS.md](../FORMATOS.md), [LICENSE_CLIENT.md](../LICENSE_CLIENT.md) o [UI_UX_IX.md](../UI_UX_IX.md), vale lo que dicen esos documentos. Las fases posteriores sustituyen a las anteriores.
 
+## 2026-10-09 — Segunda entrega de escritorio (sin release)
+
+- PDF/Excel/PNG y promociones textuales con encabezado; ZIP cuando hay varias imágenes. Política en servidor,
+  filtro de catálogo, validación de selección y prevención de fórmulas de Excel.
+- Respaldo cifrado `.spvidesk` y restauración atómica con validación previa y copia cifrada de seguridad.
+  No se confunde con el formato Android `.spvi`; su interoperabilidad sigue pendiente.
+- Dashboard con comparación del período anterior, evolución diaria y precios bajo costo.
+- Workflow Windows: pruebas → PyInstaller → autoprueba `.exe` → SHA-256 → artefacto. Aún no ejecutado.
+- Generador de CA/certificado local y verificación del dominio, vigencia y clave en el lanzador; sin cambiar
+  automáticamente confianza, DNS ni firewall.
+- Biblioteca de transporte según Android v1: formato QR, tramas, ECDH/HKDF/HMAC/AES-GCM y protección
+  contra repetición. **No hay servidor de negocio ni vinculación utilizable**, tampoco integración GL.
+- Notificación Android con número de turnos abiertos y cronómetro del turno propio. Ajustadas pruebas UI
+  a las nuevas restricciones de exportación; no ejecutadas sin SDK/JDK.
+- 45 tests Python, autoprueba desde Python, sintaxis JS y diff correctos. Empaquetado Linux bloqueado por
+  ausencia de libpython3.11.so.1.0. Gradle bloqueado por ausencia de Java. No se generó `.exe` Windows.
+
+## 2026-10-09 — Ajustes de interfaz y primera base de escritorio (sin release)
+
+- Casillas exclusivas por tipo de pago, icono de tarjeta común, acciones de edición/borrado horizontales.
+- Inicio reorganizado con cabecera fija (marca, turno, período), resto desplazable y acciones flotantes.
+- Retirados placeholders de búsqueda y bloque explicativo redundante de pago. Se mantienen advertencias
+  útiles de costos, borrado y datos sensibles; no se hizo una auditoría exhaustiva de todos los textos.
+- Transferencias sin vendedor en lista/tabla; exportaciones limitadas y promociones con comentario,
+  también para servicios. Iconos en todos los formatos.
+- Notificación expandida sin información financiera/personal.
+- `desktop/`: Flask/Cheroot/SQLite, acceso local autenticado, turnos, catálogo, ventas, movimientos,
+  arqueo y dashboard; lanzador de navegador, script PyInstaller y guía del dominio HTTPS.
+- **No implementado en escritorio:** protocolo TCP/QR Android, GL, respaldo `.spvi`, exportaciones,
+  funciones contables avanzadas. No se generó un ejecutable Windows ni se cambió DNS/certificados.
+- Verificación: 17 pruebas Python pasan, `node --check` y `git diff --check` correctos. `spviTests`
+  no pudo arrancar: faltan Java/JAVA_HOME. Android y Windows requieren compilación y prueba visual real.
+
 ## Afirmaciones superadas
 
 | Dónde (abajo) | Decía | Estado actual (0.12.0) |
@@ -1398,3 +1431,34 @@ Primera vez que el repositorio se verifica solo: GitHub Actions ejecuta Gradle r
 - **Fixtures:** `VentaFlujoTest` (Refresco costo 20, Galleta venta 60 / costo 10), `TurnoUseCasesTest` (Pan costo 20), `VentaViewModelTest` y `ModificarVentaTest` (Galletas costo 20); mensaje esperado actualizado en `ProductoFormTest`; caso nuevo `ValidadoresTest.no se vende al costo ni por debajo` (producto 60/59/61 con costo 60, insumo vendible 10/11 con precio 10).
 - Resultado: `./gradlew spviTests` en verde (856 tests JVM, 0 fallos) y `./gradlew spviCheck` en verde (lint 0 errores, 127 avisos; `spviPermisos` OK; APK debug 58,8 MB).
 - En el teléfono: Inicio y listas legibles con fuente normal y al 200 % (sin cortes); selección de Inventario fijada sobre el buscador con sus acciones; ficha de producto centrada con Compartir. Quedan `NO VERIFICADO` (requieren al dueño): dinero tecleado con coma y casos límite en el teléfono, descuentos acumulados en el dispositivo, QR de Transfermóvil con total debajo, SMS bancario real con Acceso a notificaciones, y Release firmada con sus assets (`spviGithubRepo=rmdvcd/SPVI`).
+
+### Principal web independiente — ampliación en desarrollo
+
+- Incorporados modelo canónico Android, servidor LAN principal, empleados, permisos, fondos,
+  QR temporal, cliente GL y respaldo compartido con separación de licencia y emparejamientos.
+- Añadida administración web, carrito agrupado, cálculo local de preajustes y recetas; los
+  elaborados no descuentan existencias propias. Anular registra devolución del consumo original.
+- Cuentas asignables por empleado; eliminar una cuenta limpia las asignaciones afectadas.
+- Añadidas regresiones de negocio y guía OpenCode CLI para PC. No se han ejecutado pruebas,
+  compilaciones ni validadores en esta fase por indicación del propietario.
+- Pendientes de funcionalidad e interoperabilidad documentados expresamente; no se declara
+  paridad completa ni servidor compatible verificado antes de probar con Android real.
+
+### 2026-10-09 — Implementación de pendientes de la principal web
+
+- Sustituido el carrito local por una operación canónica compartida: agrupación, insumos sueltos,
+  recetas, preajustes, cotización sin persistencia y corrección transaccional en el turno original.
+- Transferencias con datos congelados y cuentas asignadas; clientes fijos editables y sugerencias.
+  Las correcciones remotas se entregan con `CambioVenta` y se confirman por UUID.
+- Editor de metadatos, fotos normalizadas, archivo/restauración de artículos, selección de productos
+  en preajustes, perfil/avisos y consulta ampliable de movimientos y turnos.
+- Idempotencia HTTP persistida con la mutación; comprobación de identidad del negocio tras restaurar.
+  Rechazo de UUID remoto reutilizado con otro contenido; permisos actuales no borran ventas offline.
+- Validación de DTO anidados y relaciones, límites de fotos, cuentas 12–20 cifras y teléfonos E.164.
+  La instantánea no expone otras cuentas ni datos personales del dueño a la secundaria.
+- Sesión TCP anterior conservada hasta prueba criptográfica de la nueva. Diagnóstico sin payloads.
+- Recuperación de clave por consola, invalidación de sesiones y bloqueo de doble instancia.
+- `.spvidesk` v2/`.spvi` con extensión web de fotos; límite del contenedor desktop elevado a 128 MiB.
+  Android no conserva la extensión `webFotos`: no se afirma transferencia de fotos al móvil.
+- Pruebas nuevas y autoprueba de empaquetado ampliadas; guía de OpenCode CLI actualizada.
+  **No se ejecutaron pruebas, validadores, compilación, CI ni empaquetado en esta fase.**

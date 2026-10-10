@@ -241,3 +241,12 @@ Comandos de OpenCode ya preparados en `.opencode/commands/`: `/compilar`, `/prob
 | `docs/PLAN_0.26.md` / `docs/PLAN_ANTIREINSTALACION.md` | Decisiones de la 0.26.0 |
 | `docs/HISTORIAL_DESARROLLO.md` | Registro de decisiones de cada versión |
 | `docs/OPENCODE_DESKTOP.md` | Guía paso a paso con OpenCode Desktop |
+
+## Actualización de escritorio (2026-10-09, implementación sin ejecutar)
+
+`desktop/` es la principal web Python independiente, no una sustitución del móvil. Incluye servidor
+TCP principal, licencias GL, respaldos compartidos, carrito/cotización/correcciones, insumos, clientes,
+metadatos/fotos e idempotencia HTTP. El alcance actual está en `desktop/README.md` y la guía de pruebas
+para la PC del propietario, en `desktop/VERIFICACION_PC.md`. Los resultados históricos de 45 pruebas
+no validan esta ampliación: no se ejecutaron pruebas, validadores, compilaciones ni empaquetado en
+esta fase. `Pendiente.md` y `Pruebas.md` distinguen implementación y verificación pendiente.

@@ -185,7 +185,8 @@ class LicenciaViewModelTest {
         vm.activarLicencia()
         assertEquals(listOf("SPVI2:abc"), lic.activaciones)
         assertEquals(LicenciaEvento.Mensaje("Licencia activada"), eventos.last())
-        assertTrue(TextosActivacion.INSTRUCCION.contains("SPVI2:"))
+        assertTrue(TextosActivacion.INSTRUCCION.contains("mensaje de activación"))
+        assertFalse(TextosActivacion.INSTRUCCION.contains("SPVI2:"))
         assertFalse(TextosActivacion.INSTRUCCION.contains("QR"))
     }
 }

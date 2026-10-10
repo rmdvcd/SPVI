@@ -41,6 +41,8 @@ class ServiciosViewModelTest {
     @Before fun antes() = Dispatchers.setMain(UnconfinedTestDispatcher())
     @After fun despues() = Dispatchers.resetMain()
 
+    private val tablaPng = cu.spvi.app.FakeTabla(FakeArchivos())
+    private val tarjetas = cu.spvi.app.FakeRenderer(FakeArchivos())
     private val servicios = ServRepo()
     private val insumos = InsRepo().apply {
         items.value = listOf(Insumo(id = 1, nombre = "Gel", precio = Cup.ofPesos(5), cantidad = Cantidad.enteras(1), creadoEn = T0))
@@ -56,8 +58,21 @@ class ServiciosViewModelTest {
 
     private fun vm(saved: SavedStateHandle = SavedStateHandle()) = ServiciosViewModel(
         saved, ObservarServicios(servicios, insumos, Dispatchers.Unconfined), servicios, ObtenerFichaServicio(servicios, insumos),
-        EliminarServicios(servicios), ExportarTablas(FakeExportador()), FakeArchivos(), RelojFijo(),
+        EliminarServicios(servicios), ExportarTablas(FakeExportador()), FakeArchivos(), RelojFijo(), tablaPng, tarjetas,
     )
+
+    @Test fun serviciosCompartenImagenYPromocionSinRecetas() = runTest {
+        poner(servicio(1, "Corte") to emptyList())
+        val vm = vm()
+        val ev = eventos(vm)
+        vm.exportar(cu.spvi.app.inventario.FormatoSalida.IMAGEN)
+        assertTrue(ev.last() is EventoServicios.CompartirImagenes)
+        assertTrue(tablaPng.renderizadas.single().columnas.none { it == "Insumos" || it == "Costo" })
+        vm.comentarioPromocion("Oferta semanal")
+        vm.exportar(cu.spvi.app.inventario.FormatoSalida.TARJETAS)
+        assertEquals("Oferta semanal", tarjetas.comentarios.single())
+        assertEquals("Corte", tarjetas.renderizados.single().single().nombre)
+    }
 
     private fun TestScope.eventos(vm: ServiciosViewModel): MutableList<EventoServicios> {
         val l = mutableListOf<EventoServicios>()

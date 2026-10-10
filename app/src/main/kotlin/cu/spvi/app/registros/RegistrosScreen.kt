@@ -200,7 +200,7 @@ fun RegistrosContent(
                         )
                     }
                     val exportar = LocalPermisosApp.current.exportar
-                    if (exportar) SpviIconAction(
+                    if (exportar && tipo == TipoRegistro.SERVICIOS) SpviIconAction(
                         SpviIcons.Compartir, TextosRegistros.EXPORTAR, onClick = acciones.onAbrirExportar,
                         enabled = state.puedeCompartir && !state.exportando, modifier = Modifier.testTag(RegistrosTags.EXPORTAR),
                     )
@@ -225,7 +225,7 @@ fun RegistrosContent(
     // 0.21.0 (C8): en la secundaria solo están los registros de su empleado: sin filtro «Vendedor».
     val vendedores = if (LocalPermisosApp.current.esSecundaria) emptyList() else state.vendedores
     if (state.hojaFiltro && tipo != null) HojaFiltro(state.filtro, tipo, acciones, vendedores)
-    if (state.hojaExportar && tipo != null) HojaExportar(state, tipo, acciones)
+    if (state.hojaExportar && tipo == TipoRegistro.SERVICIOS) HojaExportar(state, tipo, acciones)
 }
 
 /** Prompt 14: PDF o Excel de lo que se ve; cada formato se puede enviar a otra app o guardar en el teléfono. */
@@ -307,7 +307,7 @@ private fun Buscador(state: RegistrosUiState, tipo: TipoRegistro, acciones: Acci
         SpviTextField(
             filtro = FiltroEntrada.BUSQUEDA,
             value = state.filtro.texto, onValueChange = acciones.onBuscar, label = "Buscar",
-            placeholder = TextosRegistros.buscar(tipo), leadingIcon = SpviIcons.Buscar,
+            leadingIcon = SpviIcons.Buscar,
             modifier = Modifier.fillMaxWidth().testTag(RegistrosTags.BUSCAR),
         )
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SpviSpacing.md, Alignment.CenterHorizontally)) { // P28: contador (+ filtro) centrados

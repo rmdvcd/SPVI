@@ -220,7 +220,7 @@ class RegistrosViewModel @Inject constructor(
 
     // ---------------- Exportar PDF / Excel (Prompt 14) ----------------
 
-    fun abrirExportar() { if (state.value.puedeCompartir) local.update { it.copy(hojaExportar = true) } }
+    fun abrirExportar() { if (state.value.tipo == TipoRegistro.SERVICIOS && state.value.puedeCompartir) local.update { it.copy(hojaExportar = true) } }
     fun cerrarExportar() = local.update { it.copy(hojaExportar = false) }
 
     /** Formato pendiente de «Guardar como» (la URI llega después, desde el selector del sistema). */
@@ -232,7 +232,7 @@ class RegistrosViewModel @Inject constructor(
 
     /** «Enviar»: crea el archivo en la carpeta privada de compartir y abre el selector del sistema. */
     fun enviar(formato: FormatoExport) {
-        val tipo = state.value.tipo ?: return
+        val tipo = state.value.tipo?.takeIf { it == TipoRegistro.SERVICIOS } ?: return
         val tabla = tablaVisible(ocultarCi = false) ?: return
         cerrarExportar()
         trabajar {
@@ -245,7 +245,7 @@ class RegistrosViewModel @Inject constructor(
 
     /** «Guardar en el teléfono»: congela la tabla visible y pide el destino al sistema. */
     fun pedirGuardar(formato: FormatoExport) {
-        val tipo = state.value.tipo ?: return
+        val tipo = state.value.tipo?.takeIf { it == TipoRegistro.SERVICIOS } ?: return
         val tabla = tablaVisible(ocultarCi = false) ?: return
         val sugerido = nombre(tipo, formato)
         exportador.recordar(Pendiente(formato, tabla, sugerido))

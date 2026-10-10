@@ -30,6 +30,7 @@ import kotlinx.coroutines.withContext
  */
 interface RenderizadorTarjetas {
     suspend fun renderizar(productos: List<Producto>): List<File>
+    suspend fun renderizar(productos: List<Producto>, comentario: String): List<File> = renderizar(productos)
 }
 
 /** Distribución (pura): 1 producto = tarjeta grande 4:5; varios = rejilla 2 columnas, hasta 6 por imagen. */
@@ -60,12 +61,27 @@ class TarjetasAndroid @Inject constructor(
     private val texto = Color.parseColor("#1B1B1B")
     private val secundario = Color.parseColor("#5F6368")
 
-    override suspend fun renderizar(productos: List<Producto>): List<File> = withContext(io) {
+    override suspend fun renderizar(productos: List<Producto>): List<File> = renderizar(productos, "")
+
+    override suspend fun renderizar(productos: List<Producto>, comentario: String): List<File> = withContext(io) {
         DisenoTarjetas.grupos(productos).mapIndexed { i, grupo ->
             val alto = DisenoTarjetas.alto(grupo.size)
-            val bmp = Bitmap.createBitmap(DisenoTarjetas.ANCHO, alto, Bitmap.Config.ARGB_8888)
+            val encabezado = comentario.trim().take(160)
+            val pincel = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = marca; textSize = 42f; typeface = Typeface.DEFAULT_BOLD }
+            val cabecera = encabezado.takeIf { it.isNotEmpty() }?.let {
+                StaticLayout.Builder.obtain(it, 0, it.length, pincel, DisenoTarjetas.ANCHO - 96).build()
+            }
+            val espacio = cabecera?.let { it.height + 80 } ?: 0
+            val bmp = Bitmap.createBitmap(DisenoTarjetas.ANCHO, alto + espacio, Bitmap.Config.ARGB_8888)
             val c = Canvas(bmp)
             c.drawColor(fondo)
+            cabecera?.let {
+                c.save()
+                c.translate(48f, 40f)
+                it.draw(c)
+                c.restore()
+                c.translate(0f, espacio.toFloat())
+            }
             if (grupo.size == 1) {
                 tarjeta(c, grupo[0], RectF(48f, 48f, DisenoTarjetas.ANCHO - 48f, alto - 48f), grande = true)
             } else {

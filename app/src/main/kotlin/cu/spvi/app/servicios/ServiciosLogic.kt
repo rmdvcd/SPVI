@@ -76,7 +76,7 @@ object ServiciosTags {
 }
 
 /** Exportar la lista de servicios: PDF, Excel o texto. */
-val FORMATOS_EXPORTAR_SERVICIOS = listOf(FormatoSalida.PDF, FormatoSalida.EXCEL)
+val FORMATOS_EXPORTAR_SERVICIOS = FormatoSalida.EXPORTAR
 
 /** Reglas puras de la lista. */
 object ServiciosLogic {
@@ -107,6 +107,11 @@ object ServiciosLogic {
     }
 
     /** Tabla para exportar (PDF/Excel). */
+    fun productoPromocional(s: cu.spvi.domain.model.Servicio) = cu.spvi.domain.model.Producto(
+        id = s.id, categoria = s.tipo, nombre = s.nombre, descripcion = s.descripcion, fotoUri = s.fotoUri,
+        precioCosto = cu.spvi.core.money.Cup.ZERO, precioVenta = s.importe, cantidad = 0, creadoEn = s.creadoEn,
+    )
+
     fun tabla(xs: List<ServicioDisponible>) = cu.spvi.domain.service.TablaExport(
         titulo = "Servicios", // 0.25.1 (E3): como las demás tablas
         columnas = listOf("Tipo", "Servicio", "Importe", "Insumos"),

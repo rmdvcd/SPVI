@@ -55,6 +55,7 @@ sealed interface ConfirmarEliminarServicio {
 }
 
 data class ServiciosUiState(
+    val comentarioPromocion: String = "",
     val vista: EstadoCarga<VistaServicios> = EstadoCarga.Cargando,
     val filtro: FiltroServicios = FiltroServicios(),
     val seleccion: Set<Long> = emptySet(),
@@ -76,6 +77,7 @@ data class ServiciosUiState(
 
 sealed interface EventoServicios {
     data class Compartir(val archivo: java.io.File, val mime: String, val asunto: String) : EventoServicios
+    data class CompartirImagenes(val archivos: List<java.io.File>) : EventoServicios
     data class GuardarComo(val nombre: String, val mime: String) : EventoServicios
     data class Navegar(val route: Route) : EventoServicios
     data class Mensaje(val texto: String) : EventoServicios
@@ -98,6 +100,8 @@ class ServiciosViewModel @Inject constructor(
     private val exportarTablas: ExportarTablas,
     private val archivos: ArchivosApp,
     private val clock: Clock,
+    private val imagenTabla: cu.spvi.app.common.RenderizadorTabla,
+    private val tarjetas: cu.spvi.app.inventario.RenderizadorTarjetas,
 ) : ViewModel() {
 
     private val modoVenta: Boolean = saved.get<Boolean>(KEY_VENTA) == true
@@ -239,11 +243,21 @@ class ServiciosViewModel @Inject constructor(
         else s.items
     }
 
+    fun comentarioPromocion(texto: String) = local.update { it.copy(comentarioPromocion = texto.take(160)) }
+
     fun exportar(formato: FormatoSalida) {
         val xs = objetivoExport()
         if (xs.isEmpty()) return
+        val comentario = state.value.comentarioPromocion
         cerrarHoja()
         trabajar {
+            if (!formato.interno) {
+                val productos = xs.map { ServiciosLogic.productoPromocional(it.servicio) }
+                val fs = if (formato == FormatoSalida.TARJETAS) tarjetas.renderizar(productos, comentario)
+                    else imagenTabla.renderizar(TablasExport.listaPrecios(productos), "SPVI_servicios")
+                emitir(EventoServicios.CompartirImagenes(fs))
+                return@trabajar
+            }
             val tabla = ServiciosLogic.tabla(xs)
             val fx = formato.aExport()
             when (val r = exportador.aTemporal(nombreArchivo(fx)) { exportarTablas(listOf(tabla), fx, it) }) {

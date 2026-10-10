@@ -11,5 +11,6 @@ fun iconoFormato(f: FormatoExport): ImageVector = if (f == FormatoExport.PDF) Sp
 fun iconoFormato(f: FormatoSalida): ImageVector? = when (f) {
     FormatoSalida.PDF -> SpviIcons.Pdf
     FormatoSalida.EXCEL -> SpviIcons.Excel
-    else -> null
+    FormatoSalida.IMAGEN -> SpviIcons.Imagen
+    FormatoSalida.TARJETAS -> SpviIcons.Promocion
 }

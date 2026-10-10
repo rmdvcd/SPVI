@@ -42,6 +42,11 @@ class FakeArchivos : ArchivosApp {
 
 class FakeRenderer(private val archivos: FakeArchivos) : RenderizadorTarjetas {
     val renderizados = mutableListOf<List<Producto>>()
+    val comentarios = mutableListOf<String>()
+    override suspend fun renderizar(productos: List<Producto>, comentario: String): List<File> {
+        comentarios += comentario
+        return renderizar(productos)
+    }
     override suspend fun renderizar(productos: List<Producto>): List<File> {
         renderizados += productos
         return productos.chunked(6).mapIndexed { i, _ -> archivos.temporal("SPVI_productos_${i + 1}.png").apply { writeText("png") } }

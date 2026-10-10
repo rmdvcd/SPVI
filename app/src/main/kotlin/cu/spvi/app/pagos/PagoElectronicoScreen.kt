@@ -2,12 +2,7 @@ package cu.spvi.app.pagos
 
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
@@ -18,7 +13,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.foundation.Image
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -27,25 +21,20 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cu.spvi.app.R
 import cu.spvi.app.common.SecureWindow
 import cu.spvi.app.inicio.formatoTelefono
 import cu.spvi.designsystem.component.FiltroEntrada
-import cu.spvi.designsystem.component.CardTone
 import cu.spvi.designsystem.component.IconActionStyle
 import cu.spvi.designsystem.component.SpviBottomSheet
-import cu.spvi.designsystem.component.SpviCard
-import cu.spvi.designsystem.component.SpviChip
 import cu.spvi.designsystem.component.SpviDialog
 import cu.spvi.designsystem.component.SpviIconAction
 import cu.spvi.designsystem.component.SpviListItem
@@ -58,12 +47,10 @@ import cu.spvi.designsystem.component.SpviTopBar
 import cu.spvi.designsystem.component.spviAnimateItem
 import cu.spvi.designsystem.component.spviContentWidth
 import cu.spvi.designsystem.icon.SpviIcons
-import cu.spvi.designsystem.token.SpviRadius
 import cu.spvi.designsystem.token.SpviSpacing
 
 object PagoTags {
     fun opcion(tipo: TipoCuentaPago, id: Long?) = "pago_${tipo.name}_${id ?: "ninguno"}"
-    fun logoBanco(banco: BancoCubano) = "pago_logo_banco_${banco.name}"
     fun bancoPreview(banco: BancoCubano) = "pago_banco_preview_${banco.name}"
 }
 
@@ -122,13 +109,6 @@ fun PagoElectronicoContent(
             contentPadding = PaddingValues(vertical = SpviSpacing.md),
             verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
         ) {
-            item {
-                SpviCard(tone = CardTone.Tonal, modifier = Modifier.padding(horizontal = SpviSpacing.md)) {
-                    Text(TextosPago.EXPLICACION, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                    SpviSecondaryText("Toca un elemento para usarlo al cobrar.")
-                    SpviSecondaryText(TextosPago.AVISO_BANCOS)
-                }
-            }
             lista(
                 tipo = TipoCuentaPago.TELEFONO, titulo = "Teléfonos",
                 items = state.perfil.telefonos.map { ElementoPago(it.id, formatoTelefono(it.numero), it.alias) },
@@ -164,7 +144,7 @@ private fun DialogosListaPago(state: PagoUiState, acciones: AccionesListaPago) {
 
 /**
  * Lista editable de teléfonos o tarjetas. P28: es el ÚNICO sitio donde se ven y se eligen (antes también en
- * Perfil y en una ventana de Inicio). Tocar un elemento lo deja "En uso".
+ * Perfil y en una ventana de Inicio). Tocar un elemento alterna su selección; solo se guarda un id por tipo.
  */
 private fun androidx.compose.foundation.lazy.LazyListScope.lista(
     tipo: TipoCuentaPago,
@@ -197,13 +177,24 @@ private fun androidx.compose.foundation.lazy.LazyListScope.lista(
             title = item.texto,
             subtitle = subtitulo,
             selected = enUso,
-            indicatorColor = null, // P28: sin barra lateral; "En uso" ya lo dicen el fondo y la etiqueta
-            leading = item.banco?.let { banco -> { LogoBanco(banco, Modifier.testTag(PagoTags.logoBanco(banco))) } },
+            indicatorColor = null, // La casilla indica el elemento elegido.
+            leading = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.material3.Checkbox(
+                        checked = enUso,
+                        modifier = Modifier.semantics { contentDescription = "Usar ${item.texto}" },
+                        onCheckedChange = { acciones.onElegir(tipo, item.id) },
+                    )
+                    androidx.compose.material3.Icon(
+                        if (tipo == TipoCuentaPago.TELEFONO) SpviIcons.Telefono else SpviIcons.PagoElectronico,
+                        contentDescription = null,
+                    )
+                }
+            },
             onClick = { acciones.onElegir(tipo, item.id) },
             modifier = spviAnimateItem().testTag(PagoTags.opcion(tipo, item.id)), // P18 (A18)
             trailing = {
-                Column(horizontalAlignment = Alignment.End) {
-                    if (enUso) SpviChip(label = TextosPago.EN_USO, selected = true, onClick = {}, enabled = false)
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     SpviIconAction(SpviIcons.Editar, "Editar ${item.texto}", onClick = { acciones.onEditar(tipo, item.id) })
                     SpviIconAction(SpviIcons.Eliminar, "Eliminar ${item.texto}", onClick = { acciones.onBorrar(tipo, item.id) })
                 }
@@ -212,41 +203,13 @@ private fun androidx.compose.foundation.lazy.LazyListScope.lista(
     }
 }
 
-/** Recurso gráfico de cada banco. El prefijo que decide el banco vive en [bancoPorTarjeta]. */
-internal fun recursoLogoBanco(banco: BancoCubano): Int = when (banco) {
-    BancoCubano.BPA -> R.drawable.logo_banco_bpa
-    BancoCubano.BANDEC -> R.drawable.logo_banco_bandec
-    BancoCubano.BANMET -> R.drawable.logo_banco_banmet
-}
-
-/** Medidas únicas de los tres logos: misma proporción (2:1) y mismo tamaño, con bordes redondeados. */
-internal object MedidasLogoBanco {
-    val ancho = 96.dp
-    val alto = 48.dp
-    val margen = 6.dp
-}
-
-/**
- * Los tres logos se dibujan en un recuadro idéntico con las esquinas redondeadas. BANDEC trae su propio fondo y llena
- * el recuadro; BPA y Banco Metropolitano (apaisados, sobre blanco o transparente) se ajustan dentro sin deformarse.
- */
+/** Icono monocromático común para todas las tarjetas. */
 @Composable
-private fun LogoBanco(banco: BancoCubano, modifier: Modifier = Modifier) {
-    val llena = banco == BancoCubano.BANDEC
-    Box(
-        modifier
-            .size(width = MedidasLogoBanco.ancho, height = MedidasLogoBanco.alto)
-            .clip(RoundedCornerShape(SpviRadius.sm))
-            .background(Color.White),
-        contentAlignment = Alignment.Center,
-    ) {
-        Image(
-            painter = painterResource(recursoLogoBanco(banco)),
-            contentDescription = banco.nombre,
-            contentScale = if (llena) ContentScale.Crop else ContentScale.Fit,
-            modifier = if (llena) Modifier.fillMaxSize() else Modifier.fillMaxSize().padding(MedidasLogoBanco.margen),
-        )
-    }
+private fun IconoTarjeta(banco: BancoCubano, modifier: Modifier = Modifier) {
+    androidx.compose.material3.Icon(
+        SpviIcons.PagoElectronico, contentDescription = banco.nombre,
+        modifier = modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 @Composable
@@ -284,7 +247,7 @@ private fun EdicionSheet(e: EdicionPago, guardando: Boolean, acciones: AccionesL
                     Modifier.fillMaxWidth().testTag(PagoTags.bancoPreview(banco)),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    LogoBanco(banco)
+                    IconoTarjeta(banco)
                     Column(Modifier.padding(start = SpviSpacing.xs)) {
                         Text(banco.nombre, style = MaterialTheme.typography.titleSmall)
                         SpviSecondaryText(TextosPago.BANCO_ESTIMADO)

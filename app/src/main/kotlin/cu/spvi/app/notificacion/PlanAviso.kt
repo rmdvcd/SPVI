@@ -20,6 +20,7 @@ data class PlanAviso(
     /** Apertura del turno propio, si lo hay. */
     val turnoDesde: Instant?,
     val conectadas: Int,
+    val turnosAbiertos: Int = 0,
 ) {
     companion object {
         fun calcular(visible: Boolean, turnoPropioDesde: Instant?, atencion: AtencionSync): PlanAviso {
@@ -29,6 +30,7 @@ data class PlanAviso(
                 mostrar = servicio || (turnoPropioDesde != null && !visible),
                 turnoDesde = turnoPropioDesde,
                 conectadas = if (servicio) atencion.conectadas else 0,
+                turnosAbiertos = if (servicio) atencion.turnosAbiertos else 0,
             )
         }
 
@@ -51,6 +53,16 @@ data class PlanAviso(
                 else -> ESPERANDO
             }
         }
+
+        fun detalle(plan: PlanAviso, hora: String?): String = buildList {
+            add(texto(plan, hora))
+            if (hora == null) add("Turno de esta app cerrado")
+            if (plan.servicio) {
+                add("Sincronización local activa")
+                add(if (plan.turnosAbiertos == 1) "1 turno abierto en el negocio" else "${plan.turnosAbiertos} turnos abiertos en el negocio")
+            }
+            add("Toca para volver a SPVI")
+        }.joinToString("\n")
 
         const val ESPERANDO = "Esperando a tus apps vinculadas"
     }

@@ -103,6 +103,7 @@ class AccionesServicios(
     val onEliminarSeleccion: () -> Unit = {},
     val onConfirmarEliminar: () -> Unit = {},
     val onCancelarEliminar: () -> Unit = {},
+    val onComentarioPromocion: (String) -> Unit = {},
     val onExportar: (FormatoSalida) -> Unit = {},
     val onGuardar: (FormatoSalida) -> Unit = {},
     val onContinuarVenta: () -> Unit = {},
@@ -132,6 +133,8 @@ fun ServiciosScreen(
             when (e) {
                 is EventoServicios.Compartir ->
                     if (!Compartir.archivos(context, listOf(e.archivo), e.mime, e.asunto)) snackbar.showSnackbar(TextosServicios.ERROR_COMPARTIR)
+                is EventoServicios.CompartirImagenes ->
+                    if (!Compartir.archivos(context, e.archivos, "image/png", TextosServicios.TITULO)) snackbar.showSnackbar(TextosServicios.ERROR_COMPARTIR)
                 is EventoServicios.GuardarComo -> (if (e.mime == FormatoExport.XLSX.mime) guardarXlsx else guardarPdf).launch(e.nombre)
                 is EventoServicios.Navegar -> onNavigate(e.route)
                 is EventoServicios.Mensaje -> snackbar.showSnackbar(e.texto)
@@ -150,7 +153,7 @@ fun ServiciosScreen(
             onEditar = viewModel::editar, onHoja = viewModel::mostrarHoja,
             onCerrarHoja = viewModel::cerrarHoja, onAgregar = viewModel::agregar, onEliminarFicha = viewModel::pedirEliminarFicha,
             onEliminarSeleccion = viewModel::pedirEliminarSeleccion, onConfirmarEliminar = viewModel::confirmarEliminar,
-            onCancelarEliminar = viewModel::cancelarEliminar, onExportar = viewModel::exportar, onGuardar = viewModel::pedirGuardar,
+            onCancelarEliminar = viewModel::cancelarEliminar, onComentarioPromocion = viewModel::comentarioPromocion, onExportar = viewModel::exportar, onGuardar = viewModel::pedirGuardar,
             onContinuarVenta = viewModel::confirmarSeleccionVenta, onAtras = onBack,
         ),
     )
@@ -260,7 +263,7 @@ private fun Buscador(state: ServiciosUiState, acciones: AccionesServicios) {
         SpviTextField(
             filtro = FiltroEntrada.BUSQUEDA,
             value = state.filtro.texto, onValueChange = acciones.onBuscar, label = "Buscar",
-            placeholder = TextosServicios.BUSCAR, leadingIcon = SpviIcons.Buscar,
+            leadingIcon = SpviIcons.Buscar,
             modifier = Modifier.fillMaxWidth().testTag(ServiciosTags.BUSCAR),
         )
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SpviSpacing.md, Alignment.CenterHorizontally)) {
@@ -453,6 +456,10 @@ private fun HojaExportar(state: ServiciosUiState, acciones: AccionesServicios) {
             else "Lo que ves: ${TextosServicios.servicios(n)}",
             textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
         )
+        SpviTextField(
+            value = state.comentarioPromocion, onValueChange = acciones.onComentarioPromocion,
+            label = "Encabezado de promoción (opcional)",
+        )
         FORMATOS_EXPORTAR_SERVICIOS.forEach { f ->
             SpviListItem(
                 title = f.etiqueta, indicatorColor = null,
@@ -461,7 +468,7 @@ private fun HojaExportar(state: ServiciosUiState, acciones: AccionesServicios) {
                 trailing = {
                     Row {
                         SpviIconAction(SpviIcons.Compartir, "Compartir ${f.etiqueta}", onClick = { acciones.onExportar(f) })
-                        SpviIconAction(SpviIcons.Exportar, "Guardar ${f.etiqueta} en el dispositivo", onClick = { acciones.onGuardar(f) })
+                        if (f.guardable) SpviIconAction(SpviIcons.Exportar, "Guardar ${f.etiqueta} en el dispositivo", onClick = { acciones.onGuardar(f) })
                     }
                 },
             )

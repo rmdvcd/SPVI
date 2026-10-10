@@ -39,7 +39,7 @@ class InventarioLogicTest {
         assertEquals("Incluye costos", FormatoSalida.PDF.destinatario)
         assertEquals("Para clientes (sin costos)", FormatoSalida.IMAGEN.destinatario)
         assertTrue(FormatoSalida.PDF.interno && FormatoSalida.EXCEL.interno && !FormatoSalida.TARJETAS.interno)
-        assertEquals(listOf(FormatoSalida.PDF, FormatoSalida.TARJETAS), FormatoSalida.COMPARTIR_FICHA)
+        assertEquals(listOf(FormatoSalida.IMAGEN, FormatoSalida.TARJETAS), FormatoSalida.COMPARTIR_FICHA)
         assertFalse(FormatoSalida.entries.any { it.name == "TEXTO" })
         // Solo un archivo por «Guardar como»: imagen y tarjetas pueden ser varias → solo se envían.
         assertEquals(listOf(FormatoSalida.PDF, FormatoSalida.EXCEL), FormatoSalida.entries.filter { it.guardable })

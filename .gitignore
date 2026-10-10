@@ -12,3 +12,17 @@ keystore.properties
 
 # Contexto para OpenCode (17 MB): no se sube al repositorio
 SPVI_*_capturas_y_exportaciones.pdf
+
+# Escritorio Python: datos privados y artefactos portables
+__pycache__/
+.venv/
+desktop/datos/
+desktop/dist/
+desktop/*.spec
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.spvidesk
+*.pem
+*.key
+desktop/tls/

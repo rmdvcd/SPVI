@@ -53,10 +53,10 @@ object TablasExport {
     /** [ocultarCi]: en el texto compartido el carné solo muestra sus 3 últimas cifras (ver [ciOculto]). */
     fun transacciones(ts: List<Transaccion>, zone: ZoneId = ZoneId.systemDefault(), ocultarCi: Boolean = false) = TablaExport(
         titulo = "Transferencias recibidas",
-        columnas = listOf("Fecha", "Vendedor", "Nº transacción", "Cliente", "CI", "Teléfono", "Importe"),
+        columnas = listOf("Fecha", "Nº transacción", "Cliente", "CI", "Teléfono", "Importe"),
         filas = ts.map { t ->
             listOf(
-                Dates.dayTime(t.fecha, zone), t.vendedor, t.numero, t.cliente.nombreApellidos,
+                Dates.dayTime(t.fecha, zone), t.numero, t.cliente.nombreApellidos,
                 if (ocultarCi) ciOculto(t.cliente.ci) else t.cliente.ci, t.cliente.telefono,
                 Money.format(t.importe),
             )

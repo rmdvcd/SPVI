@@ -105,7 +105,7 @@ object AyudaContenido {
                 "Ajustes → Licencia muestra cuántos días te quedan. Sigue los 3 pasos.",
                 "Paso 1: revisa tus datos. Paso 2: elige el tipo, WhatsApp o SMS, y toca Solicitar. Solo pulsa Enviar.",
                 "Paso 3: copia todo el mensaje que te respondan, toca Pegar y luego Activar.",
-                "Solo cuenta la línea que empieza por SPVI2:. Por SMS puede llegar en 2 o 3 mensajes: pégalos todos.",
+                "Si la activación llega en varios SMS, copia y pega todos.",
                 "Para renovar con lo mismo, toca Renovar igual. Si renuevas antes de que venza no pierdes días.",
             ),
         ),

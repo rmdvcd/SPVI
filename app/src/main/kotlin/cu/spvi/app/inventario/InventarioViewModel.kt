@@ -68,6 +68,7 @@ sealed interface ConfirmarEliminar {
 }
 
 data class InventarioUiState(
+    val comentarioPromocion: String = "",
     val vista: EstadoCarga<VistaInventario> = EstadoCarga.Cargando,
     val filtro: FiltroInventario = FiltroInventario(),
     val seleccion: Set<Long> = emptySet(),
@@ -330,9 +331,12 @@ class InventarioViewModel @Inject constructor(
         else s.items.map { it.producto }
     }
 
+    fun comentarioPromocion(texto: String) = local.update { it.copy(comentarioPromocion = texto.take(160)) }
+
     fun exportar(formato: FormatoSalida) {
-        val ps = objetivoExport()
+        val ps = objetivoExport().filter { formato.interno || !it.esInsumo }
         if (ps.isEmpty()) return
+        val comentario = state.value.comentarioPromocion
         cerrarHoja()
         trabajar {
             when (formato) {
@@ -341,7 +345,7 @@ class InventarioViewModel @Inject constructor(
                     emitir(EventoInventario.Compartir(fs, "image/png", TextosInventario.TITULO))
                 }
                 FormatoSalida.TARJETAS -> {
-                    val fs = tarjetas.renderizar(ps)
+                    val fs = tarjetas.renderizar(ps, comentario)
                     emitir(EventoInventario.Compartir(fs, "image/png", TextosInventario.TITULO))
                 }
                 FormatoSalida.PDF, FormatoSalida.EXCEL -> {
@@ -377,10 +381,13 @@ class InventarioViewModel @Inject constructor(
 
     fun compartirFicha(formato: FormatoSalida) {
         val f = state.value.ficha ?: return
+        if (formato.interno || f.producto.esInsumo) return
+        val comentario = state.value.comentarioPromocion
         local.update { it.copy(hoja = null) }
         trabajar {
             when (formato) {
-                FormatoSalida.IMAGEN, FormatoSalida.TARJETAS -> emitir(EventoInventario.Compartir(tarjetas.renderizar(listOf(f.producto)), "image/png", f.producto.nombreCompleto))
+                FormatoSalida.IMAGEN -> emitir(EventoInventario.Compartir(imagenTabla.renderizar(TablasExport.listaPrecios(listOf(f.producto)), "SPVI_precios"), "image/png", f.producto.nombreCompleto))
+                FormatoSalida.TARJETAS -> emitir(EventoInventario.Compartir(tarjetas.renderizar(listOf(f.producto), comentario), "image/png", f.producto.nombreCompleto))
                 FormatoSalida.PDF, FormatoSalida.EXCEL -> {
                     when (val r = exportador.aTemporal("Ficha ${f.producto.nombreCompleto}.pdf") { exportarFicha(f, it) }) {
                         is AppResult.Ok -> emitir(EventoInventario.Compartir(listOf(r.value.archivo), FormatoExport.PDF.mime, f.producto.nombreCompleto))
