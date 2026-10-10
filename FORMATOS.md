@@ -14,6 +14,29 @@ Nombres de archivo sin datos personales: `SPVI_<qué>_<aaaa-mm-dd>.<ext>`, con l
 
 ---
 
+## Alcance de exportación en desarrollo (2026-10-09)
+
+Esta tabla sustituye los alcances de las versiones anteriores descritas más abajo; no cambia el formato
+binario de los respaldos ni los escritores PDF/XLSX.
+
+| Origen Android | PDF / Excel | Imagen PNG | Tarjetas promocionales PNG |
+|---|---|---|---|
+| Informe de inventario (incluye insumos) | Sí | Solo productos | Solo productos |
+| Catálogo / informe de servicios | Sí | Sí, catálogo | Sí, catálogo |
+| Turnos | Sí | No | No |
+| Ventas de productos, transferencias y movimientos en Registros | No | No | No |
+| Compartir ficha de producto | No | Sí | Sí |
+
+- Una selección mixta excluye insumos al generar imágenes/promociones; PDF/Excel conserva todo el informe.
+- Las imágenes comerciales llevan nombres, categorías/tipos y precios de venta, no costos, existencias
+  ni recetas. Las tarjetas añaden foto cuando existe.
+- El campo «Encabezado de promoción (opcional)» admite 160 caracteres, solo afecta a tarjetas y se repite
+  encima de cada PNG. Vacío mantiene el diseño sin encabezado. El texto se ajusta en altura sin recortar.
+- La tabla de transferencias ya no tiene columna Vendedor; el registro original y su ficha se conservan.
+- `desktop/` también genera PDF/XLSX para inventario, servicios y turnos, e imágenes para productos/servicios.
+  Sus promociones son textuales (aún no admite fotos); varias imágenes se entregan como PNG separados en ZIP.
+  Exporta y restaura `.spvidesk`, no `.spvi` Android. La base activa SQLite permanece **sin cifrar**.
+
 ## 1. Respaldo `.spvi`
 
 Implementación: `data/.../respaldo/BackupCipher.kt` (contenedor cifrado), `data/.../dto/RespaldoDto.kt` (contenido) y `data/.../respaldo/RespaldoRepositoryImpl.kt` (lectura y escritura).
@@ -209,3 +232,36 @@ No se generan archivos `.txt`: el escritor de texto plano (`TextoWriter`) se eli
 ### Entrada numérica en pantalla (09/10/2026)
 
 Los campos de dinero admiten punto o coma decimal y hasta dos decimales, sin separadores de miles; las cantidades decimales admiten hasta tres. Una entrada ambigua se rechaza conservando el texto anterior, sin cambiar los formatos de archivos exportados/importados. Tarjeta/cuenta: hasta 20 cifras en edición (validación final de 12 a 20). La venta debe superar el costo, incluso tras descuentos; no se cambian comprobantes históricos.
+
+## Respaldo de escritorio `.spvidesk` (JSON v1/v2)
+
+No es un archivo Android `.spvi` y no se ofrece como tal. Formato:
+`SPVIDSK1` (8 bytes) | salt aleatorio (16) | nonce (12) | AES-256-GCM(gzip(JSON)) con tag de 16 bytes.
+La cabecera completa de 36 bytes es AAD. Clave: PBKDF2-HMAC-SHA256, 310000 iteraciones,
+contraseña UTF-8 de 12–256 caracteres, 32 bytes de salida. Máximo actual: 128 MiB tanto cifrado como descomprimido.
+JSON v1: `format=spvi-desktop`, `version=1`, tablas `items`, `shifts`, `sales`, `movements`.
+JSON v2: conserva esas tablas y añade `business` (DTO canónicos Android), `name` y fotos dentro de `business.webFotos`. La escritura actual usa v2; la lectura migra v1.
+No contiene credenciales, licencias ni datos de vinculación. No se ejecuta SQL procedente del archivo.
+La restauración valida tipos, restricciones y referencias en una base temporal, exige turnos cerrados,
+guarda una copia cifrada previa y reemplaza los datos transaccionalmente. No cambia la clave de acceso web.
+
+### Ampliación de escritorio: formatos compartidos (pendiente de verificación)
+
+El código Python incorpora lectura `.spvi` v3/v4 y escritura v4, además de `.spvidesk` v2
+con migración del v1. La restauración exige turnos cerrados y genera una copia cifrada previa;
+para importar Android sin contraseña se solicita otra contraseña para esa copia de seguridad.
+No se transfieren activación de licencia ni secretos de vinculación. Véase
+`desktop/VERIFICACION_PC.md` para las comprobaciones de ida/vuelta todavía pendientes.
+
+### Fotos y operaciones de la principal web
+
+`webFotos` es una extensión de escritorio: lista de `{kind, id, jpeg}`, con `kind` igual a `productos`
+o `servicios` y JPEG normalizado en Base64. Máximo conjunto de imágenes decodificadas: 64 MiB.
+No se leen rutas ni URL de `fotoUri`. Android ignora esta extensión y no la conserva al volver a
+exportar; su formato nativo sigue almacenando URI, no los archivos de fotos.
+
+Las correcciones usan `corrigeVentaId` y conservan el original con `anuladaEn`/motivo. La principal
+notifica a la secundaria mediante `CambioVenta.nueva` y `corrigeUuid`, sin cambiar TCP v1.
+Las cantidades de venta de insumos son enteras; existencias y recetas usan milésimas. La cotización
+no persiste registros. Los reintentos HTTP se identifican por `Idempotency-Key`; el resultado y la
+mutación se confirman en la misma transacción SQLite. Esas claves no se exportan al respaldo.

@@ -69,7 +69,7 @@ class PagoElectronicoViewModel @Inject constructor(
 
     fun elegir(tipo: TipoCuentaPago, id: Long) = ejecutar {
         val p = perfil.first()
-        val r = if (tipo == TipoCuentaPago.TELEFONO) seleccionar(tarjetaId = p.pagoTarjetaId, telefonoId = id) else seleccionar(tarjetaId = id, telefonoId = p.pagoTelefonoId)
+        val r = if (tipo == TipoCuentaPago.TELEFONO) seleccionar(tarjetaId = p.pagoTarjetaId, telefonoId = id.takeUnless { it == p.pagoTelefonoId }) else seleccionar(tarjetaId = id.takeUnless { it == p.pagoTarjetaId }, telefonoId = p.pagoTelefonoId)
         if (r is AppResult.Err) eventosCh.trySend(EventoPago.Mensaje(mensajePago(r.error)))
     }
 

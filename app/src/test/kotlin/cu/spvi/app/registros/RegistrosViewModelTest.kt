@@ -182,7 +182,9 @@ class RegistrosViewModelTest {
 
     @Test fun laTablaExportadaIncluyeFiltroYTotal() = runTest {
         cargar()
+        repo.ventas.value = repo.ventas.value.map { v -> v.copy(detalles = v.detalles.map { it.copy(clase = cu.spvi.domain.model.ClaseArticulo.SERVICIO) }) }
         val vm = vm()
+        vm.pestana(PestanaRegistros.SERVICIOS)
         vm.aplicarFiltro(FiltroRegistros(periodo = PeriodoRegistro.HOY))
         vm.buscar("pan")
         vm.enviar(FormatoExport.PDF)
@@ -195,7 +197,9 @@ class RegistrosViewModelTest {
 
     @Test fun enviarExcelDeLoQueSeVeConFiltroYSinTopeDeFilas() = runTest {
         cargar()
+        repo.ventas.value = repo.ventas.value.map { v -> v.copy(detalles = v.detalles.map { it.copy(clase = cu.spvi.domain.model.ClaseArticulo.SERVICIO) }) }
         val vm = vm()
+        vm.pestana(PestanaRegistros.SERVICIOS)
         vm.aplicarFiltro(FiltroRegistros(periodo = PeriodoRegistro.HOY))
         vm.buscar("pan")
         vm.abrirExportar()
@@ -208,39 +212,46 @@ class RegistrosViewModelTest {
         assertEquals("Ventas (Hoy · búsqueda «pan»)", tablas.single().titulo)
         assertEquals(vm.state.value.datos!!.cantidad, tablas.single().filas.size)
         val e = eventos.last() as EventoRegistros.CompartirArchivo
-        assertEquals("SPVI_ventas_2026-09-30.xlsx", e.archivo.name)
+        assertEquals("SPVI_servicios_2026-09-30.xlsx", e.archivo.name)
         assertEquals(FormatoExport.XLSX.mime, e.mime)
         assertEquals("XLSX", e.archivo.readText())
     }
 
     @Test fun guardarPdfPideDestinoEscribeYConfirma() = runTest {
         cargar()
+        repo.ventas.value = repo.ventas.value.map { v -> v.copy(detalles = v.detalles.map { it.copy(clase = cu.spvi.domain.model.ClaseArticulo.SERVICIO) }) }
         val vm = vm()
-        vm.pestana(PestanaRegistros.MOVIMIENTOS)
+        vm.pestana(PestanaRegistros.SERVICIOS)
         vm.pedirGuardar(FormatoExport.PDF)
         val g = eventos.last() as EventoRegistros.GuardarComo
-        assertEquals("SPVI_movimientos_2026-09-30.pdf", g.nombre)
+        assertEquals("SPVI_servicios_2026-09-30.pdf", g.nombre)
         assertEquals(FormatoExport.PDF.mime, g.mime)
         vm.guardarEn("content://doc/1")
         assertEquals("PDF", archivos.destinos.getValue("content://doc/1").toString())
-        assertEquals(EventoRegistros.Mensaje("Guardado: SPVI_movimientos_2026-09-30.pdf"), eventos.last())
+        assertEquals(EventoRegistros.Mensaje("Guardado: SPVI_servicios_2026-09-30.pdf"), eventos.last())
         // Cancelar el selector, o una URI sin petición pendiente, no escribe nada.
         vm.pedirGuardar(FormatoExport.XLSX); vm.guardarEn(null); vm.guardarEn("content://tarde")
         assertEquals(1, archivos.destinos.size)
     }
 
-    @Test fun losDocumentosDeTransferenciasLlevanElCarneCompleto() = runTest {
+    @Test fun ventasTransferenciasYMovimientosNoSeExportan() = runTest {
         cargar()
         val vm = vm()
-        vm.pestana(PestanaRegistros.TRANSFERENCIAS)
-        vm.enviar(FormatoExport.PDF)
-        assertTrue(exportador.llamadas.single().first.single().filas.flatten().contains("90020212345"))
+        listOf(PestanaRegistros.VENTAS, PestanaRegistros.TRANSFERENCIAS, PestanaRegistros.MOVIMIENTOS).forEach { tipo ->
+            vm.pestana(tipo)
+            vm.abrirExportar(); vm.enviar(FormatoExport.PDF); vm.pedirGuardar(FormatoExport.XLSX)
+            assertFalse(vm.state.value.hojaExportar)
+        }
+        assertTrue(exportador.llamadas.isEmpty())
+        assertTrue(eventos.isEmpty())
     }
 
     @Test fun errorAlExportarSeAvisaYBorraElTemporal() = runTest {
         cargar()
+        repo.ventas.value = repo.ventas.value.map { v -> v.copy(detalles = v.detalles.map { it.copy(clase = cu.spvi.domain.model.ClaseArticulo.SERVICIO) }) }
         exportador.fallar = true
         val vm = vm()
+        vm.pestana(PestanaRegistros.SERVICIOS)
         vm.enviar(FormatoExport.PDF)
         assertEquals(EventoRegistros.Mensaje(TextosRegistros.ERROR_EXPORTAR), eventos.last())
         assertTrue(archivos.dir.listFiles().orEmpty().isEmpty())

@@ -1,0 +1,36 @@
+name: Escritorio Windows
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/desktop.yml'
+permissions:
+  contents: read
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  portable:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: desktop/requirements.txt
+      - name: Probar, empaquetar y verificar el ejecutable
+        shell: pwsh
+        run: ./desktop/build_windows.ps1
+      - name: Entregar portable y suma SHA-256
+        uses: actions/upload-artifact@v4
+        with:
+          name: SPVI-Windows-portable
+          path: |
+            desktop/dist/SPVI.exe
+            desktop/dist/SPVI.exe.sha256
+            desktop/dist/LEEME.md
+          if-no-files-found: error
+          retention-days: 14

@@ -115,6 +115,7 @@ class AccionesInventario(
     val onEliminarSeleccion: () -> Unit = {},
     val onConfirmarEliminar: () -> Unit = {},
     val onCancelarEliminar: () -> Unit = {},
+    val onComentarioPromocion: (String) -> Unit = {},
     val onExportar: (FormatoSalida) -> Unit = {},
     val onGuardar: (FormatoSalida) -> Unit = {},
     val onCompartirFicha: (FormatoSalida) -> Unit = {},
@@ -168,7 +169,7 @@ fun InventarioScreen(
             onAgregar = viewModel::agregar,
             onEliminarFicha = viewModel::pedirEliminarFicha,
             onEliminarSeleccion = viewModel::pedirEliminarSeleccion, onConfirmarEliminar = viewModel::confirmarEliminar,
-            onCancelarEliminar = viewModel::cancelarEliminar, onExportar = viewModel::exportar, onGuardar = viewModel::pedirGuardar,
+            onCancelarEliminar = viewModel::cancelarEliminar, onComentarioPromocion = viewModel::comentarioPromocion, onExportar = viewModel::exportar, onGuardar = viewModel::pedirGuardar,
             onCompartirFicha = viewModel::compartirFicha,
             onContinuarVenta = viewModel::confirmarSeleccionVenta, onAtras = onBack,
         ),
@@ -252,7 +253,7 @@ fun InventarioContent(
     when (state.hoja) {
         HojaInventario.FILTRO -> HojaFiltro(state, acciones)
         HojaInventario.EXPORTAR -> HojaExportar(state, acciones)
-        HojaInventario.COMPARTIR_FICHA -> if (state.ficha != null) HojaCompartirFicha(acciones)
+        HojaInventario.COMPARTIR_FICHA -> if (state.ficha != null) HojaCompartirFicha(state, acciones)
         null -> Unit
     }
     state.confirmar?.let { c ->
@@ -276,7 +277,7 @@ private fun Buscador(state: InventarioUiState, acciones: AccionesInventario) {
         SpviTextField(
             filtro = FiltroEntrada.BUSQUEDA,
             value = state.filtro.texto, onValueChange = acciones.onBuscar, label = "Buscar",
-            placeholder = TextosInventario.BUSCAR, leadingIcon = SpviIcons.Buscar,
+            leadingIcon = SpviIcons.Buscar,
             modifier = Modifier.fillMaxWidth().testTag(InventarioTags.BUSCAR),
         )
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SpviSpacing.md, Alignment.CenterHorizontally)) { // P28: contador (+ filtro) centrados
@@ -534,11 +535,16 @@ private fun HojaFiltro(state: InventarioUiState, acciones: AccionesInventario) {
 @Composable
 private fun HojaExportar(state: InventarioUiState, acciones: AccionesInventario) {
     val n = if (state.seleccion.isNotEmpty()) state.seleccion.size else state.items.size
+    val promocionable = (if (state.seleccion.isNotEmpty()) state.elementosFijados else state.items).any { !it.producto.esInsumo }
     SpviBottomSheet(onDismiss = acciones.onCerrarHoja, title = TextosInventario.EXPORTAR) {
         SpviSecondaryText(
             if (state.seleccion.isNotEmpty()) "${TextosInventario.productos(n)} seleccionados" else "Lo que ves: ${TextosInventario.productos(n)}",
         )
-        FormatoSalida.EXPORTAR.forEach { f ->
+        if (promocionable) SpviTextField(
+            value = state.comentarioPromocion, onValueChange = acciones.onComentarioPromocion,
+            label = "Encabezado de promoción (opcional)",
+        )
+        FormatoSalida.EXPORTAR.filter { it.interno || promocionable }.forEach { f ->
             SpviListItem(
                 title = f.etiqueta, subtitle = f.destinatario, indicatorColor = null,
                 leading = cu.spvi.app.common.iconoFormato(f)?.let { ic -> { Icon(ic, contentDescription = null, modifier = Modifier.size(SpviSize.icon)) } },
@@ -555,9 +561,10 @@ private fun HojaExportar(state: InventarioUiState, acciones: AccionesInventario)
 }
 
 @Composable
-private fun HojaCompartirFicha(acciones: AccionesInventario) {
+private fun HojaCompartirFicha(state: InventarioUiState, acciones: AccionesInventario) {
     SpviBottomSheet(onDismiss = acciones.onCerrarHoja, title = "Compartir") {
-        SpviSecondaryText("Imagen y texto: sin costo ni existencias.")
+        SpviTextField(value = state.comentarioPromocion, onValueChange = acciones.onComentarioPromocion,
+            label = "Encabezado de promoción (opcional)")
         FormatoSalida.COMPARTIR_FICHA.forEach { f ->
             SpviListItem(
                 title = f.etiqueta, subtitle = if (f == FormatoSalida.PDF) FormatoSalida.USO_INTERNO else null,

@@ -84,7 +84,7 @@ class RegistrosUiTest {
     @Test fun pestanasBuscadorFiltroYCompartir() {
         val hechos = mutableListOf<String>()
         pantalla(
-            ventas(),
+            ventas().copy(pestana = PestanaRegistros.SERVICIOS),
             AccionesRegistros(
                 onPestana = { hechos += it.name }, onBuscar = { hechos += "buscar:$it" },
                 onAbrirFiltro = { hechos += "filtro" }, onAbrirExportar = { hechos += "exportar" },
@@ -101,7 +101,7 @@ class RegistrosUiTest {
     @Test fun sinDatosNoSeComparte() {
         pantalla(RegistrosUiState(vista = EstadoCarga.Vacio(VistaRegistro.Ventas(emptyList()))))
         rule.onNodeWithText(TextosRegistros.vacioTitulo(TipoRegistro.VENTAS)).assertIsDisplayed()
-        rule.onNodeWithTag(RegistrosTags.EXPORTAR).assertIsNotEnabled()
+        rule.onNodeWithTag(RegistrosTags.EXPORTAR).assertDoesNotExist()
     }
 
     @Test fun sinResultadosOfreceQuitarFiltros() {
@@ -187,13 +187,13 @@ class RegistrosUiTest {
         var abrir = 0
         val enviados = mutableListOf<FormatoExport>(); val guardados = mutableListOf<FormatoExport>()
         pantalla(
-            ventas().copy(hojaExportar = true),
+            ventas().copy(pestana = PestanaRegistros.SERVICIOS, hojaExportar = true),
             AccionesRegistros(onAbrirExportar = { abrir++ }, onEnviar = { enviados += it }, onGuardar = { guardados += it }),
         )
         rule.onNodeWithTag(RegistrosTags.EXPORTAR).assertIsEnabled().performClick()
         assertEquals(1, abrir)
-        rule.onNodeWithText(TextosRegistros.tituloExportar(TipoRegistro.VENTAS)).assertIsDisplayed()
-        rule.onNodeWithText(TextosRegistros.alcanceExportar(TipoRegistro.VENTAS, 1, null)).assertIsDisplayed()
+        rule.onNodeWithText(TextosRegistros.tituloExportar(TipoRegistro.SERVICIOS)).assertIsDisplayed()
+        rule.onNodeWithText(TextosRegistros.alcanceExportar(TipoRegistro.SERVICIOS, 1, null)).assertIsDisplayed()
         rule.onNodeWithTag(RegistrosTags.enviar(FormatoExport.XLSX)).performClick()
         rule.onNodeWithTag(RegistrosTags.guardar(FormatoExport.PDF)).performClick()
         assertEquals(listOf(FormatoExport.XLSX), enviados)
@@ -201,18 +201,19 @@ class RegistrosUiTest {
     }
 
     @Test fun exportandoMuestraProgresoYDeshabilitaExportar() {
-        pantalla(ventas().copy(exportando = true))
+        pantalla(ventas().copy(pestana = PestanaRegistros.SERVICIOS, exportando = true))
         rule.onNodeWithTag(RegistrosTags.EXPORTANDO).assertExists()
         rule.onNodeWithTag(RegistrosTags.EXPORTAR).assertIsNotEnabled()
     }
 
-    @Test fun exportarTransferenciasAvisaDeDatosDeClientes() {
+    @Test fun transferenciasNoOfreceExportacion() {
         pantalla(
             RegistrosUiState(
                 pestana = PestanaRegistros.TRANSFERENCIAS, hojaExportar = true,
                 vista = EstadoCarga.Exito(VistaRegistro.Transferencias(listOf(transaccion))),
             ),
         )
-        rule.onNodeWithText(TextosRegistros.AVISO_DATOS_CLIENTES).assertIsDisplayed()
+        rule.onNodeWithTag(RegistrosTags.EXPORTAR).assertDoesNotExist()
+        rule.onNodeWithText(TextosRegistros.AVISO_DATOS_CLIENTES).assertDoesNotExist()
     }
 }

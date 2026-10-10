@@ -28,13 +28,36 @@ App Android nativa para pequeños negocios: vender en turnos, controlar inventar
 
 Los documentos de trabajo que estaban fuera del proyecto (`DECISIONES_LICENCIA_SPVI.md`, `PRUEBA_COMPATIBILIDAD_GL.md`, `ARQUITECTURA_SPVI.md`, planes y auditorías de los Prompts 17 y 18, entregas `ENTREGA_*`) se retiraron en la 0.18.0. Lo vigente está en `LICENSE_CLIENT.md` (contrato GL y decisiones de licencia), `SECURITY.md`, `docs/HISTORIAL_DESARROLLO.md` y el propio código.
 
+## Cambios en desarrollo — 9 de octubre de 2026
+
+- Pago electrónico: tarjetas con icono genérico monocromático, casillas de selección (máximo un teléfono y
+  una tarjeta; tocar la elegida la desmarca) y editar/eliminar en una fila.
+- Inicio: cabecera con turno y período fija; avisos, accesos y gráficos se desplazan debajo. Nueva venta
+  flota a la izquierda y movimiento de caja a la derecha, solo con turno abierto y permiso de vender.
+- Buscadores sin placeholder. La lista/tabla de transferencias no muestra el vendedor.
+- PDF/Excel solo en informes de inventario, servicios y turnos. Imagen y tarjetas promocionales para
+  productos/servicios, no insumos; comentario opcional de hasta 160 caracteres como encabezado de tarjetas.
+  Cada formato tiene icono, incluido Excel monocromático.
+- Notificación expandida con estado del turno, turnos abiertos en el negocio y sincronización, más duración
+  del turno propio; sin importes ni datos personales.
+- **Escritorio Python:** primera base independiente en [desktop/](desktop/README.md), con catálogo,
+  turnos, ventas, caja y dashboard. Incluye PDF/Excel/PNG, respaldo cifrado `.spvidesk`, preparación HTTPS,
+  comparación entre períodos y proceso Windows que prueba antes y después de empaquetar.
+  **Ampliación implementada:** QR/TCP principal, licencias GL, respaldo Android, correcciones,
+  insumos, clientes, fotos e idempotencia. Pendiente ejecutar pruebas e interoperabilidad en PC.
+  La web es independiente y exclusivamente principal; no sustituye la aplicación móvil.
+
+Ver [manual de estos cambios](MANUAL_USUARIO.md) y [alcance técnico de escritorio](desktop/README.md).
+Resultados de la fase inicial: 45 pruebas Python y sintaxis JavaScript correctas; **no validan la ampliación actual, que no se ha ejecutado**. Gradle no ejecutado por ausencia
+de Java en este entorno; no se afirma que Android esté compilado ni validado visualmente.
+
 ## Descripción
 
 ### Qué hace
 
 | Área | Funciones |
 |---|---|
-| **Inicio** | Banner de licencia, **Nueva venta** (izquierda) y turno con su interruptor abierto/cerrado (derecha), alertas de inventario (stock bajo/crítico, insumo bajo/crítico, próximo a caducar), accesos a Pago electrónico (teléfono y tarjeta/cuenta resaltados) y Precios, selector de período y, debajo, acordeones: 4 gráficos (Ventas, Inventario, Métodos de pago, Ganancia neta) y Top 3 (más vendido, lento movimiento, rentabilidad). Los acordeones empiezan cerrados y se cierran de nuevo al cambiar de ventana |
+| **Inicio** | Banner de licencia, **Nueva venta** flotante abajo a la izquierda y movimiento de caja abajo a la derecha (solo con turno abierto); turno y selector de período fijos en la cabecera, alertas de inventario (stock bajo/crítico, insumo bajo/crítico, próximo a caducar), accesos a Pago electrónico (teléfono y tarjeta/cuenta resaltados) y Precios, selector de período y, debajo, acordeones: 4 gráficos (Ventas, Inventario, Métodos de pago, Ganancia neta) y Top 3 (más vendido, lento movimiento, rentabilidad). Los acordeones empiezan cerrados y se cierran de nuevo al cambiar de ventana |
 | **Venta** | Solo con turno abierto. Selección desde el Inventario, carrito con cantidades, **Efectivo** (comprobante) o **Transferencia** (QR de Transfermóvil con tarjeta y móvil; el total aparece debajo porque el QR oficial no lo admite). El nº de transacción se puede capturar opcionalmente desde una notificación autorizada o pegar/compartir desde el SMS de PAGOxMOVIL. Un Elaborado se vende mientras alcancen sus insumos, que se descuentan en la misma transacción |
 | **Inventario** | Lista con buscador, filtros, selección múltiple, ficha, alta manual, exportación (PDF, Excel, Imagen, Tarjetas) |
 | **QR de vinculación** | CameraX + ML Kit (modelo empaquetado). Solo lee el QR para vincular la principal con la secundaria |
@@ -301,3 +324,12 @@ El repositorio no incluye un archivo de licencia del código fuente; los derecho
 ### Revisión de entradas y listas (09/10/2026, pendiente de verificar)
 
 Los datos secundarios de las listas se muestran por renglones. Los campos numéricos rechazan formatos ambiguos en lugar de convertirlos silenciosamente; las cuentas bancarias admiten hasta 20 cifras. El precio de venta debe superar el costo: se valida al guardar productos/insumos y al cotizar, también después de aplicar descuentos. Los precios históricos no se modifican. La compilación y las pruebas quedan para opencode CLI en el PC del usuario: [guía de revisión](docs/REVISION_2026-10-09.md).
+
+### Ampliación de principal web Python
+
+El desarrollo de `desktop/` incorpora servidor principal LAN, empleados, cliente GL, respaldo
+Android compartido y operaciones canónicas del carrito. Es una aplicación independiente,
+exclusivamente principal, no una sustitución del móvil. Esta ampliación **no se ha probado ni
+compilado aquí**: la verificación se realiza en la PC del propietario con OpenCode CLI siguiendo
+[desktop/VERIFICACION_PC.md](desktop/VERIFICACION_PC.md). El alcance implementado y las limitaciones de formatos/fotos están
+explicitados en [desktop/README.md](desktop/README.md).

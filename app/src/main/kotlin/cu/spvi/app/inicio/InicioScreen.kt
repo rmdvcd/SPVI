@@ -266,13 +266,29 @@ fun InicioContent(
     )
     Scaffold(
         topBar = {
-            SpviTopBar(title = "SPVI", marca = true)
+            Column {
+                SpviTopBar(title = "SPVI", marca = true)
+                Column(Modifier.padding(horizontal = SpviSpacing.md), verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
+                    TurnoContenedor(state, acciones, zona, ajustar = false)
+                    if (!permisos.esSecundaria) SelectorPeriodo(state.opcion, acciones.onPeriodo)
+                }
+            }
+        },
+        floatingActionButtonPosition = androidx.compose.material3.FabPosition.Center,
+        floatingActionButton = {
+            if (state.turnoAbierto && permisos.vender) {
+                Row(
+                    Modifier.fillMaxWidth().padding(SpviSpacing.md),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) { AccionesVenta(state, acciones) }
+            }
         },
         snackbarHost = { SpviSnackbarHost(snackbar) },
     ) { padding ->
         LazyColumn(
             Modifier.fillMaxSize().padding(padding).testTag(InicioTags.LISTA),
-            contentPadding = PaddingValues(SpviSpacing.md),
+            contentPadding = PaddingValues(start = SpviSpacing.md, end = SpviSpacing.md, top = SpviSpacing.md, bottom = SpviSize.touchTarget + SpviSpacing.xl),
             verticalArrangement = Arrangement.spacedBy(SpviSpacing.md),
         ) {
             state.banner?.let { texto ->
@@ -369,7 +385,6 @@ fun InicioContent(
                 }
             }
             if (actualizacion.tarjetaVisible) item(key = "actualizacion") { TarjetaActualizacion(actualizacion, acciones) }
-            item(key = "turno") { TurnoCard(state, acciones, zona, permisos, apilar = maxAlertas < 2) }
             // 0.21.0 (C12): sin Ventas ni Inventario no hay alertas de existencias.
             if (permisos.verInventario) alertas(state.alertas, acciones, maxAlertas)
             // 0.21.0 (C9): en la secundaria, solo turno, Nueva venta y alertas; los accesos y los gráficos son del dueño.
@@ -403,7 +418,6 @@ fun InicioContent(
                 }
             }
             if (!permisos.esSecundaria) {
-                item(key = "periodo") { SelectorPeriodo(state.opcion, acciones.onPeriodo) }
                 graficosPeriodo(state.graficos, state.opcion, zona, acciones.onReintentar, acordeones)
                 resumenGeneral(state.resumen, acciones.onReintentar, acordeones)
             }
@@ -485,37 +499,6 @@ private fun TarjetaActualizacion(a: cu.spvi.app.actualizacion.EstadoActualizacio
 // ---------------- Turno y Nueva venta ----------------
 
 
-/**
- * 0.30.1: «Nueva venta» a la izquierda y, a la derecha, el turno con su interruptor de dos estados (abierto / cerrado).
- * El contenedor del turno mide lo que mide su contenido. Con letra muy grande ([apilar]) no caben en una fila: el botón
- * va arriba y el turno debajo, a todo el ancho.
- */
-@Composable
-private fun TurnoCard(state: InicioUiState, acciones: AccionesInicio, zona: ZoneId, permisos: cu.spvi.domain.model.PermisosApp, apilar: Boolean) {
-    // 0.21.0 (C12): sin ningún tipo de venta (solo Inventario, o sin permiso de vender) no hay botón de venta.
-    if (!permisos.vender) {
-        TurnoContenedor(state, acciones, zona, ajustar = false)
-    } else if (apilar) {
-        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(SpviSpacing.md)) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(SpviSpacing.lg, Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically,
-            ) { AccionesVenta(state, acciones) }
-            TurnoContenedor(state, acciones, zona, ajustar = false)
-        }
-    } else {
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(SpviSpacing.md),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) { AccionesVenta(state, acciones) }
-            Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) { TurnoContenedor(state, acciones, zona, ajustar = true) }
-        }
-    }
-}
-
 /** «Nueva venta» (solo icono + texto) y, con el turno abierto, entrada / salida de efectivo (0.25.0, §5.2). */
 @Composable
 private fun AccionesVenta(state: InicioUiState, acciones: AccionesInicio) {
@@ -525,7 +508,7 @@ private fun AccionesVenta(state: InicioUiState, acciones: AccionesInicio) {
     )
     if (state.turnoAbierto) SpviIconAction(
         SpviIcons.Efectivo, cu.spvi.app.caja.TextosCaja.MOVIMIENTO_TITULO, onClick = acciones.onMovimientoCaja,
-        style = IconActionStyle.Tonal, modifier = Modifier.testTag(InicioTags.CAJA),
+        style = IconActionStyle.Tonal, enabled = !state.cambiandoTurno, modifier = Modifier.testTag(InicioTags.CAJA),
     )
 }
 

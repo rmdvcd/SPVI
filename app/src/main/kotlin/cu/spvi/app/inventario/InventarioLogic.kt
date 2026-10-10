@@ -100,7 +100,7 @@ enum class FormatoSalida(val etiqueta: String, val detalle: String) {
         val EXPORTAR = listOf(PDF, EXCEL, IMAGEN, TARJETAS)
         const val USO_INTERNO = "Incluye costos" // 0.27.1: «Uso interno (incluye c…» no cabía junto a los dos botones
         const val PARA_CLIENTES = "Para clientes (sin costos)"
-        val COMPARTIR_FICHA = listOf(PDF, TARJETAS)
+        val COMPARTIR_FICHA = listOf(IMAGEN, TARJETAS)
     }
 }
 

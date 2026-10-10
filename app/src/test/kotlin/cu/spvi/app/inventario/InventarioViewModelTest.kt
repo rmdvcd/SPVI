@@ -269,14 +269,24 @@ class InventarioViewModelTest {
         assertTrue(vm.state.value.seleccion.isEmpty())
     }
 
+    @Test fun promocionLlevaComentarioOpcionalAcotado() = runTest {
+        cargar()
+        val vm = vm()
+        vm.comentarioPromocion("Oferta de hoy")
+        vm.exportar(FormatoSalida.TARJETAS)
+        assertEquals("Oferta de hoy", renderer.comentarios.single())
+        vm.comentarioPromocion("x".repeat(200))
+        assertEquals(160, vm.state.value.comentarioPromocion.length)
+    }
+
     @Test fun fichaEditarCompartirYEliminar() = runTest {
         cargar()
         val vm = vm()
         vm.abrirFicha(2)
         assertEquals("Galletas", vm.state.value.ficha?.producto?.nombre)
-        vm.compartirFicha(FormatoSalida.PDF)
+        vm.compartirFicha(FormatoSalida.TARJETAS)
         val c = eventos.filterIsInstance<EventoInventario.Compartir>().single()
-        assertEquals("Ficha Galletas.pdf", c.archivos.single().name)
+        assertEquals("image/png", c.mime)
         vm.pedirEliminarFicha()
         assertEquals(ConfirmarEliminar.Uno(2, "Galletas"), vm.state.value.confirmar)
         vm.confirmarEliminar()

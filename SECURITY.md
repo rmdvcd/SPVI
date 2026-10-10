@@ -127,3 +127,49 @@ Cómo protege SPVI los datos del negocio y la licencia en el teléfono. Describe
 ## 7. Comunicar un problema de seguridad
 
 Escribe al desarrollador por WhatsApp o SMS al **+53 51815604** (Ajustes → Soporte). No publiques el detalle hasta que haya una versión corregida.
+
+## Base de escritorio Python (en desarrollo, 2026-10-09)
+
+Las garantías SQLCipher/Keystore y licencia Android de este documento **no se aplican** a `desktop/`.
+La base de escritorio escucha solo en loopback, exige acceso con clave, valida Host y CSRF; el servidor TCP LAN es un canal separado. SQLite y el secreto de sesión se guardan **sin cifrado de aplicación** en la
+carpeta del dueño: usar ACL de Windows y cifrado de disco. No usarla como sistema de producción hasta
+completar interoperabilidad, licencias, protección de claves/datos y pruebas de Windows.
+HTTPS requiere certificado válido para el nombre y confianza explícita; no se desactiva TLS ni se
+modifican automáticamente DNS, firewall o almacenes de certificados. Detalles en `desktop/README.md`.
+
+El respaldo web `.spvidesk` sí se cifra con AES-GCM y contraseña, aunque la base activa no esté cifrada.
+Se valida antes de restaurar y no admite SQL, archivos ejecutables ni rutas del usuario. Las descargas y
+restauraciones requieren sesión y CSRF. Las imágenes comerciales no incluyen datos internos; los nombres
+exportados a Excel se marcan como texto para evitar fórmulas. El servidor TCP valida vinculación, sesiones y comandos; las confirmaciones de lotes se guardan
+junto con sus datos, sin publicar la administración HTTP en la red.
+
+### Principal web: separación de canales e identidad
+
+La ampliación Python mantiene el navegador administrativo separado del listener TCP LAN.
+El listener requiere IPv4 privada explícita, limita trabajadores y usa emparejamiento QR
+con token temporal de un uso; no debe publicarse mediante reenvío de puertos del router.
+La identidad y secretos usan DPAPI del usuario en Windows; la identidad se conserva fuera
+ de la carpeta portable, en `%LOCALAPPDATA%/SPVI-Web/identidad`. Copiar el EXE o el respaldo
+no traslada activación ni emparejamientos. El respaldo está cifrado, la base SQLite activa no:
+proteger la cuenta Windows, permisos del directorio y disco. No compartir QR ni contraseñas.
+
+Estas medidas están implementadas pero **no verificadas en esta ampliación**. Deben probarse
+límites, reconexión, revocación, lotes repetidos, restauración y contratos criptográficos con
+Android/GL antes de producción; véase `desktop/VERIFICACION_PC.md`.
+
+### Reintentos, fotos y recuperación local
+
+- Mutaciones HTTP con clave de idempotencia: resultado y datos en una transacción. Reutilizar una
+  clave con otro cuerpo devuelve conflicto. La interfaz envía también el identificador del negocio
+  para rechazar solicitudes anteriores a una restauración.
+- Una conexión TCP no sustituye la sesión anterior hasta autenticar su primera trama cifrada.
+  La instantánea solo entrega las cuentas de cobro asignadas al empleado, sin perfil personal.
+- Las fotos admitidas se decodifican con límites de bytes/píxeles y se recodifican sin EXIF. Nunca
+  se accede a rutas o URL incluidas en un DTO. Hay límites por imagen, conjunto y respaldo.
+- `--reset-password` necesita acceso local al directorio y exige detener el proceso. Cambia el hash
+  sin rotar secretos de cifrado/identidad; las sesiones previas quedan inválidas al reiniciar.
+  El bloqueo de instancia impide dos lanzadores simultáneos sobre los mismos datos.
+- Los contadores de rechazo de sincronización no incluyen payloads, claves, QR ni datos personales.
+
+Estado: implementación sin ejecutar en esta fase. Las pruebas añadidas deben correr en la PC y
+complementarse con los ensayos de móviles, Windows y GL antes de uso real.

@@ -18,6 +18,7 @@ import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class RegistrosLogicTest {
@@ -31,6 +32,10 @@ class RegistrosLogicTest {
         val t = transferencia(3, 50)
         assertEquals("30/09/2026 12:03", tituloFila(t, habana))
         assertEquals("Ana Díaz", subtituloFila(t))
+        assertEquals("Ana Díaz", subtituloFila(t.copy(vendedor = "Nombre privado")))
+        val tabla = cu.spvi.domain.service.TablasExport.transacciones(listOf(t.copy(vendedor = "Nombre privado")))
+        assertFalse(tabla.columnas.contains("Vendedor"))
+        assertFalse(tabla.filas.flatten().contains("Nombre privado"))
         assertNull(subtituloFila(transferencia(3, 50, cliente = " ")))
         assertEquals("50.00 CUP", valorFila(t))
 

@@ -9,6 +9,13 @@ import org.junit.Test
 
 /** 0.19.2 · Cuándo corre el servicio en primer plano de la principal y qué dice la notificación única. */
 class PlanAvisoTest {
+    @Test fun detalleExpandidoNoIncluyeDatosFinancieros() {
+        val texto = PlanAviso.detalle(PlanAviso(servicio = true, mostrar = true, turnoDesde = null, conectadas = 2), null)
+        org.junit.Assert.assertTrue(texto.contains("Turno de esta app cerrado"))
+        org.junit.Assert.assertTrue(texto.contains("Sincronización local activa"))
+        org.junit.Assert.assertFalse(texto.contains("CUP"))
+    }
+
 
     private val desde = Instant.parse("2026-10-02T13:30:00Z")
     private val sinSecundarias = AtencionSync()
@@ -47,6 +54,13 @@ class PlanAvisoTest {
         assertEquals("1 app conectada", PlanAviso.texto(unaApp, null))
         val esperando = PlanAviso.calcular(true, null, principal())
         assertEquals(PlanAviso.ESPERANDO, PlanAviso.texto(esperando, null))
+    }
+
+    @Test fun detalleMuestraTurnosDeLaRedSinDatosPersonales() {
+        val p = PlanAviso.calcular(false, desde, principal(abiertos = 3, conectadas = 2))
+        assertEquals(3, p.turnosAbiertos)
+        assertTrue(PlanAviso.detalle(p, "9:30").contains("3 turnos abiertos en el negocio"))
+        assertEquals(0, PlanAviso.calcular(false, desde, sinSecundarias).turnosAbiertos)
     }
 
     @Test fun sinServicioNoSeCuentanConexiones() {

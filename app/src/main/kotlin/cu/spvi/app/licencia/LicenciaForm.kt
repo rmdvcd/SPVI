@@ -170,7 +170,7 @@ object TextosRenovacion {
 
 /** 0.23.1: la licencia llega solo como texto (sin QR): se pega el mensaje completo o solo el código. */
 object TextosActivacion {
-    const val INSTRUCCION = "Pega el mensaje que recibiste del desarrollador (completo o solo la línea que empieza por SPVI2:)."
+    const val INSTRUCCION = "Pega el mensaje de activación que recibiste."
 }
 
 fun mensajeActivacion(r: ActivationResult): String = when (r) {
