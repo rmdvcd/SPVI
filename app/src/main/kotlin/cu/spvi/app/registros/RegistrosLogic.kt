@@ -225,7 +225,7 @@ fun valorFila(v: Venta): String = Money.format(v.total)
 
 fun tituloFila(t: Transaccion, zona: ZoneId): String = fechaHora(t.fecha, zona)
 fun subtituloFila(t: Transaccion): String? =
-    t.cliente.nombreApellidos.ifBlank { null }
+    listOfNotNull(t.cliente.nombreApellidos.ifBlank { null }, t.vendedor.ifBlank { null }).joinToString(" · ").ifEmpty { null }
 fun valorFila(t: Transaccion): String = Money.format(t.importe)
 
 fun tituloFila(i: ItemMovimiento, zona: ZoneId): String = fechaHora(i.movimiento.fecha, zona)
