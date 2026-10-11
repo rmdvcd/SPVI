@@ -20,7 +20,7 @@ from spvi_web.secrets import SecretBox
 
 STATIC = Path(__file__).resolve().parent.parent / 'spvi_web' / 'static'
 
-# Vectores fijos compartidos con GL (SpviPc16Test): si cambian, los códigos ya emitidos dejarían de valer.
+# Vectores fijos que GL (SpviPc16Test) debe reproducir: si cambian, los códigos ya emitidos dejarían de valer.
 DEVICE_SCALAR = int('11' * 32, 16)
 GL_SCALAR = int('22' * 32, 16)
 DEVICE_ID = 'SPVI:vector-pc'

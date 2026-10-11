@@ -24,6 +24,14 @@ licencia de PC de 16 dígitos: 103 pruebas Python, autoprueba y recorrido en nav
 correctos en Linux. **Pendiente:** probar en Windows (icono, registro `Run`, `.exe` sin consola) y la
 licencia de PC de punta a punta con la app GL real en el teléfono (VERIFICACION_PC.md, pasos 19–23).
 
+**GL:** falta publicar en GL `security/SpviPc16.kt` (port de `pc_code.py`), los campos opcionales
+`plataforma`, `transaccion` y `recupera` de `SolicitudSpviV2` y su validación en `Spvi23`, el método
+`SpviPuerta.emitirCodigoPc` con su implementación en `CryptoGatewayImpl`, la rama PC de
+`EmitirSpvi2UseCase` (vence al final del día UTC, `id` = `license_id`), `SpviResponseMessage.buildPc`,
+`EnvelopeValidator.licenciaPc` para `.glreg`, las filas Plataforma/Transacción/Recupera del Generador y
+`SpviPc16Test` con los vectores de `desktop/tests/test_escritorio.py`. Hasta entonces GL no puede
+responder a una solicitud de PC con un código de 16 dígitos.
+
 ## Android
 
 Conservar los cambios existentes de pago electrónico, exportaciones, Inicio y notificaciones.

@@ -14,16 +14,17 @@ Registro **histórico** de lo que se implementó en cada fase y de las suposicio
   reinicio, inicio con Windows (`HKCU\…\Run`) con retraso, clave opcional y red local reanudada.
   `build_windows.ps1` genera el `.exe` con `--noconsole` e icono; la autoprueba devuelve código de salida.
 - Licencia de PC: `licensing/pc_code.py` (código de 16 dígitos con `K` de ECDH+HKDF) y solicitud con
-  `plataforma`/`transaccion` y QR de WhatsApp. En GL: `SpviPc16`, rama PC de `EmitirSpvi2UseCase`,
-  validación de los campos nuevos, fila Plataforma/Transacción en el Generador y revalidación al importar
-  `.glreg`. Sin cambio del contrato v1 ni de Room.
+  `plataforma`/`transaccion` y QR de WhatsApp. Para GL se escribieron `SpviPc16`, la rama PC de
+  `EmitirSpvi2UseCase`, la validación de los campos nuevos, la fila Plataforma/Transacción del Generador y la
+  revalidación al importar `.glreg` (sin cambio del contrato v1 ni de Room). **No están en el repositorio GL:**
+  la copia de trabajo de GL se perdió al reiniciarse la sesión, antes de publicarla; hay que rehacerlos.
 - Datos de prueba `seed.py` (548 días, parecidos al móvil, no idénticos), Registros paginados, Tiempo en
   línea y rutas nuevas (`/api/app*`, `/api/uptime`, `/api/registros/<tipo>`, `/api/license/qr`, `/api/seed`).
 - Móvil: pestañas de Registros en varias filas, títulos y selectores sin «…», textos sin términos técnicos.
 - Verificación: 103 pruebas Python y autoprueba; recorrido en Chromium sin pantalla a 1440×900, 800×1000 y
   390×844, claro y oscuro, y un flujo de venta/licencia. GL: `SpviPc16Test` más las pruebas SPVI existentes
   (38) compiladas con el compilador Kotlin del kernel Jupyter y stubs mínimos de JUnit/Truth/coroutines;
-  ida y vuelta real PC (Python) → GL (Kotlin) → PC. **No** se compiló Android ni GL con Gradle (sin JDK/SDK),
+  ida y vuelta real PC (Python) → GL (Kotlin) → PC (antes de perderse la copia de GL). **No** se compiló Android ni GL con Gradle (sin JDK/SDK),
   no se regeneraron capturas Roborazzi ni se probó en Windows.
 
 ## 2026-10-09 — Segunda entrega de escritorio (sin release)

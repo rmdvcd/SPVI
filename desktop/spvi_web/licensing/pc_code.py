@@ -1,6 +1,6 @@
 """Licencia de PC: código de 16 dígitos (XXXX-XXXX-XXXX-XXXX) emitido por GL.
 
-Contrato «SPVI-P1» (espejo de ``dev.gl.license.security.SpviPc16`` en GL):
+Contrato «SPVI-P1» (GL debe reproducirlo en ``dev.gl.license.security.SpviPc16``):
 
 * ``Z = ECDH(clave privada del equipo, clave ECDH pública de GL)``; GL obtiene el mismo valor con su clave privada y la
   ``devicePub`` (33 bytes comprimidos) que viaja en la solicitud ``SPVIR1``.

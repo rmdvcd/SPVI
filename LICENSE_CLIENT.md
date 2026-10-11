@@ -144,7 +144,7 @@ Después, el teléfono viejo queda bloqueado sin periodo de prueba, rechaza cual
 | Renovación sin perder días, `renueva` (0.22.0, L-e) | No (campo extra al final) | **Sí:** GL calcula `venceEn = max(ahora, venceEn anterior) + duración` con SUS registros |
 | `licenseId` fuera del envelope (N1) | No | Resuelto: GL lo pone en la línea «ID:» (solo afecta a la larga ya instalada) |
 | **Solicitud `SPVIR1` + licencia corta cifrada `SPVI2` únicas, mensaje «datos + renglón + código», solo texto (0.23.0; QR quitado en la 0.23.1)** | **Sí:** solicitud `v = 2` y la larga deja de activarse; las claves de GL no cambian | **Sí:** `docs/GL_PROMPT_0.23.md` |
-| Escritorio 0.31: campos opcionales `plataforma = "PC"` y `transaccion` en la solicitud; respuesta = código de 16 dígitos (sección 10) | No (campos extra; la solicitud es AEAD y SPVI2 no cambia) | **Sí:** GL `SpviPc16` y rama PC de `EmitirSpvi2UseCase` (hecho en GL junto con esta versión) |
+| Escritorio 0.31: campos opcionales `plataforma = "PC"` y `transaccion` en la solicitud; respuesta = código de 16 dígitos (sección 10) | No (campos extra; la solicitud es AEAD y SPVI2 no cambia) | **Sí:** GL `SpviPc16` y rama PC de `EmitirSpvi2UseCase` (escrito y probado; **pendiente de publicar en GL**) |
 
 ## 9. Pruebas
 
@@ -162,8 +162,9 @@ Prueba de extremo a extremo con la app GL real: generar una solicitud en SPVI, e
 ## 10. Licencia de la PC — código de 16 dígitos (escritorio 0.31)
 
 La app de escritorio (`desktop/`) no usa `SPVI2:` (210 caracteres) sino un código que se teclea:
-`XXXX-XXXX-XXXX-XXXX`. Referencia: `desktop/spvi_web/licensing/pc_code.py`; en GL, `security/SpviPc16.kt`. Los
-vectores de `desktop/tests/test_escritorio.py` y `SpviPc16Test` son los mismos y deben seguir coincidiendo.
+`XXXX-XXXX-XXXX-XXXX`. Referencia: `desktop/spvi_web/licensing/pc_code.py`; en GL irá en `security/SpviPc16.kt`
+(pendiente de publicar). Los vectores fijos de `desktop/tests/test_escritorio.py` son los que debe reproducir
+`SpviPc16Test` en GL.
 
 **Solicitud.** La misma `SPVIR1` de la sección 2 (cifrada hacia la ECDH de GL), con `via = WHATSAPP`,
 `deviceId = "SPVI:" + 32 hex` aleatorios de la instalación, y además `plataforma = "PC"` y `transaccion`

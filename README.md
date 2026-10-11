@@ -36,7 +36,8 @@ Los documentos de trabajo que estaban fuera del proyecto (`DECISIONES_LICENCIA_S
   con retraso, Tiempo en línea (PC, red local y cada app vinculada) y datos de prueba «Bodega La Esquina».
 - **Licencia de PC:** código de 16 dígitos `XXXX-XXXX-XXXX-XXXX`; la solicitud lleva plataforma PC y número
   de transacción y se envía por WhatsApp escaneando un QR ([LICENSE_CLIENT.md](LICENSE_CLIENT.md), sección 10).
-  GL emite el código (`SpviPc16`); el teléfono sigue usando `SPVI2`.
+  El teléfono sigue usando `SPVI2`. **Falta publicar en GL** la parte que emite el código (`SpviPc16`): se
+  escribió y probó en esta sesión pero aún no está en el repositorio GL (ver [Pendiente.md](Pendiente.md)).
 - **Móvil:** ver «Cambios de la 0.30.1 en curso» (textos y pestañas que no se cortan).
 - Verificación: 103 pruebas Python, autoprueba y recorrido de la web en Chromium sin pantalla correctos;
   el código de 16 dígitos se comprobó de punta a punta entre Python y el Kotlin de GL. Sin compilar Android
