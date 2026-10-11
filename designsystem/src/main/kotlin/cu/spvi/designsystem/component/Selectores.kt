@@ -109,7 +109,7 @@ fun <T> SpviComboBox(
                 }
                 Column(Modifier.weight(1f)) {
                     Text(label, style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant)
-                    Text(etiqueta(seleccion), style = MaterialTheme.typography.titleMedium, color = cs.onSurface, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                    Text(etiqueta(seleccion), style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
                 }
                 Icon(SpviIcons.Desplegar, contentDescription = null, tint = cs.onSurfaceVariant, modifier = Modifier.rotate(giro))
             }

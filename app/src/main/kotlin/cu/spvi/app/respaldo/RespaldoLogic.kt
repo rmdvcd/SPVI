@@ -11,7 +11,7 @@ import java.time.ZoneId
 
 object TextosRespaldo {
     const val TITULO = "Respaldo"
-    const val EXPLICACION = "Guarda una copia cifrada de todo el negocio. Si la proteges con contraseña, nadie puede abrirla sin ella, ni siquiera el desarrollador."
+    const val EXPLICACION = "Guarda una copia protegida de todo el negocio. Si la proteges con contraseña, nadie puede abrirla sin ella, ni siquiera el desarrollador."
     /** 0.27.0 (T10): contraseña opcional, apagada por defecto. */
     const val PROTEGER = "Proteger con contraseña"
     const val SIN_CONTRASENA_AVISO = "Sin contraseña, cualquiera con SPVI podrá abrir este archivo."

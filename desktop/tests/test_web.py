@@ -188,8 +188,9 @@ class HttpTest(unittest.TestCase):
         response = self.app.test_client().get('/')
         self.assertEqual('DENY', response.headers['X-Frame-Options'])
         self.assertEqual('no-store', response.headers['Cache-Control'])
-        with self.client.get('/static/app.js') as asset:
-            self.assertEqual(200, asset.status_code)
+        for asset_path in ('/static/js/core.js', '/static/app.css', '/static/icons.svg', '/favicon.ico'):
+            with self.client.get(asset_path) as asset:
+                self.assertEqual(200, asset.status_code, asset_path)
         self.assertIn('HttpOnly', response.headers.get('Set-Cookie', ''))
 
     def test_old_csrf_rejected_after_login(self):

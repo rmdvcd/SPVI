@@ -17,6 +17,13 @@ configurados explícitamente; fotos web no importadas por Android; ningún respa
 activación ni secretos de emparejamiento; no se inventan consumos ausentes en respaldos históricos.
 No incorpora impuestos ni contabilidad de partida doble.
 
+### Escritorio 0.31.0
+
+Interfaz nueva, icono de notificación, inicio con Windows, tema, Tiempo en línea, datos de prueba y
+licencia de PC de 16 dígitos: 103 pruebas Python, autoprueba y recorrido en navegador sin pantalla
+correctos en Linux. **Pendiente:** probar en Windows (icono, registro `Run`, `.exe` sin consola) y la
+licencia de PC de punta a punta con la app GL real en el teléfono (VERIFICACION_PC.md, pasos 19–23).
+
 ## Android
 
 Conservar los cambios existentes de pago electrónico, exportaciones, Inicio y notificaciones.

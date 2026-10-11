@@ -34,7 +34,7 @@ object ActualizacionModule {
 
 /** Motivo por el que un APK descargado no se instala (se borra y se avisa). */
 enum class RechazoApk(val texto: String) {
-    ILEGIBLE("El archivo descargado no es un APK válido."),
+    ILEGIBLE("El archivo descargado no es una actualización válida de SPVI."),
     OTRO_PAQUETE("El archivo no es SPVI."),
     VERSION_NO_MAYOR("El archivo no es una versión más nueva que la instalada."),
     OTRA_FIRMA("El archivo no está firmado por el mismo desarrollador. No se instala."),

@@ -1,6 +1,11 @@
 package cu.spvi.designsystem.component
 
-import androidx.compose.material3.SecondaryScrollableTabRow
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -38,8 +43,10 @@ data class SpviTab(val label: String, val count: Int? = null, val testTag: Strin
  * - Seleccionada = resaltado invertido (fondo primary, texto onPrimary), igual que la barra inferior. No depende
  *   solo del color: el estado seleccionado también va en la semántica.
  * - Altura mínima de 48dp; si no cabe (letra grande, «Transferencias»), el texto ocupa 2 líneas.
+ * - 0.30.1: con más de 4 pestañas (Registros) pasan a varias filas centradas en lugar de una fila desplazable:
+ *   ninguna queda cortada en el borde de la pantalla, sea cual sea el ancho o la proporción.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SpviTabs(
     tabs: List<SpviTab>,
@@ -50,7 +57,7 @@ fun SpviTabs(
     val cs = MaterialTheme.colorScheme
     val indice = selectedIndex.coerceIn(0, (tabs.size - 1).coerceAtLeast(0))
     val mod = modifier.semantics { collectionInfo = CollectionInfo(rowCount = 1, columnCount = tabs.size) }
-    // P29: con más de 4 pestañas (Registros) no caben a 360dp sin partir palabras: fila desplazable.
+    // P29: con más de 4 pestañas (Registros) no caben a 360dp sin partir palabras: varias filas (0.30.1).
     val contenido: @Composable () -> Unit = {
         tabs.forEachIndexed { i, tab ->
             val seleccionada = i == selectedIndex
@@ -76,10 +83,11 @@ fun SpviTabs(
         }
     }
     if (tabs.size > MAX_FIJAS) {
-        SecondaryScrollableTabRow(
-            selectedTabIndex = indice, modifier = mod, containerColor = cs.surface, contentColor = cs.onSurface,
-            edgePadding = SpviSpacing.xs, indicator = {}, divider = {}, tabs = contenido,
-        )
+        FlowRow(
+            modifier = mod.fillMaxWidth().background(cs.surface).selectableGroup(),
+            horizontalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.Center,
+        ) { contenido() }
     } else {
         SecondaryTabRow(
             selectedTabIndex = indice, modifier = mod, containerColor = cs.surface, contentColor = cs.onSurface,

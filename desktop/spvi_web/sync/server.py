@@ -81,6 +81,7 @@ class Handler(socketserver.StreamRequestHandler):
                     if not e['active']:
                         self.wfile.write(channel.encode({'t':'quitada'}));self.wfile.flush();return
                 tag=request['t']
+                manager.seen(employee,tag)
                 if tag=='sync': result=manager.business.synchronize(employee,request)
                 elif tag=='cmd': result=manager.business.command(employee,request)
                 elif tag=='ping': result=dict(t='pong',id=dto.number(request.get('id')))
@@ -103,6 +104,8 @@ class SyncManager:
         self.business=business
         self.server=None; self.thread=None; self.sessions={}; self.lock=threading.RLock(); self.running=False
         self.errors=0;self.last_error=None
+        # Tiempo en línea (solo memoria de esta ejecución): inicio de la red y de cada conexión, acumulado y último contacto.
+        self.started_at=None; self.since={}; self.online={}; self.last_seen={}; self.last_sync={}
 
     def record_error(self,category):
         with self.lock:
@@ -117,7 +120,7 @@ class SyncManager:
                 raise ValueError('Detén la red antes de cambiar la dirección.')
             try: self.server=PrincipalServer((host,port),self)
             except OSError as error: raise ValueError('No se pudo abrir esa dirección o puerto en esta PC.') from error
-            self.running=True
+            self.running=True; self.started_at=dto.now_ms()
             self.thread=threading.Thread(target=self.server.serve_forever,name='SPVI principal LAN',daemon=True)
             self.thread.start()
         return self.status()
@@ -125,6 +128,9 @@ class SyncManager:
     def stop(self):
         with self.lock:
             self.running=False;server=self.server;self.server=None;sessions=list(self.sessions.values());self.sessions.clear()
+            now=dto.now_ms()
+            for id,start in self.since.items(): self.online[id]=self.online.get(id,0)+now-start
+            self.since.clear(); self.started_at=None
         for connection in sessions:
             try: connection.shutdown(socket.SHUT_RDWR);connection.close()
             except OSError: pass
@@ -139,19 +145,42 @@ class SyncManager:
     def register(self,id,connection):
         with self.lock:
             previous=self.sessions.get(id);self.sessions[id]=connection
+            self.since.setdefault(id,dto.now_ms()); self.last_seen[id]=dto.now_ms()
         if previous is not None and previous is not connection:
             try: previous.shutdown(socket.SHUT_RDWR);previous.close()
             except OSError: pass
 
     def unregister(self,id,connection):
         with self.lock:
-            if self.sessions.get(id) is connection: self.sessions.pop(id,None)
+            if self.sessions.get(id) is connection:
+                self.sessions.pop(id,None); self._closed(id)
 
     def disconnect(self,id):
-        with self.lock: connection=self.sessions.pop(id,None)
+        with self.lock:
+            connection=self.sessions.pop(id,None); self._closed(id)
         if connection:
             try: connection.shutdown(socket.SHUT_RDWR);connection.close()
             except OSError: pass
+
+    def _closed(self,id):
+        start=self.since.pop(id,None)
+        if start is not None: self.online[id]=self.online.get(id,0)+dto.now_ms()-start
+
+    def seen(self,id,tag):
+        with self.lock:
+            now=dto.now_ms(); self.last_seen[id]=now
+            if tag=='sync': self.last_sync[id]=now
+
+    def uptime(self):
+        """Tiempos en milisegundos de esta ejecución: red local y cada app (conexión actual y acumulado)."""
+        with self.lock:
+            now=dto.now_ms()
+            apps={}
+            for id in set(self.since)|set(self.online)|set(self.last_seen):
+                current=now-self.since[id] if id in self.since else 0
+                apps[id]=dict(connected=id in self.sessions,since=self.since.get(id),current=current,
+                              total=self.online.get(id,0)+current,last_seen=self.last_seen.get(id),last_sync=self.last_sync.get(id))
+            return dict(lan=dict(running=self.running,since=self.started_at,address=self.server.server_address if self.server else None),apps=apps)
 
     def qr(self,id):
         self.business.license.require_active()

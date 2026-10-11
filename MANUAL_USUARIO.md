@@ -43,6 +43,25 @@ navegador y dominio se explican en [la guía de escritorio](desktop/README.md).
 Incluye el servidor principal para secundarias Android, pendiente de prueba real con móviles.
 Es independiente y solo principal; no sustituye la aplicación móvil.
 
+### SPVI en la PC (0.31.0)
+
+- **Abrir y cerrar:** SPVI vive en el icono junto al reloj de Windows. Doble clic abre la pantalla principal;
+  clic derecho muestra *Pantalla principal*, *Apps conectadas*, *Tiempo en línea*, *Ajustes*, *Reiniciar* y
+  *Salir*. Cerrar la pestaña del navegador no cierra SPVI.
+- **Menú:** el botón ☰ de arriba a la izquierda muestra u oculta el menú lateral con Inicio, Venta,
+  Inventario, Servicios, Registros, Apps vinculadas, Tiempo en línea y Ajustes.
+- **Clave de acceso (opcional):** en *Ajustes › Clave de acceso* se crea, cambia o quita. Si la olvidas,
+  sal de SPVI y ejecuta `SPVI.exe --reset-password`: se quita y puedes crear otra.
+- **Inicio con Windows:** en *Ajustes › Inicio de SPVI* elige si SPVI arranca con Windows, cuántos segundos espera
+  y si abre la pantalla principal o solo el icono.
+- **Tema:** *Ajustes › Tema*: Claro, Oscuro o el del sistema.
+- **Tiempo en línea:** cuánto lleva abierto SPVI en esta PC y la red local, y por cada app vinculada si está
+  conectada, el tiempo conectada y su última sincronización.
+- **Licencia:** en *Ajustes › Licencia* completa tus datos, el tipo, las apps secundarias y el número de
+  transacción del pago, y pulsa *Generar QR de solicitud*. Escanea el QR con la cámara del teléfono para abrir WhatsApp
+  con el mensaje listo y envíalo. El desarrollador responde con un código `XXXX-XXXX-XXXX-XXXX`: escríbelo
+  (o pega el mensaje) en *Activar licencia* y pulsa *Activar*.
+
 ### Exportar y respaldar en escritorio
 
 En **Exportar**, elige informe de inventario, servicios, turnos o productos para clientes.

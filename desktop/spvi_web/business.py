@@ -170,8 +170,18 @@ class Business:
             if get(db,'caja',id): continue
             put(db,'caja',dict(id=id,uuid=str(uuid.uuid4()),turnoId=linked_id(db,'turnos',row['shift_id']),fecha=dto.millis(row['created']),
                               tipo='ENTRADA' if row['amount']>0 else 'SALIDA',importeCent=abs(row['amount']),motivo=row['reason']))
+        index=self.turn_index(db)
         for turn in objects(db,'turnos'):
-            if turn.get('cerradoEn') is not None: self.summarize(db,turn)
+            if turn.get('cerradoEn') is not None and turn.get('resumen') is None: self.summarize(db,turn,index)
+
+    @staticmethod
+    def turn_index(db):
+        """Ventas, caja y movimientos agrupados por turno: una sola lectura para muchos turnos."""
+        index=defaultdict(lambda:dict(ventas=[],caja=[],movimientos=[]))
+        for kind in ('ventas','caja','movimientos'):
+            for obj in objects(db,kind):
+                if obj.get('turnoId') is not None: index[obj['turnoId']][kind].append(obj)
+        return index
 
     def project_catalog(self,db):
         for kind in ('productos','servicios','insumos'):
@@ -261,11 +271,14 @@ class Business:
             finally:
                 db.execute('ROLLBACK TO quotation');db.execute('RELEASE quotation')
 
-    def summarize(self,db,turn):
-        sales=[s for s in objects(db,'ventas') if s['turnoId']==turn['id']]
+    def summarize(self,db,turn,index=None):
+        if index is None:
+            sales=[s for s in objects(db,'ventas') if s['turnoId']==turn['id']]
+            moves=[m for m in objects(db,'caja') if m['turnoId']==turn['id']]
+            stock=[m for m in objects(db,'movimientos') if m.get('turnoId')==turn['id']]
+        else:
+            group=index[turn['id']]; sales,moves,stock=group['ventas'],group['caja'],group['movimientos']
         valid=[s for s in sales if s.get('anuladaEn') is None]
-        moves=[m for m in objects(db,'caja') if m['turnoId']==turn['id']]
-        stock=[m for m in objects(db,'movimientos') if m.get('turnoId')==turn['id']]
         turn['resumen']=dict(numVentas=len(valid),unidades=sum(d['cantidad'] for s in valid for d in s['detalles']),
             totalCent=sum(total(s) for s in valid),efectivoCent=sum(total(s) for s in valid if s['metodoPago']=='EFECTIVO'),
             transferenciaCent=sum(total(s) for s in valid if s['metodoPago']=='TRANSFERENCIA'),costoCent=sum(cost(s) for s in valid),
@@ -534,8 +547,9 @@ class Business:
             if not turn or turn.get('empleadoId')!=e['id']: raise ValueError('Falta el turno de origen del registro.')
             movement.update(id=next_id(db,'caja'),turnoId=turn['id'],uuid=code,empleadoId=e['id'],sincronizado=True,hechoPor=e['name'])
             put(db,'caja',movement); received['caja'].append(code)
+        index=self.turn_index(db)
         for turn in objects(db,'turnos'):
-            if turn.get('empleadoId')==e['id'] and turn.get('cerradoEn') is not None: self.summarize(db,turn)
+            if turn.get('empleadoId')==e['id'] and turn.get('cerradoEn') is not None: self.summarize(db,turn,index)
         self.project_catalog(db)
         return received
 
@@ -653,20 +667,24 @@ class Business:
             with open(temporary,'wb') as file:
                 os.chmod(temporary,0o600);file.write(encrypted);file.flush();os.fsync(file.fileno())
             os.replace(temporary,target)
-            for table in ('sales','movements','shifts','items','local_refs','objects','commands','sale_changes','grouped_sales','employees','http_requests','photos','remote_receipts'): db.execute('DELETE FROM '+table)
-            for kind in dto.COLLECTIONS:
-                for index,obj in enumerate(document[kind],1):
-                    put(db,kind,obj,id=obj.get('id',obj.get('productoId',index)))
-            db.executemany('INSERT INTO photos VALUES(?,?,?)',photos)
-            for key in ('perfil','preferencias'): set_meta(db,key,document.get(key))
-            extra={key:val for key,val in document.items() if key not in dto.COLLECTIONS and key not in ('empleados','perfil','preferencias','licencia','webFotos')}
-            set_meta(db,'extra',extra)
-            for e in employees:
-                db.execute('INSERT INTO employees(id,name,permissions,active,card_id,phone_id) VALUES(?,?,?,?,?,?)',
-                    (e['id'],e['nombre'],dto.dump(e.get('permisos',[])),0,e.get('tarjetaId'),e.get('telefonoId')))
-            set_meta(db,'business_id',str(uuid.uuid4()))
-            if not android: set_meta(db,'name',text(value.get('name','Mi negocio')))
-            self.project_catalog(db)
+            self.replace_all(db,document,photos,employees,None if android else text(value.get('name','Mi negocio')))
+
+    def replace_all(self,db,document,photos,employees,name=None):
+        """Sustituye todo el negocio por un documento DTO ya validado (restaurar respaldo o datos de prueba)."""
+        for table in ('sales','movements','shifts','items','local_refs','objects','commands','sale_changes','grouped_sales','employees','http_requests','photos','remote_receipts'): db.execute('DELETE FROM '+table)
+        for kind in dto.COLLECTIONS:
+            for index,obj in enumerate(document[kind],1):
+                put(db,kind,obj,id=obj.get('id',obj.get('productoId',index)))
+        db.executemany('INSERT INTO photos VALUES(?,?,?)',photos)
+        for key in ('perfil','preferencias'): set_meta(db,key,document.get(key))
+        extra={key:val for key,val in document.items() if key not in dto.COLLECTIONS and key not in ('empleados','perfil','preferencias','licencia','webFotos')}
+        set_meta(db,'extra',extra)
+        for e in employees:
+            db.execute('INSERT INTO employees(id,name,permissions,active,card_id,phone_id) VALUES(?,?,?,?,?,?)',
+                (e['id'],e['nombre'],dto.dump(e.get('permisos',[])),0,e.get('tarjetaId'),e.get('telefonoId')))
+        set_meta(db,'business_id',str(uuid.uuid4()))
+        if name is not None: set_meta(db,'name',name)
+        self.project_catalog(db)
 
     def settings(self,data):
         self.license.require_active()
@@ -705,6 +723,60 @@ class Business:
                         perfil=meta(db,'perfil'),preferencias=meta(db,'preferencias'),
                         **{kind:objects(db,kind) for kind in dto.COLLECTIONS})
 
+    def catalog(self):
+        """Catálogo y configuración sin el historial (la interfaz pide el historial por páginas)."""
+        with self.connect() as db:
+            db.execute('BEGIN')
+            result=dict(role=self.ROLE,name=meta(db,'name'),business_id=meta(db,'business_id'),
+                        perfil=meta(db,'perfil'),preferencias=meta(db,'preferencias'))
+            for kind in ('productos','servicios','insumos','recetas','preajustes','clientesFijos'):
+                result[kind]=objects(db,kind)
+            refs={(r['kind'],r['object_id']):r['local_id'] for r in db.execute(
+                "SELECT kind,object_id,local_id FROM local_refs WHERE kind IN ('productos','servicios','insumos')")}
+            for kind in ('productos','servicios','insumos'):
+                for item in result[kind]: item['localId']=refs.get((kind,item['id']))
+            turn=next((t for t in reversed(objects(db,'turnos')) if t.get('cerradoEn') is None and not t.get('empleadoId')),None)
+            result['turnoAbierto']=turn
+            return result
+
+    LEDGERS=('ventas','servicios','transferencias','movimientos','caja','turnos','clientes')
+
+    def ledger(self,kind,query='',page=1,size=50,since=None,until=None):
+        """Una página de Registros, del más reciente al más antiguo, con totales del filtro completo."""
+        if kind not in self.LEDGERS: raise ValueError('Registro no válido.')
+        if type(page) is not int or page<1 or type(size) is not int or not 1<=size<=200: raise ValueError('Página no válida.')
+        query=(query or '').strip().casefold()[:120]
+        with self.connect() as db:
+            db.execute('BEGIN')
+            source={'servicios':'ventas','transferencias':'ventas','clientes':'clientesFijos'}.get(kind,kind)
+            rows=objects(db,source)
+            field={'turnos':'abiertoEn','clientes':'actualizadoEn'}.get(kind,'fecha')
+            if kind=='servicios': rows=[x for x in rows if any(d.get('clase')=='SERVICIO' for d in x['detalles'])]
+            elif kind=='ventas': rows=[x for x in rows if any(d.get('clase','PRODUCTO')!='SERVICIO' for d in x['detalles'])]
+            elif kind=='transferencias': rows=[x for x in rows if x.get('transaccion')]
+            if since is not None: rows=[x for x in rows if (x.get(field) or 0)>=since]
+            if until is not None: rows=[x for x in rows if (x.get(field) or 0)<until]
+            if query:
+                def haystack(x):
+                    if source=='ventas':
+                        tr=x.get('transaccion') or {}
+                        return ' '.join([d['nombre'] for d in x['detalles']]+[tr.get('numero',''),tr.get('clienteNombre',''),x.get('motivoAnulacion') or ''])
+                    if kind=='movimientos': return x['nombre']+' '+x['tipo']+' '+(x.get('nota') or '')
+                    if kind=='caja': return x['motivo']+' '+(x.get('hechoPor') or '')
+                    if kind=='turnos': return (x.get('abiertoPor') or '')+' '+(x.get('cerradoPor') or '')
+                    return x['nombreApellidos']+' '+x['ci']+' '+x['telefono']
+                rows=[x for x in rows if query in haystack(x).casefold()]
+            rows.sort(key=lambda x:(x.get(field) or 0,x.get('id',0)),reverse=True)
+            summary=dict(count=len(rows))
+            if source=='ventas':
+                valid=[x for x in rows if x.get('anuladaEn') is None]
+                summary.update(total=sum(total(x) for x in valid),valid=len(valid))
+            elif kind=='caja':
+                summary.update(entradas=sum(x['importeCent'] for x in rows if x['tipo']=='ENTRADA'),
+                               salidas=sum(x['importeCent'] for x in rows if x['tipo']=='SALIDA'))
+            start=(page-1)*size
+            return dict(items=rows[start:start+size],page=page,size=size,pages=max(1,(len(rows)+size-1)//size),**summary)
+
     def dashboard(self,days=30):
         if days not in (7,30,90): raise ValueError('Período no válido.')
         with self.connect() as db:
@@ -729,11 +801,15 @@ class Business:
                 day=dto.iso(sale['fecha'])[:10]; daily[day]['revenue']+=total(sale); daily[day]['margin']+=total(sale)-cost(sale)
                 for line in sale['detalles']: tops[line['nombre']]+=line['precioUnitarioCent']*line['cantidad']
             local=db.execute('SELECT * FROM shifts WHERE closed IS NULL').fetchone()
-            shifts=[]
-            for t in reversed(objects(db,'turnos')):
-                summary=t.get('resumen') or {}
-                moves=[m for m in objects(db,'caja') if m['turnoId']==t['id']]
-                expected=(t.get('fondoCent') or 0)+sum(total(s) for s in sales if s['turnoId']==t['id'] and s['metodoPago']=='EFECTIVO')+sum(m['importeCent']*(1 if m['tipo']=='ENTRADA' else -1) for m in moves)
+            shifts=[]; latest=objects(db,'turnos')[-10:]; wanted={t['id'] for t in latest}
+            cash_moves=defaultdict(list); cash_sales=defaultdict(int)
+            for m in objects(db,'caja'):
+                if m['turnoId'] in wanted: cash_moves[m['turnoId']].append(m)
+            for s in sales:
+                if s['turnoId'] in wanted and s['metodoPago']=='EFECTIVO': cash_sales[s['turnoId']]+=total(s)
+            for t in reversed(latest):
+                moves=cash_moves[t['id']]
+                expected=(t.get('fondoCent') or 0)+cash_sales[t['id']]+sum(m['importeCent']*(1 if m['tipo']=='ENTRADA' else -1) for m in moves)
                 shifts.append(dict(id=t['id'],opened=dto.iso(t['abiertoEn']),closed=dto.iso(t['cerradoEn']) if t.get('cerradoEn') is not None else None,
                     employee=t.get('empleadoId'),fund=t.get('fondoCent') or 0,counted=t.get('contadoCent'),expected=expected))
             recent=[]
@@ -753,11 +829,11 @@ class Business:
         with self.connect() as db:
             db.execute('BEGIN')
             if scope=='turnos':
-                rows=[]; shifts=objects(db,'turnos')
+                rows=[]; shifts=objects(db,'turnos'); index=self.turn_index(db)
                 for turn in shifts:
                     # Recalcular sin mutar la BD de lectura.
-                    sales=[s for s in objects(db,'ventas') if s['turnoId']==turn['id'] and s.get('anuladaEn') is None]
-                    moves=[m for m in objects(db,'caja') if m['turnoId']==turn['id']]
+                    sales=[s for s in index[turn['id']]['ventas'] if s.get('anuladaEn') is None]
+                    moves=index[turn['id']]['caja']
                     expected=(turn.get('fondoCent') or 0)+sum(total(s) for s in sales if s['metodoPago']=='EFECTIVO')+sum(m['importeCent']*(1 if m['tipo']=='ENTRADA' else -1) for m in moves)
                     counted=turn.get('contadoCent')
                     rows.append([turn['id'],dto.iso(turn['abiertoEn']),dto.iso(turn['cerradoEn']) if turn.get('cerradoEn') is not None else 'Abierto',

@@ -300,7 +300,7 @@ private fun PasoBienvenida() {
         SpviLogo(size = SpviSize.logoLarge, contentDescription = "SPVI")
         Text("Bienvenido a SPVI", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center, modifier = Modifier.semantics { heading() })
         Text(
-            "Tu punto de venta e inventario. Funciona sin internet y guarda tus datos cifrados en este teléfono.",
+            "Tu punto de venta e inventario. Funciona sin internet y guarda tus datos protegidos en este teléfono.",
             style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center,
         )
     }
@@ -316,7 +316,7 @@ private fun PasoBienvenida() {
 @Composable
 private fun PasoDatos(state: OnboardingUiState, acciones: OnboardingAcciones) {
     // P28: sin título propio: la cabecera ya dice «Paso 2 de 4: Tus datos».
-    Explicacion("Se usan para pedir tu licencia y para cobrar por transferencia. Solo se guardan en este teléfono, cifrados. Puedes dejarlos en blanco.")
+    Explicacion("Se usan para pedir tu licencia y para cobrar por transferencia. Solo se guardan en este teléfono, protegidos. Puedes dejarlos en blanco.")
     val d = state.datos
     val err = erroresDatos(d)
     val forzar = state.mostrarErroresDatos

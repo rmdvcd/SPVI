@@ -1,7 +1,8 @@
 # Verificación de la principal web con OpenCode CLI
 
-Esta ampliación está sin ejecutar: no se han pasado pruebas, comprobaciones sintácticas,
-compilación ni empaquetado después de incorporarla. No usar datos reales como primera prueba.
+Estado 0.31.0: las 103 pruebas Python y la autoprueba pasan en Linux y la interfaz se recorrió en un
+navegador sin pantalla. **Falta todo lo propio de Windows** (icono de notificación, inicio con Windows,
+`.exe`) y las pruebas con Android y GL reales. No usar datos reales como primera prueba.
 
 ## Encargo para OpenCode
 
@@ -70,8 +71,22 @@ restauración canónica, DTO, operaciones HTTP, fotos, cotización, correcciones
     `.spvi` abierto y reexportado en Android no conserva la extensión de fotos web.
 16. Asignar cuentas distintas a dos empleados: cada instantánea debe mostrar solo la asignada.
     Probar tarjetas de 12/16/20 cifras, teléfono E.164 y documento alfanumérico admitido por GL.
-17. Cerrar SPVI, recuperar clave por consola, reiniciar e intentar usar la cookie anterior: debe
-    pedir acceso nuevo. Una segunda instancia no debe abrir la misma carpeta de datos.
+17. Crear una clave en Ajustes › Clave de acceso, salir, ejecutar `SPVI.exe --reset-password`, abrir e
+    intentar usar la cookie anterior: debe abrir sin clave y sin la sesión vieja. Abrir SPVI dos veces:
+    la segunda solo muestra la pantalla principal de la primera.
 18. Revisar teclado, mensajes dentro de diálogos, cabecera fija, botones flotantes, checkbox único,
     cuentas enmascaradas, selección de productos en preajustes y consulta de registros antiguos.
 
+### Escritorio 0.31.0 (Windows)
+
+19. Icono de notificación: aparece junto al reloj con el logo de SPVI; doble clic abre la pantalla
+    principal; clic derecho muestra Pantalla principal, Apps conectadas, Tiempo en línea, Ajustes,
+    Reiniciar y Salir, y cada opción hace lo que dice. No debe aparecer ninguna ventana de consola.
+20. Ajustes › Inicio: activar «Iniciar con Windows», reiniciar sesión de Windows y comprobar el retraso
+    elegido y que la pantalla principal solo se abre si se marcó. Desactivar y comprobar que se quita
+    el valor `SPVI` de `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.
+21. Ajustes › Tema: Claro, Oscuro y Sistema (cambiando el tema de Windows). Comprobar contraste.
+22. Licencia de PC: pedirla en Ajustes › Licencia, escanear el QR con WhatsApp del teléfono y enviar;
+    emitir en GL (debe mostrar «Plataforma: PC» y la transacción) y escribir el código de 16 dígitos.
+    Probar un dígito cambiado (rechazo), renovar antes de vencer y una perpetua.
+23. Reducir la ventana a 800 px y a un ancho de teléfono: menú desplegable, nada cortado ni solapado.

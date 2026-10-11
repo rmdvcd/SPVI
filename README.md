@@ -28,6 +28,20 @@ App Android nativa para pequeños negocios: vender en turnos, controlar inventar
 
 Los documentos de trabajo que estaban fuera del proyecto (`DECISIONES_LICENCIA_SPVI.md`, `PRUEBA_COMPATIBILIDAD_GL.md`, `ARQUITECTURA_SPVI.md`, planes y auditorías de los Prompts 17 y 18, entregas `ENTREGA_*`) se retiraron en la 0.18.0. Lo vigente está en `LICENSE_CLIENT.md` (contrato GL y decisiones de licencia), `SECURITY.md`, `docs/HISTORIAL_DESARROLLO.md` y el propio código.
 
+## Cambios en desarrollo — 10 de octubre de 2026
+
+- **Escritorio 0.31.0** ([desktop/README.md](desktop/README.md#novedades-de-la-0310-10102026)): interfaz
+  nueva con el estilo del móvil (menú lateral, tarjetas, diálogos, iconos y fuentes de la app), tema
+  claro/oscuro, icono de notificación en lugar de la consola, clave de acceso opcional, inicio con Windows
+  con retraso, Tiempo en línea (PC, red local y cada app vinculada) y datos de prueba «Bodega La Esquina».
+- **Licencia de PC:** código de 16 dígitos `XXXX-XXXX-XXXX-XXXX`; la solicitud lleva plataforma PC y número
+  de transacción y se envía por WhatsApp escaneando un QR ([LICENSE_CLIENT.md](LICENSE_CLIENT.md), sección 10).
+  GL emite el código (`SpviPc16`); el teléfono sigue usando `SPVI2`.
+- **Móvil:** ver «Cambios de la 0.30.1 en curso» (textos y pestañas que no se cortan).
+- Verificación: 103 pruebas Python, autoprueba y recorrido de la web en Chromium sin pantalla correctos;
+  el código de 16 dígitos se comprobó de punta a punta entre Python y el Kotlin de GL. Sin compilar Android
+  (no hay Java aquí) ni probar en Windows.
+
 ## Cambios en desarrollo — 9 de octubre de 2026
 
 - Pago electrónico: tarjetas con icono genérico monocromático, casillas de selección (máximo un teléfono y
@@ -168,6 +182,7 @@ SPVI es **cliente** del contrato v1 de GL, sin cambiarlo. Detalle completo en [L
 - **Pago electrónico:** los logos de BPA, BANDEC y BANMET se muestran con esquinas redondeadas y el mismo tamaño (96 × 48 dp). El logo se elige por los 4 primeros dígitos de la tarjeta; es una estimación (ver [docs/LOGOS_BANCOS.md](docs/LOGOS_BANCOS.md): `9225`/`9235` los comparten varios bancos y `9226` tiene fuentes contradictorias).
 - **Inicio:** «Nueva venta» a la izquierda y, a la derecha, el turno con su interruptor de dos estados en un contenedor que mide lo que mide su contenido (con letra muy grande se apilan). En la tarjeta de Pago electrónico, el teléfono y la tarjeta/cuenta van en seminegrita. Los gráficos y listas que siguen al selector de período son acordeones: empiezan cerrados y se vuelven a cerrar al cambiar de ventana.
 - **Licencia:** una tarjeta «Precios de la licencia» lista el precio de cada tipo y lo que suma cada app secundaria.
+- **Textos y tamaños:** con más de 4 pestañas (Registros) pasan a varias filas centradas en lugar de una fila desplazable, para que ninguna quede cortada en el borde. Los títulos de las tarjetas y el valor de los selectores ya no se cortan con «…»: pasan a otra línea. Textos sin detalles técnicos: «protegidos» en lugar de «cifrados» en Bienvenida, Perfil y Respaldo, y «no es una actualización válida de SPVI» en lugar de «no es un APK válido».
 - **Actualizaciones:** antes de abrir el instalador SPVI guarda un respaldo completo (sin contraseña, en la carpeta privada de la app; no se exporta ni cuenta para el recordatorio mensual). Si no se puede guardar, no se actualiza. Al abrir la versión nueva se restaura y se borra; si la instalación se cancela, se borra sin restaurar. Las ventas hechas entre el respaldo y la instalación no entran en él. El texto de la actualización ya no menciona el repositorio ni su alojamiento.
 
 ## Novedades de la 0.27.1 (correcciones, [historial](docs/HISTORIAL_DESARROLLO.md))
