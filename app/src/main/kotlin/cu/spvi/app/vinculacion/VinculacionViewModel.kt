@@ -24,6 +24,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -157,9 +158,15 @@ class VinculacionViewModel @Inject constructor(
     private val eligioSecundaria: StateFlow<Boolean> =
         ajustesDispositivo.ajustes.map { it.eligioSecundaria }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-    private fun puedeSerSecundaria(): Boolean = cu.spvi.domain.model.Vinculacion.puedeVincularseComoSecundaria(
-        tipoRepo.tipo.value, eligioSecundaria.value, state.value.empleados.size,
-    )
+    /**
+     * La regla se evalúa con los valores REALES (se esperan con [first]): leer [StateFlow.value] aquí fallaba
+     * al abrir la vinculación justo después del recorrido inicial, porque el DataStore aún no había emitido y
+     * se leía el inicial (`false`) → «Esta app es la principal…» aunque se había elegido «Secundaria».
+     */
+    private suspend fun puedeSerSecundaria(): Boolean {
+        val b = base.first()
+        return cu.spvi.domain.model.Vinculacion.puedeVincularseComoSecundaria(b.tipo, b.eligioSecundaria, b.empleados.size)
+    }
 
     private val base = combine(tipoRepo.tipo, principal.observarEmpleados(), principal.estado, secundaria.estado, ajustesDispositivo.ajustes) { t, e, p, s, a ->
         VinculacionUi(t, e, p, s, eligioSecundaria = a.eligioSecundaria)
@@ -305,8 +312,12 @@ class VinculacionViewModel @Inject constructor(
     // ---------------------------------------------------------------- pasar a secundaria
 
     override fun pedirSecundaria() {
-        if (!puedeSerSecundaria()) { mensajesCh.trySend(VinculacionLogic.PRINCIPAL_NO_SECUNDARIA); return } // 0.27.0 (T9)
-        local.update { it.copy(confirmarSecundaria = true, errorTelefono = null) }
+        // Se espera a los valores reales (ver puedeSerSecundaria): al abrirse sola tras el recorrido,
+        // la comprobación inmediata leería el inicial y bloquearía a quien eligió «Secundaria».
+        viewModelScope.launch {
+            if (!puedeSerSecundaria()) { mensajesCh.trySend(VinculacionLogic.PRINCIPAL_NO_SECUNDARIA); return@launch } // 0.27.0 (T9)
+            local.update { it.copy(confirmarSecundaria = true, errorTelefono = null) }
+        }
     }
     override fun cancelarSecundaria() = local.update { it.copy(confirmarSecundaria = false) }
     override fun telefonoSecundaria(v: String) = local.update {

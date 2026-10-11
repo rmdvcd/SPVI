@@ -1484,6 +1484,18 @@ Primera vez que el repositorio se verifica solo: GitHub Actions ejecuta Gradle r
 - **Observación menor (sin tocar):** la tarjeta de producto sin foto pide `/api/photo/...` y el servidor devuelve 404 que ensucia la consola (3–7 errores). Decisión del dueño: no pedir la foto si no existe, o devolver 204.
 - Siguen `NO VERIFICADO`: instrumentados UI en dispositivo dedicado, SMS bancario real, Release firmada, LAN Android↔PC con GL real, HTTPS `spvi.minegocio.cu`, licencia PC GL real de 16 dígitos, y segunda instancia / recuperación de clave (puntos 6, 9, 10, 17 de VERIFICACION_PC).
 
+## Cambio 2026-10-11 (dueño): Inicio con flotantes y pestañas horizontales
+
+- **Pestañas de Registros** (de Ventas a Turnos): una sola fila horizontal desplazable (`ScrollableTabRow`), por decisión del dueño; se revierte el FlowRow de varias filas de la 0.30.1. Solo afecta a Registros (el resto usa ≤4 pestañas). `README.md` actualizado.
+- **Inicio:** «Nueva venta» (izquierda) y «Movimiento de caja» (derecha) pasan a botones flotantes (`SpviFab`) en las esquinas inferiores, visibles solo con el turno abierto (y con permiso de vender). El contenedor del turno se ajusta a su contenido, centrado; la lista deja hueco abajo para que los flotantes no tapen la última fila. Se eliminó `AccionesVenta` de la fila del turno.
+- Verificación: `spviTests` verde, `verifyRoborazziDebug` verde (referencias regeneradas; la de Inicio muestra turno centrado y ambos flotantes), APK instalado y abierto en el Redmi (flotantes visibles con turno abierto).
+
+## Bug 2026-10-11 (dueño): elegía «Secundaria» y arrancaba como principal
+
+- **Causa:** `VinculacionViewModel.pedirSecundaria()` (y `qrLeido()`) leían `eligioSecundaria.value` y `tipoRepo.tipo.value` de forma síncrona. Al abrirse la vinculación sola justo tras el recorrido inicial, el DataStore aún no había emitido y se leía el inicial (`false`) → «Esta app es la principal del negocio…» aunque se había elegido «Secundaria». La bandera en memoria (`TourPendiente`) sí llegaba; el que fallaba era el dato persistido recién guardado.
+- **Corrección (`app/.../vinculacion/VinculacionViewModel.kt`):** la regla se evalúa con los valores reales (`base.first()`, suspendida); `pedirSecundaria()` espera dentro de una corrutina. Sin cambios de firmas ni de comportamiento visible salvo el bug. `spviTests` verde (859/859), APK reinstalado en el Redmi con los datos intactos.
+- Para probarlo en un teléfono hace falta borrar sus datos (el tipo queda fijado al instalarse): solo con respaldo previo, o mejor en el teléfono del empleado.
+
 ### Principal web independiente — ampliación en desarrollo
 
 - Incorporados modelo canónico Android, servidor LAN principal, empleados, permisos, fondos,
