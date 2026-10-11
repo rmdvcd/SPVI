@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import cu.spvi.designsystem.token.SpviSpacing
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Badge
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -133,7 +135,8 @@ fun SpviChip(
             if (supportingLabel == null) {
                 Text(label, style = MaterialTheme.typography.labelLarge)
             } else {
-                Column {
+                // 0.30.1: margen vertical para que las dos líneas no queden pegadas al borde del chip.
+                Column(Modifier.padding(vertical = SpviSpacing.xs)) {
                     Text(label, style = MaterialTheme.typography.labelLarge)
                     Text(
                         supportingLabel,

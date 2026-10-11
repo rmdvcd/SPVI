@@ -265,3 +265,12 @@ notifica a la secundaria mediante `CambioVenta.nueva` y `corrigeUuid`, sin cambi
 Las cantidades de venta de insumos son enteras; existencias y recetas usan milésimas. La cotización
 no persiste registros. Los reintentos HTTP se identifican por `Idempotency-Key`; el resultado y la
 mutación se confirman en la misma transacción SQLite. Esas claves no se exportan al respaldo.
+
+### Datos de la PC (escritorio 0.31.0)
+
+`datos/config.json` (JSON, permisos solo del usuario): `secret` (secreto de sesión), `password_hash`
+(`null` = sin clave de acceso) y `preferencias` = `{tema: claro|oscuro|sistema, inicioConWindows: bool,
+retrasoSegundos: 0|15|30|60|120|300, abrirAlIniciar: bool, red: null | {host, port}}`. `red` es la última
+red local iniciada y se reanuda al abrir SPVI. `datos/instancia.json` guarda el puerto de la instancia en
+marcha para que una segunda solo muestre su pantalla principal. Ninguno de los dos va en los respaldos.
+El código de licencia de 16 dígitos se describe en [LICENSE_CLIENT.md](LICENSE_CLIENT.md), sección 10.

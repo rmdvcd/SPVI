@@ -144,6 +144,7 @@ Después, el teléfono viejo queda bloqueado sin periodo de prueba, rechaza cual
 | Renovación sin perder días, `renueva` (0.22.0, L-e) | No (campo extra al final) | **Sí:** GL calcula `venceEn = max(ahora, venceEn anterior) + duración` con SUS registros |
 | `licenseId` fuera del envelope (N1) | No | Resuelto: GL lo pone en la línea «ID:» (solo afecta a la larga ya instalada) |
 | **Solicitud `SPVIR1` + licencia corta cifrada `SPVI2` únicas, mensaje «datos + renglón + código», solo texto (0.23.0; QR quitado en la 0.23.1)** | **Sí:** solicitud `v = 2` y la larga deja de activarse; las claves de GL no cambian | **Sí:** `docs/GL_PROMPT_0.23.md` |
+| Escritorio 0.31: campos opcionales `plataforma = "PC"` y `transaccion` en la solicitud; respuesta = código de 16 dígitos (sección 10) | No (campos extra; la solicitud es AEAD y SPVI2 no cambia) | **Sí:** GL `SpviPc16` y rama PC de `EmitirSpvi2UseCase` (escrito y probado; **pendiente de publicar en GL**) |
 
 ## 9. Pruebas
 
@@ -157,3 +158,37 @@ Después, el teléfono viejo queda bloqueado sin periodo de prueba, rechaza cual
 | `LicenciaUiTest`, `FlujoLicenciaTest` (`:app`) | Panel y bloqueo → activar → Inicio |
 
 Prueba de extremo a extremo con la app GL real: generar una solicitud en SPVI, emitir la respuesta en GL, pegarla en Licencia → Activar y comprobar el estado. El documento detallado `PRUEBA_COMPATIBILIDAD_GL.md` se retiró en la 0.18.0.
+
+## 10. Licencia de la PC — código de 16 dígitos (escritorio 0.31)
+
+La app de escritorio (`desktop/`) no usa `SPVI2:` (210 caracteres) sino un código que se teclea:
+`XXXX-XXXX-XXXX-XXXX`. Referencia: `desktop/spvi_web/licensing/pc_code.py`; en GL irá en `security/SpviPc16.kt`
+(pendiente de publicar). Los vectores fijos de `desktop/tests/test_escritorio.py` son los que debe reproducir
+`SpviPc16Test` en GL.
+
+**Solicitud.** La misma `SPVIR1` de la sección 2 (cifrada hacia la ECDH de GL), con `via = WHATSAPP`,
+`deviceId = "SPVI:" + 32 hex` aleatorios de la instalación, y además `plataforma = "PC"` y `transaccion`
+(número de la transferencia del pago, 4–40 letras, números o guiones; obligatorio salvo al pedir
+`recupera`). El mensaje legible añade «Plataforma: PC» y «Transacción: …». En la PC el enlace
+`https://wa.me/5351815604?text=…` se muestra como **QR** para escanearlo con el teléfono y enviarlo por
+WhatsApp; también se puede copiar. Las solicitudes sin `plataforma` son de teléfono.
+
+**Código** (`K` es común a GL y a la PC, nunca viaja):
+
+1. `K = HKDF-SHA256(ECDH(clave de la PC, ECDH pública de GL), salt = devicePub (33 B), info = "SPVI-P1|" + deviceId)`, 32 B.
+   GL calcula lo mismo con su privada ECDH y el `devicePub` de la solicitud.
+2. `D = (tipo·11 + secundarias)·10000 + día` (6 cifras). `tipo` 0–3 = mensual, semestral, anual, perpetua;
+   `día` = días desde 2026-01-01 UTC del último día válido (perpetua = 0). La licencia vale hasta el final de
+   ese día UTC; GL redondea el vencimiento a ese límite y lo guarda así en su registro.
+3. `M = HMAC-SHA256(K, "SPVI-P1|code|" + D)[0..8] mod 10¹⁰`; `máscara = HMAC(K, "SPVI-P1|mask|" + M)[0..8] mod 10⁶`.
+4. Código = `(D + máscara) mod 10⁶` (6 cifras) ‖ `M` (10 cifras).
+5. `id` de la licencia = UUID v4 sobre SHA-256(`"SPVI-P1|id|" + deviceId + "|" + código`)[0..16]: GL y la PC lo
+   calculan igual, así que `renueva` y la lista de revocaciones funcionan como en el teléfono.
+
+La PC acepta el código con o sin guiones o espacios y dentro del mensaje de GL. Un dígito cambiado o un
+código de otra instalación se rechaza («Código no válido para esta instalación»).
+
+**Límite de seguridad.** 16 cifras no admiten una firma asimétrica: la autenticidad depende del secreto
+compartido `K`. Quien extraiga la clave privada del equipo (guardada cifrada con DPAPI en `licencia.bin`)
+podría calcular `K` y acuñar códigos para **esa** instalación. Es la contrapartida de un código tecleable;
+el teléfono sigue usando `SPVI2` firmado.

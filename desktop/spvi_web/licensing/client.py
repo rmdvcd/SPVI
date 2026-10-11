@@ -1,4 +1,6 @@
-"""Solicitud SPVIR1, activación SPVI2 y lista firmada de revocaciones de GL."""
+"""Solicitud SPVIR1, activación con código de 16 dígitos (PC) y lista firmada de revocaciones de GL.
+
+Las licencias ``SPVI2`` ya guardadas por versiones anteriores siguen siendo válidas."""
 import base64
 import hashlib
 import hmac
@@ -15,9 +17,14 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-from . import trust
+from urllib.parse import quote
+from . import pc_code, trust
 
 TYPES = ('MENSUAL', 'SEMESTRAL', 'ANUAL', 'PERPETUA')
+TYPE_LABELS = dict(MENSUAL='Mensual', SEMESTRAL='Semestral', ANUAL='Anual', PERPETUA='Perpetua')
+DEVELOPER = '5351815604'
+TRANSACTION = re.compile(r'[A-Za-z0-9\-]{4,40}')
+MAX_FAILURES, FAILURE_WINDOW = 5, 600
 
 
 def enc(data): return base64.urlsafe_b64encode(data).rstrip(b'=').decode('ascii')
@@ -106,7 +113,7 @@ class LicenseClient:
                 if now < expires:
                     return dict(base, clase='PRUEBA', secundarias=5, venceEn=expires * 1000)
                 return dict(base, motivo='La prueba terminó. Activa una licencia.')
-            info = decode_license(self.data['code'], self.private, self.data['deviceId'])
+            info = self._installed()
             revoked = self.data.get('revocations')
             token = hashlib.sha256(('SPVI-REV|' + info['id']).encode()).digest()[:16].hex()
             if info['estado'] in (1, 2) or (revoked and token in revoked['revocadas']):
@@ -122,30 +129,74 @@ class LicenseClient:
         if state['clase'] == 'BLOQUEADA': raise ValueError(state['motivo'])
         return state
 
+    def _key(self):
+        public = serialization.load_der_public_key(base64.b64decode(trust.ECDH))
+        shared = self.private.exchange(ec.ECDH(), public)
+        return pc_code.key(shared, compressed(self.private.public_key()), self.data['deviceId'])
+
+    def _installed(self):
+        code = self.data['code']
+        if code.startswith('PC1:'):
+            digits = code[4:]
+            info = pc_code.verify(self._key(), digits)
+            return dict(id=pc_code.license_id(self.data['deviceId'], digits), tipo=info['tipo'], estado=0,
+                        secundarias=info['secundarias'], emitidaEn=self.data.get('activated', 0),
+                        venceEn=pc_code.expiry_seconds(info['dia']), code=pc_code.grouped(digits))
+        return decode_license(code, self.private, self.data['deviceId'])
+
     def activate(self, code):
+        """Activa el código de 16 dígitos que envía el desarrollador (también acepta un SPVI2 antiguo)."""
         if not isinstance(code, str) or len(code) > 4096: raise ValueError('Código no válido.')
         with self.lock:
-            info = decode_license(code, self.private, self.data['deviceId'])
-            if info['estado'] in (1, 2): raise ValueError('Licencia vencida o revocada.')
-            self.data['code'] = info['code']; self._save()
+            now = self.clock()
+            failures = [t for t in getattr(self, 'failures', []) if now - t < FAILURE_WINDOW]
+            if len(failures) >= MAX_FAILURES:
+                raise ValueError('Demasiados intentos. Espera unos minutos y vuelve a intentarlo.')
+            digits = pc_code.extract(code)
+            try:
+                if digits:
+                    info = pc_code.verify(self._key(), digits)
+                    expires = pc_code.expiry_seconds(info['dia'])
+                    if expires and now >= expires: raise ValueError('La licencia no está vigente.')
+                    stored = 'PC1:' + digits
+                elif 'SPVI2:' in code:
+                    info = decode_license(code, self.private, self.data['deviceId'])
+                    if info['estado'] in (1, 2): raise ValueError('Licencia vencida o revocada.')
+                    stored = info['code']
+                else:
+                    raise ValueError('Escribe los 16 dígitos de tu licencia.')
+            except ValueError:
+                failures.append(now); self.failures = failures
+                raise
+            self.failures = []
+            self.data['code'] = stored; self.data['activated'] = int(now); self._save()
             return self.status()
 
     def request(self, data):
-        fields = {k: str(data.get(k, '')).strip() for k in ('nombre', 'apellidos', 'ci', 'telefono', 'tipo', 'via')}
+        """Solicitud cifrada ``SPVIR1`` de la plataforma PC con el número de transacción del pago."""
+        fields = {k: str(data.get(k, '')).strip() for k in ('nombre', 'apellidos', 'ci', 'telefono', 'tipo')}
         if not fields['nombre'] or not fields['apellidos'] or any(len(fields[k]) > 80 for k in ('nombre','apellidos')):
             raise ValueError('Completa nombre y apellidos.')
         from ..dto import identity_number, telephone
         fields['ci']=identity_number(fields['ci']);fields['telefono']=telephone(fields['telefono'])
-        if fields['tipo'] not in TYPES or fields['via'] not in ('SMS','WHATSAPP'): raise ValueError('Solicitud no válida.')
+        if fields['tipo'] not in TYPES: raise ValueError('Elige el tipo de licencia.')
         n = data.get('secundarias', 0)
         if type(n) is not int or not 0 <= n <= 10: raise ValueError('Elige entre 0 y 10 secundarias.')
-        payload = dict(fields, v=2, deviceId=self.data['deviceId'], secundarias=n,
+        transaction = str(data.get('transaccion', '') or '').strip()
+        recover = str(data.get('recupera', '') or '').strip()
+        if transaction and not TRANSACTION.fullmatch(transaction):
+            raise ValueError('El número de transacción tiene de 4 a 40 letras, números o guiones.')
+        if not transaction and not recover:
+            raise ValueError('Escribe el número de transacción del pago.')
+        payload = dict(fields, v=2, via='WHATSAPP', plataforma='PC', deviceId=self.data['deviceId'], secundarias=n,
                        solicitadaEn=datetime.fromtimestamp(self.clock(),timezone.utc).isoformat().replace('+00:00','Z'),
                        nonce=enc(os.urandom(16)), devicePub=enc(compressed(self.private.public_key())))
-        if data.get('recupera'):
-            payload['recupera'] = str(uuid.UUID(data['recupera']))
+        if transaction: payload['transaccion'] = transaction
+        if recover:
+            try: payload['recupera'] = str(uuid.UUID(recover))
+            except ValueError as error: raise ValueError('El ID de la licencia anterior no es válido.') from error
         elif self.data['code']:
-            info = decode_license(self.data['code'], self.private, self.data['deviceId'])
+            info = self._installed()
             if info['tipo'] != 'PERPETUA': payload['renueva'] = info['id']
         ephemeral = ec.generate_private_key(ec.SECP256R1())
         epk = compressed(ephemeral.public_key())
@@ -154,6 +205,19 @@ class LicenseClient:
         raw = json.dumps(payload, ensure_ascii=False,separators=(',',':')).encode()
         cipher = AESGCM(key[:32]).encrypt(key[32:], raw, b'SPVI-R1|' + epk)
         return 'SPVIR1:' + enc(epk + cipher)
+
+    def request_message(self, data):
+        """Texto para WhatsApp (datos legibles + solicitud cifrada) y su enlace ``wa.me``, que se muestra como QR."""
+        code = self.request(data)
+        lines = ['Solicitud de licencia SPVI', 'Plataforma: PC',
+                 'Nombre: %s %s' % (str(data.get('nombre', '')).strip(), str(data.get('apellidos', '')).strip())]
+        for label, field in (('CI', 'ci'), ('Teléfono', 'telefono')):
+            if str(data.get(field, '') or '').strip(): lines.append('%s: %s' % (label, str(data[field]).strip()))
+        lines += ['Tipo: ' + TYPE_LABELS[data['tipo']], 'Apps secundarias: %d' % data.get('secundarias', 0)]
+        if str(data.get('transaccion', '') or '').strip(): lines.append('Transacción: ' + str(data['transaccion']).strip())
+        if str(data.get('recupera', '') or '').strip(): lines.append('Recuperar licencia: ' + str(data['recupera']).strip())
+        message = '\n'.join(lines) + '\n\n' + code
+        return dict(code=code, message=message, url='https://wa.me/%s?text=%s' % (DEVELOPER, quote(message, safe='')))
 
     def import_revocations(self, envelope):
         if not isinstance(envelope,dict) or not isinstance(envelope.get('datos'), str) or len(envelope['datos']) > 512*1024:

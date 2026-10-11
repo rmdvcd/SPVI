@@ -8,7 +8,7 @@ object TextosPerfil {
     const val TITULO = "Perfil"
     const val MODULOS_TITULO = "Tu negocio"
     const val MODULOS_EXPLICACION = "Lo que no marques desaparece de la barra inferior, de Inicio y de Registros. No se borra nada."
-    const val EXPLICACION = "Tus datos se usan para pedir la licencia. Solo se guardan en este teléfono, cifrados. Los teléfonos y tarjetas para cobrar están en Pago electrónico."
+    const val EXPLICACION = "Tus datos se usan para pedir la licencia. Solo se guardan en este teléfono, protegidos. Los teléfonos y tarjetas para cobrar están en Pago electrónico."
     const val ERROR_NOMBRE = "Solo letras, de 2 a 80"
     const val ERROR_CI = "Entre 5 y 20 letras o números"
     const val GUARDADO = "Datos guardados"

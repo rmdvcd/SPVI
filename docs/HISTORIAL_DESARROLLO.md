@@ -4,6 +4,29 @@ Registro **histórico** de lo que se implementó en cada fase y de las suposicio
 
 > **Prevalece la documentación actual.** Si algo de este historial contradice a [README.md](../README.md), [SECURITY.md](../SECURITY.md), [FORMATOS.md](../FORMATOS.md), [LICENSE_CLIENT.md](../LICENSE_CLIENT.md) o [UI_UX_IX.md](../UI_UX_IX.md), vale lo que dicen esos documentos. Las fases posteriores sustituyen a las anteriores.
 
+## 2026-10-10 — Escritorio 0.31.0 y licencia de PC de 16 dígitos (sin release)
+
+- `desktop/`: interfaz reescrita (`templates/index.html`, `static/app.css`, `static/js/*.js`; se retiran
+  `app.js`, `management.js` y `management.html`) con tokens de color de `ColorTokens.kt`, iconos generados
+  desde `SpviIcons.kt` (`tools/generar_iconos.py`), Roboto/Orbitron y diálogos con el logo. CSP sin estilos
+  en línea: los estilos dinámicos se asignan por CSSOM.
+- Lanzador con icono de notificación (pystray), instancia única que reabre la pantalla principal,
+  reinicio, inicio con Windows (`HKCU\…\Run`) con retraso, clave opcional y red local reanudada.
+  `build_windows.ps1` genera el `.exe` con `--noconsole` e icono; la autoprueba devuelve código de salida.
+- Licencia de PC: `licensing/pc_code.py` (código de 16 dígitos con `K` de ECDH+HKDF) y solicitud con
+  `plataforma`/`transaccion` y QR de WhatsApp. Para GL se escribieron `SpviPc16`, la rama PC de
+  `EmitirSpvi2UseCase`, la validación de los campos nuevos, la fila Plataforma/Transacción del Generador y la
+  revalidación al importar `.glreg` (sin cambio del contrato v1 ni de Room). **No están en el repositorio GL:**
+  la copia de trabajo de GL se perdió al reiniciarse la sesión, antes de publicarla; hay que rehacerlos.
+- Datos de prueba `seed.py` (548 días, parecidos al móvil, no idénticos), Registros paginados, Tiempo en
+  línea y rutas nuevas (`/api/app*`, `/api/uptime`, `/api/registros/<tipo>`, `/api/license/qr`, `/api/seed`).
+- Móvil: pestañas de Registros en varias filas, títulos y selectores sin «…», textos sin términos técnicos.
+- Verificación: 103 pruebas Python y autoprueba; recorrido en Chromium sin pantalla a 1440×900, 800×1000 y
+  390×844, claro y oscuro, y un flujo de venta/licencia. GL: `SpviPc16Test` más las pruebas SPVI existentes
+  (38) compiladas con el compilador Kotlin del kernel Jupyter y stubs mínimos de JUnit/Truth/coroutines;
+  ida y vuelta real PC (Python) → GL (Kotlin) → PC (antes de perderse la copia de GL). **No** se compiló Android ni GL con Gradle (sin JDK/SDK),
+  no se regeneraron capturas Roborazzi ni se probó en Windows.
+
 ## 2026-10-09 — Segunda entrega de escritorio (sin release)
 
 - PDF/Excel/PNG y promociones textuales con encabezado; ZIP cuando hay varias imágenes. Política en servidor,

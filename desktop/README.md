@@ -3,6 +3,32 @@
 Aplicación web Python que corre en la PC del dueño, **solo como principal**. No usa cámara, permisos,
 SMS, servicios ni otras funciones de Android. **No sustituye la aplicación móvil: se despliega de forma independiente.**
 
+## Novedades de la 0.31.0 (10/10/2026)
+
+- **Interfaz nueva** con el mismo estilo que el móvil: menú lateral (hamburguesa), tarjetas, listas, diálogos
+  centrados con el icono de SPVI, iconos de `SpviIcons` y las fuentes Roboto/Orbitron de la app. Se adapta
+  a pantallas anchas (menú fijo), medianas y estrechas (menú desplegable). Tema **Claro/Oscuro/Sistema**
+  en Ajustes › Tema. Pantallas: Inicio, Venta, Inventario (e insumos), Servicios, Registros, Apps vinculadas,
+  Tiempo en línea y Ajustes. Las funciones propias del teléfono (SMS, cámara, huella, notificaciones de
+  Android) no están.
+- **Icono de notificación** junto al reloj en lugar de la consola. Clic derecho: Pantalla principal, Apps
+  conectadas, Tiempo en línea, Ajustes, Reiniciar, Salir. Si SPVI ya está abierto, abrirlo otra vez solo
+  muestra la pantalla principal.
+- **Clave de acceso opcional:** sin clave la pantalla principal abre directamente (el servidor solo escucha
+  en `127.0.0.1`). Se crea, cambia o quita en Ajustes › Clave de acceso (8–256 caracteres).
+- **Ajustes › Inicio de SPVI:** iniciar con Windows (valor `SPVI` en `HKCU\…\Run`, sin permisos de administrador),
+  retraso de inicio (0, 15, 30, 60, 120 o 300 s) y abrir o no la pantalla principal al iniciar con Windows.
+- **Tiempo en línea:** tiempo que lleva abierto SPVI en la PC y la red local, y por cada app vinculada si
+  está conectada, desde cuándo, el tiempo conectada en esta sesión y la última sincronización.
+- **Licencia de PC por código de 16 dígitos** (ver [LICENSE_CLIENT.md](../LICENSE_CLIENT.md), sección 10):
+  la solicitud se envía por WhatsApp con un QR que se escanea con el teléfono, con los datos, la
+  plataforma (PC) y el número de transacción del pago. El desarrollador responde con
+  `XXXX-XXXX-XXXX-XXXX`, que se escribe en Ajustes › Licencia.
+- **Datos de prueba** «Bodega La Esquina» (18 meses de turnos y ventas, parecidos a los del móvil, no
+  idénticos): `SPVI.exe --seed` (borra todo) o, con `--dev`, Ajustes › Datos de prueba.
+- La red local se reanuda al abrir SPVI si estaba iniciada.
+- Iconos de pestaña, ventana, notificación y `.exe` a partir del logo de la app móvil.
+
 ## Implementación actual (pendiente de verificación en PC)
 
 - Puesto Python independiente, exclusivamente principal; no sustituye la aplicación móvil.
@@ -19,9 +45,10 @@ SMS, servicios ni otras funciones de Android. **No sustituye la aplicación móv
 - Reintentos HTTP idempotentes y validación anidada de DTO, relaciones y fotos.
 - PDF/Excel solo de inventario, servicios y turnos; imágenes/tarjetas de productos y servicios.
 
-**Estado real:** el código de esta ampliación no se ha compilado ni probado aquí, por indicación
- del propietario. Los resultados de pruebas de la fase anterior no validan esta ampliación.
- Sigue [VERIFICACION_PC.md](VERIFICACION_PC.md) antes de usar datos reales.
+**Estado real (0.31.0):** 103 pruebas Python y la autoprueba pasan en Linux, y la interfaz se recorrió en
+un navegador sin pantalla (Chromium) a 1440×900, 800×1000 y 390×844, en claro y oscuro, sin errores. **No
+se ha probado en Windows** (icono de notificación, inicio con Windows, `.exe`) ni con teléfonos reales.
+Sigue [VERIFICACION_PC.md](VERIFICACION_PC.md) antes de usar datos reales.
 
 **Pendiente de verificación, no de ejecución aquí:** pruebas Python/JavaScript, empaquetado Windows,
 validación visual e interoperabilidad real con Android/GL. Los pendientes funcionales enumerados en
@@ -37,28 +64,29 @@ Python 3.11 o posterior. En Windows, desde PowerShell:
 cd desktop
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe launcher.py --local
+.\.venv\Scripts\pythonw.exe launcher.py
 ```
 
-El primer inicio solicita una clave de al menos 12 caracteres en la consola. La interfaz se abre en
-`http://127.0.0.1:8765`. `--local` es un modo de evaluación explícito; no simula HTTPS.
-Cierra con **Ctrl+C** en la consola. Cerrar la pestaña no detiene el proceso.
-No ejecutar dos instancias sobre los mismos datos. Si el puerto está ocupado, detén la anterior.
+SPVI aparece como icono junto al reloj y abre la pantalla principal en `http://127.0.0.1:8765`.
+Cerrar la pestaña no detiene SPVI: se cierra con **Salir** en el menú del icono (o en Ajustes).
+Abrirlo otra vez con la misma carpeta de datos solo vuelve a mostrar la pantalla principal.
+`--console` funciona sin icono (se cierra con **Ctrl+C**); `--dev` muestra Ajustes › Datos de prueba.
 
-En Linux/macOS: `.venv/bin/python launcher.py --local`.
+En Linux/macOS: `.venv/bin/python launcher.py` (el icono necesita un escritorio con bandeja del sistema;
+si no lo hay, sigue funcionando como `--console`).
 
 ## Portable Windows
 
 ```powershell
 .\build_windows.ps1
-.\dist\SPVI.exe --local
-.\dist\SPVI.exe --local --browser "C:\Program Files\Mozilla Firefox\firefox.exe"
+.\dist\SPVI.exe
+.\dist\SPVI.exe --browser "C:\Program Files\Mozilla Firefox\firefox.exe"
 ```
 
 Compilar **en Windows**, no en Linux: PyInstaller no realiza compilación cruzada.
 El script ejecuta las pruebas, genera un ejecutable único con Python y recursos incluidos, ejecuta
 `SPVI.exe --self-test` y escribe `SPVI.exe.sha256`. No requiere instalar Python
-para ejecutarlo. Se mantiene la consola para crear la clave y detener el servidor de forma explícita.
+para ejecutarlo. Se genera sin ventana de consola (`--noconsole`) y con el icono de SPVI.
 Debe vivir en una carpeta escribible. `--data-dir "D:\Mi negocio\SPVI"` permite elegir los datos.
 **El `.exe` no se ha generado ni probado en este entorno Linux.** El workflow manual
 `.github/workflows/desktop.yml` prepara un runner Windows y publica el artefacto
@@ -79,10 +107,10 @@ Para usar exactamente esta URL, sin advertencias, hacen falta:
 3. Puerto 443 libre. Ejecutar:
 
 ```powershell
-SPVI.exe --cert "D:\SPVI-TLS\cert.pem" --key "D:\SPVI-TLS\key.pem"
+SPVI.exe --https --cert "D:\SPVI-TLS\cert.pem" --key "D:\SPVI-TLS\key.pem"
 ```
 
-Sin `--local`, el lanzador exige esta configuración y abre `https://SPVI.minegocio.cu`.
+Con `--https` el lanzador exige esta configuración y abre `https://SPVI.minegocio.cu`.
 El servidor web administrativo **solo escucha en loopback**; no se publica en Internet ni en la LAN.
 Los certificados no se empaquetan ni se suben al repositorio. No se exige ser propietario del dominio
 para una resolución estrictamente local con CA privada; para certificados públicos o acceso público sí
@@ -91,7 +119,7 @@ hay que controlar el dominio. No expongas la administración públicamente.
 ## Vincular secundarias Android
 
 1. Activa la licencia propia de esta instalación, o utiliza su período de prueba.
-2. En **Red local**, escribe la IPv4 privada de esta PC y un puerto TCP (por defecto 47811).
+2. En **Apps vinculadas › Red local**, elige la IPv4 privada de esta PC y un puerto TCP (por defecto 47811).
    También puedes iniciar con `--lan-host 192.168.1.10 --lan-port 47811`.
 3. Autoriza ese puerto en el firewall **solo para redes privadas**. No abrir puertos en el router.
 4. Agrega un empleado, asigna permisos y cuentas de cobro, y muestra su QR.
@@ -110,14 +138,14 @@ ha certificado la interoperabilidad ni se ha generado un ejecutable durante esta
 
 ## Datos y seguridad
 
-`datos/config.json` contiene el hash de la clave y el secreto de sesión; `datos/spvi.sqlite3` contiene el
+`datos/config.json` contiene el hash de la clave (si hay), el secreto de sesión y las preferencias de la PC; `datos/spvi.sqlite3` contiene el
 negocio. SQLite en esta primera versión **no está cifrada**, a diferencia de Android. Protege la carpeta
 con permisos de Windows y cifrado de disco. La clave web no cifra los archivos. No uses carpetas públicas
 ni memorias USB sin cifrar para datos reales. Tras detener la aplicación, copia **toda la carpeta** para
 un respaldo manual coherente, conservando también los archivos WAL/SHM si existen. No copiar la base
-abierta como método de respaldo. Para cambiar o recuperar la clave desde la PC del dueño, detén SPVI y ejecuta
-`SPVI.exe --reset-password --data-dir "D:\Mi negocio\SPVI"`. La consola pide la nueva clave dos veces;
-no se pasa por argumentos ni por chat. Conserva licencia y secretos y deja inválidas las sesiones anteriores.
+abierta como método de respaldo. La clave se cambia en Ajustes › Clave de acceso. Si se olvidó, sal de SPVI y
+ejecuta `SPVI.exe --reset-password --data-dir "D:\Mi negocio\SPVI"`: quita la clave (después puedes crear
+otra en Ajustes), conserva licencia y secretos y deja inválidas las sesiones anteriores.
 El lanzador impide abrir dos instancias con la misma carpeta de datos.
 
 ## Pruebas
@@ -128,7 +156,12 @@ $env:PYTHONPATH = "."
 ```
 
 Las pruebas no necesitan red. Cubren caja, stock, concurrencia, persistencia, dinero decimal,
-autenticación, CSRF, validación, Host y cabeceras. Falta validación visual, Windows/TLS y Android LAN.
+autenticación, CSRF, validación, Host y cabeceras, y desde la 0.31.0 el código de licencia de 16 dígitos
+(con los mismos vectores que GL), preferencias, inicio automático, datos de prueba, Registros, Tiempo en
+línea y que cada icono usado por la interfaz exista en `icons.svg`. Falta Windows/TLS y Android LAN.
+
+`static/icons.svg` se genera desde `SpviIcons.kt` de la app móvil con `python tools/generar_iconos.py`;
+una prueba falla si queda desactualizado.
 
 ## Exportar desde el navegador
 
@@ -181,13 +214,13 @@ separado. No importes certificados de origen desconocido. Configura manualmente 
 como se indicó arriba y ejecuta:
 
 ```powershell
-.\dist\SPVI.exe --cert .\tls\spvi.crt --key .\tls\spvi.key
+.\dist\SPVI.exe --https --cert .\tls\spvi.crt --key .\tls\spvi.key
 ```
 
 La herramienta no modifica DNS, firewall ni almacenes de confianza. No compartas la clave del servidor.
 Si retiras la aplicación, puedes quitar la CA local desde el administrador de certificados de Windows.
 
-## Estado de comprobación (2026-10-09)
+## Estado de comprobación (2026-10-09, superado por la 0.31.0 arriba)
 
 - Las 45 pruebas y autoprueba correctas pertenecen a la fase anterior, no a esta ampliación.
 - Ampliación canónica/LAN/GL/respaldo: código escrito, **sin pruebas ni comprobación sintáctica ejecutadas**.

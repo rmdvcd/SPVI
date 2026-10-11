@@ -232,11 +232,10 @@ fun SpviListItem(
             Column(Modifier.weight(1f)) {
                 if (titleResaltado != null) Text(
                     titleResaltado, style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 3, overflow = TextOverflow.Ellipsis,
                 )
                 else Text(
                     title, style = if (tituloEsDato) SpviTextos.datoEn(MaterialTheme.typography.bodyLarge) else MaterialTheme.typography.bodyLarge,
-                    maxLines = 3, overflow = TextOverflow.Ellipsis, // 0.27.0 (T2): con letra al 200 % no se corta antes
+                    // 0.30.1: el título nunca se corta con «…»: con nombres largos o letra al 200 % pasa a otra línea.
                 )
                 if (subtitleResaltado != null) SpviSecondaryText(subtitleResaltado, maxLines = if (apilar) maxOf(2, subtitleMaxLines) else subtitleMaxLines)
                 else subtitle?.split(" · ", "\n")?.filter { it.isNotBlank() }?.forEach { linea ->

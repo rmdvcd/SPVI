@@ -17,6 +17,21 @@ configurados explícitamente; fotos web no importadas por Android; ningún respa
 activación ni secretos de emparejamiento; no se inventan consumos ausentes en respaldos históricos.
 No incorpora impuestos ni contabilidad de partida doble.
 
+### Escritorio 0.31.0
+
+Interfaz nueva, icono de notificación, inicio con Windows, tema, Tiempo en línea, datos de prueba y
+licencia de PC de 16 dígitos: 103 pruebas Python, autoprueba y recorrido en navegador sin pantalla
+correctos en Linux. **Pendiente:** probar en Windows (icono, registro `Run`, `.exe` sin consola) y la
+licencia de PC de punta a punta con la app GL real en el teléfono (VERIFICACION_PC.md, pasos 19–23).
+
+**GL:** falta publicar en GL `security/SpviPc16.kt` (port de `pc_code.py`), los campos opcionales
+`plataforma`, `transaccion` y `recupera` de `SolicitudSpviV2` y su validación en `Spvi23`, el método
+`SpviPuerta.emitirCodigoPc` con su implementación en `CryptoGatewayImpl`, la rama PC de
+`EmitirSpvi2UseCase` (vence al final del día UTC, `id` = `license_id`), `SpviResponseMessage.buildPc`,
+`EnvelopeValidator.licenciaPc` para `.glreg`, las filas Plataforma/Transacción/Recupera del Generador y
+`SpviPc16Test` con los vectores de `desktop/tests/test_escritorio.py`. Hasta entonces GL no puede
+responder a una solicitud de PC con un código de 16 dígitos.
+
 ## Android
 
 Conservar los cambios existentes de pago electrónico, exportaciones, Inicio y notificaciones.
