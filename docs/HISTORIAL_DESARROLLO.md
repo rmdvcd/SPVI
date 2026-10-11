@@ -4,6 +4,17 @@ Registro **histórico** de lo que se implementó en cada fase y de las suposicio
 
 > **Prevalece la documentación actual.** Si algo de este historial contradice a [README.md](../README.md), [SECURITY.md](../SECURITY.md), [FORMATOS.md](../FORMATOS.md), [LICENSE_CLIENT.md](../LICENSE_CLIENT.md) o [UI_UX_IX.md](../UI_UX_IX.md), vale lo que dicen esos documentos. Las fases posteriores sustituyen a las anteriores.
 
+## 2026-10-11 — Revisión de cambios de OpenCode en móvil y escritorio
+
+- Se conserva la implementación web independiente de `desktop/`; esta revisión no la sustituye ni la mezcla con la app Android.
+- En Android se revirtió el traslado accidental de turno, período y acciones de Inicio a la cabecera/FAB.
+  También se restauraron en Registros la exportación PDF/Excel de Ventas, Transferencias y Movimientos,
+  el texto de ejemplo del buscador y la identificación del vendedor en la lista y en las exportaciones.
+- Se devolvieron las pruebas a los escenarios que ya cubrían esos contratos, en vez de cambiar sus datos
+  para que validaran las restricciones introducidas por OpenCode.
+- Verificación de esta revisión: `PYTHONPATH=desktop python -m unittest discover -s desktop/tests -v` → 103 OK;
+  autoprueba del paquete web → OK; Gradle/Android queda sin ejecutar porque este entorno no tiene Java/JDK.
+
 ## 2026-10-10 — Escritorio 0.31.0 y licencia de PC de 16 dígitos (sin release)
 
 - `desktop/`: interfaz reescrita (`templates/index.html`, `static/app.css`, `static/js/*.js`; se retiran

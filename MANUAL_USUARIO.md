@@ -9,19 +9,18 @@ Antes de cobrar por transferencia, comprueba que tienes ambos seleccionados.
 
 ## Inicio
 
-La marca, el estado del turno y el selector de período permanecen arriba al desplazarte.
-Los avisos, accesos y gráficos están debajo. Con turno abierto y permiso para vender aparecen
-**Nueva venta**, abajo a la izquierda, y **Movimiento de caja**, abajo a la derecha.
-Cuando el turno está cerrado no aparecen.
+El estado del turno y las acciones **Nueva venta** y **Movimiento de caja** forman parte del contenido de Inicio y
+se desplazan con la pantalla. El selector de período aparece antes de los gráficos y el resumen; gráficos y tops
+empiezan cerrados y se abren al tocarlos. No se fijan controles en la cabecera ni se añaden acciones flotantes.
 
 ## Buscar y consultar transferencias
 
-Los buscadores conservan su etiqueta, pero no tienen texto de ejemplo dentro.
-Las transferencias no muestran el vendedor en la lista/tabla. Esto no borra quién registró la operación.
+Los buscadores de Registros conservan su texto de ejemplo. Las transferencias muestran el vendedor en la lista/tabla;
+la ficha mantiene además los datos completos de la operación.
 
 ## Exportar
 
-- **PDF y Excel:** informes de inventario, servicios y turnos.
+- **PDF y Excel:** informes de inventario, servicios, turnos y Registros (ventas, transferencias y movimientos).
 - **Imagen:** lista de precios de productos o servicios.
 - **Tarjetas promocionales:** productos o servicios con foto, nombre y precio. Puedes escribir un
   encabezado opcional de hasta 160 caracteres antes de compartir. Aparece encima de cada imagen.

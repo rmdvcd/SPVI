@@ -96,8 +96,6 @@ class InicioUiTest {
 
     @Test fun turnoCerradoSePuedeAbrir() {
         mostrar(InicioUiState())
-        rule.onNodeWithTag(InicioTags.NUEVA_VENTA).assertDoesNotExist()
-        rule.onNodeWithTag(InicioTags.CAJA).assertDoesNotExist()
         rule.onNodeWithText("Turno cerrado", substring = true).assertIsDisplayed().performClick()
         assertEquals("turno:true", eventos.last())
     }

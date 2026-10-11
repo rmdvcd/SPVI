@@ -24,7 +24,7 @@ binario de los respaldos ni los escritores PDF/XLSX.
 | Informe de inventario (incluye insumos) | Sí | Solo productos | Solo productos |
 | Catálogo / informe de servicios | Sí | Sí, catálogo | Sí, catálogo |
 | Turnos | Sí | No | No |
-| Ventas de productos, transferencias y movimientos en Registros | No | No | No |
+| Ventas de productos, transferencias y movimientos en Registros | Sí | No | No |
 | Compartir ficha de producto | No | Sí | Sí |
 
 - Una selección mixta excluye insumos al generar imágenes/promociones; PDF/Excel conserva todo el informe.
@@ -32,7 +32,7 @@ binario de los respaldos ni los escritores PDF/XLSX.
   ni recetas. Las tarjetas añaden foto cuando existe.
 - El campo «Encabezado de promoción (opcional)» admite 160 caracteres, solo afecta a tarjetas y se repite
   encima de cada PNG. Vacío mantiene el diseño sin encabezado. El texto se ajusta en altura sin recortar.
-- La tabla de transferencias ya no tiene columna Vendedor; el registro original y su ficha se conservan.
+- La tabla de transferencias conserva la columna Vendedor; el registro original y su ficha también se conservan.
 - `desktop/` también genera PDF/XLSX para inventario, servicios y turnos, e imágenes para productos/servicios.
   Sus promociones son textuales (aún no admite fotos); varias imágenes se entregan como PNG separados en ZIP.
   Exporta y restaura `.spvidesk`, no `.spvi` Android. La base activa SQLite permanece **sin cifrar**.

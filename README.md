@@ -47,24 +47,27 @@ Los documentos de trabajo que estaban fuera del proyecto (`DECISIONES_LICENCIA_S
 
 - Pago electrónico: tarjetas con icono genérico monocromático, casillas de selección (máximo un teléfono y
   una tarjeta; tocar la elegida la desmarca) y editar/eliminar en una fila.
-- Inicio: cabecera con turno y período fija; avisos, accesos y gráficos se desplazan debajo. Nueva venta
-  flota a la izquierda y movimiento de caja a la derecha, solo con turno abierto y permiso de vender.
-- Buscadores sin placeholder. La lista/tabla de transferencias no muestra el vendedor.
-- PDF/Excel solo en informes de inventario, servicios y turnos. Imagen y tarjetas promocionales para
-  productos/servicios, no insumos; comentario opcional de hasta 160 caracteres como encabezado de tarjetas.
-  Cada formato tiene icono, incluido Excel monocromático.
+- Inicio: se conserva la distribución de la pantalla con el turno y las acciones dentro del contenido desplazable;
+  el selector de período permanece antes de los gráficos y el resumen. Los gráficos y tops son acordeones cerrados.
+- Registros conserva los textos de ejemplo de sus buscadores y muestra el vendedor en la lista de transferencias.
+- PDF/Excel están disponibles también en Ventas, Transferencias y Movimientos de Registros, además de los informes
+  de inventario, servicios y turnos. Imagen y tarjetas promocionales quedan para productos/servicios, no insumos;
+  el comentario opcional de hasta 160 caracteres se usa como encabezado de tarjetas. Cada formato tiene icono,
+  incluido Excel monocromático.
 - Notificación expandida con estado del turno, turnos abiertos en el negocio y sincronización, más duración
   del turno propio; sin importes ni datos personales.
 - **Escritorio Python:** primera base independiente en [desktop/](desktop/README.md), con catálogo,
   turnos, ventas, caja y dashboard. Incluye PDF/Excel/PNG, respaldo cifrado `.spvidesk`, preparación HTTPS,
   comparación entre períodos y proceso Windows que prueba antes y después de empaquetar.
   **Ampliación implementada:** QR/TCP principal, licencias GL, respaldo Android, correcciones,
-  insumos, clientes, fotos e idempotencia. Pendiente ejecutar pruebas e interoperabilidad en PC.
-  La web es independiente y exclusivamente principal; no sustituye la aplicación móvil.
+  insumos, clientes, fotos e idempotencia. La web es independiente y exclusivamente principal;
+  no sustituye la aplicación móvil. Quedan pendientes la validación en Windows y la interoperabilidad
+  real con Android y GL.
 
 Ver [manual de estos cambios](MANUAL_USUARIO.md) y [alcance técnico de escritorio](desktop/README.md).
-Resultados de la fase inicial: 45 pruebas Python y sintaxis JavaScript correctas; **no validan la ampliación actual, que no se ha ejecutado**. Gradle no ejecutado por ausencia
-de Java en este entorno; no se afirma que Android esté compilado ni validado visualmente.
+La suite web actual tiene 103 pruebas Python y autoprueba del paquete; la validación visual y los flujos
+con Windows, Android y GL siguen siendo pendientes. Gradle/Android no se ejecutó en este entorno por ausencia
+de Java; no se afirma que el APK se haya validado localmente.
 
 ## Descripción
 
@@ -72,7 +75,7 @@ de Java en este entorno; no se afirma que Android esté compilado ni validado vi
 
 | Área | Funciones |
 |---|---|
-| **Inicio** | Banner de licencia, **Nueva venta** flotante abajo a la izquierda y movimiento de caja abajo a la derecha (solo con turno abierto); turno y selector de período fijos en la cabecera, alertas de inventario (stock bajo/crítico, insumo bajo/crítico, próximo a caducar), accesos a Pago electrónico (teléfono y tarjeta/cuenta resaltados) y Precios, selector de período y, debajo, acordeones: 4 gráficos (Ventas, Inventario, Métodos de pago, Ganancia neta) y Top 3 (más vendido, lento movimiento, rentabilidad). Los acordeones empiezan cerrados y se cierran de nuevo al cambiar de ventana |
+| **Inicio** | Banner de licencia, turno y acciones de **Nueva venta** y movimiento de caja dentro del contenido de la pantalla, alertas de inventario (stock bajo/crítico, insumo bajo/crítico, próximo a caducar), accesos a Pago electrónico (teléfono y tarjeta/cuenta resaltados) y Precios, selector de período y, debajo, acordeones: 4 gráficos (Ventas, Inventario, Métodos de pago, Ganancia neta) y Top 3 (más vendido, lento movimiento, rentabilidad). Los acordeones empiezan cerrados y se cierran de nuevo al cambiar de ventana |
 | **Venta** | Solo con turno abierto. Selección desde el Inventario, carrito con cantidades, **Efectivo** (comprobante) o **Transferencia** (QR de Transfermóvil con tarjeta y móvil; el total aparece debajo porque el QR oficial no lo admite). El nº de transacción se puede capturar opcionalmente desde una notificación autorizada o pegar/compartir desde el SMS de PAGOxMOVIL. Un Elaborado se vende mientras alcancen sus insumos, que se descuentan en la misma transacción |
 | **Inventario** | Lista con buscador, filtros, selección múltiple, ficha, alta manual, exportación (PDF, Excel, Imagen, Tarjetas) |
 | **QR de vinculación** | CameraX + ML Kit (modelo empaquetado). Solo lee el QR para vincular la principal con la secundaria |
