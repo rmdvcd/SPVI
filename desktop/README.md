@@ -235,6 +235,13 @@ Si retiras la aplicación, puedes quitar la CA local desde el administrador de c
 - EXE con `--local` y datos temporales: HTTP 200 en `http://127.0.0.1:8765` (acceso, CSRF presente). Temporal borrado.
 - Pendientes: navegador real, HTTPS `spvi.minegocio.cu`, LAN con Android real y GL real (ver VERIFICACION_PC.md, puntos 4–10 y 15–18).
 
+## Estado de comprobación (2026-10-11, PC del dueño, main @ 328cdfa, 0.31)
+
+- `unittest discover -s tests`: **103 pruebas OK (1 omitida)**. El venv de la sesión anterior quedó viejo; bastó reinstalar el `requirements.txt` nuevo (ya trae `tzdata`, `pystray`, `six`).
+- `build_windows.ps1`: EXE `dist/SPVI.exe` (30,1 MB) regenerado con `--self-test` pasado; `.sha256` reescrito a mano (el script no lo actualizó).
+- Aceptación en Chrome real contra el EXE con datos temporales (borrados después): turno (fondo 1000), producto, venta en efectivo, corrección con motivo, anulación con motivo, doble anulación bloqueada, PDF/XLSX válidos, Tiempo en línea y cierre con **Cuadra**. Detalle en `docs/HISTORIAL_DESARROLLO.md` (entrada 2026-10-11).
+- Observación menor: tarjeta sin foto provoca 404 en `/api/photo/...` (consola). Pendientes: LAN con Android real, GL real, HTTPS, licencia PC de 16 dígitos y recuperación de clave.
+
 ## Flujos añadidos
 
 - **Corregir:** abre Historial, selecciona una venta de turno abierto, modifica su carrito, método y

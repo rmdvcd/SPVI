@@ -1,0 +1,65 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - button "Menú" [ref=e3] [cursor=pointer]
+    - generic [ref=e6]:
+      - generic [ref=e7]: SPVI
+      - generic [ref=e8]: Venta
+    - generic [ref=e332]:
+      - button "Movimiento de caja" [ref=e637] [cursor=pointer]
+      - button "Cerrar turno" [ref=e640] [cursor=pointer]
+  - navigation "Secciones" [ref=e9]:
+    - generic [ref=e11]:
+      - strong [ref=e12]: Mi negocio
+      - text: Periodo de prueba
+    - generic [ref=e13]:
+      - link "Inicio" [ref=e643] [cursor=pointer]:
+        - /url: "#/inicio"
+      - link "Venta" [ref=e647] [cursor=pointer]:
+        - /url: "#/venta"
+      - link "Inventario" [ref=e651] [cursor=pointer]:
+        - /url: "#/inventario"
+      - link "Servicios" [ref=e655] [cursor=pointer]:
+        - /url: "#/servicios"
+      - link "Registros" [ref=e659] [cursor=pointer]:
+        - /url: "#/registros"
+      - separator [ref=e663]
+      - link "Apps vinculadas" [ref=e664] [cursor=pointer]:
+        - /url: "#/vinculadas"
+      - link "Tiempo en línea" [ref=e668] [cursor=pointer]:
+        - /url: "#/tiempo"
+      - separator [ref=e672]
+      - link "Ajustes" [ref=e673] [cursor=pointer]:
+        - /url: "#/ajustes"
+    - generic [ref=e48]: SPVI 0.31.0
+  - main [ref=e49]:
+    - generic [ref=e677]:
+      - heading "Venta" [level=1] [ref=e679]
+      - generic [ref=e680]:
+        - generic [ref=e683]: "Periodo de prueba: quedan 7 días."
+        - button "Licencia" [ref=e684] [cursor=pointer]
+      - generic [ref=e685]:
+        - generic [ref=e686]:
+          - searchbox "Buscar artículo" [ref=e691]
+          - group "Filtrar" [ref=e692]:
+            - button "Todo" [pressed] [ref=e693] [cursor=pointer]
+            - button "Productos" [ref=e694] [cursor=pointer]
+          - 'button "Pan Alimentos 50.00 CUP Existencias: 99" [ref=e696] [cursor=pointer]':
+            - generic [ref=e697]: Pan
+            - generic [ref=e698]: Alimentos
+            - generic [ref=e699]: 50.00 CUP
+            - generic [ref=e700]: "Existencias: 99"
+        - generic [ref=e701]:
+          - generic [ref=e702]:
+            - heading "Carrito" [level=3] [ref=e705]
+            - button "Vaciar carrito" [ref=e706] [cursor=pointer]
+          - paragraph [ref=e713]: Toca un artículo para agregarlo.
+          - generic [ref=e714]: Forma de pago
+          - group "Forma de pago" [ref=e715]:
+            - button "Efectivo" [pressed] [ref=e716] [cursor=pointer]
+            - button "Transferencia" [ref=e719] [cursor=pointer]
+          - generic [ref=e722]:
+            - text: Total
+            - generic [ref=e723]: 0.00 CUP
+            - paragraph
+          - button "Cobrar" [disabled] [ref=e724]
+  - status [ref=e331]: "Venta registrada: 50.00 CUP"

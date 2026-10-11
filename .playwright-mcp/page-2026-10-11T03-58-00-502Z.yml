@@ -1,0 +1,61 @@
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - button "Menú" [ref=e3] [cursor=pointer]
+    - generic [ref=e6]:
+      - generic [ref=e7]: SPVI
+      - generic [ref=e8]: Registros
+    - button "Exportar" [ref=e1193] [cursor=pointer]
+  - navigation "Secciones" [ref=e9]:
+    - generic [ref=e11]:
+      - strong [ref=e12]: Mi negocio
+      - text: Periodo de prueba
+    - generic [ref=e13]:
+      - link "Inicio" [ref=e1196] [cursor=pointer]:
+        - /url: "#/inicio"
+      - link "Venta" [ref=e1200] [cursor=pointer]:
+        - /url: "#/venta"
+      - link "Inventario" [ref=e1204] [cursor=pointer]:
+        - /url: "#/inventario"
+      - link "Servicios" [ref=e1208] [cursor=pointer]:
+        - /url: "#/servicios"
+      - link "Registros" [ref=e1212] [cursor=pointer]:
+        - /url: "#/registros"
+      - separator [ref=e1216]
+      - link "Apps vinculadas" [ref=e1217] [cursor=pointer]:
+        - /url: "#/vinculadas"
+      - link "Tiempo en línea" [ref=e1221] [cursor=pointer]:
+        - /url: "#/tiempo"
+      - separator [ref=e1225]
+      - link "Ajustes" [ref=e1226] [cursor=pointer]:
+        - /url: "#/ajustes"
+    - generic [ref=e48]: SPVI 0.31.0
+  - main [ref=e49]:
+    - generic [ref=e1230]:
+      - heading "Registros" [level=1] [ref=e1232]
+      - tablist [ref=e1233]:
+        - tab "Ventas" [selected] [ref=e1234] [cursor=pointer]
+        - tab "Servicios" [ref=e1235] [cursor=pointer]
+        - tab "Transferencias" [ref=e1236] [cursor=pointer]
+        - tab "Inventario" [ref=e1237] [cursor=pointer]
+        - tab "Caja" [ref=e1238] [cursor=pointer]
+        - tab "Turnos" [ref=e1239] [cursor=pointer]
+        - tab "Clientes fijos" [ref=e1240] [cursor=pointer]
+      - generic [ref=e1241]:
+        - searchbox "Buscar" [ref=e1245]
+        - group "Período" [ref=e1246]:
+          - button "Todo" [pressed] [ref=e1247] [cursor=pointer]
+          - button "Hoy" [ref=e1248] [cursor=pointer]
+          - button "7 días" [ref=e1249] [cursor=pointer]
+          - button "30 días" [ref=e1250] [cursor=pointer]
+      - paragraph [ref=e1251]: "2 registros · Total válido: 0.00 CUP"
+      - generic [ref=e1252]:
+        - button "Pan ×2 10/10/2026 23:49 · Efectivo · Anulada 100.00 CUP" [active] [ref=e1253] [cursor=pointer]:
+          - generic [ref=e1257]:
+            - generic [ref=e1258]: Pan ×2
+            - generic [ref=e1259]: 10/10/2026 23:49 · Efectivo · Anulada
+          - generic [ref=e1260]: 100.00 CUP
+        - button "Pan 10/10/2026 23:41 · Efectivo · Anulada 50.00 CUP" [ref=e1261] [cursor=pointer]:
+          - generic [ref=e1265]:
+            - generic [ref=e1266]: Pan
+            - generic [ref=e1267]: 10/10/2026 23:41 · Efectivo · Anulada
+          - generic [ref=e1268]: 50.00 CUP
