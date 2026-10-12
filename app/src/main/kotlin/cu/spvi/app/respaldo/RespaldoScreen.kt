@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.text.style.TextAlign
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import android.app.Activity
+import android.content.Intent
+import android.provider.DocumentsContract
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,7 +31,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -38,7 +40,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cu.spvi.app.common.Compartir
 import cu.spvi.app.common.SecureWindow
 import cu.spvi.designsystem.component.FiltroEntrada
 import cu.spvi.designsystem.component.CardTone
@@ -64,7 +65,6 @@ object RespaldoTags {
     const val SIN_CONTRASENA = "respaldo.sin_contrasena"
     const val REPETIR = "respaldo.repetir"
     const val GUARDAR = "respaldo.guardar"
-    const val COMPARTIR = "respaldo.compartir"
     const val IMPORTAR = "respaldo.importar"
     const val CONTRASENA_IMPORTAR = "respaldo.contrasena_importar"
     const val PROGRESO = "respaldo.progreso"
@@ -80,7 +80,6 @@ object RespaldoTags {
 class AccionesRespaldo(
     val onEditarExport: ((ExportForm) -> ExportForm) -> Unit,
     val onGuardar: () -> Unit,
-    val onCompartir: () -> Unit,
     val onElegirArchivo: () -> Unit,
     val onContrasenaImport: (String) -> Unit,
     val onConfirmarImport: () -> Unit,
@@ -90,28 +89,31 @@ class AccionesRespaldo(
 )
 
 /**
- * Ajustes → Respaldo: exportar/importar la configuración o la base de datos completa, cifrada con contraseña.
- * Guardar en el teléfono (SAF) o enviar por otras apps (selector del sistema: WhatsApp, Telegram, Zapya,
- * Bluetooth, Drive, OneDrive…); importar desde cualquier proveedor de archivos o recibiéndolo de otra app.
+ * Ajustes → Respaldo: exportar/importar el `.spvi` cifrado solo hacia y desde el almacenamiento interno.
+ * "Guardar en el teléfono" y "Elegir archivo" abren el gestor de archivos del dispositivo, enraizado en
+ * Descargas internas (el usuario elige la ubicación). Sin enviar a otras apps ni recibir archivos de ellas.
  * 0.26.0: el respaldo se exporta solo como `.spvi` cifrado (sin el PDF de configuración). Sin permisos de almacenamiento. FLAG_SECURE: se escriben contraseñas.
  */
 @Composable
 fun RespaldoScreen(onBack: () -> Unit, viewModel: RespaldoViewModel = hiltViewModel()) {
     SecureWindow()
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
-    val guardar = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(TextosRespaldo.MIME)) {
-        viewModel.destinoElegido(it?.toString())
+    // Gestor de archivos del dispositivo, enraizado en el almacenamiento interno (Descargas). Si el
+    // dispositivo no resuelve esa ubicación, el selector abre donde pueda: igual lo elige el usuario.
+    val guardar = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (it.resultCode == Activity.RESULT_OK) viewModel.destinoElegido(it.data?.data?.toString())
+        else viewModel.destinoElegido(null)
     }
-    // "*/*": WhatsApp, Telegram o Drive no siempre conservan un MIME reconocible para .spvi.
-    val abrir = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { viewModel.archivoElegido(it?.toString()) }
+    // "*/*": algunos gestores no conservan un MIME reconocible para .spvi.
+    val abrir = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (it.resultCode == Activity.RESULT_OK) viewModel.archivoElegido(it.data?.data?.toString())
+        else viewModel.archivoElegido(null)
+    }
     LaunchedEffect(viewModel) {
         viewModel.eventos.collect { e ->
             when (e) {
-                is EventoRespaldo.ElegirDestino -> guardar.launch(e.nombre)
-                is EventoRespaldo.Compartir ->
-                    if (!Compartir.archivos(context, listOf(e.archivo), e.mime, e.asunto)) snackbar.showSnackbar(TextosRespaldo.SIN_APP)
+                is EventoRespaldo.ElegirDestino -> guardar.launch(crearDocumento(e.nombre))
                 is EventoRespaldo.Mensaje -> snackbar.showSnackbar(e.texto)
             }
         }
@@ -121,8 +123,8 @@ fun RespaldoScreen(onBack: () -> Unit, viewModel: RespaldoViewModel = hiltViewMo
         onBack = onBack,
         acciones = AccionesRespaldo(
             onEditarExport = viewModel::editarExport,
-            onGuardar = viewModel::guardarEnTelefono, onCompartir = viewModel::compartir,
-            onElegirArchivo = { abrir.launch(arrayOf("*/*")) },
+            onGuardar = viewModel::guardarEnTelefono,
+            onElegirArchivo = { abrir.launch(abrirDocumento()) },
             onContrasenaImport = viewModel::editarImport, onConfirmarImport = viewModel::confirmarImport,
             onCancelarImport = viewModel::cancelarImport,
             onCerrarResultado = viewModel::cerrarResultado,
@@ -131,6 +133,27 @@ fun RespaldoScreen(onBack: () -> Unit, viewModel: RespaldoViewModel = hiltViewMo
         snackbar = snackbar,
     )
 }
+
+/** "Guardar como" en el almacenamiento interno (Descargas). Solo proveedores locales (sin nubes). */
+private fun crearDocumento(nombre: String): Intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+    addCategory(Intent.CATEGORY_OPENABLE)
+    type = TextosRespaldo.MIME
+    putExtra(Intent.EXTRA_TITLE, nombre)
+    putExtra(Intent.EXTRA_LOCAL_ONLY, true)
+    putExtra(DocumentsContract.EXTRA_INITIAL_URI, descargasInternas())
+}
+
+/** "Abrir" en el almacenamiento interno (Descargas). Solo proveedores locales (sin nubes). */
+private fun abrirDocumento(): Intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+    addCategory(Intent.CATEGORY_OPENABLE)
+    type = "*/*"
+    putExtra(Intent.EXTRA_LOCAL_ONLY, true)
+    putExtra(DocumentsContract.EXTRA_INITIAL_URI, descargasInternas())
+}
+
+/** Carpeta Descargas del almacenamiento interno. Si no existe, el selector abre donde pueda. */
+private fun descargasInternas(): android.net.Uri =
+    DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Download")
 
 @Composable
 fun RespaldoContent(
@@ -211,16 +234,11 @@ fun RespaldoContent(
                 } else {
                     SpviSecondaryText(if (e.conContrasena) TextosRespaldo.CONTRASENA_LISTA else TextosRespaldo.LISTO_SIN_CONTRASENA)
                     SpviButtonRow {
-                        SpviSecondaryButton(
-                            "Enviar a otra app", onClick = acciones.onCompartir, enabled = !state.ocupado, icon = SpviIcons.Compartir,
-                            modifier = Modifier.testTag(RespaldoTags.COMPARTIR),
-                        )
                         SpviPrimaryButton(
                             "Guardar en el teléfono", onClick = acciones.onGuardar, enabled = !state.ocupado, icon = SpviIcons.Exportar,
                             modifier = Modifier.testTag(RespaldoTags.GUARDAR),
                         )
                     }
-                    SpviSecondaryText(TextosRespaldo.ENVIAR_OTRA_APP)
                 }
             }
 

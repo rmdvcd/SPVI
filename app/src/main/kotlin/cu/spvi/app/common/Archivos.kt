@@ -5,8 +5,6 @@ import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.provider.OpenableColumns
-import androidx.core.content.FileProvider
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -29,24 +27,9 @@ interface ArchivosApp {
     /** Destino elegido por el usuario con "Guardar en el dispositivo" (SAF, content://). */
     fun abrirDestino(uri: String): OutputStream?
     /**
-     * Archivo elegido con "Abrir" (SAF, content://): Descargas, Drive, OneDrive, WhatsApp Documents… o la copia local
-     * de un archivo recibido ([copiarRecibido]). null si no se puede leer.
+     * Archivo elegido con "Abrir" (SAF, content://, solo proveedores locales). null si no se puede leer.
      */
     fun abrirOrigen(uri: String): InputStream?
-
-    /**
-     * Prompt 14: copia YA el archivo que otra app compartió con SPVI (el permiso de lectura de esa URI es temporal)
-     * a la carpeta privada de compartir. Devuelve la URI local y el nombre visible, o null si no se pudo leer o
-     * supera [MAX_RECIBIDO]. Bloqueante: llamar fuera del hilo principal.
-     */
-    fun copiarRecibido(uri: String): Recibido? = null
-
-    data class Recibido(val uri: String, val nombre: String?)
-
-    companion object {
-        /** Mismo tope que el respaldo (BackupCipher.MAX_PLANO). */
-        const val MAX_RECIBIDO = 128L * 1024 * 1024
-    }
 }
 
 @Singleton
@@ -64,7 +47,7 @@ class ArchivosAppImpl @Inject constructor(@ApplicationContext private val contex
     override fun abrirOrigen(uri: String): InputStream? = runCatching {
         val u = Uri.parse(uri)
         if (u.scheme == "file") {
-            // Solo copias locales de archivos recibidos: nunca una ruta arbitraria.
+            // Solo copias locales de la carpeta privada: nunca una ruta arbitraria.
             val f = File(u.path ?: return null).canonicalFile
             if (f.parentFile != dir.canonicalFile) return null
             f.inputStream()
@@ -72,37 +55,6 @@ class ArchivosAppImpl @Inject constructor(@ApplicationContext private val contex
             context.contentResolver.openInputStream(u)
         }
     }.getOrNull()
-
-    override fun copiarRecibido(uri: String): ArchivosApp.Recibido? = runCatching {
-        val u = Uri.parse(uri)
-        if (u.scheme != "content") return null
-        val nombre = nombreVisible(u)
-        val destino = temporal("recibido_${System.currentTimeMillis()}.spvi")
-        val ok = context.contentResolver.openInputStream(u)?.use { input ->
-            destino.outputStream().use { out -> copiarAcotado(input, out) }
-        } ?: false
-        if (!ok) { destino.delete(); return null }
-        ArchivosApp.Recibido(Uri.fromFile(destino).toString(), nombre)
-    }.getOrNull()
-
-    private fun copiarAcotado(input: InputStream, out: OutputStream): Boolean {
-        val buf = ByteArray(64 * 1024)
-        var total = 0L
-        while (true) {
-            val n = input.read(buf)
-            if (n < 0) return true
-            total += n
-            if (total > ArchivosApp.MAX_RECIBIDO) return false
-            out.write(buf, 0, n)
-        }
-    }
-
-    /** Nombre que muestra la app de origen ("SPVI_respaldo_2026-09-30.spvi"); solo para el diálogo. */
-    private fun nombreVisible(u: Uri): String? = runCatching {
-        context.contentResolver.query(u, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
-            if (c.moveToFirst()) c.getString(0) else null
-        }
-    }.getOrNull()?.take(120)
 
     /** Lo compartido hace más de un día ya no hace falta. */
     private fun limpiarViejos() {

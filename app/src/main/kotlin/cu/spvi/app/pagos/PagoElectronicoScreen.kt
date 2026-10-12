@@ -19,7 +19,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -33,9 +36,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cu.spvi.app.common.SecureWindow
 import cu.spvi.app.inicio.formatoTelefono
 import cu.spvi.designsystem.component.FiltroEntrada
-import cu.spvi.designsystem.component.IconActionStyle
 import cu.spvi.designsystem.component.SpviBottomSheet
 import cu.spvi.designsystem.component.SpviDialog
+import cu.spvi.designsystem.component.SpviExpandableFab
+import cu.spvi.designsystem.component.SpviFabAction
 import cu.spvi.designsystem.component.SpviIconAction
 import cu.spvi.designsystem.component.SpviListItem
 import cu.spvi.designsystem.component.SpviPrimaryButton
@@ -47,6 +51,7 @@ import cu.spvi.designsystem.component.SpviTopBar
 import cu.spvi.designsystem.component.spviAnimateItem
 import cu.spvi.designsystem.component.spviContentWidth
 import cu.spvi.designsystem.icon.SpviIcons
+import cu.spvi.designsystem.token.SpviSize
 import cu.spvi.designsystem.token.SpviSpacing
 
 object PagoTags {
@@ -100,13 +105,31 @@ fun PagoElectronicoContent(
     acciones: AccionesListaPago,
     snackbar: SnackbarHostState = remember { SnackbarHostState() },
 ) {
+    // Un solo «+» flotante abajo a la derecha con las 2 opciones (en vez de un + por lista).
+    var expandido by rememberSaveable { mutableStateOf(false) }
     Scaffold(
         topBar = { SpviTopBar(title = TextosPago.TITULO, onBack = onBack) },
+        floatingActionButton = {
+            SpviExpandableFab(
+                actions = listOf(
+                    SpviFabAction(SpviIcons.Telefono, "Teléfono") { acciones.onNuevo(TipoCuentaPago.TELEFONO) },
+                    SpviFabAction(SpviIcons.PagoElectronico, "Tarjeta o cuenta") { acciones.onNuevo(TipoCuentaPago.TARJETA) },
+                ),
+                expanded = expandido,
+                onExpandedChange = { expandido = it },
+                icon = SpviIcons.Agregar,
+                contentDescription = "Agregar",
+            )
+        },
         snackbarHost = { SpviSnackbarHost(snackbar) },
     ) { padding ->
         LazyColumn(
             Modifier.fillMaxSize().spviContentWidth().padding(padding),
-            contentPadding = PaddingValues(vertical = SpviSpacing.md),
+            contentPadding = PaddingValues(
+                top = SpviSpacing.md,
+                // Hueco para que el flotante no tape la última fila.
+                bottom = SpviSpacing.md + SpviSize.fabClearance,
+            ),
             verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
         ) {
             lista(
@@ -154,16 +177,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.lista(
     acciones: AccionesListaPago,
 ) {
     item(key = "h_$tipo") {
-        Row(
-            Modifier.fillMaxWidth().padding(start = SpviSpacing.md, end = SpviSpacing.xs, top = SpviSpacing.md),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(titulo, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f).semantics { heading() })
-            SpviIconAction(
-                SpviIcons.Agregar, if (tipo == TipoCuentaPago.TELEFONO) "Agregar teléfono" else "Agregar tarjeta o cuenta",
-                onClick = { acciones.onNuevo(tipo) }, style = IconActionStyle.Tonal,
-            )
-        }
+        Text(titulo, style = MaterialTheme.typography.titleMedium, modifier = Modifier.fillMaxWidth().padding(start = SpviSpacing.md, end = SpviSpacing.md, top = SpviSpacing.md).semantics { heading() })
     }
     if (items.isEmpty()) {
         item(key = "v_$tipo") {

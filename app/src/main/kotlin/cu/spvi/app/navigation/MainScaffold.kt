@@ -82,15 +82,9 @@ fun MainScaffold(snapshot: Licencia) {
     val enRutaRaiz = current != null && TopLevel.entries.any { current.hasRoute(it.route::class) }
     val deslizar = deslizarPermitido(enRutaRaiz, enSeleccionVenta, bloqueoGestos.activo)
 
-    // Prompt 14: un .spvi abierto/compartido desde otra app → Respaldo (lo consume su ViewModel).
-    val entradaVm: EntradaViewModel = hiltViewModel()
-    val archivoPendiente by entradaVm.archivoPendiente.collectAsStateWithLifecycle()
-    LaunchedEffect(archivoPendiente) {
-        if (archivoPendiente && nav.currentDestination?.hasRoute(Route.Respaldo::class) != true) {
-            nav.navigate(Route.Respaldo) { launchSingleTop = true }
-        }
-    }
     // 0.25.0: un mensaje de licencia compartido con SPVI abre Licencia, que lo activa sola.
+    // (Los .spvi solo entran por el gestor de archivos desde Respaldo: lo compartido desde otras apps se ignora.)
+    val entradaVm: EntradaViewModel = hiltViewModel()
     val licenciaPendiente by entradaVm.licenciaPendiente.collectAsStateWithLifecycle()
     LaunchedEffect(licenciaPendiente) {
         if (licenciaPendiente && nav.currentDestination?.hasRoute(Route.Licencia::class) != true) {

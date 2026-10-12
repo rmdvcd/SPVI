@@ -29,8 +29,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.lifecycle.lifecycleScope
-import cu.spvi.app.common.ArchivosApp
 import cu.spvi.app.common.Entrada
 import cu.spvi.app.common.EntradaCompartida
 import cu.spvi.app.common.FormatoFechaDispositivo
@@ -40,9 +38,6 @@ import cu.spvi.app.root.SpviRoot
 import cu.spvi.designsystem.theme.SpviTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * Única Activity. Edge-to-edge estándar (barras transparentes, iconos según tema): la app no oculta ni
@@ -58,9 +53,8 @@ class MainActivity : FragmentActivity() {
     private val accesoViewModel: AccesoViewModel by viewModels()
     @Inject lateinit var guardiaAcceso: GuardiaAcceso
 
-    /** «Compartir con SPVI» (SMS de PAGOxMOVIL, respaldo .spvi). launchMode=singleTask: llega a la venta en curso. */
+    /** «Compartir con SPVI» (SMS de PAGOxMOVIL o licencia). launchMode=singleTask: llega a la venta en curso. */
     @Inject lateinit var entradaCompartida: EntradaCompartida
-    @Inject lateinit var archivos: ArchivosApp
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // La splash del sistema (#478EA1 + icono) se mantiene hasta evaluar la licencia.
@@ -107,11 +101,9 @@ class MainActivity : FragmentActivity() {
     private fun recibir(intent: Intent?) {
         when (val e = EntradaCompartida.desdeIntent(intent)) {
             null -> Unit
-            // El permiso de lectura de la URI compartida es temporal: se copia ya a la carpeta privada.
-            is Entrada.Archivo -> lifecycleScope.launch {
-                val local = withContext(Dispatchers.IO) { archivos.copiarRecibido(e.uri) }
-                entradaCompartida.publicar(local?.let { Entrada.Archivo(it.uri, it.nombre) } ?: e)
-            }
+            // Los .spvi solo entran por el gestor de archivos desde Respaldo: lo compartido desde
+            // otras apps se ignora (queda la app abierta sin hacer nada con el archivo).
+            is Entrada.Archivo -> Unit
             else -> entradaCompartida.publicar(e)
         }
     }

@@ -6,8 +6,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cu.spvi.app.common.ArchivosApp
 import cu.spvi.app.common.ExportadorArchivos
-import cu.spvi.app.common.Entrada
-import cu.spvi.app.common.EntradaCompartida
 import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
 import cu.spvi.core.time.Clock
@@ -15,7 +13,6 @@ import cu.spvi.domain.repository.EtapaRespaldo
 import cu.spvi.domain.usecase.ExportarRespaldo
 import cu.spvi.domain.usecase.ImportarRespaldo
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.io.File
 import java.time.LocalDate
 import java.time.ZoneId
 import javax.inject.Inject
@@ -44,8 +41,6 @@ data class RespaldoUiState(
 sealed interface EventoRespaldo {
     /** Abrir "Guardar como" del sistema con este nombre sugerido (respaldo .spvi). */
     data class ElegirDestino(val nombre: String) : EventoRespaldo
-    /** Abrir el selector de Compartir (WhatsApp, Telegram, Zapya, Bluetooth, Drive, OneDrive…) con este archivo. */
-    data class Compartir(val archivo: File, val mime: String = TextosRespaldo.MIME, val asunto: String = "Respaldo de SPVI") : EventoRespaldo
     data class Mensaje(val texto: String) : EventoRespaldo
 }
 
@@ -53,9 +48,11 @@ sealed interface EventoRespaldo {
  * Ajustes → Respaldo. Las contraseñas solo viven en el estado de la pantalla: se pasan como CharArray al
  * caso de uso (que las borra de memoria) y se vacían del formulario al terminar. Nunca se registran.
  *
+ * Solo almacenamiento interno: exportar = "Guardar como" del gestor de archivos; importar = "Abrir" del
+ * gestor de archivos. Sin enviar a otras apps ni recibir archivos de ellas.
+ *
  * Prompt 14: importar = (1) comprobar el archivo SIN contraseña (ajeno, cortado o dañado se explica antes de
- * pedir nada), (2) contraseña, (3) progreso por pasos, (4) diálogo de confirmación. Recibe también los `.spvi`
- * que otra app comparte con SPVI ([EntradaCompartida]).
+ * pedir nada), (2) contraseña, (3) progreso por pasos, (4) diálogo de confirmación.
  */
 @HiltViewModel
 class RespaldoViewModel @Inject constructor(
@@ -63,7 +60,6 @@ class RespaldoViewModel @Inject constructor(
     private val importar: ImportarRespaldo,
     private val respaldoRepo: RespaldoRepository,
     private val archivos: ArchivosApp,
-    private val entrada: EntradaCompartida,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -72,17 +68,6 @@ class RespaldoViewModel @Inject constructor(
     val state: StateFlow<RespaldoUiState> = _state.asStateFlow()
     private val _eventos = Channel<EventoRespaldo>(Channel.BUFFERED)
     val eventos: Flow<EventoRespaldo> = _eventos.receiveAsFlow()
-
-    init {
-        // Un .spvi abierto/compartido desde otra app (MainScaffold trae aquí al usuario).
-        viewModelScope.launch {
-            entrada.entrada.collect { e ->
-                if (e is Entrada.Archivo && entrada.consumir(e)) {
-                    if (_state.value.ocupado) mensaje(TextosRespaldo.OCUPADO) else archivoElegido(e.uri, e.nombre)
-                }
-            }
-        }
-    }
 
     fun editarExport(f: (ExportForm) -> ExportForm) = _state.update { it.copy(export = f(it.export)) }
     fun cerrarResultado() = _state.update { it.copy(resultado = null) }
@@ -112,18 +97,6 @@ class RespaldoViewModel @Inject constructor(
         ejecutar(EtapasRespaldo.progreso(EtapaRespaldo.PREPARANDO)) {
             when (val r = exportador.aDestino(uri) { exportar(_state.value.export.contrasenaFinal.toCharArray(), it, ::avanzar) }) {
                 is AppResult.Ok -> { limpiarExport(); _state.update { it.copy(resultado = exitoRespaldo(r.value, importado = false, nombre, con), exportado = PasosRespaldo.textoHecho(nombre, enviado = false, con)) } }
-                is AppResult.Err -> mensaje(mensajeRespaldo(r.error))
-            }
-        }
-    }
-
-    /** Crea el archivo cifrado en la carpeta privada de compartir y lo entrega al selector del sistema. */
-    fun compartir() {
-        if (!validarExport()) return
-        val con = _state.value.export.conContrasena
-        ejecutar(EtapasRespaldo.progreso(EtapaRespaldo.PREPARANDO)) {
-            when (val r = exportador.aTemporal(nombre()) { exportar(_state.value.export.contrasenaFinal.toCharArray(), it, ::avanzar) }) {
-                is AppResult.Ok -> { limpiarExport(); _state.update { it.copy(exportado = PasosRespaldo.textoHecho(nombre(), enviado = true, con)) }; _eventos.send(EventoRespaldo.Compartir(r.value.archivo)) }
                 is AppResult.Err -> mensaje(mensajeRespaldo(r.error))
             }
         }

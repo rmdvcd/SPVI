@@ -27,10 +27,7 @@ object TextosRespaldo {
     const val CONTENIDO = "Se guarda todo: productos, insumos, inventario, turnos, ventas, perfil, teléfonos y cuentas, precios y preferencias."
     const val AVISO_IMPORTAR = "Se reemplazarán TODOS los datos de este teléfono: productos, insumos, inventario, turnos, ventas y configuración. No se puede deshacer."
     const val CONTRASENA_LISTA = "Contraseña lista. Ahora elige dónde guardar el respaldo."
-    const val ENVIAR_OTRA_APP = "Por ejemplo WhatsApp, Telegram, Zapya, Bluetooth, Google Drive o OneDrive."
-    const val IMPORTAR_AYUDA = "Elige un archivo .spvi del teléfono, Drive u OneDrive. También puedes abrirlo o compartirlo con SPVI desde WhatsApp, Telegram, Zapya o Bluetooth."
-    const val OCUPADO = "Espera a que termine la operación en curso y vuelve a compartir el archivo."
-    const val SIN_APP = "No hay una app disponible para enviar el archivo"
+    const val IMPORTAR_AYUDA = "Elige un archivo .spvi del almacenamiento interno del teléfono."
 
     const val MIME = "application/octet-stream"
     const val EXTENSION = "spvi"

@@ -22,7 +22,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  * - [Texto]: contenido compartido por el usuario, como el SMS de PAGOxMOVIL o una licencia.
  * - [SmsPagoAutomatico]: SMS nuevo reconocido en una notificación, solo con acceso especial autorizado y una venta por
  *   transferencia activa; no consulta el buzón ni guarda el cuerpo.
- * - [Archivo]: un respaldo `.spvi` compartido desde WhatsApp, Telegram, Zapya, Bluetooth o un gestor de archivos.
+ * - [Archivo]: un respaldo `.spvi` abierto desde otra app. SPVI lo ignora: el .spvi solo entra con el
+ *   gestor de archivos desde Respaldo (almacenamiento interno).
  *
  * Sin permisos: la URI llega con permiso de lectura temporal concedido por la app que comparte.
  */
@@ -86,15 +87,11 @@ class EntradaCompartida @Inject constructor() {
 }
 
 /**
- * Prompt 14: la navegación principal observa si hay un archivo recibido esperando y lleva al usuario a Respaldo,
- * cuyo ViewModel lo consume. Solo existe mientras la app está desbloqueada (MainScaffold): si llega con la app
- * bloqueada, queda pendiente hasta entrar.
+ * Prompt 14: la navegación principal observa si hay un texto de licencia compartido. (Los .spvi ya no entran
+ * por aquí: solo se importan con el gestor de archivos desde Respaldo.)
  */
 @HiltViewModel
 class EntradaViewModel @Inject constructor(private val entrada: EntradaCompartida) : ViewModel() {
-    val archivoPendiente: StateFlow<Boolean> =
-        entrada.entrada.map { it is Entrada.Archivo }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-
     /**
      * 0.25.0: el mensaje de licencia de GL compartido con SPVI (WhatsApp → Compartir → SPVI) se activa sin pegarlo a mano.
      * Solo lo que el usuario comparte: nunca se lee el portapapeles ni los mensajes en segundo plano.

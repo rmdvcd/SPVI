@@ -86,12 +86,11 @@ class RespaldoTest {
     private val repo = RespaldoRepo()
     private val archivos = FakeArchivos()
     private val exportador = FakeExportador()
-    private val entrada = EntradaCompartida()
     private val zona = ZoneId.of("America/Havana")
 
     private fun vm() = RespaldoViewModel(
         ExportarRespaldo(repo), ImportarRespaldo(repo), repo,
-        archivos, entrada, RelojFijo(),
+        archivos, RelojFijo(),
     )
 
     // ---------- lógica
@@ -196,28 +195,6 @@ class RespaldoTest {
         val vm = vm()
         vm.destinoElegido(null)
         assertEquals(0, repo.exportados)
-    }
-
-    @Test fun compartirCreaArchivoTemporalCifrado() = runTest {
-        val vm = vm(); val ev = mutableListOf<EventoRespaldo>()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.eventos.collect { ev += it } }
-        vm.editarExport { it.copy(conContrasena = true, contrasena = "secreta12", repetir = "secreta12") }
-        vm.compartir()
-        val c = ev.single() as EventoRespaldo.Compartir
-        assertEquals("SPVI_respaldo_2026-09-30.spvi", c.archivo.name)
-        assertEquals(TextosRespaldo.MIME, c.mime)
-        assertEquals("CIFRADO", c.archivo.readText())
-        assertTrue(vm.state.value.exportado!!.contains("enviarlo"))
-    }
-
-    @Test fun siFallaCompartirSeBorraElTemporal() = runTest {
-        repo.fallarExport = true
-        val vm = vm(); val ev = mutableListOf<EventoRespaldo>()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.eventos.collect { ev += it } }
-        vm.editarExport { it.copy(conContrasena = true, contrasena = "secreta12", repetir = "secreta12") }
-        vm.compartir()
-        assertEquals(EventoRespaldo.Mensaje(TextosRespaldo.NO_SE_PUDO_GUARDAR), ev.single())
-        assertTrue(archivos.dir.listFiles().orEmpty().isEmpty())
     }
 
     // ---------- importar
