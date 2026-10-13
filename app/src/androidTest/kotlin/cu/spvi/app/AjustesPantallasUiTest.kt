@@ -108,7 +108,7 @@ class AjustesPantallasUiTest {
     // ---------- Respaldo
 
     private fun accionesRespaldo(onGuardar: () -> Unit = {}, onImportar: () -> Unit = {}) = AccionesRespaldo(
-        onEditarExport = {}, onGuardar = onGuardar, onCompartir = {}, onElegirArchivo = onImportar,
+        onEditarExport = {}, onGuardar = onGuardar, onElegirArchivo = onImportar,
         onContrasenaImport = {}, onConfirmarImport = {}, onCancelarImport = {},
     )
 
@@ -146,7 +146,7 @@ class AjustesPantallasUiTest {
                         resultado = ResultadoRespaldo(true, "Respaldo guardado", "SPVI_respaldo_2026-09-30.spvi"),
                     ),
                     {}, AccionesRespaldo(
-                        onEditarExport = {}, onGuardar = {}, onCompartir = {}, onElegirArchivo = {},
+                        onEditarExport = {}, onGuardar = {}, onElegirArchivo = {},
                         onContrasenaImport = {}, onConfirmarImport = {}, onCancelarImport = {}, onCerrarResultado = { cerrar++ },
                     ),
                 )
@@ -180,7 +180,7 @@ class AjustesPantallasUiTest {
                 RespaldoContent(
                     RespaldoUiState(exportado = PasosRespaldo.textoHecho("SPVI_respaldo_2026-09-30.spvi", enviado = false)),
                     {}, AccionesRespaldo(
-                        onEditarExport = {}, onGuardar = {}, onCompartir = {}, onElegirArchivo = {},
+                        onEditarExport = {}, onGuardar = {}, onElegirArchivo = {},
                         onContrasenaImport = {}, onConfirmarImport = {}, onCancelarImport = {}, onNuevoRespaldo = { otro++ },
                     ),
                 )
@@ -199,7 +199,7 @@ class AjustesPantallasUiTest {
             SpviTheme(darkTheme = false) {
                 RespaldoContent(
                     RespaldoUiState(), {}, AccionesRespaldo(
-                        onEditarExport = {}, onGuardar = {}, onCompartir = {}, onElegirArchivo = {},
+                        onEditarExport = {}, onGuardar = {}, onElegirArchivo = {},
                         onContrasenaImport = {}, onConfirmarImport = {}, onCancelarImport = {},
                     ),
                 )

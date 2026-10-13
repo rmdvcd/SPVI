@@ -135,7 +135,7 @@ class EntornoIntegracion(licencia: LicenseState = LicenseState.Trial(5)) {
 
     fun respaldoVm() = RespaldoViewModel(
         ExportarRespaldo(respaldo), ImportarRespaldo(respaldo), respaldo,
-        archivos, entrada, clock,
+        archivos, clock,
     )
 
     fun licenciaVm() = LicenciaViewModel(

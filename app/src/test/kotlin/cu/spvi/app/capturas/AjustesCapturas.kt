@@ -155,7 +155,7 @@ class AjustesCapturas {
 
     // ---------- Respaldo ----------
     private val accionesRespaldo = AccionesRespaldo(
-        onEditarExport = {}, onGuardar = {}, onCompartir = {}, onElegirArchivo = {}, onContrasenaImport = {}, onConfirmarImport = {}, onCancelarImport = {},
+        onEditarExport = {}, onGuardar = {}, onElegirArchivo = {}, onContrasenaImport = {}, onConfirmarImport = {}, onCancelarImport = {},
     )
     private fun respaldo(id: String, s: RespaldoUiState) = rule.capturar(id) { RespaldoContent(s, {}, accionesRespaldo, zona = Captura.ZONA) }
     private val info = InfoRespaldo(3, Instant.parse("2026-09-28T15:00:00Z"), 48_213)

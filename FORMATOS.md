@@ -106,7 +106,7 @@ El respaldo es siempre **completo**. Desde la 0.13.0 ya no existe «Solo configu
 
 1. *Reuniendo los datos…*: lectura en una transacción.
 2. *Cifrando con tu contraseña…*: JSON → gzip → AES-GCM. Al terminar, el JSON en claro se sobrescribe con ceros.
-3. *Guardando el archivo…*: va al destino elegido con el selector del sistema (**Guardar en el teléfono**) o a `cacheDir/compartir` para **Enviar a otra app**. Lo hace `ExportadorArchivos`, compartido con el resto de exportaciones.
+3. *Guardando el archivo…*: va al destino elegido con el gestor de archivos del dispositivo (**Guardar en el teléfono**, enraizado en Descargas internas, solo proveedores locales). Lo hace `ExportadorArchivos`, compartido con el resto de exportaciones.
 
 Nombre: `SPVI_respaldo_<fecha>.spvi`.
 
@@ -136,7 +136,7 @@ Cualquier error deja los datos como estaban.
 Tras importar un respaldo v4 con bloque `licencia` en un teléfono sin licencia instalada, Licencia muestra el ID ya escrito para **Recuperar** (MANUAL §9). Exportar un respaldo pone a cero el recordatorio mensual de Inicio.
 | Contraseña incorrecta | «Contraseña incorrecta» (el diálogo queda abierto para reintentar) |
 
-**Cómo llega el archivo:** «Importar» → selector del sistema; **Compartir** a SPVI desde otra app; o **Abrir con → SPVI**. En los dos últimos casos se copia a `cacheDir/compartir` (solo `content://`, máx. 128 MB, se borra a las 24 h) y siempre se piden contraseña y confirmación.
+**Cómo llega el archivo:** «Importar» → «Elegir archivo» abre el gestor de archivos del dispositivo (enraizado en Descargas internas, solo proveedores locales). El `.spvi` no se envía a otras apps ni se recibe de ellas: siempre se piden contraseña y confirmación.
 
 ---
 

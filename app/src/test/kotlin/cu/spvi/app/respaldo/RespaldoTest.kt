@@ -6,8 +6,6 @@ import cu.spvi.app.PerfilRepo
 import cu.spvi.app.PreciosRepo
 import cu.spvi.app.ProdRepo
 import cu.spvi.app.RelojFijo
-import cu.spvi.app.common.Entrada
-import cu.spvi.app.common.EntradaCompartida
 import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
 import cu.spvi.domain.repository.EtapaRespaldo
@@ -258,16 +256,5 @@ class RespaldoTest {
         assertEquals("", repo.importadoSinContrasena)
         assertNull(vm.state.value.importacion)
         assertTrue(vm.state.value.resultado!!.exito)
-    }
-
-    @Test fun archivoRecibidoDeOtraAppAbreLaImportacionYSeConsume() = runTest {
-        archivos.origenes["file:///cache/compartir/recibido_1.spvi"] = "CIFRADO".toByteArray()
-        entrada.publicar(Entrada.Archivo("file:///cache/compartir/recibido_1.spvi", "SPVI_completo_2026-09-29.spvi"))
-        val vm = vm()
-        assertEquals("SPVI_completo_2026-09-29.spvi", vm.state.value.importacion!!.nombre)
-        assertNull(entrada.entrada.value) // consumido: no se reabre al volver
-        // El texto compartido (SMS) no es para Respaldo: se deja a la venta.
-        entrada.publicar(Entrada.Texto("Nro. Transaccion: BR601ADLM8997"))
-        assertNotNull(entrada.entrada.value)
     }
 }

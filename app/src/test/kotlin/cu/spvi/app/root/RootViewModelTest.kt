@@ -82,24 +82,22 @@ class RootViewModelTest {
     }
 }
 
-/** Archivo recibido de otra app (Prompt 14): MainScaffold navega a Respaldo mientras esté pendiente. */
+/** La licencia compartida queda pendiente hasta activarse (los .spvi ya no entran por aquí). */
 @OptIn(ExperimentalCoroutinesApi::class)
 class EntradaViewModelTest {
     @Before fun antes() = Dispatchers.setMain(UnconfinedTestDispatcher())
     @After fun despues() = Dispatchers.resetMain()
 
-    @Test fun soloLosArchivosQuedanPendientesHastaConsumirse() = runTest {
+    @Test fun soloLaLicenciaQuedaPendienteHastaTomarse() = runTest {
         val entrada = EntradaCompartida()
         val vm = EntradaViewModel(entrada)
-        assertFalse(vm.archivoPendiente.value)
+        assertFalse(vm.licenciaPendiente.value)
         entrada.publicar(Entrada.Texto("Nro. Transaccion: BR601ADLM8997"))
-        assertFalse(vm.archivoPendiente.value) // el SMS es para la venta, no para Respaldo
-        val archivo = Entrada.Archivo("file:///cache/compartir/recibido_1.spvi", "SPVI_completo.spvi")
-        entrada.publicar(archivo)
-        assertTrue(vm.archivoPendiente.value)
-        assertTrue(entrada.consumir(archivo))
-        assertFalse(vm.archivoPendiente.value)
-        assertFalse(entrada.consumir(archivo)) // una sola vez
+        assertFalse(vm.licenciaPendiente.value) // el SMS es para la venta, no una licencia
+        entrada.publicar(Entrada.Texto("SPVI2:codigo-de-licencia"))
+        assertTrue(vm.licenciaPendiente.value)
+        assertEquals("SPVI2:codigo-de-licencia", vm.tomarLicencia())
+        assertFalse(vm.licenciaPendiente.value)
         vm.viewModelScope.cancel()
     }
 }

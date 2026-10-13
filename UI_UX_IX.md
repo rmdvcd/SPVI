@@ -64,7 +64,7 @@ Módulo `:designsystem`. **Regla única: ninguna pantalla define colores, tamañ
 | **Vibración breve** al leer un código, al terminar una venta y con cada snackbar; respeta el ajuste del sistema | Escáner, Venta, todos los mensajes |
 | **Asistentes en la misma pantalla** con `SpviStepper` («Paso N de M: título» + barra): Licencia 3 pasos; Respaldo Exportar 3 (Contraseña → Destino → Respaldo listo) e Importar 4 (Elegir → Comprobar → Contraseña → Confirmar); Onboarding; Migrar 4 (la cabecera indica el paso en curso; las 4 tarjetas siguen visibles) | Licencia, Respaldo, Onboarding, Migrar |
 | **Progreso de la operación por etapas** («Etapa 1 de 3 · Reuniendo los datos…»), con las demás acciones deshabilitadas. «Etapa», no «Paso», para no confundirlo con el asistente | Respaldo |
-| **Pegar solo al tocar «Pegar»**; compartir a SPVI desde otras apps (SMS, `.spvi`) | Venta, Licencia, Respaldo |
+| **Pegar solo al tocar «Pegar»**; compartir a SPVI desde otras apps (SMS, licencia) | Venta, Licencia |
 | **Eventos de un solo uso** (snackbar, abrir otra app) separados del estado | Todos los ViewModels |
 | **Estado que sobrevive** a girar la pantalla y a la muerte del proceso (`SavedStateHandle`) | Carrito y paso de la venta, período de Inicio, pestaña/búsqueda/filtros de Registros |
 
@@ -96,7 +96,7 @@ Módulo `:designsystem`. **Regla única: ninguna pantalla define colores, tamañ
 | Perfil | Marcador de posición | Nombre, apellidos, CI, teléfonos y tarjetas con validación; tarjetas enmascaradas | Prompt 12 |
 | Exportar como imagen | Imagen = tarjetas de 6 productos | Imagen = lista de precios (25 filas por imagen); Tarjetas aparte | Prompt 14 |
 | Registros | Solo compartir texto | Además, Exportar PDF y Excel de lo que se ve | Prompt 14 |
-| Importar respaldo | Solo desde el selector de archivos | También con Compartir y Abrir con → SPVI | Prompt 14 |
+| Importar respaldo | Solo «Elegir archivo» del gestor del dispositivo (almacenamiento interno) | Antes también con Compartir y Abrir con → SPVI | Prompt 14 |
 | Respaldo dañado | «Contraseña incorrecta o archivo alterado» | Se distingue archivo incompleto, dañado o de otra app **antes** de pedir la contraseña; progreso por pasos | Prompt 14 |
 | Clave del emisor, tasas de cambio, botón Enzona, caducidad por código | Pantallas o datos sin uso real | Eliminados; respaldo siempre completo | Prompt 17 |
 | Iconos | `material-icons-extended` (≈ 2 300 iconos) | `SpviIcons` propios, solo los usados | Prompt 17 |

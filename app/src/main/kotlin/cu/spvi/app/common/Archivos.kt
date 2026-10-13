@@ -5,6 +5,7 @@ import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.core.content.FileProvider
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

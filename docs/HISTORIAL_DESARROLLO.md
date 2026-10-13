@@ -1496,6 +1496,13 @@ Primera vez que el repositorio se verifica solo: GitHub Actions ejecuta Gradle r
 - **Corrección (`app/.../vinculacion/VinculacionViewModel.kt`):** la regla se evalúa con los valores reales (`base.first()`, suspendida); `pedirSecundaria()` espera dentro de una corrutina. Sin cambios de firmas ni de comportamiento visible salvo el bug. `spviTests` verde (859/859), APK reinstalado en el Redmi con los datos intactos.
 - Para probarlo en un teléfono hace falta borrar sus datos (el tipo queda fijado al instalarse): solo con respaldo previo, o mejor en el teléfono del empleado.
 
+## Cambio 2026-10-11 (dueño): respaldo .spvi solo en almacenamiento interno
+
+- **Regla nueva:** exportar e importar el `.spvi` solo hacia y desde el almacenamiento interno; la ubicación la elige el usuario con el gestor de archivos del dispositivo.
+- **Quitado:** botón «Enviar a otra app» (WhatsApp, Telegram, Drive…) y la recepción de `.spvi` compartidos o abiertos desde otras apps (`EventoRespaldo.Compartir`, `RespaldoViewModel.compartir()`, consumo de `Entrada.Archivo`, redirección de MainScaffold, `ArchivosApp.copiarRecibido`, filtros SEND/VIEW de `octet-stream` en el manifiesto y el string `importar_respaldo`). La licencia por texto compartido y el SMS de PAGOxMOVIL no cambian.
+- **Queda:** «Guardar en el teléfono» y «Elegir archivo», que abren el gestor del dispositivo enraizado en Descargas internas y limitado a proveedores locales (`EXTRA_INITIAL_URI` + `EXTRA_LOCAL_ONLY`, sin nubes). PDF/Excel/imágenes se siguen enviando como antes.
+- Verificación: `spviTests` 856/856, `spviCheck` verde (`spviPermisos` OK con el manifiesto recortado), instrumentados compilan, `verifyRoborazziDebug` verde (referencias 09* regeneradas), APK instalado. Docs: FORMATOS, SECURITY, UI_UX_IX e historial.
+
 ### Principal web independiente — ampliación en desarrollo
 
 - Incorporados modelo canónico Android, servidor LAN principal, empleados, permisos, fondos,
