@@ -1,6 +1,6 @@
 """Lanzador portable de SPVI para Windows: icono en el área de notificación, sin consola.
 
-Al abrirse inicia el servidor local (http://127.0.0.1:8765) y la pantalla principal en el navegador. El icono de la
+Al abrirse inicia el servidor local (https://spvi.io) y la pantalla principal en el navegador. El icono de la
 barra de tareas (clic: Pantalla principal; clic derecho: menú) permite abrir Apps conectadas, Tiempo en línea y
 Ajustes, reiniciar o salir. No modifica DNS, certificados ni firewall de Windows.
 """
@@ -26,6 +26,26 @@ def resource(*parts):
     return root.joinpath('spvi_web', *parts)
 
 
+EXTRACTION_FILES = ('_sqlite3.pyd', 'sqlite3.dll')
+EXTRACTION_TIMEOUT = 30
+
+
+def extraction_ready(base, needed=EXTRACTION_FILES, timeout=EXTRACTION_TIMEOUT):
+    """Espera a que el ejecutable termine de extraer sus archivos temporales.
+
+    Al reiniciar en Windows el proceso nuevo puede arrancar antes de que la
+    extracción termine; sin esta espera falla con «No module named '_sqlite3'».
+    Devuelve True si están todos los archivos, False si se agota el tiempo.
+    """
+    end = time.monotonic() + timeout
+    while True:
+        if all((base / name).is_file() for name in needed):
+            return True
+        if time.monotonic() >= end:
+            return False
+        time.sleep(0.1)
+
+
 def alert(message, title='SPVI'):
     """Aviso visible también sin consola (MessageBox con el icono de la app en Windows)."""
     if os.name == 'nt':
@@ -49,12 +69,13 @@ def parse(argv=None):
     parser.add_argument('--console', action='store_true', help='Sin icono de notificación (Ctrl+C para cerrar)')
     parser.add_argument('--lan-host', help='IPv4 privada de esta PC para atender apps secundarias')
     parser.add_argument('--lan-port', type=int, default=47811, help='Puerto TCP de sincronización')
-    parser.add_argument('--local', action='store_true', help=argparse.SUPPRESS)  # compatibilidad: ya es el modo por defecto
-    parser.add_argument('--https', action='store_true', help='Servir https://spvi.minegocio.cu con --cert y --key')
-    parser.add_argument('--port', type=int, help='Puerto web; 8765 por defecto (443 con --https)')
+    parser.add_argument('--dominio', default='spvi.io', help='Dominio local servido por HTTPS (spvi.io por defecto)')
+    parser.add_argument('--local', action='store_true', help='Sin HTTPS: servir solo en http://127.0.0.1:8765')
+    parser.add_argument('--https', action='store_true', help=argparse.SUPPRESS)  # compatibilidad: HTTPS ya es el modo por defecto
+    parser.add_argument('--port', type=int, help='Puerto web; 443 por defecto (8765 con --local)')
     parser.add_argument('--browser', help='Ruta del navegador preferido')
     parser.add_argument('--data-dir', type=Path)
-    parser.add_argument('--cert', type=Path, help='Certificado PEM de spvi.minegocio.cu')
+    parser.add_argument('--cert', type=Path, help='Certificado PEM del dominio local')
     parser.add_argument('--key', type=Path, help='Clave privada PEM')
     return parser, parser.parse_args(argv)
 
@@ -79,7 +100,7 @@ def build_tray(url, open_route, restart, quit_app):
                  for title, route in ROUTES]
         items += [pystray.Menu.SEPARATOR, pystray.MenuItem('Reiniciar', lambda icon, item: restart()),
                   pystray.MenuItem('Salir', lambda icon, item: quit_app())]
-        return pystray.Icon('SPVI', image, 'SPVI · ' + url.replace('http://', ''), pystray.Menu(*items))
+        return pystray.Icon('SPVI', image, 'SPVI · ' + url.replace('https://', '').replace('http://', ''), pystray.Menu(*items))
     except Exception:
         return None
 
@@ -90,6 +111,10 @@ def main(argv=None):
         sink = open(os.devnull, 'w', encoding='utf-8')
         sys.stdout = sys.stdout or sink; sys.stderr = sys.stderr or sink
     parser, args = parse(argv)
+    base = getattr(sys, '_MEIPASS', None)
+    if base is not None and not extraction_ready(Path(base)):
+        alert('SPVI no terminó de preparar sus archivos temporales. Ciérralo si sigue abierto y ábrelo de nuevo.')
+        return 1
     if args.self_test:
         from spvi_web.selftest import run
         try: run()
@@ -114,15 +139,15 @@ def main(argv=None):
         alert('Se quitó la clave de acceso. Puedes crear otra en Ajustes › Clave de acceso.\n'
               'La licencia y los datos no se modificaron.')
         return
-    if args.https:
+    if not args.local:
         from spvi_web.tls import validate_certificate
         import socket
         if not args.cert or not args.key or not args.cert.is_file() or not args.key.is_file():
-            parser.error('HTTPS requiere --cert y --key. Consulta el README.')
+            parser.error('HTTPS requiere --cert y --key. Consulta el README (URL https://%s).' % args.dominio)
         try:
-            validate_certificate(args.cert, args.key)
-            if socket.gethostbyname('spvi.minegocio.cu') != '127.0.0.1':
-                parser.error('Configura spvi.minegocio.cu → 127.0.0.1 en esta PC antes de iniciar.')
+            validate_certificate(args.cert, args.key, args.dominio)
+            if socket.gethostbyname(args.dominio) != '127.0.0.1':
+                parser.error('Configura %s → 127.0.0.1 en esta PC (archivo hosts) antes de iniciar.' % args.dominio)
         except (ValueError, OSError) as error:
             parser.error(str(error))
 
@@ -140,8 +165,8 @@ def main(argv=None):
     preferences = config.preferences()
     dev = args.dev or os.environ.get('SPVI_DEV') == '1'
     stop, restart_requested = threading.Event(), threading.Event()
-    port = args.port or (443 if args.https else 8765)
-    url = ('https://SPVI.minegocio.cu' + (f':{port}' if port != 443 else '')) if args.https else f'http://127.0.0.1:{port}'
+    port = args.port or (8765 if args.local else 443)
+    url = f'http://127.0.0.1:{port}' if args.local else 'https://' + args.dominio + (f':{port}' if port != 443 else '')
 
     if args.browser:
         if not Path(args.browser).is_file(): parser.error('No se encontró el navegador indicado.')
@@ -171,7 +196,7 @@ def main(argv=None):
     from cheroot.wsgi import Server
     from spvi_web.app import create_app
     identity_dir = Path(os.environ.get('LOCALAPPDATA', str(data))) / 'SPVI-Web' / 'identidad' if os.name == 'nt' else data
-    app = create_app(data, config=config, secure=args.https, identity_dir=identity_dir, dev=dev, controls=controls)
+    app = create_app(data, config=config, secure=not args.local, hosts=[args.dominio, '127.0.0.1', 'localhost'], identity_dir=identity_dir, dev=dev, controls=controls)
     sync = app.extensions['sync']
     if args.seed:
         from spvi_web import seed
@@ -183,7 +208,7 @@ def main(argv=None):
         except ValueError as error:
             if args.lan_host: alert('No se pudo iniciar la red local: ' + str(error))
     server = Server(('127.0.0.1', port), app, numthreads=8)
-    if args.https:
+    if not args.local:
         from cheroot.ssl.builtin import BuiltinSSLAdapter
         server.ssl_adapter = BuiltinSSLAdapter(str(args.cert), str(args.key))
     try:
@@ -229,6 +254,8 @@ def relaunch():
     command = [sys.executable] + ([] if getattr(sys, 'frozen', False) else [str(Path(__file__).resolve())]) + args
     flags = 0x00000008 | 0x00000200 if os.name == 'nt' else 0  # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
     subprocess.Popen(command, close_fds=True, creationflags=flags, cwd=str(base_dir()))
+    if os.name == 'nt':
+        os._exit(0)  # la limpieza ya terminó; evita que el proceso viejo quede colgado tras el reinicio
 
 
 if __name__ == '__main__':

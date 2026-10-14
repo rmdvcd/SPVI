@@ -9,7 +9,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.x509.oid import NameOID, ExtendedKeyUsageOID
 
 
-def generate(directory):
+def generate(directory, domain='spvi.io'):
     directory=Path(directory)
     directory.mkdir(parents=True,exist_ok=True)
     paths=[directory/name for name in ('spvi-ca.crt','spvi.crt','spvi.key')]
@@ -23,11 +23,11 @@ def generate(directory):
         .add_extension(x509.BasicConstraints(ca=True,path_length=0),critical=True)
         .add_extension(x509.KeyUsage(False,False,False,False,False,True,True,False,False),critical=True)
         .sign(root_key,hashes.SHA256()))
-    domain=x509.Name([x509.NameAttribute(NameOID.COMMON_NAME,'spvi.minegocio.cu')])
-    cert=(x509.CertificateBuilder().subject_name(domain).issuer_name(root_name).public_key(server_key.public_key())
+    subject=x509.Name([x509.NameAttribute(NameOID.COMMON_NAME,domain)])
+    cert=(x509.CertificateBuilder().subject_name(subject).issuer_name(root_name).public_key(server_key.public_key())
           .serial_number(x509.random_serial_number()).not_valid_before(now-timedelta(minutes=5)).not_valid_after(now+timedelta(days=365))
           .add_extension(x509.BasicConstraints(ca=False,path_length=None),critical=True)
-          .add_extension(x509.SubjectAlternativeName([x509.DNSName('spvi.minegocio.cu')]),critical=False)
+          .add_extension(x509.SubjectAlternativeName([x509.DNSName(domain)]),critical=False)
           .add_extension(x509.ExtendedKeyUsage([ExtendedKeyUsageOID.SERVER_AUTH]),critical=False)
           .add_extension(x509.KeyUsage(True,False,False,False,False,False,False,False,False),critical=True)
           .sign(root_key,hashes.SHA256()))
@@ -43,8 +43,9 @@ def generate(directory):
 if __name__ == '__main__':
     parser=argparse.ArgumentParser(description='Preparar certificado HTTPS local de SPVI')
     parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--dominio',default='spvi.io',help='Dominio del certificado (spvi.io por defecto)')
     args=parser.parse_args()
-    try: generate(args.output)
+    try: generate(args.output,args.dominio)
     except (ValueError,OSError) as error: parser.error(str(error))
     print('Certificados creados. Falta instalar explícitamente spvi-ca.crt como raíz confiable y configurar hosts.')
     print('No compartas spvi.key. Consulta README para configurar Windows y renovar el certificado.')

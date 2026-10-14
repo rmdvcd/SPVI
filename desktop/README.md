@@ -67,9 +67,13 @@ python -m venv .venv
 .\.venv\Scripts\pythonw.exe launcher.py
 ```
 
-SPVI aparece como icono junto al reloj y abre la pantalla principal en `http://127.0.0.1:8765`.
+SPVI aparece como icono junto al reloj y abre la pantalla principal en `https://spvi.io` (requiere el
+certificado y el archivo `hosts` descritos más abajo). `--local` sirve solo en `http://127.0.0.1:8765`
+sin HTTPS, útil para desarrollo.
 Cerrar la pestaña no detiene SPVI: se cierra con **Salir** en el menú del icono (o en Ajustes).
 Abrirlo otra vez con la misma carpeta de datos solo vuelve a mostrar la pantalla principal.
+Solo puede haber una pestaña a la vez: si ya hay una abierta, la nueva muestra un aviso con
+**Usar aquí** para tomar el control (la anterior queda bloqueada).
 `--console` funciona sin icono (se cierra con **Ctrl+C**); `--dev` muestra Ajustes › Datos de prueba.
 
 En Linux/macOS: `.venv/bin/python launcher.py` (el icono necesita un escritorio con bandeja del sistema;
@@ -94,23 +98,23 @@ Debe vivir en una carpeta escribible. `--data-dir "D:\Mi negocio\SPVI"` permite 
 `--self-test` comprueba recursos, PDF/XLSX/PNG y respaldo sin abrir el navegador ni tocar datos reales.
 Los resultados de empaquetado/autoprueba de fases anteriores no verifican el código actual.
 
-## URL `https://SPVI.minegocio.cu`
+## URL `https://spvi.io`
 
 Un ejecutable portable no puede apropiarse de un dominio ni instalar silenciosamente confianza TLS.
 Para usar exactamente esta URL, sin advertencias, hacen falta:
 
-1. Resolución local en la PC: `127.0.0.1 spvi.minegocio.cu` en el archivo `hosts` de Windows
+1. Resolución local en la PC: `127.0.0.1 spvi.io` en el archivo `hosts` de Windows
    (`C:\Windows\System32\drivers\etc\hosts`), o DNS local equivalente. Es un cambio administrativo manual.
-2. Certificado PEM con SAN `spvi.minegocio.cu` y su clave privada. Puede emitirlo una CA local del negocio
+2. Certificado PEM con SAN `spvi.io` y su clave privada. Puede emitirlo una CA local del negocio
    cuya raíz se instale de forma explícita en los almacenes de confianza de Windows y del navegador.
    No basta con renombrar un certificado; no se desactiva la verificación TLS.
 3. Puerto 443 libre. Ejecutar:
 
 ```powershell
-SPVI.exe --https --cert "D:\SPVI-TLS\cert.pem" --key "D:\SPVI-TLS\key.pem"
+SPVI.exe --cert "D:\SPVI-TLS\cert.pem" --key "D:\SPVI-TLS\key.pem"
 ```
 
-Con `--https` el lanzador exige esta configuración y abre `https://SPVI.minegocio.cu`.
+HTTPS es el modo por defecto: el lanzador exige esta configuración y abre `https://spvi.io`.
 El servidor web administrativo **solo escucha en loopback**; no se publica en Internet ni en la LAN.
 Los certificados no se empaquetan ni se suben al repositorio. No se exige ser propietario del dominio
 para una resolución estrictamente local con CA privada; para certificados públicos o acceso público sí
@@ -214,7 +218,7 @@ separado. No importes certificados de origen desconocido. Configura manualmente 
 como se indicó arriba y ejecuta:
 
 ```powershell
-.\dist\SPVI.exe --https --cert .\tls\spvi.crt --key .\tls\spvi.key
+.\dist\SPVI.exe --cert .\tls\spvi.crt --key .\tls\spvi.key
 ```
 
 La herramienta no modifica DNS, firewall ni almacenes de confianza. No compartas la clave del servidor.
@@ -233,7 +237,7 @@ Si retiras la aplicación, puedes quitar la CA local desde el administrador de c
 - `unittest discover -s tests`: **84 pruebas OK** (Python 3.14.7). Primera ejecución real de la ampliación; sin correcciones.
 - `build_windows.ps1`: EXE `dist/SPVI.exe` (29,3 MB + `.sha256`) generado y `--self-test` interno pasado.
 - EXE con `--local` y datos temporales: HTTP 200 en `http://127.0.0.1:8765` (acceso, CSRF presente). Temporal borrado.
-- Pendientes: navegador real, HTTPS `spvi.minegocio.cu`, LAN con Android real y GL real (ver VERIFICACION_PC.md, puntos 4–10 y 15–18).
+- Pendientes: navegador real, HTTPS `spvi.io`, LAN con Android real y GL real (ver VERIFICACION_PC.md, puntos 4–10 y 15–18).
 
 ## Estado de comprobación (2026-10-11, PC del dueño, main @ 328cdfa, 0.31)
 
