@@ -4,7 +4,7 @@ from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 
 
-def validate_certificate(cert_path, key_path, hostname='spvi.minegocio.cu'):
+def validate_certificate(cert_path, key_path, hostname='spvi.io'):
     try:
         cert=x509.load_pem_x509_certificate(cert_path.read_bytes())
         key=serialization.load_pem_private_key(key_path.read_bytes(),password=None)

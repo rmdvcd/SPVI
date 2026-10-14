@@ -14,6 +14,45 @@ SPVI.nivel = function (item, kind, prefs = {}) {
 SPVI.caduca = item => item.fechaCaducidad && new Date(item.fechaCaducidad + 'T23:59:59') - Date.now() < 7 * 86400000;
 SPVI.colorNivel = nivel => nivel === 'critico' ? 'var(--alert-critico)' : nivel === 'bajo' ? 'var(--alert-bajo)' : null;
 
+/* ---------- Gráficos SVG propios (sin librerías ni líneas de rejilla). ---------- */
+/** Dona de reparto. segmentos: [{label, value, color}]. */
+function donaSvg(segmentos) {
+  const total = segmentos.reduce((suma, x) => suma + (x.value || 0), 0);
+  const radio = 40, perimetro = 2 * Math.PI * radio;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 100 100'); svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', segmentos.map(x => x.label + ': ' + (total ? Math.round(x.value * 100 / total) : 0) + ' %').join('. '));
+  let offset = 0;
+  for (const segmento of segmentos) {
+    const parte = total ? (segmento.value || 0) / total : 0;
+    if (!parte) continue;
+    const circulo = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circulo.setAttribute('cx', '50'); circulo.setAttribute('cy', '50'); circulo.setAttribute('r', String(radio));
+    circulo.setAttribute('fill', 'none'); circulo.setAttribute('stroke', segmento.color); circulo.setAttribute('stroke-width', '16');
+    circulo.setAttribute('stroke-dasharray', (perimetro * parte).toFixed(2) + ' ' + (perimetro * (1 - parte)).toFixed(2));
+    circulo.setAttribute('stroke-dashoffset', (-offset).toFixed(2));
+    circulo.setAttribute('transform', 'rotate(-90 50 50)');
+    svg.append(circulo); offset += perimetro * parte;
+  }
+  return svg;
+}
+/** Área de una serie numérica; los valores negativos se recortan a cero. */
+function areaSvg(valores) {
+  const ancho = 100, alto = 40, maximo = Math.max(1, ...valores.map(v => Math.max(0, v)));
+  const puntos = valores.map((v, i) => [(valores.length < 2 ? 0 : i * ancho / (valores.length - 1)).toFixed(2), (alto - Math.max(0, v) * alto / maximo).toFixed(2)]);
+  const linea = puntos.map((p, i) => (i ? 'L' : 'M') + p[0] + ' ' + p[1]).join(' ');
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 100 40'); svg.setAttribute('preserveAspectRatio', 'none'); svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', 'Ganancia por día');
+  const relleno = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  relleno.setAttribute('d', linea + ' L ' + ancho + ' ' + alto + ' L 0 ' + alto + ' Z'); relleno.setAttribute('fill', 'var(--primary)'); relleno.setAttribute('opacity', '.18');
+  const trazo = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  trazo.setAttribute('d', linea); trazo.setAttribute('fill', 'none'); trazo.setAttribute('stroke', 'var(--primary)');
+  trazo.setAttribute('stroke-width', '1.5'); trazo.setAttribute('stroke-linejoin', 'round'); trazo.setAttribute('vector-effect', 'non-scaling-stroke');
+  svg.append(relleno, trazo);
+  return svg;
+}
+
 /* ---------- Turno y caja: ventanas compartidas por Inicio y Venta. ---------- */
 SPVI.turno = {
   abrir() {
@@ -113,11 +152,27 @@ SPVI.views.inicio = async function (root) {
   const maximo = Math.max(1, ...serie.map(d => porDia[d] || 0));
   root.append(h('div', {class: 'dos'},
     h('div', {class: 'card'}, h('div', {class: 'cabecera'}, icon('Registros'), h('h3', {text: 'Ingresos por día'})),
-      h('div', {class: 'barras', role: 'img', 'aria-label': 'Ingresos por día'}, serie.map(d => h('div', {class: 'barra', style: 'height:' + Math.round((porDia[d] || 0) * 100 / maximo) + '%', title: fecha(Date.parse(d + 'T12:00:00')) + ': ' + cup(porDia[d] || 0)}))),
+      h('div', {class: 'barras', role: 'img', 'aria-label': 'Ingresos por día'}, serie.map((d, i) => h('div', {class: 'barra', style: 'height:' + Math.round((porDia[d] || 0) * 100 / maximo) + '%;animation-delay:' + (i * 12) + 'ms', title: fecha(Date.parse(d + 'T12:00:00')) + ': ' + cup(porDia[d] || 0)}))),
       h('div', {class: 'ejes'}, h('span', {text: fecha(Date.parse(serie[0] + 'T12:00:00'))}), h('span', {text: 'Hoy'}))),
     h('div', {class: 'card'}, h('div', {class: 'cabecera'}, icon('Recomendados'), h('h3', {text: 'Más vendidos'})),
       tablero.top.length ? h('div', {class: 'lista plana'}, tablero.top.map((x, i) => itemLista({title: x.name, value: cup(x.total), lead: h('span', {class: 'lead', text: String(i + 1)})})))
         : vacio('Venta', 'Aún no hay ventas en este período.'))));
+
+  // Formas de cobro y ganancia por día.
+  const margenPorDia = Object.fromEntries(tablero.daily.map(x => [x.day, x.margin]));
+  const metodos = [{label: 'Efectivo', value: tablero.cash, color: 'var(--chart-1)'}, {label: 'Transferencias', value: tablero.transfers, color: 'var(--chart-2)'}];
+  const totalMetodos = tablero.cash + tablero.transfers;
+  root.append(h('div', {class: 'dos'},
+    h('div', {class: 'card'}, h('div', {class: 'cabecera'}, icon('Efectivo'), h('h3', {text: 'Formas de cobro'})),
+      totalMetodos ? h('div', {class: 'dona'}, donaSvg(metodos),
+        h('div', {class: 'leyenda'}, metodos.map(x => h('div', {class: 'fila'},
+          h('span', {class: 'punto', style: 'background:' + x.color}),
+          h('span', {text: x.label + ': ' + Math.round(x.value * 100 / totalMetodos) + ' %'}),
+          h('span', {class: 'dato', style: 'margin-left:auto', text: cup(x.value)})))))
+        : vacio('Efectivo', 'Sin ventas en este período.')),
+    h('div', {class: 'card'}, h('div', {class: 'cabecera'}, icon('Registros'), h('h3', {text: 'Ganancia por día'})),
+      h('div', {class: 'area'}, areaSvg(serie.map(d => margenPorDia[d] || 0))),
+      h('div', {class: 'ejes'}, h('span', {text: fecha(Date.parse(serie[0] + 'T12:00:00'))}), h('span', {text: 'Hoy'})))));
 
   // Bajo costo y movimientos recientes
   if (tablero.below_cost.length) {

@@ -4,6 +4,35 @@ Registro **histórico** de lo que se implementó en cada fase y de las suposicio
 
 > **Prevalece la documentación actual.** Si algo de este historial contradice a [README.md](../README.md), [SECURITY.md](../SECURITY.md), [FORMATOS.md](../FORMATOS.md), [LICENSE_CLIENT.md](../LICENSE_CLIENT.md) o [UI_UX_IX.md](../UI_UX_IX.md), vale lo que dicen esos documentos. Las fases posteriores sustituyen a las anteriores.
 
+## 2026-10-14 — Una sola pestaña de SPVI
+
+- Los dos procesos `SPVI.exe` visibles son una sola instancia: el cargador del portable (padre) y la
+  app (hija); el candado `spvi.lock` ya impedía un segundo proceso con los mismos datos.
+- `static/js/core.js`: control de pestaña única con reclamo en `localStorage`, latido cada 3 s y
+  caducidad de 9 s. La segunda pestaña muestra «SPVI ya está abierto en otra pestaña» con **Usar aquí**,
+  que transfiere el control (la anterior queda bloqueada por evento `storage`). El identificador vive en
+  `sessionStorage` para sobrevivir a la recarga. Sin almacenamiento no se controla y se permite.
+- Verificado en Chromium: primera pestaña activa, segunda bloqueada, «Usar aquí» activa la segunda y
+  bloquea la primera; sin errores de consola.
+
+## 2026-10-14 — Dominio https://spvi.io y pulido de interfaz web
+
+- `desktop/`: la pantalla principal es `https://spvi.io` por HTTPS y puerto 443 (reemplaza a
+  `http://127.0.0.1:8765`). El dominio es parametrizable (`--dominio spvi.io`, `--cert`, `--key`);
+  el lanzador exige resolución a 127.0.0.1 (archivo `hosts`) y certificado válido de CA privada
+  instalada a mano. `--local` mantiene el modo sin HTTPS de desarrollo. Opción B2 elegida por el dueño
+  (sin propiedad del dominio público). `setup_https.py` acepta `--dominio`; `tls.validate_certificate`
+  y `TRUSTED_HOSTS` usan `spvi.io` por defecto.
+- Inicio suma dos gráficos SVG propios (sin librerías ni rejilla): dona de Formas de cobro
+  (Efectivo/Transferencias) y área de Ganancia por día; las barras de Ingresos por día crecen con
+  retardo escalonado. Transición de entrada entre secciones y micro-interacciones en botones/listas,
+  todo con `prefers-reduced-motion`. Se quitó la referencia a Roboto Mono no empaquetada. Mismos tokens,
+  sin rediseño (opción A del dueño).
+- Verificación: 106 pruebas Python OK (1 omitida), sintaxis JS, recorrido en Chromium real (1440 y
+  estrecho, claro y oscuro) con datos de prueba; EXE reconstruido con `build_windows.ps1` (pruebas +
+  autoprueba) y `LEEME.md`/`.sha256` regenerados. HTTPS real en Windows sigue pendiente del dueño
+  (hosts + CA + certificado).
+
 ## 2026-10-13 — Licencias en las tres apps: clave maestra, sub-tokens y envelope v1 (mitigaciones 1, 7 y 8, Opción A)
 
 - Se implementó en SPVI el sistema de licencias documentado por GL (`SISTEMA_LICENCIAS_CLIENTES.md`,
@@ -19,15 +48,16 @@ Registro **histórico** de lo que se implementó en cada fase y de las suposicio
   de versión. El envelope v1 sella con la AAD canónica y sigue abriendo lo ya emitido con la heredada.
 - **Escritorio:** `sync/server.py` anota el `device` de la secundaria al vincular y en `hola`;
   `licensing/subtokens.py` y `licensing/trust.py` ya cubrían el sub-token y `SPVI_DESARROLLO=1`.
-  Pruebas nuevas en `test_sync_server.py`. **123 pruebas Python correctas** (`pytest tests -q`).
+  Pruebas nuevas en `test_sync_server.py`. **126 pruebas Python correctas** (`pytest tests -q`).
 - **iOS (Flutter):** `flutter_app/lib/src/licensing/` reescrito sobre `pointycastle` 3.9.1 (P-256, ECDH,
   HKDF-SHA256, AES-256-GCM, ECDSA DER/crudo, AAD con longitud prefijada): solicitud `SPVIR1`, licencia
   corta `SPVI2:`, licencia larga v1, maestra en `kDebugMode`, marca de agua del reloj, revocadas,
   sub-tokens, limitador de intentos y renovación. `ClienteLicencia` es ahora el estado real de la
   pantalla de Licencia (se retiró el campo de texto de «clave» inventada). Tests con un GL de prueba en
   `test/` (los corre Codemagic; en esta máquina no hay Dart).
-- Verificación: Android e iOS **sin compilar** (no hay JDK, Gradle ni Dart en el entorno). Queda pendiente
-  ejecutar `spviTests`, `flutter test` y commitear `data/schemas/…/12.json`, que Room exporta al compilar.
+- Verificación: Android compila y pasa `spviTests` en el CI del repositorio (lint, R8, permisos del manifiesto y API
+  mínima 26, en verde). La app iOS **no se compiló aquí** (no hay Dart en el entorno): queda pendiente `flutter test`
+  (Codemagic) y commitear `data/schemas/…/12.json`, que Room exporta al compilar.
 - Documentación: [LICENSE_CLIENT.md](../LICENSE_CLIENT.md) §11–§13, [SECURITY.md](../SECURITY.md) §4 quater
   y [Pendiente.md](../Pendiente.md).
 
@@ -1529,6 +1559,14 @@ Primera vez que el repositorio se verifica solo: GitHub Actions ejecuta Gradle r
 - **Quitado:** botón «Enviar a otra app» (WhatsApp, Telegram, Drive…) y la recepción de `.spvi` compartidos o abiertos desde otras apps (`EventoRespaldo.Compartir`, `RespaldoViewModel.compartir()`, consumo de `Entrada.Archivo`, redirección de MainScaffold, `ArchivosApp.copiarRecibido`, filtros SEND/VIEW de `octet-stream` en el manifiesto y el string `importar_respaldo`). La licencia por texto compartido y el SMS de PAGOxMOVIL no cambian.
 - **Queda:** «Guardar en el teléfono» y «Elegir archivo», que abren el gestor del dispositivo enraizado en Descargas internas y limitado a proveedores locales (`EXTRA_INITIAL_URI` + `EXTRA_LOCAL_ONLY`, sin nubes). PDF/Excel/imágenes se siguen enviando como antes.
 - Verificación: `spviTests` 856/856, `spviCheck` verde (`spviPermisos` OK con el manifiesto recortado), instrumentados compilan, `verifyRoborazziDebug` verde (referencias 09* regeneradas), APK instalado. Docs: FORMATOS, SECURITY, UI_UX_IX e historial.
+
+## Bug 2026-10-13 (dueño): «Reiniciar SPVI» fallaba con «No module named '_sqlite3'»
+
+- **Síntoma:** al pulsar Ajustes › «Reiniciar SPVI» en el EXE portable, el proceso nuevo moría con `ModuleNotFoundError: No module named '_sqlite3'` (`launcher.py:172`, vía `app.py` → `backups.py:6`). La app quedaba detenida.
+- **Causa:** el proceso reiniciado arrancó con la extracción del ejecutable a medio hacer (carpeta temporal `_MEI*` con 28–30 de 810 archivos: estaban los tiempos de ejecución básicos pero faltaba `_sqlite3.pyd`). Los módulos empaquetados dentro del EXE cargan bien, pero las extensiones nativas viven en la carpeta temporal y aún no existían. En la repetición provocada se vio además al extractor detenido en ese punto sin ventana ni CPU (sin registro en Defender). Es una carrera en el arranque, no un paquete roto: el mismo EXE arranca bien cuando la extracción termina (comprobado: autoprueba y servicio correctos con PATH limpio, y 106 pruebas verdes).
+- **Corrección (`desktop/launcher.py`):** al arrancar, el proceso espera (hasta 30 s) a que `_sqlite3.pyd` y `sqlite3.dll` existan en su carpeta temporal antes de importar la aplicación; si se agota el tiempo muestra un aviso en español («ábrelo de nuevo») en lugar del diálogo técnico. Además `relaunch()` termina el proceso viejo con `os._exit(0)` tras lanzar al nuevo (la limpieza ya terminó), para no dejarlo colgado. Prueba nueva `desktop/tests/test_launcher.py` (3 pruebas). EXE reconstruido con `build_windows.ps1` (106 pruebas OK con 1 omitida + autoprueba del ejecutable verde; `.sha256` reescrito a mano porque al script en segundo plano le falló `Get-FileHash`) y app relanzada con los datos intactos (verificado: 810 archivos extraídos y API con estado real).
+- **Uso:** si al reiniciar aparece el aviso en español, ciérralo y abre SPVI de nuevo (o usa Salir y el acceso directo). Si se repite, avisa: el paso siguiente sería compilar en modo carpeta (sin extracción) o excluir la carpeta del antivirus.
+- **Nota:** cada arranque del EXE deja una carpeta `_MEI*` en `%TEMP%` que solo se borra al cerrarse bien; tras cuelgues o apagados conviene borrar las sobrantes. Se limpiaron 8 pendientes.
 
 ### Principal web independiente — ampliación en desarrollo
 

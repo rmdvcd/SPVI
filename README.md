@@ -42,9 +42,10 @@ Los documentos de trabajo que estaban fuera del proyecto (`DECISIONES_LICENCIA_S
   v12**, `MIGRACION_11_12`) para recordar el `deviceId` de cada secundaria.
 - **AAD canónica del envelope v1** (mitigación 8, Opción A): se sella con longitud prefijada y se sigue abriendo lo
   ya emitido con la heredada `1|alg|…` (`EnvelopeV1.kt`, `CanonicalAadTest`).
-- Verificación: 123 pruebas Python del escritorio correctas; **Android e iOS sin compilar ni ejecutar aquí** (no hay
-  JDK ni Dart en este entorno): `spviTests`, `:app:assembleDebug` y `flutter test` (Codemagic) quedan pendientes, y
-  la primera compilación de Android debe exportar y commitear `data/schemas/…/12.json` (ver [Pendiente.md](Pendiente.md)).
+- Verificación: 126 pruebas Python del escritorio correctas; Android compila y pasa `spviTests` en el CI del repositorio
+  (con lint, R8 y los permisos del manifiesto), y **la app iOS no se ha compilado ni probado aquí** (no hay Dart en este
+  entorno): `flutter test` y el build los corre Codemagic. Falta commitear `data/schemas/…/12.json`, que Room exporta al
+  compilar (ver [Pendiente.md](Pendiente.md)).
 
 ## Cambios en desarrollo — 10 de octubre de 2026
 

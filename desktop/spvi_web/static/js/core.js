@@ -143,6 +143,57 @@ async function busy(element, action) {
   try { return await action(); } catch (error) { snack(error.message, true); } finally { if (element) element.disabled = false; }
 }
 
+/* ---------- Una sola pestaña: las demás muestran un aviso y no pintan nada. ---------- */
+const CLAVE_PESTANA = 'spvi-pestana';
+/* El identificador sobrevive a la recarga (sessionStorage es por pestaña); si no, «Usar aquí» se bloquearía a sí mismo. */
+let ID_PESTANA = null;
+try { ID_PESTANA = sessionStorage.getItem('spvi-id') || ''; } catch { ID_PESTANA = ''; }
+if (!ID_PESTANA) {
+  ID_PESTANA = crypto.randomUUID();
+  try { sessionStorage.setItem('spvi-id', ID_PESTANA); } catch { /* sin acción */ }
+}
+const LATIDO_MS = 3000, CADUCIDAD_MS = 9000;
+let pestanaPropia = false, latidoPestana = null;
+function leerPestana() {
+  try { return JSON.parse(localStorage.getItem(CLAVE_PESTANA) || 'null'); }
+  catch { return null; }
+}
+function escribirPestana() {
+  localStorage.setItem(CLAVE_PESTANA, JSON.stringify({id: ID_PESTANA, ts: Date.now()}));
+}
+/** Reclama esta pestaña como la activa, salvo que otra siga viva. Sin almacenamiento no se controla. */
+function pestanaActiva() {
+  try {
+    const actual = leerPestana();
+    if (actual && actual.id !== ID_PESTANA && Date.now() - actual.ts < CADUCIDAD_MS) return false;
+    escribirPestana(); pestanaPropia = true;
+  } catch { return true; }
+  latidoPestana = setInterval(() => { if (pestanaPropia) { try { escribirPestana(); } catch { /* sin acción */ } } }, LATIDO_MS);
+  window.addEventListener('storage', evento => {
+    if (evento.key === CLAVE_PESTANA && pestanaPropia) {
+      const otra = leerPestana();
+      if (otra && otra.id !== ID_PESTANA) { pestanaPropia = false; clearInterval(latidoPestana); mostrarPestanaBloqueada(); }
+    }
+  });
+  window.addEventListener('beforeunload', () => {
+    if (!pestanaPropia) return;
+    try { const actual = leerPestana(); if (actual && actual.id === ID_PESTANA) localStorage.removeItem(CLAVE_PESTANA); }
+    catch { /* sin acción */ }
+  });
+  return true;
+}
+/** Aviso a pantalla completa cuando SPVI ya está abierto en otra pestaña. */
+function mostrarPestanaBloqueada() {
+  if (cleanup) { try { cleanup(); } catch { /* sin acción */ } cleanup = null; }
+  for (const open of document.querySelectorAll('dialog[open]')) open.close('');
+  buildMenu('inicio'); SPVI.actions();
+  $('#seccion').textContent = ''; document.title = 'SPVI';
+  $('#vista').replaceChildren(h('div', {class: 'vista'},
+    h('div', {class: 'card centro'},
+      vacio('Alerta', 'SPVI ya está abierto en otra pestaña de este navegador. Usa esa pestaña para seguir trabajando: solo puede haber una a la vez.'),
+      button('Usar aquí', () => { try { escribirPestana(); } catch { /* sin acción */ } location.reload(); }, {iconName: 'Confirmar'}))));
+}
+
 /* ---------- Ventanas emergentes centradas con el icono de SPVI. ---------- */
 function dialog({title, body = [], actions = [], wide = false, iconName = null, onClose = null}) {
   const error = h('p', {class: 'dlg-error', role: 'alert'});
@@ -274,6 +325,7 @@ function buildMenu(current) {
 }
 SPVI.actions = (...nodes) => $('#acciones-barra').replaceChildren(...nodes);
 SPVI.render = async function () {
+  if (!pestanaPropia) { mostrarPestanaBloqueada(); return; }
   const {id, sub, params} = parseHash();
   if (cleanup) { try { cleanup(); } catch { /* sin acción */ } cleanup = null; }
   for (const open of document.querySelectorAll('dialog[open]')) open.close('');   // las ventanas pertenecen a la sección anterior
@@ -309,5 +361,6 @@ document.addEventListener('DOMContentLoaded', () => {
   $('#scrim').addEventListener('click', () => drawer(false));
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && document.body.classList.contains('drawer-open')) drawer(false); });
   if (!location.hash) history.replaceState(null, '', '#/inicio');
+  if (!pestanaActiva()) { mostrarPestanaBloqueada(); return; }
   SPVI.render();
 });

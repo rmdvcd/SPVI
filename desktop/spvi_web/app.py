@@ -26,7 +26,7 @@ def create_app(data_dir, password_hash=None, secret=None, secure=False, hosts=No
     app.config.update(DEV=bool(dev), STARTED_AT=int(time.time()*1000))
     app.config.update(SECRET_KEY=secret, MAX_CONTENT_LENGTH=android_backup.MAX_BYTES + 65536, SESSION_COOKIE_HTTPONLY=True,
                       SESSION_COOKIE_SAMESITE='Strict', SESSION_COOKIE_SECURE=secure,
-                      TRUSTED_HOSTS=hosts or ['127.0.0.1', 'localhost', 'spvi.minegocio.cu'])
+                      TRUSTED_HOSTS=hosts or ['127.0.0.1', 'localhost', 'spvi.io'])
     Path(data_dir).mkdir(parents=True, exist_ok=True)
     box = SecretBox(secret)
     identity = Path(identity_dir) if identity_dir else Path(data_dir)

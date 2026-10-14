@@ -20,7 +20,7 @@ No incorpora impuestos ni contabilidad de partida doble.
 ### Escritorio 0.31.0
 
 Interfaz nueva, icono de notificación, inicio con Windows, tema, Tiempo en línea, datos de prueba y
-licencia de PC de 16 dígitos y licencias del contrato GL: 123 pruebas Python, autoprueba y recorrido en navegador sin pantalla
+licencia de PC de 16 dígitos y licencias del contrato GL: 126 pruebas Python, autoprueba y recorrido en navegador sin pantalla
 correctos en Linux. **Pendiente:** probar en Windows (icono, registro `Run`, `.exe` sin consola) y la
 licencia de PC de punta a punta con la app GL real en el teléfono (VERIFICACION_PC.md, pasos 19–23).
 
@@ -40,24 +40,28 @@ tres apps el contrato de GL con las mitigaciones 1, 7 y 8 (Opción A):
 clave maestra solo en depuración, sub-tokens firmados por la principal y AAD canónica del envelope v1.
 Detalle: [LICENSE_CLIENT.md](LICENSE_CLIENT.md) §11–§13.
 
-**Pendiente por no haber toolchain en este entorno (ni JDK, ni Gradle, ni Dart):**
+**Compilación:** el CI del repositorio ya compila Android y pasa `spviTests` con estos cambios
+(`Tests JVM y compilación de instrumentados`, `Lint`, `Release (R8) y APK debug`, `Permisos del manifiesto`
+y `API mínima 26`, los cinco en verde). Lo que sigue pendiente:
 
-1. **Compilar y probar Android.** `./gradlew spviTests`, `./gradlew spviCheck` y `:app:assembleDebug`.
-   Sin ejecutar, no se puede declarar la versión verificada.
-2. **Commitear `data/schemas/cu.spvi.data.SpviDatabase/12.json`.** Room lo escribe al compilar
-   (`room.schemaLocation`); aquí no se puede generar, y **no se debe inventar**. `tools/verificacion/`
-   (etapa 3) y `EsquemaTest` avisan si falta o no coincide.
-3. **`flutter pub get` + `flutter test` + build de iOS** (Codemagic ya los corre en cada push;
-   en esta máquina pub.dev no es alcanzable). `pubspec.yaml` ya lleva `pointycastle: ^3.9.1`.
+1. **`data/schemas/cu.spvi.data.db.SpviDatabase/12.json`.** Room lo escribe al compilar
+   (`room.schemaLocation`); en este entorno no se puede generar y **no se debe inventar** (su
+   `identityHash` lo calcula Room). Basta compilar una vez en la PC del dueño y commitear el archivo:
+   `tools/verificacion/` (etapa 3) y `EsquemaTest` avisan si falta o no coincide.
+2. **Probar Android en dispositivos:** los 136 tests instrumentados (incluido `EsquemaTest` con la
+   migración 11→12), capturas Roborazzi y el APK de depuración en un teléfono; después, la prueba con dos
+   teléfonos (principal + secundaria) para ver el sub-token firmado de punta a punta.
+3. **`flutter pub get` + `flutter test` + build de iOS** (Codemagic los corre en cada push; en esta máquina
+   pub.dev no es alcanzable). `pubspec.yaml` ya lleva `pointycastle: ^3.9.1`.
 4. **Prueba de las tres apps contra GL de verdad**: solicitud `SPVIR1` → `SPVI2:` en el teléfono y la app
    iOS, código de 16 dígitos en la PC, clave maestra en un build de depuración (no debe valer en release)
-   y verificar que una secundaria rechaza un permiso manipulado.
+   y comprobar que una secundaria rechaza un permiso manipulado.
 5. **Convivencia de versiones:** una principal 0.30 con una secundaria 0.31 (sin `subToken`) debe seguir
    funcionando; la secundaria lo acepta y lo advierte solo en el registro interno.
 
 ### Escritorio 0.31.0 (licencias)
 
-Las pruebas nuevas del sub-token y de la clave maestra pasan en Linux (123 pruebas). Falta repetirlas en
+Las pruebas nuevas del sub-token y de la clave maestra pasan en Linux (126 pruebas en total). Falta repetirlas en
 Windows y con la app GL real, como el resto del escritorio.
 
 ## Android

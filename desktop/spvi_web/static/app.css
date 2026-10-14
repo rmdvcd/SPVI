@@ -231,11 +231,34 @@ button.item-lista:hover, a.item-lista:hover { background: var(--surface-containe
 .tabla td.num, .tabla th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .paginacion { display: flex; align-items: center; justify-content: center; gap: var(--xs); padding: var(--xs); }
 
-/* Gráfico de barras (evolución diaria). */
+/* Gráficos (sin líneas de rejilla): barras, dona y área. */
 .barras { display: flex; align-items: flex-end; gap: 3px; height: 180px; padding-top: var(--xs); }
-.barras .barra { flex: 1; background: var(--chart-1); border-radius: 4px 4px 0 0; min-height: 2px; opacity: .85; }
+.barras .barra { flex: 1; background: var(--chart-1); border-radius: 4px 4px 0 0; min-height: 2px; opacity: .85;
+  transform-origin: bottom; animation: crecer .45s ease both; transition: opacity .15s ease; }
 .barras .barra:hover { opacity: 1; }
 .ejes { display: flex; justify-content: space-between; font-size: 12px; color: var(--on-surface-variant); }
+.area { height: 180px; padding-top: var(--xs); }
+.area svg { width: 100%; height: 100%; display: block; }
+.dona { display: flex; align-items: center; gap: var(--lg); flex-wrap: wrap; justify-content: center; }
+.dona svg { width: 168px; height: 168px; flex: none; animation: girar .5s ease both; }
+.leyenda { display: flex; flex-direction: column; gap: var(--xs); flex: 1; min-width: 0; }
+.leyenda .punto { width: 12px; height: 12px; }
+@keyframes crecer { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes girar { from { transform: rotate(-90deg) scale(.85); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Movimiento: transiciones suaves, respetando «reducir movimiento». */
+.btn, .icon-btn, .item-lista, .articulo, button.card, .chip, .pestanas button, .drawer a.item, .fab {
+  transition: background-color .15s ease, color .15s ease, box-shadow .15s ease, transform .15s ease, opacity .15s ease; }
+.btn:hover:not(:disabled), .icon-btn:hover:not(:disabled), .fab:hover { transform: translateY(-1px); }
+.btn:active:not(:disabled), .icon-btn:active:not(:disabled), .fab:active, .articulo:active, .chip:active { transform: translateY(0) scale(.98); }
+.vista { animation: aparecer .22s ease both; }
+dialog[open] { animation: aparecer .18s ease both; }
+dialog[open]::backdrop { animation: aparecer .18s ease both; }
+.snackbar { animation: aparecer .2s ease both; }
+@keyframes aparecer { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+}
 
 /* Aviso de licencia (banner superior de Inicio). */
 .banner { display: flex; align-items: center; gap: var(--md); padding: var(--md); border-radius: var(--r-lg); background: var(--primary-container);
@@ -256,7 +279,7 @@ dialog .dlg-pie { display: flex; justify-content: flex-end; gap: var(--xs); padd
 dialog .dlg-error { color: var(--error); font-weight: 500; }
 dialog .dlg-error:empty { display: none; }
 .qr { width: 280px; height: 280px; max-width: 100%; image-rendering: pixelated; background: #FFFFFF; padding: var(--xs); border-radius: var(--r-md); align-self: center; }
-.codigo { font-family: 'Roboto Mono', ui-monospace, Consolas, monospace; font-size: 22px; letter-spacing: 2px; text-align: center; }
+.codigo { font-family: ui-monospace, Consolas, 'Courier New', monospace; font-size: 22px; letter-spacing: 2px; text-align: center; }
 
 /* Mensajes breves (Snackbar). */
 .snackbar { position: fixed; left: 50%; bottom: var(--lg); transform: translateX(-50%); background: var(--inverse-surface); color: var(--inverse-on-surface);
