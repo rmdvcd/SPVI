@@ -1,10 +1,15 @@
 # Verificación de la principal web con OpenCode CLI
 
-Estado 0.31.0 + licencias + mejoras del informe móvil: las 129 pruebas Python y la autoprueba pasan en Linux,
-y la interfaz se recorrió en un navegador sin pantalla (con una prueba de humo que verifica las secciones
-nuevas: barra de período en Inicio, fila de inventario con costo, casillas y barra de selección en Registros,
-Ayuda y Soporte, y el fundido entre secciones). **Falta todo lo propio de Windows** (icono de notificación,
-inicio con Windows, `.exe`) y las pruebas con Android y GL reales. No usar datos reales como primera prueba.
+Estado 0.31.0 + licencias + mejoras del informe móvil: las 129 pruebas Python y la autoprueba pasan en Linux
+(y en el runner Windows del PR #14), y la interfaz se recorrió con una prueba de humo que verifica las
+secciones nuevas (barra de período en Inicio, fila de inventario con costo, casillas y barra de selección en
+Registros, Ayuda y Soporte, y el fundido entre secciones). **Falta lo que solo se ve en la PC del dueño:**
+la interfaz en un navegador real, el icono junto al reloj, el inicio con Windows y las pruebas con Android
+y GL reales. No usar datos reales como primera prueba.
+
+**Comprobado en el runner Windows del PR #14** (workflow `Escritorio Windows`, 1 m 33 s): las 129 pruebas
+Python, el empaquetado con `build_windows.ps1` y `SPVI.exe --self-test`. El runner no tiene navegador ni
+escritorio, así que **no** verifica la interfaz, el icono junto al reloj ni el inicio con Windows.
 
 Pendiente específico de las mejoras del 14/10/2026, por comprobar en la PC del dueño:
 

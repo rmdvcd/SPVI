@@ -75,9 +75,12 @@ SMS, servicios ni otras funciones de Android. **No sustituye la aplicación móv
 - Reintentos HTTP idempotentes y validación anidada de DTO, relaciones y fotos.
 - PDF/Excel solo de inventario, servicios y turnos; imágenes/tarjetas de productos y servicios.
 
-**Estado real (0.31.0 + licencias):** 129 pruebas Python y la autoprueba pasan en Linux, y la interfaz se recorrió en
-un navegador sin pantalla (Chromium) a 1440×900, 800×1000 y 390×844, en claro y oscuro, sin errores. **No
-se ha probado en Windows** (icono de notificación, inicio con Windows, `.exe`) ni con teléfonos reales.
+**Estado real (0.31.0 + licencias + mejoras del informe móvil):** 129 pruebas Python y la autoprueba pasan en
+Linux, la interfaz se recorrió con una prueba de humo (jsdom) que verifica las secciones nuevas —barra de
+período en Inicio, fila de inventario con costo, casillas y barra de selección en Registros, Ayuda y Soporte
+y el fundido entre secciones— y el workflow de Windows del PR #14 empaquetó el `.exe` y pasó su autoprueba.
+**Falta lo que solo se ve en la PC del dueño:** la interfaz en un navegador real, el icono junto al reloj,
+el inicio con Windows y las pruebas con Android y GL reales. No usar datos reales como primera prueba.
 Sigue [VERIFICACION_PC.md](VERIFICACION_PC.md) antes de usar datos reales.
 
 **Pendiente de verificación, no de ejecución aquí:** pruebas Python/JavaScript, empaquetado Windows,
@@ -122,9 +125,12 @@ El script ejecuta las pruebas, genera un ejecutable único con Python y recursos
 `SPVI.exe --self-test` y escribe `SPVI.exe.sha256`. No requiere instalar Python
 para ejecutarlo. Se genera sin ventana de consola (`--noconsole`) y con el icono de SPVI.
 Debe vivir en una carpeta escribible. `--data-dir "D:\Mi negocio\SPVI"` permite elegir los datos.
-**El `.exe` no se ha generado ni probado en este entorno Linux.** El workflow manual
-`.github/workflows/desktop.yml` prepara un runner Windows y publica el artefacto
-`SPVI-Windows-portable` solo si pasa las pruebas. Aún no se ha ejecutado en GitHub con estos cambios.
+**El `.exe` no se ha generado ni probado en este entorno Linux.** El workflow
+`.github/workflows/desktop.yml` (en cada pull request que toque `desktop/`) corre en un runner
+Windows: ejecuta las pruebas, empaqueta el ejecutable, lanza `SPVI.exe --self-test` y publica el
+artefacto `SPVI-Windows-portable`. **Ya se ejecutó con estos cambios y pasó** (PR #14, 1 m 33 s):
+129 pruebas, ejecutable generado y autoprueba verde. Lo que el runner **no** puede comprobar es la
+interfaz en un navegador real, el icono junto al reloj y el inicio con Windows.
 `--self-test` comprueba recursos, PDF/XLSX/PNG y respaldo sin abrir el navegador ni tocar datos reales.
 Los resultados de empaquetado/autoprueba de fases anteriores no verifican el código actual.
 

@@ -39,8 +39,10 @@ sincronización**, así que las apps móviles no se modifican.
 **Pruebas:** 129 pruebas Python (`desktop/tests/`), con nuevas regresiones para `dashboard` por período,
 `report('ventas')`, la selección por `ids` en turnos y ventas, y `ledger` con los identificadores del
 filtro. La interfaz se verificó con una prueba de humo temporal (jsdom, no incluida en el repositorio) que
-recorre Inicio, Registros, Inventario, Ayuda y Soporte y comprueba 31 comportamientos. **No se ha probado
-en Windows ni con el `.exe`.**
+recorre Inicio, Registros, Inventario, Ayuda y Soporte y comprueba 31 comportamientos. El workflow
+`Escritorio Windows` del PR #14 corrió en un runner Windows y pasó: 129 pruebas, `.exe` empaquetado y
+autoprueba verde. **Sin interfaz en navegador real, sin icono junto al reloj y sin inicio con Windows**:
+eso solo se puede comprobar en la PC del dueño.
 
 ## 2026-10-14 — Android 0.31.0: diez cambios de la app móvil (encargo del propietario)
 

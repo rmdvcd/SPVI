@@ -31,8 +31,10 @@ Implementadas en `desktop/` las cinco mejoras de `desktop/INFORME_FEEDBACK_MOVIL
 informe): selector de período en Inicio junto al turno, fila de inventario con costo y venta
 diferenciados, casillas y barra de selección en Registros con exportación de lo seleccionado, Ayuda y
 Soporte, y fundido entre secciones con ventanas desde el centro-abajo. 129 pruebas Python y una prueba
-de humo de la interfaz (jsdom) en verde. **Pendiente:** comprobar en Windows/EXE lo que solo se puede
-ver allí (barra fija al desplazar, animaciones, exportación de la selección con muchas ventas).
+de humo de la interfaz (jsdom) en verde, y el workflow de Windows del PR #14 empaquetó el `.exe` con su
+autoprueba en verde. **Pendiente:** comprobar en la PC del dueño lo que el runner no ve (barra fija al
+desplazar, animaciones, exportación de la selección con muchas ventas, icono junto al reloj e inicio con
+Windows).
 
 **GL:** falta publicar en GL `security/SpviPc16.kt` (port de `pc_code.py`), los campos opcionales
 `plataforma`, `transaccion` y `recupera` de `SolicitudSpviV2` y su validación en `Spvi23`, el método
