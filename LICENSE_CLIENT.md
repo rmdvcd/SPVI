@@ -89,6 +89,7 @@ Nunca se indica qué comprobación falló.
 | `ClockTampered` | No | El reloj retrocedió más de **2 h** respecto a la última hora vista |
 
 - **Vencimiento:** lo fija GL desde la emisión (+30 / +180 / +365 días).
+- **Licencia larga (envelope v1):** el teléfono **no** la activa desde la 0.23.0 (solo la re-verifica si quedó instalada en un equipo antiguo); el escritorio y la app iOS, que son clientes nuevos, sí la aceptan.
 - **Apps secundarias:** la secundaria recibe el estado de la licencia de la principal **con el permiso firmado de su ranura** (§11). Si el permiso no la autoriza (firma, `deviceId`, ranura o vencimiento), su licencia queda `Revoked` y no puede vender; si la principal es anterior y no manda permiso, la licencia se acepta como antes.
 - **Evaluación** (`LicenseManager.evaluate`), en este orden: reloj → licencia guardada, **re-verificada criptográficamente** → periodo de prueba. No existe un indicador «licenciado».
 - **Re-evaluación:** al arrancar, al volver a primer plano y mientras la app está abierta (`VigilarLicencia`: justo al vencer o cada ≤ 15 min).
@@ -254,7 +255,7 @@ P-256 (punto comprimido), ECDH, HKDF-SHA256, AES-256-GCM, ECDSA DER y crudo, y l
 
 | Pieza | Archivo | Qué hace |
 |---|---|---|
-| Identidad y flujo | `lib/src/licensing/cliente.dart` | `ClienteLicencia`: estado (marca de agua del reloj → licencia re-verificada → prueba de 7 días), activación (`SPVI2:` corta, envelope v1 larga, maestra solo en depuración) con limitador de intentos (5 en 10 min), solicitud `SPVIR1`, sub-tokens, revocadas y renovación |
+| Identidad y flujo | `lib/src/licensing/cliente.dart` | `ClienteLicencia`: estado (marca de agua del reloj → licencia re-verificada → prueba de 7 días), activación (maestra solo en depuración, `SPVI2:` corta y envelope v1 larga: es un cliente nuevo, sin licencias heredadas) con limitador de intentos (5 en 10 min), solicitud `SPVIR1`, sub-tokens, revocadas y renovación |
 | Sub-tokens | `subtokens.dart` | Emisión y verificación del permiso de la §12 |
 | Envelope v1 | `envelope.dart` | `sellar`, `abrir`, `verificarFirma`, `firmaDeLaEfimera`, `extraerEnvelope/Id`; AAD canónica y heredada |
 | Claves | `trust.dart` | Mismo par de GL fijado y sus huellas (`Trust.comprobarFijadas`); `ModoDesarrollo.esDebug` = `kDebugMode` |

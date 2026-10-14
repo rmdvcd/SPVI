@@ -35,7 +35,7 @@ class VerificadorPermisoSecundaria @Inject constructor(
         val datos = runCatching {
             cu.spvi.licencia.secondary.SubToken.verificar(
                 token = token,
-                firmaSpki = B64.de(firma),
+                firmaSpki = B64.dec(firma),
                 dispositivoEsperado = deviceIds.deviceId,
                 ahora = clock.now(),
                 cuotaMaxima = GlContract.SECUNDARIAS_MAX,

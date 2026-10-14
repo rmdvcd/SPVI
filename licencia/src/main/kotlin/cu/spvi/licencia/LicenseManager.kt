@@ -27,8 +27,6 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import cu.spvi.licencia.contract.CodigoLicencia
 import cu.spvi.licencia.contract.GlContract
-import cu.spvi.licencia.contract.SolicitudEnvelope
-import cu.spvi.licencia.contract.APP_NAME
 
 /** id local de la licencia que instala la clave maestra de desarrollo (no viene de GL). */
 const val ID_MAESTRA_LICENCIA: String = "master-license-local"
@@ -254,16 +252,17 @@ class LicenseManager(
     suspend fun licenciaRenovable(): String? = evaluate().license?.takeIf { it.venceEn != null }?.id
 
     /**
-     * Procesa el mensaje de licencia pegado o compartido. Acepta, en este orden:
+     * Procesa el mensaje de licencia pegado, compartido o leído de un QR. Acepta, en este orden:
      *  1. la **clave maestra de desarrollo** (`GLMK-PERM-MAXS-9999`), solo en builds `DEBUG` (mitigación 1);
-     *  2. la licencia corta cifrada `SPVI2:…` (el formato de SPVI ≥ 0.23.1);
-     *  3. la licencia **larga** (`envelope v1` + línea `ID:`), el flujo común del contrato de GL.
-     * Cualquier otra cosa: [ActivationResult.NotFound] o [ActivationResult.Rejected], nunca una excepción.
+     *  2. la licencia corta cifrada `SPVI2:…` (el formato de SPVI ≥ 0.23.1); el texto de arriba es informativo.
+     * Una licencia **larga** (envelope v1) ya no se activa: [ActivationResult.NotFound] (decisión de la 0.23.0; si
+     * estaba instalada, se sigue re-verificando en cada evaluación, ver [verifyStored]). Cualquier otra cosa:
+     * [ActivationResult.NotFound] o [ActivationResult.Rejected], nunca una excepción.
      */
     suspend fun activate(message: String): ActivationResult {
         if (esClaveMaestra(message)) return activarMaestra()
-        LicenciaCorta.extraer(message)?.let { return activarCorta(it) }
-        return activarLarga(message)
+        val corta = LicenciaCorta.extraer(message) ?: return ActivationResult.NotFound
+        return activarCorta(corta)
     }
 
     /** ¿El texto es la clave maestra de desarrollo? Solo en builds `DEBUG` (en release siempre `false`). */
@@ -298,24 +297,6 @@ class LicenseManager(
             LicenseValidator.evaluate(payload, payload.id, deviceId, deviceKey.publicSpki(), clock.now())
         }.getOrNull() ?: return ActivationResult.Rejected
         return instalar(payload, state, envelopeJson = codigo.texto, licenseId = payload.id)
-    }
-
-    /**
-     * Licencia **larga** (envelope v1). El `ID:` viaja fuera del sobre porque la AAD del GCM lo necesita antes de
-     * descifrar. Se exige que sea de esta app y de este dispositivo, y no se acepta si ya venció.
-     */
-    private suspend fun activarLarga(message: String): ActivationResult {
-        val json = SolicitudEnvelope.extraerEnvelope(message) ?: return ActivationResult.NotFound
-        val env = runCatching { GlJson.envelopeDecoder.decodeFromString(Envelope.serializer(), json) }.getOrNull()
-            ?: return ActivationResult.Rejected
-        val licenseId = SolicitudEnvelope.extraerId(message) ?: return ActivationResult.NotFound
-        val payload = runCatching { openPayload(env, licenseId) }.getOrNull() ?: return ActivationResult.Rejected
-        // `appName` es obligatorio en el flujo v1 y tiene que ser SPVI (acepta «SPVI» / «spvi»).
-        if (!APP_NAME.equals(payload.appName, ignoreCase = true)) return ActivationResult.Rejected
-        val state = runCatching {
-            LicenseValidator.evaluate(payload, licenseId, deviceId, deviceKey.publicSpki(), clock.now())
-        }.getOrNull() ?: return ActivationResult.Rejected
-        return instalar(payload, state, envelopeJson = json, licenseId = licenseId)
     }
 
     /**

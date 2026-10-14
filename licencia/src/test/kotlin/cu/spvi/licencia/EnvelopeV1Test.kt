@@ -101,26 +101,45 @@ class EnvelopeV1Test {
     }
 
     // ---------- Licencia ----------
+    // Decisión de la 0.23.0 (regla del dueño): SPVI **no activa** la licencia larga; solo la corta `SPVI2:`. Una
+    // larga instalada por una versión anterior se sigue **re-verificando** entera en cada evaluación (firma de GL,
+    // descifrado con la clave del equipo, `deviceId`, vigencia y el código de 16 caracteres del contrato).
 
     private fun peticion(m: LicenseManager) = gl.openRequest(m.buildRequest(
         SolicitudInput("Carlos", "Fernández Ruiz", "89051212345", "5234 5678", TipoLicencia.MENSUAL, Via.WHATSAPP, secundarias = 2),
     ).codigo)
 
-    @Test fun activarUnaLicenciaLargaDeGl() = runBlocking {
+    @Test fun elMensajeDeLicenciaLargaYaNoSeActiva() = runBlocking {
         val m = manager()
         val emitida = gl.issueLarga(peticion(m), emitidaEn = t0)
         // El mensaje trae las 3 líneas del contrato: cobro, `ID:` y el envelope.
         assertTrue(emitida.message.contains("\nID: ${emitida.id}\n"))
-        val r = m.activate(emitida.message)
-        assertTrue(r is ActivationResult.Accepted)
-        val estado = (r as ActivationResult.Accepted).state
+        assertEquals(ActivationResult.NotFound, m.activate(emitida.message))
+        assertEquals(ActivationResult.NotFound, m.activate(emitida.codigo))
+        assertNull(store.lic)
+    }
+
+    @Test fun laLicenciaLargaInstaladaSeSigueReverificando() = runBlocking {
+        val m = manager()
+        val emitida = gl.issueLarga(peticion(m), emitidaEn = t0)
+        store.instalarLarga(emitida)
+        val estado = m.state()
         assertTrue(estado is LicenseState.Active)
         assertEquals(TipoLicencia.MENSUAL, (estado as LicenseState.Active).tipo)
         assertEquals(2, estado.secundarias)
         assertEquals(emitida.id, estado.id)
-        // Se guarda el envelope (no el mensaje entero) y se re-verifica al evaluar.
+        // Se guarda el envelope (no el mensaje entero) y se re-verifica en cada evaluación.
         assertTrue(store.lic!!.envelopeJson.startsWith("{\"v\":1"))
         assertTrue(m.evaluate().state.unlocked)
+    }
+
+    @Test fun laAadHeredadaDeLasLicenciasAntiguasSeSigueAceptando() = runBlocking {
+        val m = manager()
+        val antigua = gl.issueLarga(peticion(m), emitidaEn = t0, aadHeredada = true)
+        store.instalarLarga(antigua)
+        // Emitida antes de la canonicalización con longitud prefijada (mitigación 8): al abrir se reintenta con la AAD
+        // heredada, y solo con esa.
+        assertTrue(m.state() is LicenseState.Active)
     }
 
     @Test fun elCodigoDe16CaracteresDelFlujoV1SeComprueba() = runBlocking {
@@ -130,62 +149,48 @@ class EnvelopeV1Test {
         // El payload lleva `licenciaObtenida` y `codigoCorto` idénticos y con la forma del contrato.
         assertEquals(bueno.larga!!.licenciaObtenida, bueno.larga!!.codigoCorto)
         assertTrue(CodigoLicencia.valido(bueno.larga!!.licenciaObtenida!!))
-        assertTrue(m.activate(bueno.message) is ActivationResult.Accepted)
+        store.instalarLarga(bueno)
+        assertTrue(m.state() is LicenseState.Active)
+
+        // Con un código mal formado (15 caracteres) la licencia instalada se ignora: vuelve la prueba.
+        val otro = InMemoryStore()
+        otro.instalarLarga(gl.issueLarga(peticion(manager()), emitidaEn = t0, codigo = "4K7N-9X2M-B8PQ-3T5"))
+        val conMala = LicenseManager(otro, device, deviceId, gl.ecdh.public.encoded, listOf(gl.signing.public.encoded), clock)
+        assertTrue(conMala.state() is LicenseState.Trial)
     }
 
-    @Test fun unaLicenciaConCodigoMalFormadoSeRechaza() = runBlocking {
-        val m = manager()
-        val mala = gl.issueLarga(peticion(m), emitidaEn = t0, codigo = "4K7N-9X2M-B8PQ-3T5") // 15 caracteres
-        assertTrue(m.activate(mala.message) is ActivationResult.Rejected)
-        assertNull(store.lic)
-    }
-
-    @Test fun unaLicenciaDeOtraAppSeRechaza() = runBlocking {
+    @Test fun unaLicenciaLargaDeOtraAppSeIgnora() = runBlocking {
         val m = manager()
         val ajena = gl.issueLarga(peticion(m), emitidaEn = t0, appName = "GestorPro")
-        assertTrue(m.activate(ajena.message) is ActivationResult.Rejected)
-        assertNull(store.lic)
+        store.instalarLarga(ajena)
+        assertTrue(m.state() is LicenseState.Trial)
     }
 
-    @Test fun unaLicenciaLargaDeOtroTelefonoSeRechaza() = runBlocking {
-        // Otra instalación pide su licencia; este teléfono intenta activarla con el mensaje ajeno.
-        val otroStore = InMemoryStore()
+    @Test fun unaLicenciaLargaDeOtroTelefonoSeIgnora() = runBlocking {
+        // Otra instalación pide su licencia; este teléfono acaba con esa licencia instalada.
         val otroDevice = InMemoryDeviceKey()
-        val otro = LicenseManager(otroStore, otroDevice, "SPVI:1122334455667788", gl.ecdh.public.encoded, listOf(gl.signing.public.encoded), clock)
+        val otro = LicenseManager(InMemoryStore(), otroDevice, "SPVI:1122334455667788", gl.ecdh.public.encoded, listOf(gl.signing.public.encoded), clock)
         val ajena = gl.issueLarga(peticion(otro), emitidaEn = t0)
-        val mio = manager()
-        assertTrue(mio.activate(ajena.message) is ActivationResult.Rejected)
-        assertNull(store.lic)
+        store.instalarLarga(ajena)
+        assertTrue(manager().state() is LicenseState.Trial)
     }
 
-    @Test fun laAadHeredadaDeLasLicenciasAntiguasSeSigueAceptando() = runBlocking {
-        val m = manager()
-        val antigua = gl.issueLarga(peticion(m), emitidaEn = t0, aadHeredada = true)
-        assertTrue(m.activate(antigua.message) is ActivationResult.Accepted)
-    }
-
-    @Test fun unEnvelopeSinLineaIdNoSeActiva() = runBlocking {
+    @Test fun unEnvelopeAlteradoSeIgnora() = runBlocking {
         val m = manager()
         val emitida = gl.issueLarga(peticion(m), emitidaEn = t0)
-        val soloEnvelope = emitida.message.lines().last()
-        assertEquals(ActivationResult.NotFound, m.activate(soloEnvelope))
-        assertNull(store.lic)
+        store.lic = StoredLicense(
+            emitida.codigo.replaceFirst("\"tag\":\"", "\"tag\":\"A"), emitida.id,
+            emitida.larga!!.emitidaEn, emitida.larga!!.tipo, emitida.larga!!.venceEn, deviceId,
+        )
+        assertTrue(m.state() is LicenseState.Trial)
     }
 
-    @Test fun unEnvelopeAlteradoSeRechaza() = runBlocking {
+    @Test fun laLicenciaLargaInstaladaVenceConSuFecha() = runBlocking {
         val m = manager()
-        val emitida = gl.issueLarga(peticion(m), emitidaEn = t0)
-        val alterado = emitida.message.replaceFirst("\"tag\":\"", "\"tag\":\"A")
-        assertTrue(m.activate(alterado) is ActivationResult.Rejected)
-    }
-
-    @Test fun laLicenciaLargaVencidaNoSeActiva() = runBlocking {
-        val m = manager()
-        val emitida = gl.issueLarga(peticion(m), emitidaEn = t0)
+        store.instalarLarga(gl.issueLarga(peticion(m), emitidaEn = t0))
         clock.t = t0.plus(java.time.Duration.ofDays(31))
-        val r = m.activate(emitida.message)
-        assertTrue(r is ActivationResult.Accepted)
-        // Se instala, pero ya está vencida: SPVI la usa como licencia vencida (permite renovar), no como activa.
-        assertTrue((r as ActivationResult.Accepted).state is LicenseState.Expired)
+        // Vencida: SPVI la conoce (permite renovar) pero no deja trabajar.
+        assertTrue(m.state() is LicenseState.Expired)
+        assertFalse(m.evaluate().state.unlocked)
     }
 }

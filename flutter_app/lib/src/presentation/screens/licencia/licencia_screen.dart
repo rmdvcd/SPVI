@@ -234,8 +234,7 @@ class _LicenciaScreenState extends ConsumerState<LicenciaScreen> {
             const Text('Activar licencia', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             const Text(
-              'Pega el mensaje completo del desarrollador (empieza por «Licencia SPVI» e incluye el código SPVI2:). '
-              'También se acepta la licencia larga de versiones anteriores.',
+              'Pega el mensaje completo del desarrollador (empieza por «Licencia SPVI» e incluye el código SPVI2:).',
               style: TextStyle(fontSize: 13, color: CupertinoColors.secondaryLabel),
             ),
             const SizedBox(height: 10),
