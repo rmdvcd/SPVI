@@ -152,7 +152,7 @@ class MigrarTest {
     // ---------- 0.31.0 (P6): migración por QR ----------
 
     @Test fun elCodigoVaYVieneConLosMismosDatos() {
-        val c = CodigoMigracion(RolMigracion.EMISOR, "192.168.1.20", 45123, "a1b2c3d4e5f60718", "SPVI:7F3A")
+        val c = CodigoMigracion(RolMigracion.EMISOR, "192.168.1.20", 45123, "a1b2c3d4e5f60718a1b2c3d4e5f60718", "SPVI:7F3A")
         val texto = c.texto()
         assertTrue(texto.startsWith(CodigoMigracion.PREFIJO))
         assertEquals(c, CodigoMigracion.parsear(texto))
@@ -203,7 +203,7 @@ class MigrarTest {
     @Test fun elReceptorRechazaUnCodigoQueNoEsDeEmisor() = runTest {
         val vm = vm()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
-        vm.empezarReceptor(CodigoMigracion(RolMigracion.RECEPTOR, "192.168.1.20", 45123, "a1b2c3d4e5f60718"))
+        vm.empezarReceptor(CodigoMigracion(RolMigracion.RECEPTOR, "192.168.1.20", 45123, "a1b2c3d4e5f60718a1b2c3d4e5f60718"))
         assertEquals(TextosMigrar.QR_NO_EMISOR, vm.state.value.qr.error)
         assertFalse(vm.state.value.qr.trabajando)
     }
