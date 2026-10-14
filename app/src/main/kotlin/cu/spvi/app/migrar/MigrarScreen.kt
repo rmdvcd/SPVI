@@ -71,6 +71,7 @@ import cu.spvi.designsystem.theme.SpviTheme
 import cu.spvi.designsystem.token.SpviSpacing
 import androidx.fragment.app.FragmentActivity
 import cu.spvi.licencia.contract.Via
+import kotlinx.coroutines.launch
 
 object MigrarTags {
     const val QR = "migrar.qr"
@@ -161,6 +162,7 @@ fun MigrarScreen(onBack: () -> Unit, onRespaldoCompleto: () -> Unit, viewModel: 
             onCancelarBorrado = viewModel::cancelarBorrado,
         ),
         snackbar = snackbar,
+        autorizar = autorizar,
     )
 }
 
@@ -170,6 +172,8 @@ fun MigrarContent(
     onBack: () -> Unit,
     acciones: AccionesMigrar,
     snackbar: SnackbarHostState = remember { SnackbarHostState() },
+    /** 0.31.0 (P6): confirma la identidad (clave o biometría) antes de abrir el intercambio por QR. */
+    autorizar: (() -> Unit) -> Unit = {},
 ) {
     val f = state.form
     Scaffold(
