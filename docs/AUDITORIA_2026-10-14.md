@@ -300,8 +300,14 @@ Tras entregar este informe, el dueño pidió «aplica todas las correcciones pos
 ### Verificación
 
 - Escritorio: `python -m unittest discover` → **130 tests OK** (incluye el nuevo de throttling).
-- Kotlin/Dart: **sin compilación posible en este entorno** (no hay JDK, Gradle, ni SDK de Flutter). Los cambios
-  JVM quedan verificados por el CI de la rama (`spviTests` + compilación de instrumentados); hasta verlo en
-  verde, las correcciones de Android deben tratarse como «aplicadas, pendientes de CI».
+- Kotlin: **sin compilación posible en este entorno** (no hay JDK/Gradle), pero verificado en el CI de la rama:
+  corrida `38651772280` en verde — tests JVM (con el nuevo `CanalMigracionTest` y los tests actualizados),
+  compilación de instrumentados, lint, release R8 (con splits), permisos y API mínima. La primera corrida
+  solo falló por un fixture de test con la clave QR antigua de 16 caracteres (corregido en el acto).
+  El trabajo nuevo `instrumentados` (emulador) no corre en push: queda armado para los lunes y a mano desde
+  la interfaz de GitHub (desde este entorno no se pudo disparar: el token no tiene permiso de dispatch).
+- Dart: sin SDK de Flutter en este entorno ni en CI; el cambio de datos de demostración queda sin ejecutar.
+  Es pequeño y va acompañado de su test actualizado, pero debe confirmarse con `flutter test` en un Mac/PC
+  con Flutter antes de publicar la app iOS.
 - Nota de proceso: durante la aplicación se detectaron y repararon dos corrupciones por ediciones en
   paralelo al mismo archivo (`app.py`, `VentaScreen.kt`): colas duplicadas, ya eliminadas y re-verificadas.
