@@ -37,7 +37,11 @@ class TurnoPersistenciaTest {
         // P29: v4 (servicios + precio de venta de insumos + clase en detalle_venta) con migración explícita 3→4.
         // P38: v5 (Principal/Secundaria: tabla empleado + uuid/empleadoId/sincronizado) con migración explícita 4→5.
         // 0.20.0: v6 (empleado: tarjetaId, telefonoId, cierreSolicitadoEn) con migración explícita 5→6.
-        assertEquals(11, SpviDatabase.VERSION)
+        // 0.31.0 (mitigación 7): v12 (empleado: device) con migración 11→12.
+        assertEquals(12, SpviDatabase.VERSION)
+        assertEquals(11, SpviDatabase.MIGRACION_11_12.startVersion)
+        assertEquals(12, SpviDatabase.MIGRACION_11_12.endVersion)
+        assertTrue(SpviDatabase.SQL_11_12.all { it.startsWith("ALTER TABLE `empleado` ADD COLUMN") })
         // 0.27.0 (N2): v10 = clientes fijos (tabla nueva) y la marca en `transaccion`, con migración 9→10.
         assertEquals(9, SpviDatabase.MIGRACION_9_10.startVersion)
         assertEquals(10, SpviDatabase.MIGRACION_9_10.endVersion)

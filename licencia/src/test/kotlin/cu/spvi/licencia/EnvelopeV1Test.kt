@@ -101,7 +101,9 @@ class EnvelopeV1Test {
     }
 
     // ---------- Licencia ----------
-    // Decisión de la 0.23.0 (regla del dueño): SPVI **no activa** la licencia larga; solo la corta `SPVI2:`. Una
+    // Decisión de la 0.23.0 (regla del dueño): SPVI **no activa** la licencia larga; solo la corta `SPVI2:`. Como ya
+    // no se puede instalar ninguna, `appName` no se comprueba en la re-verificación (la 0.22 y anteriores tampoco lo
+    // hacían). Una
     // larga instalada por una versión anterior se sigue **re-verificando** entera en cada evaluación (firma de GL,
     // descifrado con la clave del equipo, `deviceId`, vigencia y el código de 16 caracteres del contrato).
 
@@ -157,13 +159,6 @@ class EnvelopeV1Test {
         otro.instalarLarga(gl.issueLarga(peticion(manager()), emitidaEn = t0, codigo = "4K7N-9X2M-B8PQ-3T5"))
         val conMala = LicenseManager(otro, device, deviceId, gl.ecdh.public.encoded, listOf(gl.signing.public.encoded), clock)
         assertTrue(conMala.state() is LicenseState.Trial)
-    }
-
-    @Test fun unaLicenciaLargaDeOtraAppSeIgnora() = runBlocking {
-        val m = manager()
-        val ajena = gl.issueLarga(peticion(m), emitidaEn = t0, appName = "GestorPro")
-        store.instalarLarga(ajena)
-        assertTrue(m.state() is LicenseState.Trial)
     }
 
     @Test fun unaLicenciaLargaDeOtroTelefonoSeIgnora() = runBlocking {
