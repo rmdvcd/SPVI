@@ -90,8 +90,14 @@ bloqueados). Falta que el CI y la PC del propietario lo verifiquen.
 10. **Animaciones**: deslizar = **desplazamiento lateral** hacia la ventana de destino; barra de
     navegación = **fundido**; ventanas y diálogos = **suben desde el centro de abajo**.
 
-**Pendiente de verificación (igual que el resto):** `./gradlew spviTests`, capturas Roborazzi, APK en un
-teléfono y la migración real entre dos teléfonos (emisor + receptor en la misma wifi).
+**Verificado por el CI del repositorio** (los cinco trabajos en verde): `Tests JVM y compilación de
+instrumentados`, `Lint`, `Release (R8) y APK debug`, `API mínima 26` y `Permisos del manifiesto
+fusionado`. Durante el ajuste el CI encontró cuatro imports que faltaban, el parámetro `autorizar`
+que no llegaba a `MigrarContent`, el icono del escáner (su alias público es `SpviIcons.Escanear`),
+un fake sin el método nuevo y tres tests que dependían del orden del recorrido; todo corregido.
+
+**Pendiente de verificación (igual que el resto):** capturas Roborazzi, APK en un teléfono y la
+migración real entre dos teléfonos (emisor + receptor en la misma wifi).
 
 **Capturas Roborazzi:** hay que **regenerarlas todas** (`./gradlew :app:recordRoborazziDebug`): cambia la
 interfaz de Inicio, Inventario, Registros, Licencia, Ajustes, Ayuda, Soporte y las animaciones. Además
