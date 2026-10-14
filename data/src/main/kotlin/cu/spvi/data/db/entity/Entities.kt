@@ -345,4 +345,10 @@ data class EmpleadoEntity(
     val aperturaSolicitadaEn: Long? = null,
     /** v9: versionCode de la app secundaria (lo envía al sincronizar; NULL = 0.24 o anterior / aún sin sincronizar). */
     val versionCode: Int? = null,
+    /**
+     * v12 (0.31.0, mitigación 7): `deviceId` (`SPVI:…`) de la app secundaria de este empleado. Lo manda al vincularse y
+     * en cada saludo; la principal lo necesita para firmarle el sub-token de su ranura. NULL = todavía no se conoce
+     * (app anterior a la 0.31.0 o secundaria que no lo ha mandado).
+     */
+    val device: String? = null,
 )

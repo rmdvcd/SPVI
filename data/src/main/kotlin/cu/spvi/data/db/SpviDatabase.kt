@@ -70,7 +70,7 @@ abstract class SpviDatabase : RoomDatabase() {
          * v3 (P17): esquema consolidado, sin `tasa_cambio` ni `caducidad_codigo`. Es la base de las migraciones
          * futuras: cada versión nueva añade una `Migration(3, 4)`… explícita (regla: nunca borrar datos de usuarios).
          */
-        const val VERSION = 11
+        const val VERSION = 12
         const val NOMBRE = "spvi.db"
 
         /**
@@ -233,6 +233,21 @@ abstract class SpviDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * v12 (0.31.0, mitigación 7): `empleado.device` = `deviceId` de la app secundaria vinculada. Solo añade una
+         * columna a NULL: las secundarias anteriores quedan sin identificar hasta que vuelvan a saludar (y entonces la
+         * principal les firma su sub-token). El esquema exportado (12.json) lo genera Room al compilar.
+         */
+        val MIGRACION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                SQL_11_12.forEach(db::execSQL)
+            }
+        }
+
+        internal val SQL_11_12 = listOf(
+            "ALTER TABLE `empleado` ADD COLUMN `device` TEXT",
+        )
+
         internal val SQL_10_11 = listOf(
             "CREATE TABLE IF NOT EXISTS `producto_nuevo` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `categoria` TEXT NOT NULL, " +
                 "`nombre` TEXT NOT NULL, `descripcion` TEXT, `fotoUri` TEXT, `fechaCaducidad` INTEGER, " +
@@ -261,7 +276,7 @@ abstract class SpviDatabase : RoomDatabase() {
             System.loadLibrary("sqlcipher")
             return Room.databaseBuilder(context, SpviDatabase::class.java, NOMBRE)
                 .openHelperFactory(SupportOpenHelperFactory(passphrase))
-                .addMigrations(MIGRACION_3_4, MIGRACION_4_5, MIGRACION_5_6, MIGRACION_6_7, MIGRACION_7_8, MIGRACION_8_9, MIGRACION_9_10, MIGRACION_10_11)
+                .addMigrations(MIGRACION_3_4, MIGRACION_4_5, MIGRACION_5_6, MIGRACION_6_7, MIGRACION_7_8, MIGRACION_8_9, MIGRACION_9_10, MIGRACION_10_11, MIGRACION_11_12)
                 .fallbackToDestructiveMigrationFrom(*DESARROLLO)
                 .build()
         }

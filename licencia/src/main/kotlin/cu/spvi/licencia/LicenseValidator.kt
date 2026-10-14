@@ -1,5 +1,6 @@
 package cu.spvi.licencia
 
+import cu.spvi.licencia.contract.CodigoLicencia
 import cu.spvi.licencia.contract.EstadoLicencia
 import cu.spvi.licencia.contract.GlContract
 import cu.spvi.licencia.contract.LicensePayload
@@ -30,6 +31,11 @@ object LicenseValidator {
         // 0.21.0 (C4): campo opcional; fuera de rango = licencia mal formada.
         val secundarias = p.secundarias ?: GlContract.SECUNDARIAS_DEFECTO
         if (secundarias !in 0..GlContract.SECUNDARIAS_MAX) fail()
+        // 0.31.0: el código de 16 caracteres del flujo v1 (`SISTEMA_LICENCIAS_CLIENTES.md` §2.1 y §5.1): si viaja,
+        // tiene que ser del contrato, y `codigoCorto` tiene que ser idéntico a `licenciaObtenida`.
+        val codigo = p.licenciaObtenida ?: p.codigoCorto
+        if (codigo != null && !CodigoLicencia.valido(codigo)) fail()
+        if (p.licenciaObtenida != null && p.codigoCorto != null && p.licenciaObtenida != p.codigoCorto) fail()
         val perpetua = p.tipo == TipoLicencia.PERPETUA
 
         return when (p.estado) {

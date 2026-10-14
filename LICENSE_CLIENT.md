@@ -1,6 +1,6 @@
 # SPVI — Cliente de licencias (contrato GL v1 aplicado)
 
-Cómo cumple SPVI el contrato v1 del emisor offline **GL** (`CONTEXTO_LICENCIAS.md`) en la versión **0.14.1**, actualizado al formato de la **0.23.0**. Las decisiones y su justificación estaban en `DECISIONES_LICENCIA_SPVI.md` (v1.5) (documento de trabajo retirado en la 0.18.0; lo esencial está en este archivo); aquí se resume lo que está implementado.
+Cómo cumple SPVI el contrato v1 del emisor offline **GL** (`CONTEXTO_LICENCIAS.md`) en la versión **0.14.1**, actualizado al formato de la **0.23.0** y a las mitigaciones del sistema de licencias de GL (§11–§13, en curso: el escritorio va por la 0.31.0). Las decisiones y su justificación estaban en `DECISIONES_LICENCIA_SPVI.md` (v1.5) (documento de trabajo retirado en la 0.18.0; lo esencial está en este archivo); aquí se resume lo que está implementado.
 
 > **Este documento trata de la licencia de uso de la app**, no de la licencia del código fuente.
 
@@ -19,6 +19,9 @@ Cómo cumple SPVI el contrato v1 del emisor offline **GL** (`CONTEXTO_LICENCIAS.
 | Clave del dispositivo | `:data` `security/AndroidDeviceKey.kt` | Par P-256 persistente |
 | Persistencia | `:data` `licencia/DataStoreLicenseStore.kt`, `DeviceIdProvider.kt` | DataStore cifrado propio de SPVI |
 | UI | `:app` `licencia/`, `bloqueo/BloqueoGate.kt`, `root/RootViewModel.kt`, `migrar/` | Panel, bloqueo, re-evaluación, migración |
+| Clave maestra y sub-tokens | `licencia/.../ModoDesarrollo.kt`, `contract/CodigoLicencia.kt`, `contract/EnvelopeV1.kt`, `secondary/SubToken.kt` | Modo depuración de la clave maestra, código de 16 caracteres, envelope v1 (AAD canónica y heredada) y permiso firmado de las secundarias |
+| Sub-tokens en la app | `:data` `licencia/FirmanteLicenciaAndroid.kt`, `licencia/VerificadorPermisoSecundaria.kt`, `sync/{Protocolo,ClienteSync,ServidorSync}.kt` | Clave de firma de la principal, anotación del `deviceId` de cada secundaria y comprobación del permiso recibido |
+| App iOS | `flutter_app/lib/src/licensing/{crypto,envelope,codigo,licencia_corta,solicitud,subtokens,trust,cliente,almacen}.dart` | Mismo contrato con `pointycastle` (P-256, HKDF, AES-GCM, ECDSA) |
 
 ## 2. Solicitud (SPVI → GL) — 0.23.0
 
@@ -86,6 +89,8 @@ Nunca se indica qué comprobación falló.
 | `ClockTampered` | No | El reloj retrocedió más de **2 h** respecto a la última hora vista |
 
 - **Vencimiento:** lo fija GL desde la emisión (+30 / +180 / +365 días).
+- **Licencia larga (envelope v1):** el teléfono **no** la activa desde la 0.23.0 (solo la re-verifica si quedó instalada en un equipo antiguo); el escritorio y la app iOS, que son clientes nuevos, sí la aceptan.
+- **Apps secundarias:** la secundaria recibe el estado de la licencia de la principal **con el permiso firmado de su ranura** (§11). Si el permiso no la autoriza (firma, `deviceId`, ranura o vencimiento), su licencia queda `Revoked` y no puede vender; si la principal es anterior y no manda permiso, la licencia se acepta como antes.
 - **Evaluación** (`LicenseManager.evaluate`), en este orden: reloj → licencia guardada, **re-verificada criptográficamente** → periodo de prueba. No existe un indicador «licenciado».
 - **Re-evaluación:** al arrancar, al volver a primer plano y mientras la app está abierta (`VigilarLicencia`: justo al vencer o cada ≤ 15 min).
 - **Banner de Inicio:** «Periodo de prueba restante: N días»; Mensual en días; Semestral y Anual en meses (en el último mes, en días); Perpetua sin banner.
@@ -154,7 +159,13 @@ Después, el teléfono viejo queda bloqueado sin periodo de prueba, rechaza cual
 | `GoldenVectorTest` | `printRequest` genera una solicitud real para GL; `verifyRealLicense`: la larga real de GL ya no se activa, pero instalada sigue valiendo |
 | `LicenciaCortaTest` | Licencia `SPVI2`: formato, extracción, punto comprimido, rechazos, clon, Migrar, renovación, vector de Python |
 | `LicenseFlowTest`, `RuntimeVerificationTest`, `BannerTest`, `CasosBordeLicenciaTest` | Flujo completo con un GL simulado (`FakeGl`), formato de la solicitud, estados, reloj, bytes alterados, perpetua, migración |
+| `MasterKeyTest` | Clave maestra `GLMK-PERM-MAXS-9999`: perpetua con 10 secundarias en depuración; **nunca** en release; una licencia auténtica manda sobre ella |
+| `CodigoLicenciaTest` | Código de 16 caracteres `[0-9A-Z]` en 4 grupos: normalización, formato y rechazo de lo que no es del contrato |
+| `EnvelopeV1Test`, `CanonicalAadTest` | Envelope v1 (ECIES P-256 + HKDF `gl-req-v1`/`gl-lic-v1` + AES-256-GCM): AAD **canónica** con longitud prefijada al sellar, heredada `1\|alg\|…` solo al reabrir lo ya emitido, firma DER y transcript `epk‖iv‖ct‖tag` |
+| `SubTokenTest` | Permiso firmado de las secundarias: firma, dispositivo, ranura 1..permitidas, cuota ≤ 10, `PERPETUA`/vencimiento, separadores prohibidos y alteraciones |
 | `LicenciaInstrumentedTest` (`:data`) | Keystore real y DataStore cifrado |
+| `desktop/tests/test_licencias_gl.py`, `test_sync_server.py::test_la_secundaria_recibe_su_sub_token_firmado` | Claves fijadas, clave maestra solo con `SPVI_DESARROLLO=1`, código de PC de 16 dígitos, envelope v1 y sub-token entregado por la principal web |
+| `flutter_app/test/licencia_flujo_test.dart`, `licencia_gl_test.dart` | Flujo completo de la app iOS con un GL de prueba: activación `SPVI2`, licencia larga real de GL (AAD heredada), maestra solo en depuración, marca de agua del reloj, sub-tokens, revocadas y solicitud `SPVIR1` |
 | `LicenciaUiTest`, `FlujoLicenciaTest` (`:app`) | Panel y bloqueo → activar → Inicio |
 
 Prueba de extremo a extremo con la app GL real: generar una solicitud en SPVI, emitir la respuesta en GL, pegarla en Licencia → Activar y comprobar el estado. El documento detallado `PRUEBA_COMPATIBILIDAD_GL.md` se retiró en la 0.18.0.
@@ -192,3 +203,64 @@ código de otra instalación se rechaza («Código no válido para esta instalac
 compartido `K`. Quien extraiga la clave privada del equipo (guardada cifrada con DPAPI en `licencia.bin`)
 podría calcular `K` y acuñar códigos para **esa** instalación. Es la contrapartida de un código tecleable;
 el teléfono sigue usando `SPVI2` firmado.
+
+## 11. Clave maestra de desarrollo — solo en builds de depuración
+
+`GLMK-PERM-MAXS-9999` (mitigación 1 del contrato, Opción A) instala una licencia local **PERPETUA con 10 apps
+secundarias** sin pasar por GL. No viaja por WhatsApp: la escribe el desarrollador para trabajar. Vale **solo** en
+builds de depuración:
+
+| App | Qué la habilita |
+|---|---|
+| Android | `SpviApplication.onCreate` → `ModoDesarrollo.esDebug = BuildConfig.DEBUG`. En release es `false` y una licencia instalada con la maestra se descarta al evaluar |
+| Escritorio | `SPVI_DESARROLLO=1` (o `true`, `si`, `on`) en el entorno (`licensing/trust.py`); se lee en cada comprobación |
+| iOS | `kDebugMode` de Flutter (`licensing/trust.dart`) |
+
+El valor por defecto es `false` (**fail-closed**): si nadie lo activa —o si un día se olvida hacerlo— la maestra no
+funciona. El código se acepta con o sin guiones y no dice nada al usuario si no vale (`CodigoLicencia.esMaestra`;
+`MasterKeyTest` comprueba los dos caminos). Una licencia auténtica de GL siempre manda sobre la maestra.
+
+## 12. Sub-tokens de apps secundarias (mitigación 7)
+
+La cuota de apps secundarias deja de ser una auto-declaración y pasa a ser **un permiso firmado por la principal**.
+
+```
+<licenseId>|<deviceId de la secundaria>|<ranura>|<permitidas>|<venceEn ISO-8601 | PERPETUA>.<firma DER Base64>
+```
+
+- `ranura`: 1..`permitidas`; la principal la calcula por el puesto del empleado entre los activos.
+- `venceEn`: el de la licencia de la principal (`PERPETUA` = sin vencimiento).
+- Firma: ECDSA P-256/SHA-256 (DER) de la principal sobre el texto de la izquierda.
+
+| App | Emisión | Comprobación |
+|---|---|---|
+| Android | `FirmanteLicenciaAndroid` (Keystore, `PURPOSE_SIGN`, alias `spvi_licencia_firma_v1`; clave por software envuelta con el Keystore si el equipo no lo admite) vía `LicenseManager.emitirSubToken` | `VerificadorPermisoSecundaria` en cada sincronización; un permiso inválido deja la licencia `BLOQUEADA` |
+| Escritorio | `licensing/subtokens.py` con la clave ECDH de la instalación (`business.sub_token`) | `LicenseClient.verificar_subtoken` |
+| iOS | `ClienteLicencia.emitirSubToken` (misma clave P-256 del equipo) | `ClienteLicencia.verificarSubToken` |
+
+Camino de los datos: la secundaria manda su `deviceId` al vincularse y en cada saludo (`Vincular.device`, `Hola.device`);
+la principal lo guarda (columna `empleado.device`, esquema **v12** de Room, migración `MIGRACION_11_12`) y adjunta el
+permiso a la licencia que viaja en la instantánea (`LicenciaDto.subToken` + `firmaPub` + `ranura` + `permitidas`).
+Los cuatro campos son **opcionales**: una principal anterior no los manda y una secundaria anterior los ignora
+(convivencia de versiones).
+
+Reglas de rechazo (fail-closed, sin decirle al usuario qué falló): firma inválida, dispositivo distinto, ranura fuera de
+`1..permitidas`, cuota mayor que 10, vencido o campos del mensaje que contradicen al permiso firmado. Sin permiso, la
+secundaria acepta la licencia como antes (la principal es anterior).
+
+## 13. App iOS (Flutter)
+
+`flutter_app/` implementa el mismo contrato con `pointycastle` (Dart puro: sin plugins nativos ni Pods nuevos):
+P-256 (punto comprimido), ECDH, HKDF-SHA256, AES-256-GCM, ECDSA DER y crudo, y la AAD con longitud prefijada.
+
+| Pieza | Archivo | Qué hace |
+|---|---|---|
+| Identidad y flujo | `lib/src/licensing/cliente.dart` | `ClienteLicencia`: estado (marca de agua del reloj → licencia re-verificada → prueba de 7 días), activación (maestra solo en depuración, `SPVI2:` corta y envelope v1 larga: es un cliente nuevo, sin licencias heredadas) con limitador de intentos (5 en 10 min), solicitud `SPVIR1`, sub-tokens, revocadas y renovación |
+| Sub-tokens | `subtokens.dart` | Emisión y verificación del permiso de la §12 |
+| Envelope v1 | `envelope.dart` | `sellar`, `abrir`, `verificarFirma`, `firmaDeLaEfimera`, `extraerEnvelope/Id`; AAD canónica y heredada |
+| Claves | `trust.dart` | Mismo par de GL fijado y sus huellas (`Trust.comprobarFijadas`); `ModoDesarrollo.esDebug` = `kDebugMode` |
+| Almacén | `almacen.dart` | Documento JSON en `shared_preferences` (contiene la clave privada del equipo: lo protegen el sandbox de iOS y la protección de datos; no se añadió Keychain para no cambiar los Pods) |
+
+`codemagic.yaml` compila la app y ejecuta `flutter test` (sin red) en cada push; los tests
+(`test/licencia_gl_test.dart`, `test/licencia_flujo_test.dart`) usan un GL de prueba con claves propias y el material
+de `tools/licencia/` — **nunca** las claves privadas reales de GL.

@@ -63,10 +63,16 @@ data class DatosSecundaria(
 
 fun LicenciaDto.aDominio(): LicenciaPrincipal? {
     val c = LicenciaPrincipal.Clase.entries.firstOrNull { it.name == clase } ?: return null
-    return LicenciaPrincipal(c, TipoLicencia.entries.firstOrNull { it.name == tipo }, venceEn?.let(Instant::ofEpochMilli))
+    return LicenciaPrincipal(
+        c, TipoLicencia.entries.firstOrNull { it.name == tipo }, venceEn?.let(Instant::ofEpochMilli),
+        // 0.31.0 (mitigación 7): el permiso firmado viaja con la licencia (null en una principal anterior).
+        subToken = subToken, firmaPub = firmaPub, ranura = ranura, permitidas = permitidas,
+    )
 }
 
-fun LicenciaPrincipal.aDto(): LicenciaDto = LicenciaDto(clase.name, tipo?.name, venceEn?.toEpochMilli())
+fun LicenciaPrincipal.aDto(): LicenciaDto = LicenciaDto(
+    clase.name, tipo?.name, venceEn?.toEpochMilli(), subToken = subToken, firmaPub = firmaPub, ranura = ranura, permitidas = permitidas,
+)
 
 /** P37: configuración de vinculación de ESTE teléfono. */
 @Singleton

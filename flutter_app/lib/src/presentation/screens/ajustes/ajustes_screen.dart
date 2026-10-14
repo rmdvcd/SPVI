@@ -217,7 +217,15 @@ class AjustesScreen extends ConsumerWidget {
                   CupertinoListTile(
                     leading: const Icon(CupertinoIcons.shield_fill, color: SpviColors.navy),
                     title: const Text("Licencia SPVI"),
-                    additionalInfo: Text(licencia.tipo == TipoLicencia.activa ? "Activa" : "Prueba"),
+                    additionalInfo: Text(
+                      licencia.cargando
+                          ? "Comprobando"
+                          : (switch (licencia.tipo) {
+                              TipoLicencia.activa => "Activa",
+                              TipoLicencia.prueba => "Prueba",
+                              TipoLicencia.vencida => "Bloqueada",
+                            }),
+                    ),
                     trailing: const CupertinoListTileChevron(),
                     onTap: () {
                       SpviHaptics.lightImpact();

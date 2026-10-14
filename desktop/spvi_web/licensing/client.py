@@ -18,13 +18,18 @@ from cryptography.hazmat.primitives.asymmetric import ec, utils
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from urllib.parse import quote
-from . import pc_code, trust
+from . import codigo, envelope, pc_code, subtokens, trust
 
 TYPES = ('MENSUAL', 'SEMESTRAL', 'ANUAL', 'PERPETUA')
 TYPE_LABELS = dict(MENSUAL='Mensual', SEMESTRAL='Semestral', ANUAL='Anual', PERPETUA='Perpetua')
 DEVELOPER = '5351815604'
 TRANSACTION = re.compile(r'[A-Za-z0-9\-]{4,40}')
 MAX_FAILURES, FAILURE_WINDOW = 5, 600
+# Marca de agua del reloj (mitigación 3): si la hora del equipo retrocede más que esta tolerancia respecto a la
+# última vista, la licencia queda bloqueada (se avisa de revisar la fecha). Se persiste en `last`.
+TOLERANCIA_RELOJ = 300
+# Cuota de apps secundarias si la licencia no trae el campo (licencias anteriores y periodo de prueba).
+SECUNDARIAS_DEFECTO = 5
 
 
 def enc(data): return base64.urlsafe_b64encode(data).rstrip(b'=').decode('ascii')
@@ -35,6 +40,16 @@ def dec(text): return base64.b64decode(text + '=' * (-len(text) % 4), altchars=b
 
 def compressed(key):
     return key.public_bytes(serialization.Encoding.X962, serialization.PublicFormat.CompressedPoint)
+
+
+def _instante(valor):
+    """ISO-8601 → epoch en segundos. `None`/vacío → `None`; texto inválido → `ValueError`."""
+    if valor in (None, ''):
+        return None
+    try:
+        return int(datetime.fromisoformat(str(valor).replace('Z', '+00:00')).timestamp())
+    except ValueError:
+        raise ValueError('Fecha de licencia no válida.') from None
 
 
 def derive(shared, salt, info):
@@ -78,8 +93,10 @@ def decode_license(code, private, device_id, keys=trust.SIGN):
 
 
 class LicenseClient:
-    def __init__(self, directory, box, clock=time.time):
+    def __init__(self, directory, box, clock=time.time, firma_keys=trust.SIGN):
         self.path = Path(directory) / 'licencia.bin'
+        # Claves de firma de GL fijadas en el build (los tests usan las suyas: nunca se tocan las reales).
+        self.firma_keys = tuple(firma_keys)
         self.box, self.clock, self.lock = box, clock, threading.RLock()
         if self.path.exists():
             self.data = json.loads(box.open(self.path.read_bytes()))
@@ -104,7 +121,9 @@ class LicenseClient:
         with self.lock:
             now = int(self.clock())
             base = dict(deviceId=self.data['deviceId'], clase='BLOQUEADA', secundarias=0, tipo=None, venceEn=None)
-            if now + 300 < self.data['last']:
+            # Mitigación 3 (marca de agua del reloj): la hora del equipo no puede retroceder respecto a la última
+            # vista (`last`). Con tolerancia pequeña por los ajustes de hora y las zonas horarias.
+            if now + TOLERANCIA_RELOJ < self.data['last']:
                 return dict(base, motivo='Revisa la fecha y hora del equipo.')
             if now > self.data['last']:
                 self.data['last'] = now; self._save()
@@ -136,41 +155,150 @@ class LicenseClient:
 
     def _installed(self):
         code = self.data['code']
+        if code == 'MASTER':
+            # Clave maestra de desarrollo: perpetua y con el máximo de secundarias, SOLO con SPVI_DESARROLLO=1.
+            if not trust.es_debug(): raise ValueError('Licencia no válida para esta instalación.')
+            return dict(id=subtokens.MAESTRA_ID, tipo='PERPETUA', estado=3, secundarias=10,
+                        emitidaEn=self.data.get('activated', 0), venceEn=None, code=codigo.MAESTRA)
         if code.startswith('PC1:'):
             digits = code[4:]
             info = pc_code.verify(self._key(), digits)
             return dict(id=pc_code.license_id(self.data['deviceId'], digits), tipo=info['tipo'], estado=0,
                         secundarias=info['secundarias'], emitidaEn=self.data.get('activated', 0),
                         venceEn=pc_code.expiry_seconds(info['dia']), code=pc_code.grouped(digits))
-        return decode_license(code, self.private, self.data['deviceId'])
+        if code.lstrip().startswith('{'):
+            info = self._abrir_larga(code, self.data.get('envelopeId'), int(self.clock()))
+            tipo = info.get('tipo')
+            secundarias = info.get('secundarias')
+            return dict(id=info.get('id'), tipo=tipo, estado=3 if tipo == 'PERPETUA' else 0,
+                        secundarias=secundarias if isinstance(secundarias, int) else SECUNDARIAS_DEFECTO,
+                        emitidaEn=_instante(info.get('emitidaEn')) or self.data.get('activated', 0),
+                        venceEn=_instante(info.get('venceEn')), code=info.get('licenciaObtenida') or info.get('codigoCorto'))
+        return decode_license(code, self.private, self.data['deviceId'], self.firma_keys)
 
     def activate(self, code):
-        """Activa el código de 16 dígitos que envía el desarrollador (también acepta un SPVI2 antiguo)."""
-        if not isinstance(code, str) or len(code) > 4096: raise ValueError('Código no válido.')
+        """Activa lo que envíe el desarrollador, en este orden:
+
+        1. la **clave maestra de desarrollo** `GLMK-PERM-MAXS-9999`, solo con `SPVI_DESARROLLO=1` (mitigación 1);
+        2. el **código de 16 dígitos** de PC (`XXXX-XXXX-XXXX-XXXX`) emitido por GL;
+        3. la **licencia corta** `SPVI2:…` (el formato del teléfono);
+        4. la **licencia larga** del contrato v1 (envelope JSON + línea `ID:`).
+        """
+        if not isinstance(code, str) or len(code) > 8192: raise ValueError('Código no válido.')
         with self.lock:
             now = self.clock()
             failures = [t for t in getattr(self, 'failures', []) if now - t < FAILURE_WINDOW]
             if len(failures) >= MAX_FAILURES:
                 raise ValueError('Demasiados intentos. Espera unos minutos y vuelve a intentarlo.')
             digits = pc_code.extract(code)
+            envelope_id = envelope.extraer_id(code) if envelope.extraer_envelope(code) else None
             try:
-                if digits:
+                if codigo.es_maestra(code):
+                    stored, ident = 'MASTER', None
+                elif digits:
                     info = pc_code.verify(self._key(), digits)
                     expires = pc_code.expiry_seconds(info['dia'])
                     if expires and now >= expires: raise ValueError('La licencia no está vigente.')
-                    stored = 'PC1:' + digits
+                    stored, ident = 'PC1:' + digits, None
                 elif 'SPVI2:' in code:
-                    info = decode_license(code, self.private, self.data['deviceId'])
+                    info = decode_license(code, self.private, self.data['deviceId'], self.firma_keys)
                     if info['estado'] in (1, 2): raise ValueError('Licencia vencida o revocada.')
-                    stored = info['code']
+                    stored, ident = info['code'], None
+                elif envelope_id:
+                    self._abrir_larga(code, envelope_id, now)  # valida antes de guardar
+                    stored, ident = envelope.extraer_envelope(code), envelope_id
                 else:
-                    raise ValueError('Escribe los 16 dígitos de tu licencia.')
+                    raise ValueError('Escribe el código de tu licencia (16 caracteres o SPVI2:…).')
             except ValueError:
                 failures.append(now); self.failures = failures
                 raise
             self.failures = []
-            self.data['code'] = stored; self.data['activated'] = int(now); self._save()
+            self.data['code'] = stored; self.data['activated'] = int(now)
+            self.data['envelopeId'] = ident
+            self._save()
             return self.status()
+
+    def _abrir_larga(self, mensaje, letra_id, ahora):
+        """Licencia **larga** del contrato v1: firma de GL, descifrado con la clave del equipo y validaciones.
+
+        El `ID:` viaja fuera del sobre porque la AAD del GCM lo necesita antes de descifrar.
+        """
+        try:
+            documento = json.loads(envelope.extraer_envelope(mensaje))
+        except ValueError:
+            raise ValueError('La licencia no es válida para esta instalación.') from None
+        if not envelope.verificar_firma(documento, self.firma_keys):
+            raise ValueError('La firma no corresponde al emisor de SPVI.')
+        try:
+            plano = envelope.abrir(documento, self.private, envelope.aad_licencia(letra_id))
+        except ValueError:
+            try:
+                plano = envelope.abrir(documento, self.private, envelope.aad_licencia_heredada(letra_id))
+            except ValueError:
+                raise ValueError('La licencia no es válida para esta instalación.') from None
+        try:
+            info = json.loads(plano)
+        except ValueError:
+            raise ValueError('La licencia no es válida para esta instalación.') from None
+        if str(info.get('appName', '')).upper() != envelope.APP:
+            raise ValueError('La licencia es de otra aplicación.')
+        if info.get('deviceId') != self.data['deviceId']:
+            raise ValueError('La licencia corresponde a otro equipo.')
+        if str(info.get('id', '')).lower() != str(letra_id).lower():
+            raise ValueError('La licencia no es válida para esta instalación.')
+        codigo16 = info.get('licenciaObtenida') or info.get('codigoCorto')
+        if codigo16 is not None and not codigo.valido(codigo16):
+            raise ValueError('La licencia no es válida para esta instalación.')
+        if info.get('licenciaObtenida') and info.get('codigoCorto') and info['licenciaObtenida'] != info['codigoCorto']:
+            raise ValueError('La licencia no es válida para esta instalación.')
+        if info.get('estado') not in ('ACTIVA', 'PERPETUA'):
+            raise ValueError('Licencia vencida o revocada.')
+        perpetua = info.get('tipo') == 'PERPETUA'
+        if perpetua != (info.get('venceEn') in (None, '')) and info.get('estado') == 'PERPETUA':
+            raise ValueError('La licencia no es válida para esta instalación.')
+        vence = _instante(info.get('venceEn'))
+        if vence is None and not perpetua:
+            raise ValueError('La licencia no es válida para esta instalación.')
+        if vence is not None and ahora >= vence:
+            raise ValueError('La licencia no está vigente.')
+        return info
+
+    def emitir_subtoken(self, dispositivo, ranura):
+        """Firma (con la clave del equipo) el sub-token de la ranura `ranura` para [dispositivo].
+
+        Mitigación 7, Opción A: así una app secundaria no se auto-declara autorizada. Devuelve `None` si la licencia
+        está bloqueada, si la cuota es 0 o si la ranura se sale de la cuota.
+        """
+        with self.lock:
+            state = self.status()
+            if state['clase'] == 'BLOQUEADA':
+                return None
+            cuota = int(state.get('secundarias') or 0)
+            if cuota <= 0 or not isinstance(ranura, int) or not 1 <= ranura <= cuota:
+                return None
+            vence = None if not state.get('venceEn') else datetime.fromtimestamp(state['venceEn'] / 1000, timezone.utc)
+            try:
+                return subtokens.emitir(self.private, state.get('id') or subtokens.PRUEBA_ID, cuota, vence,
+                                        str(dispositivo), ranura)
+            except ValueError:
+                return None
+
+    def firma_publica(self):
+        """SPKI Base64 de la clave con la que este equipo firma los sub-tokens (viaja con ellos)."""
+        return base64.b64encode(self.private.public_key().public_bytes(
+            serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)).decode('ascii')
+
+    def verificar_subtoken(self, token, firma_publica, dispositivo):
+        """Datos del sub-token que entregó la app principal, o `None` si no autoriza a [dispositivo].
+
+        La cuota con la que se comprueba es la de la licencia propia (una app sin licencia no acepta sub-tokens).
+        """
+        state = self.status()
+        cuota = int(state.get('secundarias') or 0)
+        if cuota <= 0:
+            return None
+        ahora = datetime.fromtimestamp(self.clock(), timezone.utc)
+        return subtokens.verificar(token, firma_publica, str(dispositivo), ahora, cuota_maxima=cuota)
 
     def request(self, data):
         """Solicitud cifrada ``SPVIR1`` de la plataforma PC con el número de transacción del pago."""

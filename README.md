@@ -28,6 +28,25 @@ App Android nativa para pequeños negocios: vender en turnos, controlar inventar
 
 Los documentos de trabajo que estaban fuera del proyecto (`DECISIONES_LICENCIA_SPVI.md`, `PRUEBA_COMPATIBILIDAD_GL.md`, `ARQUITECTURA_SPVI.md`, planes y auditorías de los Prompts 17 y 18, entregas `ENTREGA_*`) se retiraron en la 0.18.0. Lo vigente está en `LICENSE_CLIENT.md` (contrato GL y decisiones de licencia), `SECURITY.md`, `docs/HISTORIAL_DESARROLLO.md` y el propio código.
 
+## Cambios en desarrollo — 13 de octubre de 2026
+
+- **Licencias en las tres apps** ([LICENSE_CLIENT.md](LICENSE_CLIENT.md) §11–§13), con la 0.31.0 del escritorio: la app iOS
+  (`flutter_app/`) implementa por fin el flujo real —solicitud `SPVIR1`, licencia corta `SPVI2:`, licencia larga v1,
+  maestra, marca de agua del reloj, revocadas y sub-tokens— con `pointycastle`; el teléfono y el escritorio
+  completan lo que les faltaba del contrato de GL.
+- **Clave maestra solo en depuración** (mitigación 1, Opción A): `GLMK-PERM-MAXS-9999` vale con `BuildConfig.DEBUG`
+  en Android, `SPVI_DESARROLLO=1` en el escritorio y `kDebugMode` en iOS. En release no vale nada (fail-closed).
+- **Sub-tokens de secundarias** (mitigación 7, Opción A): la principal firma un permiso por ranura y dispositivo
+  (`<licenseId>|<device>|<ranura>|<permitidas>|<vence>.<firma>`) con una clave P-256 propia del Keystore y la
+  secundaria no acepta la licencia heredada si el permiso no la autoriza. Nueva columna `empleado.device` (**esquema
+  v12**, `MIGRACION_11_12`) para recordar el `deviceId` de cada secundaria.
+- **AAD canónica del envelope v1** (mitigación 8, Opción A): se sella con longitud prefijada y se sigue abriendo lo
+  ya emitido con la heredada `1|alg|…` (`EnvelopeV1.kt`, `CanonicalAadTest`).
+- Verificación: 126 pruebas Python del escritorio correctas; Android compila y pasa `spviTests` en el CI del repositorio
+  (con lint, R8 y los permisos del manifiesto), y **la app iOS no se ha compilado ni probado aquí** (no hay Dart en este
+  entorno): `flutter test` y el build los corre Codemagic. Falta commitear `data/schemas/…/12.json`, que Room exporta al
+  compilar (ver [Pendiente.md](Pendiente.md)).
+
 ## Cambios en desarrollo — 10 de octubre de 2026
 
 - **Escritorio 0.31.0** ([desktop/README.md](desktop/README.md#novedades-de-la-0310-10102026)): interfaz
@@ -179,6 +198,8 @@ SPVI es **cliente** del contrato v1 de GL, sin cambiarlo. Detalle completo en [L
 | Prueba | 7 días |
 | Tipos y precios | Mensual 6,000 · Semestral 30,000 · Anual 50,000 · Perpetua 90,000 CUP |
 | Reloj | Si retrocede más de 2 h respecto a la última hora vista → bloqueo hasta corregirlo |
+| Clave maestra | `GLMK-PERM-MAXS-9999`: perpetuidad y 10 secundarias **solo** en builds de depuración |
+| Apps secundarias | La principal firma el permiso de cada ranura y dispositivo (sub-token); la secundaria lo comprueba antes de dar la licencia por buena |
 | Migrar | La autorización es la licencia emitida al teléfono nuevo; el viejo cede su licencia y se borra |
 
 ## Cambios de la 0.30.1 en curso (sin compilar ni probar en teléfono)

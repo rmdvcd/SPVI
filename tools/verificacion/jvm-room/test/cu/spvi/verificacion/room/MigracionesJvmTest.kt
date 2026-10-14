@@ -15,7 +15,7 @@ import org.junit.Test
 /**
  * SOLO tools/verificacion (0.21.9, P59). Versión JVM de data/src/androidTest/.../EsquemaTest (que en Gradle usa
  * MigrationTestHelper y SQLiteDatabase nativos): crea con JDBC una BD de la versión antigua a partir del esquema
- * exportado (7.json) y la abre con Room y las migraciones reales. Room valida cada tabla, índice y clave foránea contra
+ * exportado (<VERSION>.json) y la abre con Room y las migraciones reales. Room valida cada tabla, índice y clave foránea contra
  * las entidades al terminar la migración, y lanza IllegalStateException si algo no coincide.
  */
 class MigracionesJvmTest {
@@ -40,7 +40,7 @@ class MigracionesJvmTest {
 
     private fun <T> abrirConRoom(bloque: (SupportSQLiteDatabase) -> T): T {
         val room = Room.databaseBuilder(ApplicationProvider.getApplicationContext(), SpviDatabase::class.java, archivo.absolutePath)
-            .addMigrations(SpviDatabase.MIGRACION_3_4, SpviDatabase.MIGRACION_4_5, SpviDatabase.MIGRACION_5_6, SpviDatabase.MIGRACION_6_7, SpviDatabase.MIGRACION_7_8, SpviDatabase.MIGRACION_8_9, SpviDatabase.MIGRACION_9_10)
+            .addMigrations(SpviDatabase.MIGRACION_3_4, SpviDatabase.MIGRACION_4_5, SpviDatabase.MIGRACION_5_6, SpviDatabase.MIGRACION_6_7, SpviDatabase.MIGRACION_7_8, SpviDatabase.MIGRACION_8_9, SpviDatabase.MIGRACION_9_10, SpviDatabase.MIGRACION_10_11, SpviDatabase.MIGRACION_11_12)
             .allowMainThreadQueries().build()
         try {
             return bloque(room.openHelper.writableDatabase) // abrir = migrar + validar
@@ -58,10 +58,22 @@ class MigracionesJvmTest {
             .map { it.getString("createSql").replace("\${TABLE_NAME}", e.getString("tableName")) }
     }
 
-    /** v9 = v10 sin la tabla `cliente_fijo` (0.27.0) ni la columna `clienteFijo` de `transaccion`. */
+    /** v9 = v10 sin la tabla `cliente_fijo` (0.27.0) ni la columna `clienteFijo` de `transaccion` (y sin la `device` de la v12). */
     private fun entidadesV9(): List<JSONObject> = entidades().filter { it.getString("tableName") != "cliente_fijo" }
-    private fun crearV9(e: JSONObject): String =
-        if (e.getString("tableName") == "transaccion") sinColumnas(crear(e), V10_TRANSACCION) else crear(e)
+    private fun crearV9(e: JSONObject): String {
+        var sql = crear(e)
+        when (e.getString("tableName")) {
+            "transaccion" -> sql = sinColumnas(sql, V10_TRANSACCION)
+            "empleado" -> sql = sinColumnas(sql, V12_EMPLEADO) // v12 (0.31.0): solo la añade la última migración
+        }
+        return sql
+    }
+
+    /** v11 = el esquema actual sin la columna `device` que añade la v12 (0.31.0) en `empleado`. */
+    private fun crearV11(e: JSONObject): String =
+        if (e.getString("tableName") == "empleado") sinColumnas(crear(e), V12_EMPLEADO) else crear(e)
+
+    private fun sqlV11(): List<String> = entidades().flatMap { e -> listOf(crearV11(e)) + indices(e) }
     private fun sqlV9(): List<String> = entidadesV9().flatMap { e -> listOf(crearV9(e)) + indices(e) }
 
     /** v7 = v8 sin la tabla `movimiento_caja` ni las columnas de la v8 en `turno` y `venta`. */
@@ -184,6 +196,17 @@ class MigracionesJvmTest {
         }
     }
 
+    @Test fun migracion11a12AnadeElDeviceDeLaSecundaria() {
+        crearAntigua(11, sqlV11(), "INSERT INTO empleado (nombre, permisos, creadoEn, activo) VALUES ('Luis', 'VENDER_PRODUCTOS', 0, 1)")
+        abrirConRoom { db ->
+            db.query("SELECT nombre, device, versionCode FROM empleado").use {
+                assertTrue(it.moveToFirst()); assertEquals("Luis", it.getString(0))
+                assertTrue(it.isNull(1)); assertTrue(it.isNull(2))
+            }
+            db.query("PRAGMA user_version").use { it.moveToFirst(); assertEquals(SpviDatabase.VERSION, it.getInt(0)) }
+        }
+    }
+
     @Test(expected = IllegalStateException::class)
     fun unaBdQueNoCoincideConElEsquemaSeRechaza() {
         // Control negativo: si la validación de Room no se ejecutara en esta JVM, las demás pruebas no demostrarían nada.
@@ -199,5 +222,7 @@ class MigracionesJvmTest {
         val V8_VENTA = listOf("anuladaEn", "motivoAnulacion", "anuladaPor", "corrigeVentaId", "bajarCambio")
         val V9_EMPLEADO = listOf("fondoAsignadoCent", "fondoAsignadoEn", "aperturaSolicitadaEn", "versionCode")
         val V10_TRANSACCION = listOf("clienteFijo")
+        /** Columnas que añade la v12 (0.31.0, mitigación 7) en `empleado`. */
+        val V12_EMPLEADO = listOf("device")
     }
 }

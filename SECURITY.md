@@ -83,6 +83,18 @@ Cómo protege SPVI los datos del negocio y la licencia en el teléfono. Describe
 
 **Riesgos residuales:** la revocación solo llega al teléfono antiguo si se conecta a internet. Si alguien controla el repositorio de GitHub puede publicar un APK, pero Android no lo instala como actualización si no lleva la firma del desarrollador. No puede falsificar la lista de revocadas sin la clave de GL.
 
+## 4 quater. Licencias en las tres apps (13/10/2026, en curso)
+
+| Área | Medida |
+|---|---|
+| **Clave maestra de desarrollo** | `GLMK-PERM-MAXS-9999` solo vale en builds de depuración (mitigación 1, Opción A del contrato de GL). Android la habilita en `SpviApplication` con `BuildConfig.DEBUG`; el escritorio, con `SPVI_DESARROLLO=1`; la app iOS, con `kDebugMode`. El valor por defecto es `false` (**fail-closed**: si nadie lo activa, la clave maestra no vale nada). `licencia/.../ModoDesarrollo.kt`, `desktop/spvi_web/licensing/trust.py`, `flutter_app/lib/src/licensing/trust.dart` |
+| **Sub-token de apps secundarias** | La cuota de secundarias deja de ser una auto-declaración: la app **principal** firma un permiso por ranura y dispositivo (`SISTEMA_LICENCIAS_CLIENTES.md` §8.4) con una clave P-256 propia (`FirmanteLicenciaAndroid`, Keystore, `PURPOSE_SIGN`), y la secundaria no da por buena la licencia recibida si el permiso no la autoriza a ella. Sin permiso (principal anterior) se acepta la licencia como siempre **solo** para no romper la convivencia de versiones. `licencia/.../secondary/SubToken.kt`, `data/.../licencia/{FirmanteLicenciaAndroid,VerificadorPermisoSecundaria}.kt`, `desktop/spvi_web/licensing/subtokens.py` |
+| **Ranura por dispositivo** | La principal guarda el `deviceId` de cada secundaria (columna `empleado.device`, esquema v12) y firma la ranura que ocupa entre los empleados activos. Un permiso de otra secundaria, de otra ranura o vencido no autoriza; la licencia queda bloqueada también en la secundaria |
+| **Borde de la licencia larga v1** | La AAD se canonicaliza con longitud prefijada (mitigación 8, Opción A) al **emitir**; al re-verificar lo ya emitido se acepta además la AAD heredada `1|alg|…`, y nada más (`CanonicalAadTest`, `EnvelopeV1Test`). El flujo corto `SPVI2:`/`SPVIR1` no cambia |
+| **Reloj de la app iOS** | Misma marca de agua que Android y el escritorio: la hora del equipo no puede retroceder respecto a la última vista (tolerancia 5 min). La app iOS no existía como cliente de licencias antes de esta versión |
+
+**Riesgos residuales:** una secundaria sin permiso válido queda bloqueada, pero quien modifique el APK de una secundaria puede saltarse la comprobación, igual que en el teléfono principal; la clave de firma de los sub-tokens vive en el Keystore del principal, así que si se pierde hay que volver a vincular las secundarias. La revocación solo llega al teléfono antiguo si se conecta a internet; un APK de la app iOS o del escritorio parcheado localmente también puede saltarse la verificación (es una licencia offline).
+
 ## 5. Modelo de amenazas
 
 | Amenaza | Mitigación | Riesgo residual |
@@ -96,6 +108,8 @@ Cómo protege SPVI los datos del negocio y la licencia en el teléfono. Describe
 | **Reutilizar la licencia tras recuperarla en otro teléfono** (0.25.0) | GL revoca la anterior y la publica en la lista firmada; el teléfono antiguo la aplica en su consulta semanal, borra los datos y se bloquea | Si el teléfono antiguo nunca se conecta a internet, sigue funcionando hasta que venza su licencia |
 | **Reutilizar la licencia tras migrar** | Se registra `lic.migrated_at` y se rechaza toda licencia emitida antes | Sin conexión, nadie obliga a ejecutar el borrado en el teléfono viejo |
 | **APK modificado** (parche que salta la comprobación) | R8 sube el coste | **No se puede impedir** con una licencia offline |
+| **Activar con la clave maestra de pruebas** | La comprobación devuelve `false` salvo en builds de depuración; en release una licencia instalada con ella se descarta al evaluar | El APK de depuración (otro paquete, otra firma y otro `deviceId`) sí la acepta: es una herramienta del desarrollador, no un atajo del cliente |
+| **Secundaria que se auto-declara cubierta por la licencia** | La principal firma el permiso de cada ranura con su clave P-256 y la secundaria lo comprueba con la clave pública que viaja con él (firma, `deviceId`, ranura y cuota) | Con la principal 0.30 o anterior, la licencia se acepta sin permiso (convivencia de versiones) |
 | **Respaldo robado** | AES-256-GCM con clave PBKDF2 (310 000 iteraciones) | Una contraseña débil se puede adivinar por fuerza bruta. **Sin contraseña (0.27.0) no hay protección ninguna**: el secreto de ofuscación está publicado, así que basta tener el archivo. Riesgo aceptado a sabiendas (decisión del dueño, 2026-10-07): se mantiene para no romper los respaldos ya hechos |
 | **Respaldo alterado o cortado** | Cabecera autenticada, largo y SHA-256 del cifrado; todo se valida antes de escribir y la importación es una sola transacción | — |
 | **Archivo malicioso recibido** («zip bomb», archivo enorme) | Tope de 128 MB al copiar y al descomprimir; solo `content://` | — |
@@ -119,6 +133,8 @@ Cómo protege SPVI los datos del negocio y la licencia en el teléfono. Describe
 - **Clave de firma del APK** (no confundir con la de GL): guárdala fuera del repositorio (`keystore.properties` y `*.jks` están en `.gitignore`) y con copia de seguridad. Si se pierde, no se puede actualizar la app y cambian todos los `deviceId`. Ver [RELEASE.md](RELEASE.md).
 - No hagas configurable la clave de firma de GL. Para rotarla, **añade** la nueva a `SIGN_KEYS` sin quitar la anterior y publica un build nuevo.
 - Ejecuta `LicenseTrustTest` y `GoldenVectorTest` antes de cada versión; repite la prueba de extremo a extremo con GL (ver `LICENSE_CLIENT.md`) si GL cambia.
+- La clave maestra `GLMK-PERM-MAXS-9999` no debe funcionar nunca en release: comprueba que `BuildConfig.DEBUG` es el único que habilita `ModoDesarrollo.esDebug` (`MasterKeyTest`) y que en el escritorio hace falta `SPVI_DESARROLLO=1`.
+- Al cambiar una entidad de Room, sube `SpviDatabase.VERSION` con su migración y **commitea el `<VERSION>.json` que exporta Room en la primera compilación** (base: `3.json`; comprobado por `EsquemaTest` y por `tools/verificacion/jvm-room`).
 - Ejecuta `./gradlew spviCheck` antes de entregar: incluye `spviPermisos`, que falla si el manifiesto fusionado pide algo fuera de la lista autorizada: `CAMERA`, `INTERNET`, `POST_NOTIFICATIONS`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE`, `CHANGE_NETWORK_STATE`, `REQUEST_INSTALL_PACKAGES`, `REQUEST_DELETE_PACKAGES`, `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`, `USE_BIOMETRIC` y `USE_FINGERPRINT`.
 - No añadas logs con datos de usuario ni dependencias con telemetría.
 - Cada cambio de entidad necesita subir `SpviDatabase.VERSION` con su `Migration` explícita y el esquema JSON versionado (base: `3.json`, comprobado por `EsquemaTest`). La recreación vacía solo se permite para las versiones de desarrollo 1 y 2.

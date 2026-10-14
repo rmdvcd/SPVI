@@ -40,7 +40,10 @@ class GlLicenseOpener(
         val shared = deviceKey.agree(epk)
         val key = Hkdf.sha256(shared, iv, GlContract.HKDF_INFO_LICENSE.toByteArray(), GlContract.AES_KEY_LEN)
         return try {
-            AesGcm.decrypt(key, iv, GlContract.licenseAad(licenseId), ct + tag)
+            // AAD canonical con longitud prefijada (mitigación 8, Opción A). Se acepta además la AAD heredada
+            // (`1|alg|<id>`) para las licencias largas que GL emitió antes de cambiar a la canonicalización.
+            runCatching { AesGcm.decrypt(key, iv, GlContract.licenseAad(licenseId), ct + tag) }
+                .getOrElse { AesGcm.decrypt(key, iv, GlContract.licenseAadHeredada(licenseId), ct + tag) }
         } finally {
             shared.fill(0); key.fill(0)
         }

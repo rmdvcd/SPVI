@@ -1,6 +1,6 @@
 # Verificación de la principal web con OpenCode CLI
 
-Estado 0.31.0: las 103 pruebas Python y la autoprueba pasan en Linux y la interfaz se recorrió en un
+Estado 0.31.0 + licencias: las 126 pruebas Python y la autoprueba pasan en Linux y la interfaz se recorrió en un
 navegador sin pantalla. **Falta todo lo propio de Windows** (icono de notificación, inicio con Windows,
 `.exe`) y las pruebas con Android y GL reales. No usar datos reales como primera prueba.
 

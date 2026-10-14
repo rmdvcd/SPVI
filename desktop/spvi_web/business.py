@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS employees(id INTEGER PRIMARY KEY AUTOINCREMENT,name T
  active INTEGER NOT NULL DEFAULT 1,secret BLOB,token BLOB,expires INTEGER,linked INTEGER,last_sync INTEGER,
  fund INTEGER,fund_token INTEGER,requests_fund INTEGER NOT NULL DEFAULT 0,requests_close INTEGER NOT NULL DEFAULT 0,
  close_requested INTEGER NOT NULL DEFAULT 0,close_rejected INTEGER NOT NULL DEFAULT 0,
- phone TEXT,version INTEGER,card_id INTEGER,phone_id INTEGER);
+ phone TEXT,version INTEGER,card_id INTEGER,phone_id INTEGER,device TEXT);
 CREATE TABLE IF NOT EXISTS commands(employee INTEGER NOT NULL,key TEXT NOT NULL,request TEXT NOT NULL,result TEXT NOT NULL,
  PRIMARY KEY(employee,key));
 CREATE TABLE IF NOT EXISTS grouped_sales(local_id INTEGER PRIMARY KEY,sale_id INTEGER NOT NULL);
@@ -102,6 +102,10 @@ class Business:
         self.path=store.path
         with store.connect() as db:
             db.executescript(SCHEMA)
+            # Migración idempotente para instalaciones anteriores: `device` guarda el `deviceId` de la app
+            # secundaria que se vinculó (para firmarle su sub-token: mitigación 7, Opción A).
+            columnas={row[1] for row in db.execute('PRAGMA table_info(employees)')}
+            if 'device' not in columnas: db.execute('ALTER TABLE employees ADD COLUMN device TEXT')
             self.begin(db)
             if meta(db,'schema') not in (None,1): raise ValueError('Versión de negocio no compatible.')
             set_meta(db,'schema',1)
@@ -405,10 +409,37 @@ class Business:
         if not row: raise ValueError('Empleado no encontrado.')
         return dict(row)
 
+    def seat(self,db,id):
+        """Ranura 1..N del empleado entre los activos (el orden de vinculación). `None` si no es un asiento."""
+        ids=[x[0] for x in db.execute('SELECT id FROM employees WHERE active=1 ORDER BY id')]
+        return ids.index(id)+1 if id in ids else None
+
     def seat_allowed(self,db,id):
         state=self.license.status()
-        ids=[x[0] for x in db.execute('SELECT id FROM employees WHERE active=1 ORDER BY id')]
-        return id in ids[:state['secundarias']] and state['clase']!='BLOQUEADA'
+        seat=self.seat(db,id)
+        return seat is not None and seat<=state['secundarias'] and state['clase']!='BLOQUEADA'
+
+    def sub_token(self,db,e):
+        """Sub-token firmado por esta instalación para la app secundaria [e] (mitigación 7, Opción A).
+
+        Devuelve `None` si el dispositivo de la secundaria aún no se conoce, si la licencia está bloqueada o si su
+        ranura se sale de la cuota de la licencia.
+        """
+        device=str(e.get('device') or '').strip()
+        if not device: return None
+        state=self.license.status()
+        if state['clase']=='BLOQUEADA': return None
+        seat=self.seat(db,e['id'])
+        if seat is None or seat>state['secundarias']: return None
+        token=self.license.emitir_subtoken(device,seat)
+        if not token: return None
+        return dict(subToken=token,firmaPub=self.license.firma_publica(),ranura=seat,permitidas=state['secundarias'])
+
+    def set_device(self,db,employee,device):
+        """Anota el `deviceId` de la secundaria vinculada, si trae uno válido."""
+        import re
+        if not isinstance(device,str) or not re.fullmatch(r'SPVI:[A-Za-z0-9:_\-]{8,128}',device.strip()): return
+        db.execute('UPDATE employees SET device=? WHERE id=?',(device.strip(),employee))
 
     def employees(self):
         with self.connect() as db:
@@ -456,6 +487,9 @@ class Business:
         state=self.license.status()
         lic={key:state[key] for key in ('clase','tipo','venceEn') if state.get(key) is not None}
         if not self.seat_allowed(db,e['id']): lic={'clase':'BLOQUEADA'}
+        # Mitigación 7: la secundaria recibe además el permiso firmado de su ranura (y la clave para comprobarlo).
+        permiso=self.sub_token(db,e) if lic.get('clase')!='BLOQUEADA' else None
+        if permiso: lic.update(permiso)
         result=dict(nombreNegocio=meta(db,'name'),empleado=dict(nombre=e['name'],permisos=json.loads(e['permissions'])),licencia=lic)
         for kind in ('productos','servicios','insumos','recetas','preajustes'):
             result[kind]=[dict(x,fotoUri=None) if kind in ('productos','servicios') else x for x in objects(db,kind) if not x.get('eliminado')]

@@ -33,3 +33,16 @@ data class Licencia(
     /** 0.21.0 (C4): apps secundarias que cubre la licencia (o la prueba). */
     val secundariasPermitidas: Int get() = estado.secundariasPermitidas
 }
+
+/**
+ * 0.31.0 (mitigación 7, Opción A): permiso firmado por esta instalación (la principal) para una app secundaria.
+ * - [subToken]: `<licenciaId>|<deviceId>|<ranura>|<permitidas>|<venceEn>.<firma DER Base64>`.
+ * - [firmaPub]: SPKI Base64 de la clave con la que se firmó (viaja con el permiso para poder comprobarlo).
+ */
+data class SubTokenEmitido(
+    val subToken: String,
+    val firmaPub: String,
+    val ranura: Int,
+    val permitidas: Int,
+)
+
