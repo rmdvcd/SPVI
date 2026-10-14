@@ -119,6 +119,10 @@ def insert(db,tables):
                        [tuple(row[c] for c in columns) for row in tables[name]])
 
 
+# Ojo (auditoría D-05): `backup`/`restore` de módulo son el camino del formato v1 y hoy solo los ejercitan
+# los tests de compatibilidad; el camino vivo es Business.export_backup/import_backup (formato v2 +
+# Android). Se conservan porque `restore` documenta el comportamiento seguro (copia previa cifrada y
+# rechazo con turnos abiertos) y porque borrarlos rompería la lectura de respaldos v1 antiguos.
 def backup(store,password):
     with store.connect() as db:
         db.execute('BEGIN')

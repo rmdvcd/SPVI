@@ -38,7 +38,6 @@ import cu.spvi.domain.usecase.ObservarInventario
 import cu.spvi.domain.usecase.ObtenerFichaProducto
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
-import java.time.LocalDate
 import java.time.ZoneId
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi

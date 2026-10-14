@@ -47,6 +47,9 @@ void main() {
       final container = ProviderContainer();
       final inventarioNotifier = container.read(inventarioProvider.notifier);
 
+      // I-03: la app ya no arranca con datos de demostración; el test siembra el suyo.
+      expect(container.read(inventarioProvider), isEmpty);
+      inventarioNotifier.agregarOEditarProducto(kDemoInventario.first);
       final p = container.read(inventarioProvider).first;
       final stockInicial = p.stock;
 

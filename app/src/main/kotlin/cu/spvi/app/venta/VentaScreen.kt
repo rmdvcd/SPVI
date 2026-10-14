@@ -3,7 +3,6 @@ package cu.spvi.app.venta
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Checkbox
 import cu.spvi.domain.model.nombreCompleto
-import cu.spvi.app.common.LocalPermisosApp
 import cu.spvi.designsystem.component.FiltroEntrada
 import cu.spvi.designsystem.component.BannerTone
 import cu.spvi.designsystem.component.SpviStatusBanner
@@ -355,10 +354,19 @@ internal fun LineaEditable(l: LineaCarrito, onCantidad: (Long, Long) -> Unit, on
 
 // ---------------- Comprobante (efectivo) ----------------
 
+/** Auditoría 2026-10-14 (§6.1): aviso visible (no bloquea) si alguna línea quedó al costo o por debajo. */
+@Composable
+private fun AvisoBajoCosto(state: VentaUiState) {
+    val nombres = state.cotizacion?.advertencias.orEmpty()
+    if (nombres.isEmpty()) return
+    SpviCard(tone = CardTone.Tonal) { SpviSecondaryText(TextosVenta.bajoCosto(nombres)) }
+}
+
 @Composable
 private fun PasoComprobante(state: VentaUiState) {
     val cot = state.cotizacion ?: return
     LazyColumn(Modifier.fillMaxSize().testTag(VentaTags.COMPROBANTE), contentPadding = PaddingValues(SpviSpacing.md)) {
+        item { AvisoBajoCosto(state) }
         item {
             SpviCard {
                 cot.detalles.forEach { d ->
@@ -425,6 +433,7 @@ private fun PasoQr(state: VentaUiState, acciones: AccionesVenta, capturaSmsAutom
             }
         }
         item { TotalVenta(state) }
+        item { AvisoBajoCosto(state) }
         item { SpviSecondaryText(TextosVenta.QR_AYUDA, textAlign = TextAlign.Center) }
         if (state.qr is PagoQr.Resultado.Ok) item { CapturaSmsUi(capturaSmsAutomaticaActiva, acciones.onConfigurarCapturaSms) }
     }

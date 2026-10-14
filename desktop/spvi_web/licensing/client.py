@@ -96,6 +96,8 @@ class LicenseClient:
     def __init__(self, directory, box, clock=time.time, firma_keys=trust.SIGN):
         self.path = Path(directory) / 'licencia.bin'
         # Claves de firma de GL fijadas en el build (los tests usan las suyas: nunca se tocan las reales).
+        # Auditoría 2026-10-14 (D-02): la verificación huella↔clave se hace al arrancar la app (create_app),
+        # no aquí: los tests sustituyen las claves por las suyas y eso no es un error de fijación.
         self.firma_keys = tuple(firma_keys)
         self.box, self.clock, self.lock = box, clock, threading.RLock()
         if self.path.exists():

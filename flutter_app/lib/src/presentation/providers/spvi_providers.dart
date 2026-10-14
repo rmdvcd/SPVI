@@ -170,8 +170,13 @@ final inventarioProvider = StateNotifierProvider<InventarioNotifier, List<Produc
   return InventarioNotifier();
 });
 
-class InventarioNotifier extends StateNotifier<List<ProductoModel>> {
-  InventarioNotifier() : super([
+/// Auditoría 2026-10-14 (I-03): los datos de demostración ya NO se cargan al abrir la app (un POS que
+/// arranca con productos y clientes inventados invita a vender sobre datos falsos). Solo se cargan al
+/// compilar con `--dart-define=SPVI_DEMO=true` (capturas/pruebas visuales) o si un test los pide.
+/// La persistencia real sigue pendiente (ver Pendiente.md): esto solo deja de fingir que la hay.
+const bool kDatosDemo = bool.fromEnvironment('SPVI_DEMO');
+
+const kDemoInventario = <ProductoModel>[
     const ProductoModel(
       id: "prod-1",
       nombre: "Café Expreso Doble",
@@ -202,7 +207,61 @@ class InventarioNotifier extends StateNotifier<List<ProductoModel>> {
       stockMinimo: 5.0,
       tipo: TipoInventario.producto,
     ),
-  ]);
+  ];
+
+const kDemoInsumos = <InsumoModel>[
+    const InsumoModel(
+      id: "ins-1",
+      nombre: "Café en Grano Torrefacto",
+      unidadMedida: "kg",
+      cantidad: 1.5, // Stock crítico
+      minimo: 3.0,
+      precioCosto: Money(120000),
+    ),
+    const InsumoModel(
+      id: "ins-2",
+      nombre: "Pan Flauta Artesanal",
+      unidadMedida: "u",
+      cantidad: 24.0,
+      minimo: 10.0,
+      precioCosto: Money(6000),
+    ),
+  ];
+
+const kDemoServicios = <ServicioModel>[
+    const ServicioModel(
+      id: "srv-1",
+      nombre: "Mantenimiento Express",
+      tipo: "Técnico",
+      importe: Money(150000), // 1500 CUP
+      descripcion: "Limpieza y diagnóstico rápido",
+    ),
+    const ServicioModel(
+      id: "srv-2",
+      nombre: "Copia de Seguridad y Migración",
+      tipo: "Digital",
+      importe: Money(80000),
+      descripcion: "Exportación de respaldo seguro",
+    ),
+  ];
+
+const kDemoClientes = <ClienteFijoModel>[
+    const ClienteFijoModel(
+      carnet: "88051212345",
+      nombre: "Carlos Martínez",
+      telefono: "53123456",
+      direccion: "Calle 23 #456",
+    ),
+    const ClienteFijoModel(
+      carnet: "94032254321",
+      nombre: "Ana Rodríguez",
+      telefono: "58765432",
+      direccion: "Ave 5ta e/ 10 y 12",
+    ),
+  ];
+
+class InventarioNotifier extends StateNotifier<List<ProductoModel>> {
+  InventarioNotifier() : super(kDatosDemo ? kDemoInventario : const []);
 
   void agregarOEditarProducto(ProductoModel producto) {
     final idx = state.indexWhere((p) => p.id == producto.id);
@@ -249,24 +308,7 @@ final insumosProvider = StateNotifierProvider<InsumosNotifier, List<InsumoModel>
 });
 
 class InsumosNotifier extends StateNotifier<List<InsumoModel>> {
-  InsumosNotifier() : super([
-    const InsumoModel(
-      id: "ins-1",
-      nombre: "Café en Grano Torrefacto",
-      unidadMedida: "kg",
-      cantidad: 1.5, // Stock crítico
-      minimo: 3.0,
-      precioCosto: Money(120000),
-    ),
-    const InsumoModel(
-      id: "ins-2",
-      nombre: "Pan Flauta Artesanal",
-      unidadMedida: "u",
-      cantidad: 24.0,
-      minimo: 10.0,
-      precioCosto: Money(6000),
-    ),
-  ]);
+  InsumosNotifier() : super(kDatosDemo ? kDemoInsumos : const []);
 
   void agregarOEditar(InsumoModel insumo) {
     final idx = state.indexWhere((i) => i.id == insumo.id);
@@ -291,22 +333,7 @@ final serviciosProvider = StateNotifierProvider<ServiciosNotifier, List<Servicio
 });
 
 class ServiciosNotifier extends StateNotifier<List<ServicioModel>> {
-  ServiciosNotifier() : super([
-    const ServicioModel(
-      id: "srv-1",
-      nombre: "Mantenimiento Express",
-      tipo: "Técnico",
-      importe: Money(150000), // 1500 CUP
-      descripcion: "Limpieza y diagnóstico rápido",
-    ),
-    const ServicioModel(
-      id: "srv-2",
-      nombre: "Copia de Seguridad y Migración",
-      tipo: "Digital",
-      importe: Money(80000),
-      descripcion: "Exportación de respaldo seguro",
-    ),
-  ]);
+  ServiciosNotifier() : super(kDatosDemo ? kDemoServicios : const []);
 
   void agregarOEditar(ServicioModel servicio) {
     final idx = state.indexWhere((s) => s.id == servicio.id);
@@ -331,20 +358,7 @@ final clientesProvider = StateNotifierProvider<ClientesNotifier, List<ClienteFij
 });
 
 class ClientesNotifier extends StateNotifier<List<ClienteFijoModel>> {
-  ClientesNotifier() : super([
-    const ClienteFijoModel(
-      carnet: "88051212345",
-      nombre: "Carlos Martínez",
-      telefono: "53123456",
-      direccion: "Calle 23 #456",
-    ),
-    const ClienteFijoModel(
-      carnet: "94032254321",
-      nombre: "Ana Rodríguez",
-      telefono: "58765432",
-      direccion: "Ave 5ta e/ 10 y 12",
-    ),
-  ]);
+  ClientesNotifier() : super(kDatosDemo ? kDemoClientes : const []);
 
   void agregarOActualizar(ClienteFijoModel cliente) {
     final idx = state.indexWhere((c) => c.carnet == cliente.carnet);

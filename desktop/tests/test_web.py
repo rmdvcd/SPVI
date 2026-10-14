@@ -126,6 +126,12 @@ class HttpTest(unittest.TestCase):
         self.assertEqual(401, self.client.get('/api/dashboard').status_code)
         self.assertEqual(401, self.post('/login', {'password':'incorrecta'}).status_code)
 
+    def test_login_se_frena_tras_cinco_fallos(self):
+        # Auditoría 2026-10-14 (S-05): tras 5 claves malas, ni la buena entra hasta que pasa el minuto.
+        for _ in range(5):
+            self.assertEqual(401, self.post('/login', {'password':'incorrecta'}).status_code)
+        self.assertEqual(429, self.post('/login', {'password':'clave-de-pruebas'}).status_code)
+
     def test_csrf_required_even_login(self):
         self.assertEqual(403, self.client.post('/login', json={'password':'clave-de-pruebas'}).status_code)
         self.login()

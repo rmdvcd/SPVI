@@ -6,8 +6,12 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 
 object Red {
-    /** GitHub pide identificar la app en el User-Agent. No incluye datos del usuario ni del equipo. */
-    const val USER_AGENT = "SPVI/0.27 (Android)"
+    /**
+     * GitHub pide identificar la app en el User-Agent. No incluye datos del usuario ni del equipo.
+     * Sin número de versión: la constante quedó congelada en «0.27» con la app ya en 0.30 (auditoría S-10) y
+     * este módulo no conoce la versión real; un identificador sin versión no miente nunca.
+     */
+    const val USER_AGENT = "SPVI (Android)"
 
     /**
      * Cliente único. Límites generosos como tope duro. Sin caché, sin cookies, sin reintentos silenciosos,

@@ -26,3 +26,6 @@ desktop/*.spec
 *.pem
 *.key
 desktop/tls/
+
+# Sesiones de navegador de depuración (logs/capturas locales, no código): auditoría 2026-10-14 (D-06)
+.playwright-mcp/

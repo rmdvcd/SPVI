@@ -36,7 +36,7 @@ def reset_password(path,password):
     os.replace(temporary,path)
 
 
-MIN_PASSWORD = 8
+MIN_PASSWORD = 12  # Auditoría 2026-10-14 (S-05): 8 era poco para la clave que protege todo el negocio.
 THEMES = ('claro', 'oscuro', 'sistema')
 DELAYS = (0, 15, 30, 60, 120, 300)
 # abrirAlIniciar: al iniciar con Windows, además del icono, abrir la pantalla principal.

@@ -10,7 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -19,14 +18,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import cu.spvi.core.money.Money
 import cu.spvi.core.money.sumOfCup
 import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
 import cu.spvi.designsystem.component.IconActionStyle
 import cu.spvi.designsystem.component.SpviDialog
 import cu.spvi.designsystem.component.SpviIconAction
-import cu.spvi.designsystem.component.SpviSecondaryText
 import cu.spvi.designsystem.component.SpviTextField
 import cu.spvi.designsystem.icon.SpviIcons
 import cu.spvi.designsystem.token.SpviSpacing
@@ -38,8 +35,6 @@ import cu.spvi.domain.repository.TipoAppRepository
 import cu.spvi.domain.repository.TurnoRepository
 import cu.spvi.domain.service.LineaSolicitada
 import cu.spvi.domain.usecase.AnularVenta
-import cu.spvi.domain.usecase.DatosTransferencia
-import cu.spvi.domain.usecase.ModificarVenta
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException

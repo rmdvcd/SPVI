@@ -2,8 +2,6 @@ package cu.spvi.designsystem.component
 
 import androidx.compose.ui.unit.sp
 import cu.spvi.designsystem.theme.SpviMarca
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -25,12 +23,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import cu.spvi.designsystem.icon.SpviIcons
 import cu.spvi.designsystem.token.SpviElevation
-import cu.spvi.designsystem.token.SpviSpacing
 
 @Immutable
 data class SpviNavItem(val key: String, val icon: ImageVector, val label: String)

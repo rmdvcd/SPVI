@@ -24,6 +24,11 @@ import javax.crypto.spec.SecretKeySpec
  * - Indicador: 1 = con contraseña del usuario; 0 = sin contraseña (la clave sale de un secreto interno ofuscado de la
  *   app, con [ITERACIONES_SIN_CONTRASENA]). **Riesgo aceptado** (SECURITY.md): sin contraseña, cualquiera con SPVI
  *   puede abrir el archivo; el cifrado solo evita que se lea o se altere con otras herramientas.
+ *   Auditoría 2026-10-14 (S-01): se comprobó que el «secreto» se deriva solo de constantes XOR publicadas en este
+ *   repositorio (cualquiera puede reproducirlo sin el APK), así que el modo sin contraseña NO aporta
+ *   confidencialidad: es ofuscación. Por eso la exportación trae la contraseña encendida por defecto y la migración de
+ *   teléfono a teléfono cifra además el transporte (ver CanalMigracion). No subir iteraciones aquí esperando
+ *   seguridad: sin un secreto real, el KDF no protege nada.
  * - v3 (P17) se sigue leyendo: igual que v4 pero sin el byte de indicador y siempre con contraseña.
  * - Contraseña vacía al cifrar = sin contraseña.
  * - KDF: PBKDF2-HMAC-SHA256, 310 000 iteraciones por defecto (OWASP 2023), salt aleatorio por archivo.

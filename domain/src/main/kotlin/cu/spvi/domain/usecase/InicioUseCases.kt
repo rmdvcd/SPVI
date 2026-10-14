@@ -21,7 +21,6 @@ import cu.spvi.domain.repository.TurnoRepository
 import cu.spvi.domain.repository.VentaRepository
 import cu.spvi.domain.service.Estadisticas
 import cu.spvi.domain.service.Stock
-import java.time.LocalDate
 import java.time.ZoneId
 import cu.spvi.domain.model.Preferencias
 import javax.inject.Inject

@@ -166,8 +166,8 @@ class MigrarTest {
     @Test fun loQueNoEsUnCodigoDeMigracionSeRechaza() {
         assertNull(CodigoMigracion.parsear(""))
         assertNull(CodigoMigracion.parsear("SPVI-VINC1:otra cosa"))
-        assertNull(CodigoMigracion.parsear("SPVIM1|EMISOR|host|0|clave-de-16-carac|origen"))
-        assertNull(CodigoMigracion.parsear("SPVIM1|NI_EMISOR_NI_RECEPTOR|host|80|clave-de-16-carac|origen"))
+        assertNull(CodigoMigracion.parsear("SPVIM1|EMISOR|host|0|clave-de-prueba-de-32-caracteres|origen"))
+        assertNull(CodigoMigracion.parsear("SPVIM1|NI_EMISOR_NI_RECEPTOR|host|80|clave-de-prueba-de-32-caracteres|origen"))
         assertNull(CodigoMigracion.parsear("SPVIM1|EMISOR|host|80|corta|origen"))
     }
 

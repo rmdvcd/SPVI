@@ -53,12 +53,16 @@ class PlanificadorVentaTest {
         assertTrue(ef.ajustes.isEmpty())
     }
 
-    @Test fun `descuentos no permiten vender al costo ni por debajo`() {
+    @Test fun `descuentos al costo o por debajo cotizan con advertencia`() {
+        // Auditoría 2026-10-14 (§6.1): ya no bloquea; advierte la línea afectada.
         listOf(-4000, -5000).forEach { descuento ->
             val pre = listOf(PreajustePrecios(1, "Descuento", descuento, setOf(1L)))
-            val r = PlanificadorVenta.cotizar(listOf(LineaSolicitada(1, 1)), ps, MetodoPago.EFECTIVO, pre)
-            assertEquals(AppError.Validacion("precioVenta", AppError.Regla.RANGO), (r as AppResult.Err).error)
+            val c = ok(PlanificadorVenta.cotizar(listOf(LineaSolicitada(1, 1)), ps, MetodoPago.EFECTIVO, pre))
+            assertEquals(listOf("P1"), c.advertencias)
         }
+        // Sin bajar al costo no hay advertencia.
+        val sin = ok(PlanificadorVenta.cotizar(listOf(LineaSolicitada(1, 1)), ps, MetodoPago.EFECTIVO, emptyList()))
+        assertTrue(sin.advertencias.isEmpty())
     }
 
     @Test fun `producto eliminado no se vende`() {

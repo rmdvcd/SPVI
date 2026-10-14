@@ -24,7 +24,6 @@ import cu.spvi.domain.usecase.ObservarRegistro
 import cu.spvi.domain.usecase.TipoRegistro
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
-import java.time.LocalDate
 import java.time.ZoneId
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException

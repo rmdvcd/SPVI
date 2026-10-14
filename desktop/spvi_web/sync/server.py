@@ -65,6 +65,13 @@ class Handler(socketserver.StreamRequestHandler):
         self.request.settimeout(90);self.request.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY,1)
         try:
             message=read_greeting(self.rfile)
+            # Auditoría 2026-10-14 (S-04, paridad con Android S-03): el `device` del saludo «hola» NO se anota
+            # hasta que la conexión supere el primer mensaje cifrado; hasta ahí solo prueba conocer los
+            # identificadores, no poseer la clave. Se aparta y se anota al autenticar (abajo). En «vincular»
+            # ya lo autentica el MAC del código, así que viaja como hasta ahora.
+            pending_device=message.get('device') if message.get('t')=='hola' else None
+            if pending_device is not None:
+                message=dict(message); message.pop('device',None)
             response,key,employee=manager.hello(message)
             self.wfile.write(greeting(response));self.wfile.flush()
             if key is None: return
@@ -141,6 +148,12 @@ class SyncManager:
         with self.lock:
             return dict(role='PRINCIPAL',running=self.running,address=self.server.server_address if self.server else None,
                         connected=sorted(self.sessions),errors=self.errors,last_error=self.last_error)
+
+    def note_device(self,id,device):
+        """Anota el `deviceId` del saludo SOLO tras autenticar la sesión (S-04): así un saludo falso no puede
+        plantar el identificador de otro. La validación del formato la hace `Business.set_device`."""
+        with self.business.connect() as db:
+            self.business.set_device(db,id,device)
 
     def register(self,id,connection):
         with self.lock:

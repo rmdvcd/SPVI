@@ -174,13 +174,16 @@ class RespaldoTest {
         assertNull(vm.state.value.exportado)
     }
 
-    /** 0.27.0 (T10): la contraseña es opcional y viene apagada; sin ella se exporta con contraseña vacía. */
-    @Test fun exportarSinContrasenaPorDefecto() = runTest {
+    /**
+     * 0.27.0 (T10): la contraseña es opcional. Auditoría 2026-10-14 (S-01): viene ENCENDIDA por defecto (el modo
+     * sin contraseña solo ofusca); sin contraseña solo se exporta si el usuario la apaga expresamente.
+     */
+    @Test fun exportarSinContrasenaSoloSiSeApaga() = runTest {
         val vm = vm(); val ev = mutableListOf<EventoRespaldo>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.eventos.collect { ev += it } }
-        assertFalse(vm.state.value.export.conContrasena)
+        assertTrue(vm.state.value.export.conContrasena)
+        vm.editarExport { it.copy(conContrasena = false, contrasena = "quedo-escrita", repetir = "x") } // apagada: se ignora
         assertTrue(vm.state.value.export.valido)
-        vm.editarExport { it.copy(contrasena = "quedo-escrita", repetir = "x") } // escrita pero apagada: se ignora
         vm.guardarEnTelefono()
         assertEquals(EventoRespaldo.ElegirDestino("SPVI_respaldo_2026-09-30.spvi"), ev.single())
         vm.destinoElegido("content://doc/2")

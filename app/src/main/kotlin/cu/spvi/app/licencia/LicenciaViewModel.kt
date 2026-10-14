@@ -2,7 +2,6 @@ package cu.spvi.app.licencia
 
 import cu.spvi.domain.repository.LicenciaRepository
 import cu.spvi.domain.repository.PerfilRepository
-import cu.spvi.licencia.ActivationResult
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cu.spvi.core.result.AppResult

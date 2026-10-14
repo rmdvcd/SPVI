@@ -67,7 +67,7 @@ Un solo test: `./gradlew :domain:test --tests "cu.spvi.domain.Version025Test"`. 
 ## Qué se ha ejecutado y qué no
 
 Desde el **2026-10-07** el CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) ejecuta Gradle real en cada push:
-`spviTests` (825 tests JVM), `:app:lintDebug`, `:app:assembleRelease` (R8, con control de clases ausentes),
+`spviTests` (906 tests JVM sin contar las 146 capturas Roborazzi; conteo estático 2026-10-14, el runner manda), `:app:lintDebug`, `:app:assembleRelease` (R8, con control de clases ausentes),
 `spviPermisos` y `tools/verificacion/api_minima.py`. El estado y los números están en
 [docs/VERIFICACION.md](docs/VERIFICACION.md).
 

@@ -7,9 +7,6 @@ import cu.spvi.core.result.AppResult
 import cu.spvi.domain.repository.EtapaRespaldo
 import cu.spvi.domain.repository.ExportadorDocumentos
 import cu.spvi.domain.repository.InsumoRepository
-import cu.spvi.domain.repository.PerfilRepository
-import cu.spvi.domain.repository.PreciosRepository
-import cu.spvi.domain.repository.ProductoRepository
 import cu.spvi.domain.repository.RegistroRepository
 import cu.spvi.domain.repository.RespaldoRepository
 import cu.spvi.domain.repository.ResumenRespaldo
@@ -28,12 +25,10 @@ import cu.spvi.domain.model.TipoEntidad
 import cu.spvi.domain.model.VistaRegistro
 import cu.spvi.domain.service.RegistrosFiltro
 import cu.spvi.domain.di.IoDispatcher
-import java.time.LocalDate
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 
 // ---------------- Registros ----------------

@@ -131,7 +131,7 @@ data class InfoRespaldo(val version: Int, val creadoEn: Instant?, val bytes: Lon
  * (PBKDF2-HMAC-SHA256 + AES-256-GCM). La BD SQLCipher está atada al Keystore y no es portable por sí misma.
  */
 interface RespaldoRepository {
-    /** [contrasena] vacía = sin contraseña (0.27.0, T10: opcional, apagada por defecto). */
+    /** [contrasena] vacía = sin contraseña (0.27.0, T10: opcional; auditoría S-01: la pantalla la trae encendida). */
     suspend fun exportar(
         contrasena: CharArray, destino: OutputStream, progreso: (EtapaRespaldo) -> Unit = {},
     ): AppResult<ResumenRespaldo>
