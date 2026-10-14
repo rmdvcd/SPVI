@@ -1,6 +1,8 @@
 package cu.spvi.licencia
 
 import cu.spvi.licencia.contract.Envelope
+import cu.spvi.licencia.contract.CodigoLicencia
+import cu.spvi.licencia.contract.DatosUsuario
 import cu.spvi.licencia.contract.EstadoLicencia
 import cu.spvi.licencia.contract.GlContract
 import cu.spvi.licencia.contract.GlJson
@@ -78,10 +80,24 @@ class FakeGl {
         return Issued(id, MensajesLicencia.licencia(campos, codigo), codigo)
     }
 
-    /** Licencia LARGA v1 (antes de 0.23.0): envelope JSON con el id fuera. */
-    fun issueLarga(req: RequestPayload, emitidaEn: Instant, id: String = UUID.randomUUID().toString()): Issued {
+    /**
+     * Licencia LARGA v1 (el flujo «envelope» del contrato GL, §5 y §6): código de 16 caracteres + envelope JSON con el
+     * `ID:` fuera. [appName] permite emitir a nombre de otra app (para probar el rechazo). [aadHeredada] reproduce una
+     * licencia emitida antes de la canonicalización con longitud prefijada (mitigación 8).
+     */
+    fun issueLarga(
+        req: RequestPayload,
+        emitidaEn: Instant,
+        id: String = UUID.randomUUID().toString(),
+        appName: String = "SPVI",
+        codigo: String? = null,
+        aadHeredada: Boolean = false,
+        dispositivo: String = "Redmi Note 11",
+    ): Issued {
         val devicePub = EcP256.descomprimir(B64.urlDec(req.devicePub))
         val dias = dias(req.tipo)
+        // El código de 16 caracteres del contrato (`XXXX-XXXX-XXXX-XXXX`); [codigo] lo fuerza para las pruebas de rechazo.
+        val codigo16 = codigo ?: CodigoLicencia.formatear(UUID.randomUUID().toString().filter { it.isLetterOrDigit() }.take(16))!!
         val lic = LicensePayload(
             nombre = req.nombre, apellidos = req.apellidos, ci = req.ci, via = req.via, telefono = req.telefono,
             deviceId = req.deviceId, tipo = req.tipo, solicitadaEn = req.solicitadaEn,
@@ -90,17 +106,23 @@ class FakeGl {
             venceEn = dias?.let { emitidaEn.plus(Duration.ofDays(it)).toString() },
             estado = if (dias == null) EstadoLicencia.PERPETUA else EstadoLicencia.ACTIVA,
             secundarias = req.secundarias,
+            appName = appName, dispositivo = dispositivo,
+            licenciaObtenida = codigo16, codigoCorto = codigo16,
+            periodoRestante = dias,
+            usuario = DatosUsuario(req.nombre, req.apellidos, req.ci, req.telefono, req.via),
         )
+        val aad = if (aadHeredada) GlContract.licenseAadHeredada(id) else GlContract.licenseAad(id)
         val eph = EcP256.generate()
         val epkDer = eph.public.encoded
         val iv = ByteArray(12).also(rnd::nextBytes)
         val key = Hkdf.sha256(EcP256.ecdh(eph.private, devicePub), iv, GlContract.HKDF_INFO_LICENSE.toByteArray(), 32)
-        val out = AesGcm.encrypt(key, iv, GlContract.licenseAad(id), GlJson.encoder.encodeToString(LicensePayload.serializer(), lic).toByteArray())
+        val out = AesGcm.encrypt(key, iv, aad, GlJson.encoder.encodeToString(LicensePayload.serializer(), lic).toByteArray())
         val ct = out.copyOfRange(0, out.size - 16); val tag = out.copyOfRange(out.size - 16, out.size)
         val sig = EcP256.sign(signing.private, epkDer + iv + ct + tag)
         val env = Envelope(1, GlContract.ALG, B64.enc(epkDer), B64.enc(iv), B64.enc(ct), B64.enc(tag), B64.enc(sig), GlContract.KID)
         val json = GlJson.encoder.encodeToString(Envelope.serializer(), env)
-        return Issued(id, "Licencia SPVI $id\n$json", json, lic)
+        // Mensaje de 3 líneas como el que envía GL por el flujo v1: cobro, ID y envelope.
+        return Issued(id, "Licencia $appName ${req.tipo} · ${req.secundarias} secundarias\nID: $id\n$json", json, lic)
     }
 
     /** [codigo]: el código `SPVI2:` (o el JSON del envelope en las largas). */

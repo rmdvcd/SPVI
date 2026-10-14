@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import '../../licensing/cliente.dart' as lic;
+
 /// Moneda en centavos para precisión sin decimales flotantes
 class Money {
   final int centavos;
@@ -16,23 +18,66 @@ class Money {
   factory Money.fromDouble(double value) => Money((value * 100).round());
 }
 
-/// Estado de la Licencia Offline
+/// Estado de la Licencia Offline (lo que ve la interfaz)
 enum TipoLicencia { prueba, activa, vencida }
 
+/// Estado de la licencia que muestra la interfaz.
+///
+/// Es una **traducción** del estado real (`licensing/cliente.dart`): aquí solo hay texto para las pantallas, nunca un
+/// `bool isLicensed`. La licencia de verdad se vuelve a verificar en cada consulta al cliente de licencias.
 class LicenciaInfo {
   final TipoLicencia tipo;
   final int diasRestantesPrueba;
   final String? clave;
   final String? titular;
 
+  /// `SPVI:…`, la identidad de este equipo (la que ata la licencia).
+  final String dispositivo;
+
+  /// Por qué está bloqueada (si lo está), en texto para el usuario.
+  final String? motivo;
+
+  /// Apps secundarias que cubre la licencia (0 si no hay licencia válida).
+  final int secundarias;
+
+  /// Vencimiento de la licencia (null = perpetua o período de prueba sin licencia).
+  final DateTime? venceEn;
+
+  /// Todavía se está leyendo el documento de licencia del equipo.
+  final bool cargando;
+
   const LicenciaInfo({
     required this.tipo,
     this.diasRestantesPrueba = 7,
     this.clave,
     this.titular,
+    this.dispositivo = '',
+    this.motivo,
+    this.secundarias = 0,
+    this.venceEn,
+    this.cargando = false,
   });
 
   bool get estaOperativo => tipo != TipoLicencia.vencida;
+
+  /// Mientras se lee el documento de licencia del equipo.
+  factory LicenciaInfo.cargando() => const LicenciaInfo(tipo: TipoLicencia.prueba, cargando: true);
+
+  /// Traduce el estado real del cliente de licencias a lo que muestran las pantallas.
+  factory LicenciaInfo.desdeEstado(lic.EstadoLicencia estado) => LicenciaInfo(
+    tipo: switch (estado.clase) {
+      lic.ClaseLicencia.prueba => TipoLicencia.prueba,
+      lic.ClaseLicencia.activa || lic.ClaseLicencia.perpetua => TipoLicencia.activa,
+      lic.ClaseLicencia.bloqueada => TipoLicencia.vencida,
+    },
+    diasRestantesPrueba: estado.diasRestantes,
+    clave: estado.id,
+    titular: estado.tipo?.etiqueta,
+    dispositivo: estado.dispositivo,
+    motivo: estado.motivo,
+    secundarias: estado.secundarias,
+    venceEn: estado.venceEn,
+  );
 }
 
 /// Estado y Datos del Turno

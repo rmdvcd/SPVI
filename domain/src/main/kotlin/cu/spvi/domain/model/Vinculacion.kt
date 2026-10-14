@@ -136,14 +136,30 @@ enum class ModoSincronizacion(val etiqueta: String, val detalle: String) {
     MANUAL("Manual", "Solo cuando toques «Sincronizar ahora» (y siempre antes de abrir un turno)"),
 }
 
-/** Estado de la licencia de la principal tal como lo recibió la secundaria en la última sincronización. */
+/**
+ * Estado de la licencia de la principal tal como lo recibió la secundaria en la última sincronización.
+ *
+ * 0.31.0 (mitigación 7, Opción A): [subToken]/[firmaPub]/[ranura]/[permitidas] son el permiso **firmado** por la
+ * principal para esta secundaria. Cuando vienen (principal 0.31+) se verifican antes de dar la licencia por buena;
+ * `null` = una principal anterior no lo manda (convivencia).
+ */
 data class LicenciaPrincipal(
     val clase: Clase,
     val tipo: TipoLicencia? = null,
     /** null = perpetua. */
     val venceEn: Instant? = null,
+    val subToken: String? = null,
+    val firmaPub: String? = null,
+    val ranura: Int? = null,
+    val permitidas: Int? = null,
 ) {
     enum class Clase { PRUEBA, ACTIVA, PERPETUA, BLOQUEADA }
+
+    /** Permiso firmado presente (una principal 0.31+ lo manda). */
+    val conPermiso: Boolean get() = !subToken.isNullOrBlank() && !firmaPub.isNullOrBlank()
+
+    /** Copia bloqueada (la secundaria no acepta lo que no puede comprobar). */
+    fun bloqueada(): LicenciaPrincipal = LicenciaPrincipal(Clase.BLOQUEADA)
 
     /** Estado equivalente para la secundaria (mismo banner y mismo bloqueo que la principal). */
     fun estado(ahora: Instant): LicenseState = when (clase) {

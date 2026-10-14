@@ -41,6 +41,8 @@ import kotlinx.coroutines.Dispatchers
 abstract class DataModule {
     @Binds abstract fun licenseStore(impl: DataStoreLicenseStore): LicenseStore
     @Binds abstract fun licenciaRepository(impl: LicenciaRepositoryImpl): LicenciaRepository
+    /** 0.31.0 (mitigación 7): clave con la que la principal firma los sub-tokens de las secundarias. */
+    @Binds abstract fun firmanteLicencia(impl: cu.spvi.data.licencia.FirmanteLicenciaAndroid): cu.spvi.licencia.secondary.FirmanteLicencia
     // 0.26.0 (P74): registro de la prueba fuera de la app + reloj monótono.
     @Binds abstract fun registroExterno(impl: cu.spvi.data.licencia.prueba.RegistroPruebaAndroid): cu.spvi.licencia.prueba.RegistroExterno
     @Binds abstract fun pruebaRepository(impl: cu.spvi.data.licencia.prueba.RegistroPruebaAndroid): cu.spvi.domain.repository.PruebaRepository

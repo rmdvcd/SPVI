@@ -79,6 +79,17 @@ interface SyncDao {
     @Query("UPDATE empleado SET versionCode = :code WHERE id = :id")
     suspend fun cambiarVersion(id: Long, code: Int?)
 
+    /**
+     * 0.31.0 (mitigación 7): `deviceId` de la app vinculada a este empleado (lo necesita la principal para firmarle su
+     * sub-token). NULL = todavía no se conoce.
+     */
+    @Query("UPDATE empleado SET device = :device WHERE id = :id")
+    suspend fun cambiarDevice(id: Long, device: String?)
+
+    /** 0.31.0: ids de los empleados activos, en el orden de vinculación (define la ranura 1..N de cada secundaria). */
+    @Query("SELECT id FROM empleado WHERE activo = 1 ORDER BY id")
+    suspend fun empleadosActivosIds(): List<Long>
+
     /** 0.20.0 (H5): turnos abiertos de las secundarias, para «Turno abierto desde las HH:MM» en su ficha. */
     @Query(
         """

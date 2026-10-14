@@ -140,8 +140,26 @@ class InicioScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
           children: [
+            // Banner de Licencia bloqueada (reloj manipulado, licencia vencida/revocada o prueba terminada)
+            if (licencia.tipo == TipoLicencia.vencida) ...[
+              SpviBanner(
+                titulo: "Licencia bloqueada",
+                mensaje: licencia.motivo ?? "Activa una licencia para seguir trabajando.",
+                icono: CupertinoIcons.exclamationmark_shield_fill,
+                colorFondo: SpviColors.error.withOpacity(0.12),
+                colorTexto: SpviColors.error,
+                textoAccion: "Ver licencia",
+                onAccion: () {
+                  Navigator.of(context).push(
+                    CupertinoPageRoute(builder: (_) => const LicenciaScreen()),
+                  );
+                },
+              ),
+              const SizedBox(height: 16.0),
+            ],
+
             // Banner de Licencia (Offline/Prueba)
-            if (licencia.tipo == TipoLicencia.prueba) ...[
+            if (licencia.tipo == TipoLicencia.prueba && !licencia.cargando) ...[
               SpviBanner(
                 titulo: "Período de prueba activo",
                 mensaje: "Te quedan ${licencia.diasRestantesPrueba} días de prueba gratuita completa.",

@@ -18,6 +18,9 @@ dependencies:
   intl: ^0.19.0
   uuid: ^4.4.0
   crypto: ^3.0.3
+  # Criptografía del sistema de licencias de GL (P-256: ECIES + ECDSA + HKDF + AES-GCM).
+  # Dart puro: no añade Pods ni permisos, así que compila igual en el simulador y en el iPhone.
+  pointycastle: ^3.9.1
 
 dev_dependencies:
   flutter_test:

@@ -26,6 +26,13 @@ interface LicenciaRepository {
     /** 0.25.0: aplica la lista pública de revocadas; true = la licencia de este teléfono quedó revocada. */
     suspend fun aplicarRevocaciones(texto: String): Boolean = false
 
+    /**
+     * 0.31.0 (mitigación 7, Opción A): firma el sub-token que autoriza a [dispositivo] como app secundaria en la
+     * ranura [ranura]. `null` = no se puede emitir (sin firmante en el build, app bloqueada, cuota 0 o ranura fuera
+     * de la cuota de la licencia).
+     */
+    suspend fun emitirSubToken(dispositivo: String, ranura: Int): cu.spvi.domain.model.SubTokenEmitido? = null
+
     /** Migrar: comprueba la licencia emitida al teléfono nuevo (sin guardarla ni descifrarla). */
     suspend fun verificarAutorizacionMigracion(mensaje: String): AutorizacionMigracion
     /**

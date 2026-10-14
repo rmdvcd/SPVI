@@ -1,18 +1,36 @@
 """Regresiones del principal canónico; ejecutar en la PC, sin red ni GL real."""
+import base64
 import tempfile
 import unittest
 from pathlib import Path
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 from spvi_web.business import Business, get, put, objects
+from spvi_web.licensing import subtokens
 from spvi_web.secrets import SecretBox
 from spvi_web.store import Store
 
 
 class LicenciaDePrueba:
+    """Doble de `LicenseClient`: licencia de prueba (5 secundarias) y firma de sub-tokens (mitigación 7)."""
+
+    def __init__(self):
+        self._clave = ec.generate_private_key(ec.SECP256R1())
+
     def require_active(self):
         return self.status()
 
     def status(self):
         return {'clase': 'PRUEBA', 'bloqueada': False, 'secundarias': 5}
+
+    def firma_publica(self):
+        return base64.b64encode(self._clave.public_key().public_bytes(
+            serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)).decode('ascii')
+
+    def emitir_subtoken(self, dispositivo, ranura):
+        if not isinstance(ranura, int) or not 1 <= ranura <= 5:
+            return None
+        return subtokens.emitir(self._clave, subtokens.PRUEBA_ID, 5, None, str(dispositivo), ranura)
 
 
 class BusinessTest(unittest.TestCase):

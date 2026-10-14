@@ -216,8 +216,13 @@ class SyncManager:
                 private=new_key();public=public_spki(private);key=employee_key(private,peer,token)
                 db.execute('UPDATE employees SET secret=?,token=NULL,expires=NULL,linked=? WHERE id=?',
                            (self.business.box.seal(key),dto.now_ms(),id))
+                # El `deviceId` de la secundaria (opcional) se anota para poder firmarle su sub-token.
+                self.business.set_device(db,id,message.get('device'))
                 return dict(t='vincular_ok',pub=enc(public),mac=enc(link_mac(token,peer,public)),nombreNegocio=meta(db,'name')),key,id
             if message['t']!='hola' or e['secret'] is None: return reject('desconocida')
+            # El `deviceId` de la secundaria también viene en cada saludo: si el respaldo restaurado no lo tenía, la
+            # principal vuelve a poder firmarle su sub-token (mitigación 7, Opción A).
+            self.business.set_device(db,id,message.get('device'))
             nonce=dec(message.get('nonce'))
             if len(nonce)!=16: return reject('desconocida')
             key=self.business.box.open(e['secret'])

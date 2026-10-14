@@ -48,9 +48,21 @@ val SyncJson: Json = Json {
 @Serializable
 sealed interface Saludo
 
-/** Secundaria ya vinculada → principal. */
+/**
+ * Secundaria ya vinculada → principal.
+ *
+ * 0.31.0 (mitigación 7): [device] es el `deviceId` (`SPVI:…`) de la secundaria. Es opcional para no romper la
+ * convivencia con una principal anterior, y se repite en cada saludo para que la principal pueda firmarle su sub-token
+ * aunque se haya reiniciado (el identificador no es ningún secreto: ya viaja en cada solicitud de licencia).
+ */
 @Serializable @SerialName("hola")
-data class Hola(val v: Int = VERSION_PROTOCOLO, val negocio: String, val empleado: Long, val nonce: String) : Saludo
+data class Hola(
+    val v: Int = VERSION_PROTOCOLO,
+    val negocio: String,
+    val empleado: Long,
+    val nonce: String,
+    val device: String? = null,
+) : Saludo
 
 /** Principal → secundaria: saludo aceptado. */
 @Serializable @SerialName("hola_ok")
@@ -63,9 +75,19 @@ data class HolaOk(
     val comandosUnicos: Boolean = false,
 ) : Saludo
 
-/** Primera conexión: clave pública de la secundaria + HMAC(token) que demuestra que leyó el QR. */
+/**
+ * Primera conexión: clave pública de la secundaria + HMAC(token) que demuestra que leyó el QR.
+ * 0.31.0 (mitigación 7): [device] = `deviceId` de la secundaria, para poder firmarle su sub-token.
+ */
 @Serializable @SerialName("vincular")
-data class Vincular(val v: Int = VERSION_PROTOCOLO, val negocio: String, val empleado: Long, val pub: String, val mac: String) : Saludo
+data class Vincular(
+    val v: Int = VERSION_PROTOCOLO,
+    val negocio: String,
+    val empleado: Long,
+    val pub: String,
+    val mac: String,
+    val device: String? = null,
+) : Saludo
 
 @Serializable @SerialName("vincular_ok")
 data class VincularOk(val pub: String, val mac: String, val nombreNegocio: String) : Saludo
@@ -243,9 +265,24 @@ data class Instantanea(
 @Serializable
 data class EmpleadoInfo(val nombre: String, val permisos: List<String>)
 
-/** [clase] = nombre de LicenciaPrincipal.Clase; [tipo] = nombre de TipoLicencia; [venceEn] epoch ms (null = perpetua). */
+/**
+ * [clase] = nombre de LicenciaPrincipal.Clase; [tipo] = nombre de TipoLicencia; [venceEn] epoch ms (null = perpetua).
+ *
+ * 0.31.0 (mitigación 7): los cuatro campos del **sub-token** (`SISTEMA_LICENCIAS_CLIENTES.md` §8.4) son opcionales:
+ * una principal anterior no los manda y una secundaria anterior los ignora. `subToken` es el permiso firmado por la
+ * principal para ESTA secundaria, `firmaPub` la clave pública (SPKI Base64) con la que se comprueba, `ranura` el
+ * puesto que ocupa (1..[permitidas]) y [permitidas] la cuota de secundarias de la licencia de la principal.
+ */
 @Serializable
-data class LicenciaDto(val clase: String, val tipo: String? = null, val venceEn: Long? = null)
+data class LicenciaDto(
+    val clase: String,
+    val tipo: String? = null,
+    val venceEn: Long? = null,
+    val subToken: String? = null,
+    val firmaPub: String? = null,
+    val ranura: Int? = null,
+    val permitidas: Int? = null,
+)
 
 // ---------------------------------------------------------------------------------------------- acciones remotas
 

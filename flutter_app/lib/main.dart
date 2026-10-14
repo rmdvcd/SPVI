@@ -3,7 +3,10 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'src/core/theme/spvi_colors.dart';
 import 'src/core/utils/haptics.dart';
+import 'src/domain/models/models.dart';
+import 'src/presentation/providers/spvi_providers.dart';
 import 'src/presentation/screens/inicio/inicio_screen.dart';
+import 'src/presentation/screens/licencia/bloqueo_screen.dart';
 import 'src/presentation/screens/inventario/inventario_screen.dart';
 import 'src/presentation/screens/servicios/servicios_screen.dart';
 import 'src/presentation/screens/registros/registros_screen.dart';
@@ -34,7 +37,7 @@ class SpviApp extends StatelessWidget {
         Locale('es', 'CU'),
       ],
       locale: const Locale('es', 'CU'),
-      home: const SpviMainNavigation(),
+      home: const Arranque(),
       builder: (context, child) {
         // Elimina cualquier glow de overscroll para una sensación 100% nativa iOS (bouncing physics)
         return ScrollConfiguration(
@@ -58,6 +61,28 @@ class _CupertinoNoGlowScrollBehavior extends ScrollBehavior {
   @override
   ScrollPhysics getScrollPhysics(BuildContext context) {
     return const BouncingScrollPhysics();
+  }
+}
+
+/// Arranque: espera a que se lea la licencia del equipo y, si está **bloqueada** (prueba terminada, vencida, revocada
+/// o reloj manipulado), no deja entrar al negocio: solo permite activar o pedir la licencia. Es el equivalente iOS de
+/// `bloqueo/BloqueoGate.kt` de Android.
+///
+/// La licencia se vuelve a evaluar cada vez que el proveedor la consulta, así que este bloqueo no se puede sortear
+/// dejando la app abierta.
+class Arranque extends ConsumerWidget {
+  const Arranque({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final licencia = ref.watch(licenciaProvider);
+    if (licencia.tipo == TipoLicencia.vencida) return const PantallaBloqueo();
+    if (licencia.cargando) {
+      return const CupertinoPageScaffold(
+        child: Center(child: CupertinoActivityIndicator(radius: 14)),
+      );
+    }
+    return const SpviMainNavigation();
   }
 }
 

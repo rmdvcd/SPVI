@@ -24,6 +24,13 @@ SMS, servicios ni otras funciones de Android. **No sustituye la aplicación móv
   la solicitud se envía por WhatsApp con un QR que se escanea con el teléfono, con los datos, la
   plataforma (PC) y el número de transacción del pago. El desarrollador responde con
   `XXXX-XXXX-XXXX-XXXX`, que se escribe en Ajustes › Licencia.
+- **Permiso firmado de las apps secundarias** ([LICENSE_CLIENT.md](../LICENSE_CLIENT.md) §12): la PC, como
+  principal, anota el `deviceId` de cada app que se vincula (al vincular y en cada saludo de la sesión) y le
+  firma su **sub-token** de ranura con `licensing/subtokens.py`; el permiso viaja dentro de la licencia que
+  se manda en la instantánea. Sin `deviceId` conocido se manda solo el estado, como antes.
+- **Clave maestra de desarrollo** (mitigación 1, Opción A): `GLMK-PERM-MAXS-9999` solo vale con
+  `SPVI_DESARROLLO=1` (o `true`/`si`/`on`) en el entorno; en cualquier otro caso la comprobación devuelve
+  `false` (fail-closed). Instala una licencia PERPETUA con 10 secundarias, sin pasar por GL.
 - **Datos de prueba** «Bodega La Esquina» (18 meses de turnos y ventas, parecidos a los del móvil, no
   idénticos): `SPVI.exe --seed` (borra todo) o, con `--dev`, Ajustes › Datos de prueba.
 - La red local se reanuda al abrir SPVI si estaba iniciada.
@@ -45,7 +52,7 @@ SMS, servicios ni otras funciones de Android. **No sustituye la aplicación móv
 - Reintentos HTTP idempotentes y validación anidada de DTO, relaciones y fotos.
 - PDF/Excel solo de inventario, servicios y turnos; imágenes/tarjetas de productos y servicios.
 
-**Estado real (0.31.0):** 103 pruebas Python y la autoprueba pasan en Linux, y la interfaz se recorrió en
+**Estado real (0.31.0 + licencias):** 123 pruebas Python y la autoprueba pasan en Linux, y la interfaz se recorrió en
 un navegador sin pantalla (Chromium) a 1440×900, 800×1000 y 390×844, en claro y oscuro, sin errores. **No
 se ha probado en Windows** (icono de notificación, inicio con Windows, `.exe`) ni con teléfonos reales.
 Sigue [VERIFICACION_PC.md](VERIFICACION_PC.md) antes de usar datos reales.

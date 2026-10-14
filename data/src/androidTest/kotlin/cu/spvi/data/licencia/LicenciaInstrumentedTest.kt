@@ -117,6 +117,8 @@ class LicenciaInstrumentedTest {
                     cu.spvi.licencia.prueba.combinarCopias<Int>(emptyMap())
             },
             object : cu.spvi.licencia.prueba.DetectorRetroceso { override suspend fun retrocedio(ahoraMs: Long) = false },
+            // 0.31.0 (mitigación 7): el firmante de los sub-tokens es la clave real del Keystore de pruebas.
+            cu.spvi.data.licencia.FirmanteLicenciaAndroid(context, KeystoreAead(context)),
         )
         val lic = repo.refrescar()
         val fijada = LicenseTrust.ecdhSpki()

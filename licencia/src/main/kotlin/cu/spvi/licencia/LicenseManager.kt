@@ -25,7 +25,13 @@ import java.security.SecureRandom
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import cu.spvi.licencia.contract.CodigoLicencia
 import cu.spvi.licencia.contract.GlContract
+import cu.spvi.licencia.contract.SolicitudEnvelope
+import cu.spvi.licencia.contract.APP_NAME
+
+/** id local de la licencia que instala la clave maestra de desarrollo (no viene de GL). */
+const val ID_MAESTRA_LICENCIA: String = "master-license-local"
 
 /**
  * Licencia guardada: el envelope COMPLETO + los metadatos que pide el contrato (checklist §5: id, venceEn,
@@ -41,6 +47,11 @@ data class StoredLicense(
     val tipo: TipoLicencia? = null,
     val venceEn: String? = null,
     val deviceId: String? = null,
+    /**
+     * 0.31.0: la licencia se activó con la clave maestra de desarrollo (`GLMK-PERM-MAXS-9999`). Solo vale en builds
+     * `DEBUG`: en release se descarta al evaluar (mitigación 1, Opción A).
+     */
+    val maestra: Boolean = false,
 )
 
 /** Licencia instalada y verificada (para el panel de Licencia). */
@@ -135,6 +146,13 @@ class LicenseManager(
     private val registroExterno: cu.spvi.licencia.prueba.RegistroExterno? = null,
     /** 0.26.0 (P74): reloj monótono (mismo arranque); se suma a la detección por `lastSeen`. */
     private val detectorRetroceso: cu.spvi.licencia.prueba.DetectorRetroceso? = null,
+    /**
+     * 0.31.0: build de depuración. Habilita la clave maestra de desarrollo (mitigación 1, Opción A). Por defecto
+     * `false` (fail-closed); la app de release no la activa nunca.
+     */
+    private val esDebug: Boolean = false,
+    /** 0.31.0: firma los sub-tokens de las apps secundarias. Sin firmante no se puede emitir ninguno. */
+    private val firmante: cu.spvi.licencia.secondary.FirmanteLicencia? = null,
 ) {
     private val glEcdh = glEcdhSpki?.let(EcP256::publicKey)
     private val signKeys = glSignSpkis.map(EcP256::publicKey)
@@ -236,13 +254,42 @@ class LicenseManager(
     suspend fun licenciaRenovable(): String? = evaluate().license?.takeIf { it.venceEn != null }?.id
 
     /**
-     * Procesa el mensaje de licencia pegado, compartido o leído de un QR. 0.23.0: solo se acepta la licencia corta
-     * cifrada (`SPVI2:…`); el texto de arriba es informativo y se ignora. Una licencia larga (envelope v1) ya no se
-     * activa: [ActivationResult.NotFound] (no hay licencia de SPVI válida en el texto).
+     * Procesa el mensaje de licencia pegado o compartido. Acepta, en este orden:
+     *  1. la **clave maestra de desarrollo** (`GLMK-PERM-MAXS-9999`), solo en builds `DEBUG` (mitigación 1);
+     *  2. la licencia corta cifrada `SPVI2:…` (el formato de SPVI ≥ 0.23.1);
+     *  3. la licencia **larga** (`envelope v1` + línea `ID:`), el flujo común del contrato de GL.
+     * Cualquier otra cosa: [ActivationResult.NotFound] o [ActivationResult.Rejected], nunca una excepción.
      */
     suspend fun activate(message: String): ActivationResult {
-        val corta = LicenciaCorta.extraer(message) ?: return ActivationResult.NotFound
-        return activarCorta(corta)
+        if (esClaveMaestra(message)) return activarMaestra()
+        LicenciaCorta.extraer(message)?.let { return activarCorta(it) }
+        return activarLarga(message)
+    }
+
+    /** ¿El texto es la clave maestra de desarrollo? Solo en builds `DEBUG` (en release siempre `false`). */
+    fun esClaveMaestra(texto: String): Boolean = CodigoLicencia.esMaestra(texto, esDebug)
+
+    /**
+     * Activa la clave maestra: licencia PERPETUA con el máximo de apps secundarias (10), sin envelope ni firma (no
+     * viaja por WhatsApp: la escribe el desarrollador). Queda marcada como [StoredLicense.maestra] para que un build
+     * de release la descarte al evaluar.
+     */
+    private suspend fun activarMaestra(): ActivationResult {
+        val current = store.license()
+        if (current != null && current.maestra) return ActivationResult.Accepted(LicenseState.Perpetual(ID_MAESTRA, GlContract.SECUNDARIAS_MAX))
+        store.clearRevoked()
+        store.saveLicense(
+            StoredLicense(
+                envelopeJson = CodigoLicencia.MAESTRA,
+                licenseId = ID_MAESTRA,
+                emitidaEn = clock.now().toString(),
+                tipo = TipoLicencia.PERPETUA,
+                venceEn = null,
+                deviceId = deviceId,
+                maestra = true,
+            ),
+        )
+        return ActivationResult.Accepted(LicenseState.Perpetual(ID_MAESTRA, GlContract.SECUNDARIAS_MAX))
     }
 
     private suspend fun activarCorta(codigo: LicenciaCorta.Codigo): ActivationResult {
@@ -253,10 +300,54 @@ class LicenseManager(
         return instalar(payload, state, envelopeJson = codigo.texto, licenseId = payload.id)
     }
 
+    /**
+     * Licencia **larga** (envelope v1). El `ID:` viaja fuera del sobre porque la AAD del GCM lo necesita antes de
+     * descifrar. Se exige que sea de esta app y de este dispositivo, y no se acepta si ya venció.
+     */
+    private suspend fun activarLarga(message: String): ActivationResult {
+        val json = SolicitudEnvelope.extraerEnvelope(message) ?: return ActivationResult.NotFound
+        val env = runCatching { GlJson.envelopeDecoder.decodeFromString(Envelope.serializer(), json) }.getOrNull()
+            ?: return ActivationResult.Rejected
+        val licenseId = SolicitudEnvelope.extraerId(message) ?: return ActivationResult.NotFound
+        val payload = runCatching { openPayload(env, licenseId) }.getOrNull() ?: return ActivationResult.Rejected
+        // `appName` es obligatorio en el flujo v1 y tiene que ser SPVI (acepta «SPVI» / «spvi»).
+        if (!APP_NAME.equals(payload.appName, ignoreCase = true)) return ActivationResult.Rejected
+        val state = runCatching {
+            LicenseValidator.evaluate(payload, licenseId, deviceId, deviceKey.publicSpki(), clock.now())
+        }.getOrNull() ?: return ActivationResult.Rejected
+        return instalar(payload, state, envelopeJson = json, licenseId = licenseId)
+    }
+
+    /**
+     * 0.31.0 (mitigación 7, Opción A): emite el **sub-token** que autoriza a [dispositivo] como app secundaria en la
+     * ranura [ranura]. Solo con una licencia propia auténtica y desbloqueada (`Adquirida`/`Prueba`), y solo si hay
+     * firmante en el build. `null` = no se puede emitir (sin firmante, app bloqueada, cuota 0 o ranura fuera de rango).
+     */
+    suspend fun emitirSubToken(dispositivo: String, ranura: Int): String? {
+        val f = firmante ?: return null
+        val ev = evaluate()
+        if (!ev.state.unlocked) return null
+        val cuota = ev.state.secundariasPermitidas
+        if (cuota <= 0 || ranura !in 1..cuota) return null
+        val id = ev.license?.id ?: ID_PRUEBA
+        val vence = ev.license?.venceEn
+        return runCatching {
+            cu.spvi.licencia.secondary.SubToken.emitir(f, id, cuota, vence, dispositivo, ranura)
+        }.getOrNull()
+    }
+
+    /** Cuota de apps secundarias de la licencia instalada (0 si no hay licencia válida). */
+    suspend fun cuotaSecundarias(): Int {
+        val ev = evaluate()
+        return if (ev.state.unlocked) ev.state.secundariasPermitidas else 0
+    }
+
     /** No se instala una licencia más antigua que la actual ni anterior a la migración. */
     private suspend fun instalar(payload: LicensePayload, state: LicenseState, envelopeJson: String, licenseId: String): ActivationResult {
         val current = store.license()
-        if (current != null && Instant.parse(payload.emitidaEn).isBefore(Instant.parse(current.emitidaEn))) {
+        // Una licencia auténtica de GL siempre manda sobre la clave maestra de desarrollo (que es solo una ayuda de
+        // depuración), aunque se instalara después.
+        if (current != null && !current.maestra && Instant.parse(payload.emitidaEn).isBefore(Instant.parse(current.emitidaEn))) {
             return ActivationResult.Outdated
         }
         // Una licencia anterior a la migración (p. ej. el mensaje viejo aún en WhatsApp) ya no vale aquí.
@@ -342,6 +433,14 @@ class LicenseManager(
 
     /** null = no verifica (alterada, otra clave de dispositivo, metadatos incoherentes…): se ignora. */
     private fun verifyStored(stored: StoredLicense, now: Instant): Pair<LicenseState, InstalledLicense>? = runCatching {
+        // Clave maestra: perpetua y con 10 secundarias, pero SOLO en builds DEBUG (mitigación 1, Opción A). En release
+        // la licencia instalada con la clave maestra se ignora, igual que si no existiera.
+        if (stored.maestra) {
+            if (!esDebug) return@runCatching null
+            return@runCatching LicenseState.Perpetual(ID_MAESTRA, GlContract.SECUNDARIAS_MAX) to InstalledLicense(
+                ID_MAESTRA, TipoLicencia.PERPETUA, Instant.parse(stored.emitidaEn), null, GlContract.SECUNDARIAS_MAX,
+            )
+        }
         val p = if (stored.envelopeJson.startsWith(LicenciaCorta.PREFIJO)) {
             abrirCorta(LicenciaCorta.extraer(stored.envelopeJson) ?: fail())
         } else {
@@ -360,6 +459,13 @@ class LicenseManager(
 
     companion object {
         const val TRIAL_DAYS = 7
+
+        /** id local de la licencia instalada con la clave maestra de desarrollo (no viene de GL). */
+        const val ID_MAESTRA: String = ID_MAESTRA_LICENCIA
+
+        /** id con el que se emiten los sub-tokens mientras la app está en periodo de prueba (no hay licencia). */
+        const val ID_PRUEBA: String = "prueba"
+
         /** Margen para ajustes de hora/zona antes de considerar manipulación del reloj. */
         val CLOCK_TOLERANCE: Duration = Duration.ofHours(2)
     }

@@ -2,12 +2,19 @@
 import copy
 import unittest
 import uuid
+from datetime import datetime,timezone
 from types import SimpleNamespace
 from tests import test_business
+from spvi_web.licensing import subtokens
 from spvi_web import dto
 from spvi_web.business import objects,get
 from spvi_web.sync.server import SyncManager,enc,dec,local_address
 from spvi_web.sync.protocol import qr_decode,new_key,public_spki,link_mac,employee_key
+
+
+def verify_subtoken(token,pub,device,_=None):
+    """Comprueba el sub-token con la cuota de la licencia de prueba (5)."""
+    return subtokens.verificar(token,pub,device,datetime.now(timezone.utc),cuota_maxima=5)
 
 
 class SyncServerTest(unittest.TestCase):
@@ -28,6 +35,50 @@ class SyncServerTest(unittest.TestCase):
         self.business.edit_employee(dict(action='revoke',id=employee))
         denied=manager.hello(dict(t='hola',v=1,negocio=fields['n'],empleado=employee,nonce=enc(bytes(16))))[0]
         self.assertEqual('quitada',denied['motivo']);self.assertIn('mac',denied)
+
+    def test_la_secundaria_recibe_su_sub_token_firmado(self):
+        """Mitigación 7: la principal entrega un permiso firmado con la ranura de la secundaria."""
+        employee=self.employee();manager=SyncManager(self.business)
+        manager.running=True;manager.server=SimpleNamespace(server_address=('192.168.1.10',47811))
+        fields,token=qr_decode(manager.qr(employee));private=new_key();peer=public_spki(private)
+        device='SPVI:secundaria000001'
+        hello=dict(t='vincular',v=1,negocio=fields['n'],empleado=employee,pub=enc(peer),
+                   mac=enc(link_mac(token,peer)),device=device)
+        response,key,linked=manager.hello(hello)
+        self.assertEqual('vincular_ok',response['t'])
+        with self.business.connect() as db:
+            self.assertEqual(device,self.business.employee(db,employee)['device'])
+            first=self.business.instantanea(db,self.business.employee(db,employee))
+        permiso=first['licencia']
+        self.assertEqual(1,permiso['ranura']);self.assertEqual(5,permiso['permitidas'])
+        datos=verify_subtoken(permiso['subToken'],permiso['firmaPub'],device,subtokens.PERPETUA)
+        self.assertEqual(device,datos['dispositivo']);self.assertEqual(1,datos['ranura'])
+        # Una secundaria distinta no puede usar el permiso de otra.
+        self.assertIsNone(subtokens.verificar(permiso['subToken'],permiso['firmaPub'],'SPVI:otra000000000001',
+                                              datetime.now(timezone.utc),cuota_maxima=5))
+        # Quitar la secundaria de la cuota deja la licencia en BLOQUEADA y sin permiso.
+        self.business.edit_employee(dict(action='revoke',id=employee))
+        with self.business.connect() as db:
+            revocada=self.business.instantanea(db,self.business.employee(db,employee))
+        self.assertEqual('BLOQUEADA',revocada['licencia']['clase']);self.assertNotIn('subToken',revocada['licencia'])
+
+    def test_el_saludo_vuelve_a_anotar_el_device_de_la_secundaria(self):
+        """Mitigación 7: si la principal perdió el `deviceId` (respaldo restaurado), el saludo lo vuelve a dejar."""
+        employee=self.employee();manager=SyncManager(self.business)
+        manager.running=True;manager.server=SimpleNamespace(server_address=('192.168.1.10',47811))
+        fields,token=qr_decode(manager.qr(employee));private=new_key();peer=public_spki(private)
+        device='SPVI:secundaria000001'
+        manager.hello(dict(t='vincular',v=1,negocio=fields['n'],empleado=employee,pub=enc(peer),
+                           mac=enc(link_mac(token,peer)),device=device))
+        with self.business.connect() as db: db.execute('UPDATE employees SET device=NULL WHERE id=?',(employee,))
+        # Ni el `device` inválido ni el de una secundaria sin asiento se anotan; el bueno de su titular, sí.
+        response,_,_=manager.hello(dict(t='hola',v=1,negocio=fields['n'],empleado=employee,nonce=enc(bytes(16)),device='no vale'))
+        self.assertEqual('hola_ok',response['t'])
+        with self.business.connect() as db: self.assertIsNone(self.business.employee(db,employee)['device'])
+        manager.hello(dict(t='hola',v=1,negocio=fields['n'],empleado=employee,nonce=enc(bytes(16)),device=device))
+        with self.business.connect() as db:
+            self.assertEqual(device,self.business.employee(db,employee)['device'])
+            self.assertIn('subToken',self.business.instantanea(db,self.business.employee(db,employee))['licencia'])
 
     def batch(self):
         turn=str(uuid.uuid4());sale=str(uuid.uuid4());now=dto.now_ms()

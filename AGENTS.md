@@ -1,6 +1,6 @@
 # SPVI — reglas para agentes (OpenCode)
 
-App Android de punto de venta e inventario para pequeños negocios en Cuba. **Versión 0.30.0 (`versionCode 51`)**. Paquete `cu.spvi.app`. Todo el texto de la interfaz, los comentarios y la documentación están en **español**; responde en español.
+App Android de punto de venta e inventario para pequeños negocios en Cuba. **Versión 0.30.0 (`versionCode 51`)**; en curso la 0.30.1 del móvil y el sistema de licencias del contrato GL (clave maestra, sub-tokens y envelope v1, `LICENSE_CLIENT.md` §11–§13). Paquete `cu.spvi.app`. Todo el texto de la interfaz, los comentarios y la documentación están en **español**; responde en español.
 
 **Empieza por `Contexto.md`** (resumen completo del proyecto), `Pendiente.md` (lo que falta) y `Pruebas.md` (qué probar y en qué orden); `opencode.json` carga los dos primeros en cada sesión. La referencia visual es `SPVI_0.26.0_capturas_y_exportaciones.pdf` (raíz; no se sube a git). Guía paso a paso para compilar y retocar con OpenCode Desktop: `docs/OPENCODE_DESKTOP.md`. Lee los demás documentos solo cuando la tarea los necesite:
 - arquitectura, compilación y novedades: `README.md`;
@@ -21,7 +21,7 @@ Kotlin 2.0.21 · AGP 8.7.3 · Gradle 8.11.1 (wrapper) · JDK 17 · compileSdk/ta
 | Módulo | Contenido | Depende de |
 |---|---|---|
 | `:core` | Utilidades puras (dinero `Cup`, fechas, `Resultado`) | — |
-| `:licencia` | Cliente de licencias GL (formatos `SPVIR1:` / `SPVI2:`, revocaciones) | core |
+| `:licencia` | Cliente de licencias GL (formatos `SPVIR1:` / `SPVI2:`, envelope v1, revocaciones, clave maestra de depuración y sub-tokens de las secundarias) | core |
 | `:domain` | Modelos, repositorios (interfaces), casos de uso, `TablasExport` | core, licencia |
 | `:data` | Room, SQLCipher, respaldo, sincronización LAN, exportadores (PdfWriter, XlsxWriter, `DisenoPdf`) | domain |
 | `:designsystem` | Tema, `Spvi*` componentes, `SpviIcons`, `SpviSpacing` | — |
@@ -49,7 +49,7 @@ Un solo test: `./gradlew :domain:test --tests "cu.spvi.domain.Version025Test"`. 
 3. **No se vende sin turno abierto.** La cámara solo mientras se usa. SMS solo pegando o compartiendo (nunca leer SMS ni el portapapeles en segundo plano).
 4. **UI:** Material 3 claro/oscuro, contraste WCAG AA (`ContrastTest`), sin estilos sueltos: usa `Spvi*` del `:designsystem`. `SpviSpacing` tiene xs=8, md=16, lg=24, xl=32 (**no existe `sm`**). Botones de solo icono con descripción. Diálogos centrados. Guardar = ✓. Gráficos sin líneas de rejilla. Asistentes de 3–4 pasos.
 5. **Datos sensibles:** nada en logs ni en Recientes (`FLAG_SECURE` en Licencia, Perfil, QR y datos del cliente). El CI sale enmascarado (`••••••••345`) en los textos compartidos.
-6. **Licencia:** no copies el almacenamiento de GL ni expongas detalles internos. Solo la licencia corta `SPVI2:` es activable.
+6. **Licencia:** no copies el almacenamiento de GL ni expongas detalles internos. GL emite para el teléfono la licencia corta `SPVI2:`; el motor sigue aceptando la licencia **larga** (envelope v1) y, **solo en builds de depuración**, la clave maestra `GLMK-PERM-MAXS-9999` (mitigación 1: en release siempre vale `false`). La cuota de secundarias la firma la principal (sub-token, mitigación 7): la secundaria comprueba el permiso y, sin él (principal anterior), acepta la licencia como antes. Detalle en `LICENSE_CLIENT.md` §11–§13.
 7. **Documentación sin funciones inventadas.** Si cambias comportamiento, actualiza README/MANUAL_USUARIO/FORMATOS y añade una entrada en `docs/HISTORIAL_DESARROLLO.md`.
 8. Tests sin red. Todo lo que añadas debe compilar y pasar `spviTests`.
 
@@ -60,7 +60,8 @@ Un solo test: `./gradlew :domain:test --tests "cu.spvi.domain.Version025Test"`. 
 - KSP: si falla Room/Hilt de forma rara, borra `build/generated/ksp` del módulo y repite.
 - Categoría de elaborados: `Categorias.ELABORADO = "Elaborado"` (singular).
 - Excel: el formato de importe es `#,##0.00 \C\U\P` (con comillas fastexcel genera un `styles.xml` inválido).
-- Base de datos v10 (`MIGRACION_9_10`, esquema `data/schemas/…/10.json`); respaldo DTO v4 (importa v3); archivo `.spvi` v4 (lee v3). Un cambio de esquema exige migración + esquema exportado + test.
+- Base de datos v12 (`MIGRACION_11_12` añade `empleado.device` para el sub-token de las secundarias; esquema `data/schemas/cu.spvi.data.db.SpviDatabase/12.json`); respaldo DTO v4 (importa v3); archivo `.spvi` v4 (lee v3). Un cambio de esquema exige migración + esquema exportado + test. **El `12.json` lo escribe Room al compilar**: si falta, `tools/verificacion/` y el CI lo avisan; no se inventa a mano.
+- Firma de los sub-tokens: clave P-256 propia de la principal (`FirmanteLicenciaAndroid`, Keystore `PURPOSE_SIGN`, alias `spvi_licencia_firma_v1`), distinta de la clave ECDH del equipo y que **nunca** se borra al migrar ni al desvincular.
 - La firma de release debe ser **siempre la misma** (el `deviceId` de la licencia depende de ella).
 
 ## Qué se ha ejecutado y qué no

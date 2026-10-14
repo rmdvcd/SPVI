@@ -1,26 +1,80 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../domain/models/models.dart';
+import '../../licensing/almacen.dart';
+import '../../licensing/cliente.dart' as lic;
+import '../../licensing/licencia_corta.dart' as gl;
 
 final uuidProvider = Provider((ref) => const Uuid());
 
 /// Licencia Provider
+///
+/// Envuelve el cliente real de licencias (`licensing/cliente.dart`): identidad del equipo en `shared_preferences`,
+/// activación con `SPVI2:`, solicitudes `SPVIR1`, sub-tokens y marca de agua del reloj. La interfaz nunca toca la
+/// criptografía: solo lee el estado y pide activar/solicitar.
 final licenciaProvider = StateNotifierProvider<LicenciaNotifier, LicenciaInfo>((ref) {
   return LicenciaNotifier();
 });
 
 class LicenciaNotifier extends StateNotifier<LicenciaInfo> {
-  LicenciaNotifier() : super(const LicenciaInfo(tipo: TipoLicencia.prueba, diasRestantesPrueba: 7));
+  LicenciaNotifier({AlmacenLicencia? almacen}) : super(LicenciaInfo.cargando()) {
+    _iniciar(almacen ?? AlmacenPreferencias());
+  }
 
-  void activarConClave(String clave) {
-    if (clave.trim().length >= 10) {
+  lic.ClienteLicencia? _cliente;
+  final List<lic.SolicitudGenerada> _solicitudes = [];
+
+  /// Última solicitud generada (para el texto que se copia a WhatsApp).
+  lic.SolicitudGenerada? get ultimaSolicitud => _solicitudes.isEmpty ? null : _solicitudes.last;
+
+  Future<void> _iniciar(AlmacenLicencia almacen) async {
+    try {
+      _cliente = await lic.ClienteLicencia.abrir(almacen: almacen);
+      await refrescar();
+    } catch (_) {
       state = LicenciaInfo(
-        tipo: TipoLicencia.activa,
-        clave: clave.trim(),
-        titular: "Usuario Licenciado",
+        tipo: TipoLicencia.vencida,
+        motivo: 'No se pudo leer la licencia de este equipo.',
+        dispositivo: state.dispositivo,
       );
     }
   }
+
+  /// Vuelve a consultar el estado (la licencia se re-verifica entera cada vez).
+  Future<void> refrescar() async {
+    final cliente = _cliente;
+    if (cliente == null) return;
+    state = LicenciaInfo.desdeEstado(await cliente.estado());
+  }
+
+  /// Activa el código pegado por el usuario. Devuelve el resultado para que la pantalla muestre el diálogo.
+  Future<lic.ResultadoActivacion> activar(String codigo) async {
+    final cliente = _cliente;
+    if (cliente == null) {
+      return const lic.ResultadoActivacion(aceptada: false, motivo: 'La licencia aún se está cargando.');
+    }
+    final resultado = await cliente.activar(codigo.trim());
+    if (resultado.aceptada) await refrescar();
+    return resultado;
+  }
+
+  /// Genera la solicitud `SPVIR1` (y el texto para WhatsApp). `null` si no hay claves de emisión en el build.
+  Future<lic.SolicitudGenerada?> solicitar(lic.DatosSolicitud datos) async {
+    final cliente = _cliente;
+    if (cliente == null || !cliente.puedeSolicitar) return null;
+    final generada = await cliente.solicitar(datos);
+    _solicitudes.add(generada);
+    return generada;
+  }
+
+  /// Id de la licencia instalada si es renovable (no perpetua), para que GL empiece la nueva al terminar la actual.
+  Future<String?> licenciaRenovable() async => _cliente?.licenciaRenovable();
+
+  /// Identidad del equipo (`SPVI:…`).
+  String get dispositivo => _cliente?.deviceId ?? state.dispositivo;
+
+  /// Tipos de licencia del contrato GL para el formulario de solicitud.
+  static List<gl.TipoLicenciaGL> get tipos => gl.TipoLicenciaGL.values;
 }
 
 /// Perfil y Ajustes Provider

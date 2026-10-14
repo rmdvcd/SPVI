@@ -207,6 +207,8 @@ class ServidorSync @Inject constructor(
         db.syncDao().actualizarEmpleado(
             e.copy(clave = CriptoSync.enc(clave), codigoToken = null, codigoVence = null, vinculadoEn = clock.now().toEpochMilli()),
         )
+        // 0.31.0 (mitigación 7): se anota el `deviceId` de la secundaria para poder firmarle su sub-token.
+        anotarDevice(e.id, v.device)
         clave.fill(0)
         withContext(Dispatchers.IO) {
             Saludos.enviar(out, VincularOk(CriptoSync.enc(pubS), CriptoSync.enc(CriptoSync.macVinculoPrincipal(token, pubS, pubC)), nombreNegocio()))
@@ -226,6 +228,9 @@ class ServidorSync @Inject constructor(
             val mac = CriptoSync.enc(CriptoSync.macRechazo(clave, nonceC, Rechazo.QUITADA))
             return Saludos.enviar(out, Rechazo(Rechazo.QUITADA, mac)).also { socket.close() }
         }
+        // 0.31.0 (mitigación 7): el saludo repite el `deviceId` de la secundaria (p. ej. tras reinstalar la principal
+        // desde un respaldo, que no guarda los `deviceId`). Se ignora cualquier valor que no sea un `deviceId` válido.
+        if (h.device != null) anotarDevice(e.id, h.device)
         val nonceS = CriptoSync.aleatorio(CriptoSync.NONCE_BYTES)
         withContext(Dispatchers.IO) { Saludos.enviar(out, HolaOk(CriptoSync.enc(nonceS), comandosUnicos = true)) }
         val canal = CanalCifrado.paraPrincipal(input, out, CriptoSync.clavesSesion(clave, nonceC, nonceS))
@@ -266,9 +271,9 @@ class ServidorSync @Inject constructor(
             ?.let { db.syncDao().cambiarTelefono(e.id, it) }
         val rechazado = solicitudCierre(e, m.solicitaCierre)
         val fondo = fondoDe(e, m)
-        val lic = LicenciaPrincipal.de(
-            licencia.snapshot.value?.estado ?: cu.spvi.licencia.LicenseState.TrialExpired, clock.now(),
-        ).aDto()
+        val lic = conPermiso(
+            licencia.snapshot.value?.estado ?: cu.spvi.licencia.LicenseState.TrialExpired, e,
+        )
         val inst = when (val r = almacen.instantanea(e, nombreNegocio(), lic)) {
             is AppResult.Ok -> r.value
             is AppResult.Err -> return null
@@ -279,6 +284,32 @@ class ServidorSync @Inject constructor(
             cambiosVentas = cambios, apk = runCatching { apk.ofrecerA(m.versionCode) }.getOrNull(),
             asignaFondos = true, fondo = fondo,
         )
+    }
+
+    /**
+     * 0.31.0 (mitigación 7, Opción A): la licencia que viaja a la secundaria lleva, además del estado, el **permiso
+     * firmado** de su ranura ([LicenciaDto.subToken] + la clave para comprobarlo). Sin `deviceId` conocido o sin firmante
+     * en el build se manda solo el estado, como antes (una secundaria 0.31+ lo acepta: es una principal anterior).
+     */
+    private suspend fun conPermiso(estado: cu.spvi.licencia.LicenseState, e: EmpleadoEntity): LicenciaDto {
+        val base = LicenciaPrincipal.de(estado, clock.now())
+        val device = e.device?.trim().orEmpty()
+        if (device.isEmpty()) return base.aDto()
+        // Ranura = puesto del empleado entre los activos, en el orden de vinculación (1..N), como en la app de escritorio.
+        val ranura = db.syncDao().empleadosActivosIds().indexOf(e.id) + 1
+        if (ranura <= 0) return base.aDto()
+        val permiso = licencia.emitirSubToken(device, ranura) ?: return base.aDto()
+        return base.copy(
+            subToken = permiso.subToken, firmaPub = permiso.firmaPub, ranura = permiso.ranura, permitidas = permiso.permitidas,
+        ).aDto()
+    }
+
+    /** Anota el `deviceId` de una secundaria si es válido (formato del contrato). */
+    private suspend fun anotarDevice(empleadoId: Long, device: String?) {
+        val limpio = device?.trim().orEmpty()
+        if (limpio.isEmpty() || !cu.spvi.core.validation.Validators.deviceId(limpio)) return
+        if (db.syncDao().empleado(empleadoId)?.device == limpio) return
+        db.syncDao().cambiarDevice(empleadoId, limpio)
     }
 
     /**

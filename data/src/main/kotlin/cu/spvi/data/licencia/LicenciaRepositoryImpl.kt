@@ -8,13 +8,16 @@ import cu.spvi.core.time.Clock
 import cu.spvi.domain.di.IoDispatcher
 import cu.spvi.domain.model.AutorizacionMigracion
 import cu.spvi.domain.model.Licencia
+import cu.spvi.domain.model.SubTokenEmitido
 import cu.spvi.domain.repository.LicenciaRepository
 import cu.spvi.licencia.ActivationResult
 import cu.spvi.licencia.LicenseManager
 import cu.spvi.licencia.LicenseStore
 import cu.spvi.licencia.LicenseTrust
+import cu.spvi.licencia.ModoDesarrollo
 import cu.spvi.licencia.SolicitudInput
 import cu.spvi.licencia.TransferAuthorization
+import cu.spvi.licencia.crypto.B64
 import cu.spvi.licencia.crypto.DeviceKey
 import cu.spvi.licencia.crypto.EcP256
 import javax.inject.Inject
@@ -45,6 +48,11 @@ class LicenciaRepositoryImpl @Inject constructor(
     /** 0.26.0 (P74): la prueba no se reinicia al reinstalar; reloj monótono además de `lastSeen`. */
     private val registroPrueba: cu.spvi.licencia.prueba.RegistroExterno,
     private val detectorReloj: cu.spvi.licencia.prueba.DetectorRetroceso,
+    /**
+     * 0.31.0 (mitigación 7): firma los sub-tokens de las apps secundarias. Es una clave de firma propia, distinta de la
+     * del dispositivo: rotarla solo obliga a volver a vincular las secundarias.
+     */
+    private val firmante: cu.spvi.licencia.secondary.FirmanteLicencia,
 ) : LicenciaRepository {
 
     private val mutex = Mutex()
@@ -65,6 +73,10 @@ class LicenciaRepositoryImpl @Inject constructor(
             clock = clock,
             registroExterno = registroPrueba,
             detectorRetroceso = detectorReloj,
+            // Mitigación 1 (Opción A): la clave maestra de desarrollo solo vale en builds de depuración. El valor lo
+            // pone el arranque de la app con su BuildConfig.DEBUG; sin nadie que lo active queda en false (fail-closed).
+            esDebug = ModoDesarrollo.esDebug,
+            firmante = firmante,
         ).also { manager = it }
     }
 
@@ -98,6 +110,18 @@ class LicenciaRepositoryImpl @Inject constructor(
     override suspend fun activar(mensaje: String): ActivationResult = withContext(io) {
         mutex.withLock {
             runCatchingCancelable { managerLocked().activate(mensaje) }.getOrDefault(ActivationResult.Rejected)
+        }
+    }
+
+    /**
+     * 0.31.0 (mitigación 7, Opción A): permiso firmado para la app secundaria [dispositivo] (su `deviceId`) en la
+     * ranura [ranura]. `null` = no se puede emitir: sin licencia desbloqueada, cuota 0 o ranura fuera de la cuota.
+     */
+    override suspend fun emitirSubToken(dispositivo: String, ranura: Int): SubTokenEmitido? = withContext(io) {
+        mutex.withLock {
+            val m = managerLocked()
+            val token = runCatchingCancelable { m.emitirSubToken(dispositivo, ranura) }.getOrNull() ?: return@withLock null
+            SubTokenEmitido(token, B64.enc(firmante.publicSpki()), ranura, m.cuotaSecundarias())
         }
     }
 

@@ -4,6 +4,33 @@ Registro **histórico** de lo que se implementó en cada fase y de las suposicio
 
 > **Prevalece la documentación actual.** Si algo de este historial contradice a [README.md](../README.md), [SECURITY.md](../SECURITY.md), [FORMATOS.md](../FORMATOS.md), [LICENSE_CLIENT.md](../LICENSE_CLIENT.md) o [UI_UX_IX.md](../UI_UX_IX.md), vale lo que dicen esos documentos. Las fases posteriores sustituyen a las anteriores.
 
+## 2026-10-13 — Licencias en las tres apps: clave maestra, sub-tokens y envelope v1 (mitigaciones 1, 7 y 8, Opción A)
+
+- Se implementó en SPVI el sistema de licencias documentado por GL (`SISTEMA_LICENCIAS_CLIENTES.md`,
+  `docs/INTEGRATION.md`, `CONTEXTO_LICENCIAS.md`, `SECURITY.md`) con las decisiones del propietario:
+  todo el alcance, incluido el flujo v1 y los sub-tokens.
+- **Android:** `ModoDesarrollo.esDebug = BuildConfig.DEBUG` (clave maestra solo en depuración);
+  `LicenseManager.emitirSubToken` con `FirmanteLicenciaAndroid` (Keystore `PURPOSE_SIGN`, alias
+  `spvi_licencia_firma_v1`, respaldo por software envuelto con el Keystore) inyectado por Hilt;
+  `VerificadorPermisoSecundaria` (fail-closed) y los cuatro campos nuevos de `LicenciaDto` propagados por
+  `ClienteSync`/`ServidorSync`/`ConfigSync`; la principal anota el `deviceId` de cada secundaria al
+  vincular y en cada saludo (`Vincular.device`, `Hola.device`). Room sube a **v12** con la columna
+  `empleado.device` y su migración explícita (`MIGRACION_11_12`), y `EsquemaTest` ya no fija el número
+  de versión. El envelope v1 sella con la AAD canónica y sigue abriendo lo ya emitido con la heredada.
+- **Escritorio:** `sync/server.py` anota el `device` de la secundaria al vincular y en `hola`;
+  `licensing/subtokens.py` y `licensing/trust.py` ya cubrían el sub-token y `SPVI_DESARROLLO=1`.
+  Pruebas nuevas en `test_sync_server.py`. **123 pruebas Python correctas** (`pytest tests -q`).
+- **iOS (Flutter):** `flutter_app/lib/src/licensing/` reescrito sobre `pointycastle` 3.9.1 (P-256, ECDH,
+  HKDF-SHA256, AES-256-GCM, ECDSA DER/crudo, AAD con longitud prefijada): solicitud `SPVIR1`, licencia
+  corta `SPVI2:`, licencia larga v1, maestra en `kDebugMode`, marca de agua del reloj, revocadas,
+  sub-tokens, limitador de intentos y renovación. `ClienteLicencia` es ahora el estado real de la
+  pantalla de Licencia (se retiró el campo de texto de «clave» inventada). Tests con un GL de prueba en
+  `test/` (los corre Codemagic; en esta máquina no hay Dart).
+- Verificación: Android e iOS **sin compilar** (no hay JDK, Gradle ni Dart en el entorno). Queda pendiente
+  ejecutar `spviTests`, `flutter test` y commitear `data/schemas/…/12.json`, que Room exporta al compilar.
+- Documentación: [LICENSE_CLIENT.md](../LICENSE_CLIENT.md) §11–§13, [SECURITY.md](../SECURITY.md) §4 quater
+  y [Pendiente.md](../Pendiente.md).
+
 ## 2026-10-11 — Revisión de cambios de OpenCode en móvil y escritorio
 
 - Se conserva la implementación web independiente de `desktop/`; esta revisión no la sustituye ni la mezcla con la app Android.

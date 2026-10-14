@@ -17,6 +17,10 @@ class SpviApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // 0.31.0 (mitigación 1, Opción A): la clave maestra de desarrollo `GLMK-PERM-MAXS-9999` solo vale en builds de
+        // depuración. Se fija aquí, en el arranque y ANTES de tocar la licencia (los repositorios se construyen de
+        // forma perezosa). En release BuildConfig.DEBUG es false y la comprobación queda como está: fail-closed.
+        cu.spvi.licencia.ModoDesarrollo.esDebug = BuildConfig.DEBUG
         avisoTurno.iniciar(this)
         arranqueSync.iniciar()
     }

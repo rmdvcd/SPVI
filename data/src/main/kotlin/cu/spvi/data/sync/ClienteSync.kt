@@ -53,6 +53,10 @@ class ClienteSync @Inject constructor(
     /** 0.25.0: recepción del APK que reparte la principal. */
     private val apkLocal: ApkLocal,
     private val info: cu.spvi.domain.model.InfoApp,
+    /** 0.31.0 (mitigación 7): `deviceId` de este teléfono, para que la principal le firme su sub-token. */
+    private val deviceIds: cu.spvi.data.licencia.DeviceIdProvider,
+    /** 0.31.0 (mitigación 7): comprueba el permiso firmado que manda la principal con su licencia. */
+    private val permisos: cu.spvi.data.licencia.VerificadorPermisoSecundaria,
 ) {
     /** 0.25.0: cambios de ventas ya aplicados aquí, pendientes de confirmar a la principal (si se pierden, se reaplican: idempotente). */
     @Volatile private var cambiosAplicados: List<String> = emptyList()
@@ -153,7 +157,9 @@ class ClienteSync @Inject constructor(
                 ).conFondo(r)
                 if (inst == null) base else base.copy(
                     hash = r.hash, nombreNegocio = inst.nombreNegocio, nombreEmpleado = inst.empleado.nombre,
-                    permisos = inst.empleado.permisos, licencia = inst.licencia,
+                    permisos = inst.empleado.permisos,
+                    // 0.31.0 (mitigación 7): la licencia solo se guarda si trae un permiso que cubra a esta app.
+                    licencia = inst.licencia?.let(permisos::verificar),
                 )
             }
             if (hechos.isNotEmpty() && d.modoSincronizacion == ModoSincronizacion.AUTOMATICA) disparar()
@@ -234,7 +240,7 @@ class ClienteSync @Inject constructor(
             val par = CriptoSync.parNuevo()
             val pubC = par.public.encoded
             Saludos.enviar(out, Vincular(negocio = c.negocioId, empleado = c.empleadoId, pub = CriptoSync.enc(pubC),
-                mac = CriptoSync.enc(CriptoSync.macVinculoSecundaria(c.token, pubC))))
+                mac = CriptoSync.enc(CriptoSync.macVinculoSecundaria(c.token, pubC)), device = deviceIds.deviceId))
             when (val r = Saludos.recibir(input)) {
                 is VincularOk -> {
                     val pubS = CriptoSync.dec(r.pub)
@@ -322,7 +328,10 @@ class ClienteSync @Inject constructor(
             val input = BufferedInputStream(socket.getInputStream())
             val out = BufferedOutputStream(socket.getOutputStream())
             val nonceC = CriptoSync.aleatorio(CriptoSync.NONCE_BYTES)
-            Saludos.enviar(out, Hola(negocio = d.negocioId, empleado = d.empleadoId, nonce = CriptoSync.enc(nonceC)))
+            Saludos.enviar(
+                out,
+                Hola(negocio = d.negocioId, empleado = d.empleadoId, nonce = CriptoSync.enc(nonceC), device = deviceIds.deviceId),
+            )
             val clave = CriptoSync.dec(d.clave)
             try {
                 when (val r = Saludos.recibir(input)) {
