@@ -19,10 +19,22 @@ No incorpora impuestos ni contabilidad de partida doble.
 
 ### Escritorio 0.31.0
 
-Interfaz nueva, icono de notificación, inicio con Windows, tema, Tiempo en línea, datos de prueba y
-licencia de PC de 16 dígitos y licencias del contrato GL: 126 pruebas Python, autoprueba y recorrido en navegador sin pantalla
-correctos en Linux. **Pendiente:** probar en Windows (icono, registro `Run`, `.exe` sin consola) y la
-licencia de PC de punta a punta con la app GL real en el teléfono (VERIFICACION_PC.md, pasos 19–23).
+Interfaz nueva, icono de notificación, inicio con Windows, tema, Tiempo en línea, datos de prueba,
+licencia de PC de 16 dígitos y licencias del contrato GL: 126 pruebas Python, autoprueba y recorrido en
+navegador sin pantalla correctos en Linux. **Pendiente:** probar en Windows (icono, registro `Run`,
+`.exe` sin consola) y la licencia de PC de punta a punta con la app GL real en el teléfono
+(VERIFICACION_PC.md, pasos 19–23).
+
+### Mejoras del informe de feedback móvil (14 de octubre de 2026)
+
+Implementadas en `desktop/` las cinco mejoras de `desktop/INFORME_FEEDBACK_MOVIL.md` (sección 6 del
+informe): selector de período en Inicio junto al turno, fila de inventario con costo y venta
+diferenciados, casillas y barra de selección en Registros con exportación de lo seleccionado, Ayuda y
+Soporte, y fundido entre secciones con ventanas desde el centro-abajo. 129 pruebas Python y una prueba
+de humo de la interfaz (jsdom) en verde, y el workflow de Windows del PR #14 empaquetó el `.exe` con su
+autoprueba en verde. **Pendiente:** comprobar en la PC del dueño lo que el runner no ve (barra fija al
+desplazar, animaciones, exportación de la selección con muchas ventas, icono junto al reloj e inicio con
+Windows).
 
 **GL:** falta publicar en GL `security/SpviPc16.kt` (port de `pc_code.py`), los campos opcionales
 `plataforma`, `transaccion` y `recupera` de `SolicitudSpviV2` y su validación en `Spvi23`, el método
@@ -63,6 +75,46 @@ y `API mínima 26`, los cinco en verde). Lo que sigue pendiente:
 
 Las pruebas nuevas del sub-token y de la clave maestra pasan en Linux (126 pruebas en total). Falta repetirlas en
 Windows y con la app GL real, como el resto del escritorio.
+
+### Android 0.31.0 (encargo del propietario, 14 de octubre de 2026)
+
+Diez cambios pedidos para el teléfono, implementados en `app/` **sin poder compilar ni probar en este
+entorno** (no hay JDK, Android SDK, Gradle ni Dart: `dl.google.com` y `repo1.maven.org` están
+bloqueados). Falta que el CI y la PC del propietario lo verifiquen.
+
+1. **Inicio**: «Turno cerrado» y el selector de período en la misma fila, del mismo alto; menos espacio
+   bajo la barra «SPVI»; el primer contenedor (turno + período) queda **fijo al desplazar**.
+2. **Inventario**: cada fila reordenada: nombre, cantidad que se puede hacer con su unidad, categoría, y
+   a la derecha precio de costo y de venta (diferenciados por color).
+3. **Registros**: todas las listas (ventas, transferencias, movimientos, turnos y clientes fijos) con
+   **casilla de selección**, como Inventario; barra de selección para exportar solo lo marcado.
+4. **Licencia**: fuera el botón de llave «Ya tengo el mensaje de licencia»; se avanza con «Paso siguiente».
+5. **Migrar**: pasa a llamarse **Migrar** y la copia de datos se hace por **código QR** entre los dos
+   teléfonos (Emisor / Receptor) por la red local; antes hay que definir el **acceso con clave**; al
+   terminar, el teléfono emisor **se borra solo**. Se cuenta en el **recorrido inicial**.
+6. **Actualizar**: «Actualizaciones» pasa a **Actualizar**; al tocarlo sale un cuadro con **barra de
+   progreso circular** y el resultado: «Actualizado», «Estas al día» o «Sin conexión».
+7. **Ayuda**: manual por **secciones** (Empezar, Vender y cobrar, Inventario, Tus datos y tu licencia,
+   Empleados, Ayuda) con **icono por tema** y **esquemas** dibujados con formas del sistema de diseño.
+8. **Soporte**: filas centradas en el orden **Icono, Descripción, Texto**.
+9. **Primera apertura**: se piden **todos los permisos necesarios de una vez y sin textos** (diálogo del
+   sistema): cámara, notificaciones y fotos.
+10. **Animaciones**: deslizar = **desplazamiento lateral** hacia la ventana de destino; barra de
+    navegación = **fundido**; ventanas y diálogos = **suben desde el centro de abajo**.
+
+**Verificado por el CI del repositorio** (los cinco trabajos en verde): `Tests JVM y compilación de
+instrumentados`, `Lint`, `Release (R8) y APK debug`, `API mínima 26` y `Permisos del manifiesto
+fusionado`. Durante el ajuste el CI encontró cuatro imports que faltaban, el parámetro `autorizar`
+que no llegaba a `MigrarContent`, el icono del escáner (su alias público es `SpviIcons.Escanear`),
+un fake sin el método nuevo y tres tests que dependían del orden del recorrido; todo corregido.
+
+**Pendiente de verificación (igual que el resto):** capturas Roborazzi, APK en un teléfono y la
+migración real entre dos teléfonos (emisor + receptor en la misma wifi).
+
+**Capturas Roborazzi:** hay que **regenerarlas todas** (`./gradlew :app:recordRoborazziDebug`): cambia la
+interfaz de Inicio, Inventario, Registros, Licencia, Ajustes, Ayuda, Soporte y las animaciones. Además
+faltan las tres capturas nuevas de Migrar (`09t_migrar_emisor_receptor`, `09u_migrar_emisor_qr` y
+`09v_migrar_sin_clave`), que están declaradas en `AjustesCapturas.kt` pero sin PNG de referencia.
 
 ## Android
 

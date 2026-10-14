@@ -16,7 +16,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 
 
 POLICY = {
-    'inventario': ('pdf', 'xlsx'), 'turnos': ('pdf', 'xlsx'),
+    'inventario': ('pdf', 'xlsx'), 'turnos': ('pdf', 'xlsx'), 'ventas': ('pdf', 'xlsx'),
     'servicios': ('pdf', 'xlsx', 'imagen', 'tarjetas'), 'productos': ('imagen', 'tarjetas'),
 }
 MIMES = {'pdf': 'application/pdf', 'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -43,6 +43,8 @@ def table(store, scope, query='', ids=None):
         return columns, rows, items
     with store.connect() as db:
         db.execute('BEGIN')
+        if scope == 'ventas':
+            raise ValueError('Ese formato no está disponible para este contenido.')
         if scope == 'turnos':
             items = [dict(x) for x in db.execute('SELECT * FROM shifts ORDER BY id DESC LIMIT 10001')]
             columns = ['Turno', 'Apertura (UTC)', 'Cierre (UTC)', 'Fondo CUP', 'Esperado CUP', 'Contado CUP', 'Diferencia CUP']

@@ -6,6 +6,7 @@ import cu.spvi.app.inicio.TipoVenta
 import cu.spvi.domain.model.EstadoCaducidad
 import cu.spvi.domain.model.FiltroInventario
 import cu.spvi.domain.model.ItemInventario
+import cu.spvi.core.money.Cup
 import cu.spvi.core.quantity.Cantidad
 import cu.spvi.domain.model.NivelStock
 import cu.spvi.domain.model.Producto
@@ -136,6 +137,20 @@ fun subtituloFila(i: ItemInventario): String? = buildList {
 /** Dato principal de la fila: existencias; en un Elaborado (P26), cuánto alcanza con sus insumos. */
 fun valorFila(i: ItemInventario): String =
     i.insumo?.let { "${Cantidad.format(it.cantidad)} ${it.unidad.simbolo}" } ?: i.alcanza?.let(::textoAlcance) ?: "${i.producto.cantidad} u"
+
+/**
+ * 0.31.0 (P2): precio de costo de la fila. Un insumo guarda su coste en [Producto.precioCosto] al verse como fila.
+ */
+fun costoFila(i: ItemInventario): Cup = i.producto.precioCosto
+
+/**
+ * 0.31.0 (P2): precio de venta de la fila; null si todavía no tiene (un insumo puede servir solo para recetas).
+ * En la fila los dos se distinguen solo por el color, así que hay que saber cuál falta.
+ */
+fun ventaFila(i: ItemInventario): Cup? = i.producto.precioVenta.takeIf { it > Cup.ZERO }
+
+/** 0.31.0 (P2): categoría de la fila (los insumos comparten la reservada «Insumos»). */
+fun categoriaFila(i: ItemInventario): String = i.producto.categoria
 
 /**
  * P26: un Elaborado no tiene existencias; se vende mientras alcancen sus insumos (el más escaso manda).

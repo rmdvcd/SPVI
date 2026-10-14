@@ -139,11 +139,12 @@ class LicenciaUiTest {
         assertTrue(editado?.mostrarErrores == true)
     }
 
-    @Test fun yaTengoElMensajeSaltaAActivar() {
+    /** 0.31.0 (P4): el paso «Activa la licencia» se alcanza con «Paso siguiente», sin botón de llave. */
+    @Test fun elPasoSiguienteLlevaAActivar() {
         licencia(LicenciaUiState(vencida, LicenciaForm().desdePerfil(perfil), perfilVacio = false))
-        rule.onNodeWithTag(LicenciaTags.YA_TENGO).performScrollTo().performClick()
+        siguiente()
+        siguiente()
         rule.onNodeWithTag(LicenciaTags.BOTON_ACTIVAR).performScrollTo().assertIsDisplayed()
-        rule.onNodeWithTag(LicenciaTags.YA_TENGO).assertDoesNotExist()
     }
 
 }

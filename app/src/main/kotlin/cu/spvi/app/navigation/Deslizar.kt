@@ -65,3 +65,20 @@ private val UMBRAL = 72.dp
  */
 fun deslizarPermitido(enRutaRaiz: Boolean, enSeleccionVenta: Boolean, bloqueado: Boolean): Boolean =
     enRutaRaiz && !enSeleccionVenta && !bloqueado
+
+/**
+ * 0.31.0 (P10): cómo se anima el cambio de sección. El deslizamiento y el toque en la barra inferior se animan
+ * distinto: el gesto tiene dirección (la ventana de destino entra desde el lado hacia donde se movió el dedo) y el
+ * toque es un fundido.
+ */
+enum class CambioSeccion { FUNDIDO, ADELANTE, ATRAS }
+
+/**
+ * 0.31.0 (P10): decisión pura (probada en JVM). [dir] = dirección del deslizamiento que provocó el cambio
+ * (+1 = sección siguiente, −1 = anterior, 0 = no fue un deslizamiento, sino un toque en la barra inferior).
+ */
+fun cambioSeccion(dir: Int): CambioSeccion = when (dir) {
+    1 -> CambioSeccion.ADELANTE
+    -1 -> CambioSeccion.ATRAS
+    else -> CambioSeccion.FUNDIDO
+}

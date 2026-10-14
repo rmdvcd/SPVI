@@ -379,6 +379,8 @@ class _InventarioScreenState extends ConsumerState<InventarioScreen> {
                                 ),
                                 const SizedBox(width: 12.0),
                                 Expanded(
+                                  // Petición 2: debajo del nombre, cuánto se puede hacer y su unidad; la
+                                  // categoría va debajo de eso. Los precios están a la derecha.
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -388,21 +390,45 @@ class _InventarioScreenState extends ConsumerState<InventarioScreen> {
                                       ),
                                       const SizedBox(height: 2.0),
                                       Text(
-                                        "${p.categoria}  •  Stock: ${p.stock.toInt()}",
+                                        "Puedes hacer: ${p.stock.toInt()} u",
                                         style: TextStyle(
                                           fontSize: 13.0,
                                           color: p.stockCritico ? SpviColors.error : CupertinoColors.secondaryLabel,
                                           fontWeight: p.stockCritico ? FontWeight.bold : FontWeight.normal,
                                         ),
                                       ),
+                                      const SizedBox(height: 2.0),
+                                      Text(
+                                        p.categoria,
+                                        style: TextStyle(
+                                          fontSize: 12.0,
+                                          color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
-                                Text(
-                                  p.precioVenta.formatted,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0, color: SpviColors.navy),
-                                ),
                                 const SizedBox(width: 8.0),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    if (p.costo != null)
+                                      Text(
+                                        p.costo!.formatted,
+                                        style: TextStyle(
+                                          fontSize: 14.0,
+                                          fontWeight: FontWeight.w600,
+                                          color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                                        ),
+                                      ),
+                                    const SizedBox(height: 2.0),
+                                    Text(
+                                      p.precioVenta.formatted,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0, color: SpviColors.navy),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(width: 6.0),
                                 const Icon(CupertinoIcons.chevron_right, size: 16.0, color: CupertinoColors.systemGrey3),
                               ],
                             ),
@@ -441,6 +467,8 @@ class _InventarioScreenState extends ConsumerState<InventarioScreen> {
                                 ),
                                 const SizedBox(width: 12.0),
                                 Expanded(
+                                  // Petición 2, igual que en los productos: cantidad y unidad bajo el
+                                  // nombre, categoría debajo y precio a la derecha.
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -457,9 +485,28 @@ class _InventarioScreenState extends ConsumerState<InventarioScreen> {
                                           fontWeight: i.stockCritico ? FontWeight.bold : FontWeight.normal,
                                         ),
                                       ),
+                                      const SizedBox(height: 2.0),
+                                      Text(
+                                        "Insumo",
+                                        style: TextStyle(
+                                          fontSize: 12.0,
+                                          color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
+                                const SizedBox(width: 8.0),
+                                if (i.precioCosto != null)
+                                  Text(
+                                    i.precioCosto!.formatted,
+                                    style: TextStyle(
+                                      fontSize: 14.0,
+                                      fontWeight: FontWeight.w600,
+                                      color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                                    ),
+                                  ),
+                                const SizedBox(width: 6.0),
                                 const Icon(CupertinoIcons.chevron_right, size: 16.0, color: CupertinoColors.systemGrey3),
                               ],
                             ),

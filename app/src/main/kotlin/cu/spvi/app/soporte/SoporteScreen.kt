@@ -28,12 +28,12 @@ import cu.spvi.core.contact.DeveloperContact
 import cu.spvi.designsystem.component.SpviButtonRow
 import cu.spvi.designsystem.component.SpviCard
 import cu.spvi.designsystem.component.SpviLogo
-import cu.spvi.designsystem.component.SpviListItem
 import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.vector.ImageVector
 import cu.spvi.designsystem.component.SpviPrimaryButton
 import cu.spvi.designsystem.component.SpviSecondaryButton
 import cu.spvi.designsystem.component.SpviSecondaryText
+import cu.spvi.designsystem.theme.SpviTextos
 import cu.spvi.designsystem.component.SpviSnackbarHost
 import cu.spvi.designsystem.component.SpviTopBar
 import cu.spvi.designsystem.component.spviContentWidth
@@ -110,14 +110,9 @@ fun SoporteContent(
             )
             SpviCard(modifier = Modifier.fillMaxWidth().testTag(SoporteTags.FICHA)) {
                 SelectionContainer {
-                    // 0.27.0 (T12): filas con icono a la izquierda (patrón de SpviListItem); el valor se puede seleccionar.
+                    // 0.31.0 (P8): cada fila centrada y en el orden Icono, Descripción, Texto.
                     Column {
-                        SoporteInfo.filas.forEach { (etiqueta, valor) ->
-                            SpviListItem(
-                                title = valor, subtitle = etiqueta, indicatorColor = null, valueMaxLines = 3, subtitleMaxLines = 2,
-                                leading = { Icon(SoporteInfo.icono(etiqueta), contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                            )
-                        }
+                        SoporteInfo.filas.forEach { (etiqueta, valor) -> FilaSoporte(etiqueta, valor) }
                     }
                 }
             }
@@ -130,5 +125,25 @@ fun SoporteContent(
                 textAlign = TextAlign.Center,
             )
         }
+    }
+}
+
+/**
+ * 0.31.0 (P8): una fila de la ficha, centrada y en el orden que se lee sin esfuerzo: el icono de qué es, la
+ * descripción (qué significa) y el texto (el dato en sí, que se puede seleccionar y copiar).
+ */
+@Composable
+private fun FilaSoporte(etiqueta: String, valor: String) {
+    Column(
+        Modifier.fillMaxWidth().padding(vertical = SpviSpacing.xs),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
+    ) {
+        Icon(SoporteInfo.icono(etiqueta), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        Text(
+            etiqueta, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(valor, style = SpviTextos.datoEn(MaterialTheme.typography.bodyLarge), textAlign = TextAlign.Center)
     }
 }

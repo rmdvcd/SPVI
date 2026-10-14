@@ -10,6 +10,7 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -19,6 +20,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import cu.spvi.app.licencia.LicenciaScreen
 import cu.spvi.app.licencia.LicenciaTags
 import cu.spvi.app.root.RootState
+import cu.spvi.designsystem.component.SpviStepperTextos
 import cu.spvi.designsystem.theme.SpviTheme
 import cu.spvi.licencia.LicenseState
 import cu.spvi.licencia.contract.TipoLicencia
@@ -59,7 +61,9 @@ class FlujoLicenciaTest {
     private fun esperar(tag: String) = rule.waitUntil(5_000) { rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
 
     private fun pegarYActivar(mensaje: String) {
-        rule.onNodeWithTag(LicenciaTags.YA_TENGO).performScrollTo().performClick() // P18: asistente en 3 pasos
+        // 0.31.0 (P4): sin botón de llave: se avanza con «Paso siguiente» del asistente.
+        rule.onNodeWithContentDescription(SpviStepperTextos.SIGUIENTE).performScrollTo().performClick()
+        rule.onNodeWithContentDescription(SpviStepperTextos.SIGUIENTE).performScrollTo().performClick()
         rule.onNode(hasSetTextAction() and hasText("Mensaje de licencia")).performScrollTo().performTextInput(mensaje)
         rule.onNodeWithTag(LicenciaTags.BOTON_ACTIVAR).performScrollTo().performClick()
     }

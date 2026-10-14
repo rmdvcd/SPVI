@@ -2,13 +2,15 @@ package cu.spvi.designsystem
 
 import cu.spvi.designsystem.token.SpviMotion
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
  * 0.28.1: las transiciones entre ventanas y las ventanas emergentes se tienen que apreciar en el teléfono (antes el
- * deslizamiento se completaba en <200 ms y el cambio de pestaña era solo un fundido). Fija el ajuste para que no se
- * vuelva a endurecer sin querer: muelle de entrada blando con leve asentamiento y zoom sutil entre pestañas.
+ * deslizamiento se completaba en <200 ms). Fija el ajuste para que no se vuelva a endurecer sin querer: muelle de
+ * entrada blando con leve asentamiento. 0.31.0 (P10): al tocar la barra inferior el cambio es un fundido; lo que se
+ * nota es el desplazamiento lateral al deslizar entre secciones.
  */
 class MovimientoApreciableTest {
     @Test fun muelleDeEntradaBlandoConLeveAsentamiento() {
@@ -21,7 +23,10 @@ class MovimientoApreciableTest {
         assertTrue(muelle.dampingRatio < SpviMotion.muelle<Float>().dampingRatio)
     }
 
-    @Test fun zoomDePestanasSutil() {
-        assertEquals(0.96f, SpviMotion.ZOOM_ENTRADA)
+    @Test fun lasVentanasEmergentesNoSubenDesdeElBorde() {
+        // 0.31.0 (P10): las ventanas y los diálogos «saltan» desde el centro de abajo. Se comprueba que el token
+        // existe y sigue siendo un desplazamiento vertical (la mitad del recorrido, no el borde de la pantalla).
+        assertNotNull(SpviMotion.ventanaEntra)
+        assertNotNull(SpviMotion.ventanaSale)
     }
 }

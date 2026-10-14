@@ -103,6 +103,7 @@ class OnboardingViewModelTest {
         vm.cambiarEmpleados(2)
         vm.siguiente()
         assertEquals(2, prefs.state.value.empleadosPrevistos)
+        assertEquals(PasoWizard.DATOS, vm.state.value.paso)
 
         // Datos: inválido no avanza; válido se guarda en el Perfil.
         vm.editarDatos { it.copy(nombre = "Ana", telefono = "12") }
@@ -124,10 +125,13 @@ class OnboardingViewModelTest {
         assertEquals(10L, prefs.state.value.niveles.productoBajo)
         assertTrue(PasoConfiguracion.ALERTAS in conf.state.value.confirmados)
 
-        // Prueba → fin.
+        // Prueba → Migrar (solo avisa) → fin.
         assertEquals(PasoWizard.PRUEBA, vm.state.value.paso)
         vm.siguiente()
         assertTrue(PasoConfiguracion.PRUEBA in conf.state.value.confirmados)
+        assertEquals(PasoWizard.MIGRAR, vm.state.value.paso)
+        assertTrue(vm.state.value.pasoOmitible)
+        vm.siguiente()
         assertTrue(prefs.state.value.onboardingCompletado)
     }
 

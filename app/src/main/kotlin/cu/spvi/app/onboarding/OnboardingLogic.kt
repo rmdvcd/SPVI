@@ -23,6 +23,8 @@ enum class PasoWizard(val titulo: String) {
     OBJETIVO("Tu negocio"),
     /** 0.21.0 (C12): cuántos empleados (apps secundarias) habrá. */
     EMPLEADOS("Empleados"),
+    /** 0.31.0 (P6): se avisa de que existe Ajustes → Migrar (pasar los datos a otro teléfono por QR). */
+    MIGRAR("Migrar"),
     DATOS("Tus datos"),
     ALERTAS("Avisos de inventario"),
     PRUEBA("Periodo de prueba"),
@@ -46,7 +48,10 @@ enum class ModoWizard { PRIMERA_VEZ, RETOMAR }
 fun planWizard(modo: ModoWizard, resumen: ResumenConfiguracion, soloPaso: PasoConfiguracion? = null): List<PasoWizard> = when {
     soloPaso != null -> listOf(soloPaso.wizard())
     // 0.21.0 (C12): el recorrido de la primera vez empieza por el tipo de app, el objetivo y los empleados.
-    modo == ModoWizard.PRIMERA_VEZ -> listOf(PasoWizard.BIENVENIDA) + PASOS_TOUR + resumen.pasos.map { it.wizard() }
+    // 0.31.0 (P6): Migrar va al final, después de la configuración: solo avisa de que existe
+    // Ajustes → Migrar, y así no desplaza el orden (ni el índice guardado) de los pasos de antes.
+    modo == ModoWizard.PRIMERA_VEZ ->
+        listOf(PasoWizard.BIENVENIDA) + PASOS_TOUR + resumen.pasos.map { it.wizard() } + PasoWizard.MIGRAR
     else -> resumen.pendientes.ifEmpty { resumen.pasos }.map { it.wizard() }
 }
 
@@ -69,6 +74,11 @@ object TextosTour {
     const val ACCESO_EXPLICACION = "Si quieres, SPVI pedirá tu huella, tu cara o el PIN del teléfono al abrirla. Puedes cambiarlo en Ajustes."
     const val TIPO_DEFINITIVO = "El tipo de app no se puede cambiar después. Para cambiarlo habría que borrar los datos de la app."
     fun empleados(n: Int): String = when (n) { 0 -> "Sin empleados"; 1 -> "1 empleado"; else -> "$n empleados" }
+    /** 0.31.0 (P6). */
+    const val MIGRAR_TITULO = "Cambiar de teléfono"
+    const val MIGRAR_EXPLICACION = "Si algún día te cambias de teléfono, en Ajustes → Migrar puedes pasarle todos tus " +
+        "datos y tu licencia al nuevo con un código QR, sin internet y sin copiar nada a mano."
+    const val MIGRAR_CLAVE = "Para que nadie más pueda hacerlo, antes hay que definir el acceso con clave (huella, cara o PIN)."
 }
 
 /**
@@ -203,7 +213,8 @@ data class OnboardingUiState(
 
     /** La bienvenida y la prueba son informativas: no se "omiten". */
     val pasoOmitible: Boolean get() = paso == PasoWizard.DATOS || paso == PasoWizard.ALERTAS ||
-        paso == PasoWizard.OBJETIVO || paso == PasoWizard.EMPLEADOS || paso == PasoWizard.ACCESO_CLAVE
+        paso == PasoWizard.OBJETIVO || paso == PasoWizard.EMPLEADOS || paso == PasoWizard.ACCESO_CLAVE ||
+        paso == PasoWizard.MIGRAR
 
     /** 0.21.0 (C12): en Objetivo hace falta al menos una opción marcada. */
     val puedeSeguir: Boolean get() = paso != PasoWizard.OBJETIVO || modulos.isNotEmpty()

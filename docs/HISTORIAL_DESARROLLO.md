@@ -4,6 +4,86 @@ Registro **histórico** de lo que se implementó en cada fase y de las suposicio
 
 > **Prevalece la documentación actual.** Si algo de este historial contradice a [README.md](../README.md), [SECURITY.md](../SECURITY.md), [FORMATOS.md](../FORMATOS.md), [LICENSE_CLIENT.md](../LICENSE_CLIENT.md) o [UI_UX_IX.md](../UI_UX_IX.md), vale lo que dicen esos documentos. Las fases posteriores sustituyen a las anteriores.
 
+## 2026-10-14 — Escritorio 0.31.0: las cinco mejoras del informe de feedback móvil
+
+Cierra [desktop/INFORME_FEEDBACK_MOVIL.md](../desktop/INFORME_FEEDBACK_MOVIL.md): se implementan las cinco
+mejoras que el informe recomendaba, en su orden sugerido. **No se toca el modelo de datos ni el protocolo de
+sincronización**, así que las apps móviles no se modifican.
+
+1. **1.1 Selector de período en Inicio** (`static/js/core.js`, `inicio.js`, `app.css`): barra fija
+   (`.barra-turno` + `.pegajoso`) con el estado del turno y los chips de período en la misma fila
+   (Turno / Hoy / 7 / 30 / 90 días / Todo). `Business.dashboard()` acepta `1, 7, 30, 90`, `0` (todo el
+   historial) y `'turno'` (desde la apertura del turno; sin turno abierto, desde el inicio del día);
+   `/api/dashboard` pasa el valor tal cual. La serie diaria del gráfico se deriva del período
+   (`SPVI.diasSerie`: en «Todo» usa los días con datos, máximo 30 barras). Con «Turno» y «Todo» no hay
+   comparación con el período anterior. Registros usa los mismos chips (`chipsPeriodo`) y gana «Turno»
+   y «90 días».
+2. **1.5 Animaciones** (`static/app.css`, `core.js`): `SPVI.fundir()` desvanece la sección anterior
+   120 ms antes de pintar la nueva y los diálogos entran desde el centro-abajo
+   (`@keyframes ventana-entra`, `translateY(48px) scale(.97)`). Se respeta `prefers-reduced-motion`.
+3. **1.2 Fila de inventario** (`static/js/inventario.js`): nombre, categoría y existencias a la izquierda;
+   a la derecha **costo y venta diferenciados** (`.valores`). En elaborados se añade «Se pueden hacer N con
+   las existencias», calculado de la receta y de las existencias de insumos (lo que en el móvil hace
+   `InventarioLogic.kt`).
+4. **1.4 Ayuda y Soporte** (`static/js/ayuda.js`, secciones nuevas del menú): Ayuda con nueve secciones
+   desplegables con icono (turno y caja, venta, inventario, servicios, registros y exportar, respaldo,
+   apps vinculadas, licencia y ajustes) y Soporte con los datos del desarrollador en filas centradas
+   Icono → Descripción → Texto, con WhatsApp y copiar teléfono.
+5. **1.3 Casillas en Registros** (`static/js/registros.js`, `business.py`, `exports.py`, `app.css`):
+   casilla en todas las listas y barra de selección con **«Marcar todo lo filtrado»** — que marca todo el
+   filtro activo, no solo la página visible, porque `ledger(..., ids=True)` devuelve los identificadores de
+   todo el filtro —, «Quitar selección» y «Exportar selección». Alcance de exportación nuevo **ventas**
+   (PDF/Excel) y filtrado por selección también en **turnos**. En caja, movimientos y clientes la casilla
+   está pero no ofrece exportar: no hay informe para ese contenido.
+
+**Pruebas:** 129 pruebas Python (`desktop/tests/`), con nuevas regresiones para `dashboard` por período,
+`report('ventas')`, la selección por `ids` en turnos y ventas, y `ledger` con los identificadores del
+filtro. La interfaz se verificó con una prueba de humo temporal (jsdom, no incluida en el repositorio) que
+recorre Inicio, Registros, Inventario, Ayuda y Soporte y comprueba 31 comportamientos. El workflow
+`Escritorio Windows` del PR #14 corrió en un runner Windows y pasó: 129 pruebas, `.exe` empaquetado y
+autoprueba verde. **Sin interfaz en navegador real, sin icono junto al reloj y sin inicio con Windows**:
+eso solo se puede comprobar en la PC del dueño.
+
+## 2026-10-14 — Android 0.31.0: diez cambios de la app móvil (encargo del propietario)
+
+Implementado en `app/` **sin compilar ni probar** (en este entorno no hay JDK/Android SDK/Gradle ni Dart, y
+`dl.google.com` y `repo1.maven.org` están bloqueados). Lo verifica el CI y la PC del propietario.
+
+1. **Inicio** (`inicio/InicioScreen.kt`): «Turno cerrado» y el selector de período en una sola fila del
+   mismo alto (`Column` + `height(IntrinsicSize.Min)` + `fillMaxHeight()`, el patrón que ya usaban las
+   tarjetas de Pago/Inventario); padding superior `md → xs`; la fila turno + período se queda **fija al
+   desplazar** (fuera de la `LazyColumn`, dentro de la `Column`). Fuera la `TurnoCard` muerta.
+2. **Inventario** (`inventario/`): `Fila` reescrita como `Row` propia — indicador, miniatura/casilla,
+   nombre con «cantidad que alcanza + unidad» y categoría debajo, y a la derecha costo y venta
+   (`Money.format`, insumos sin venta la omiten). Ayudas puras nuevas en `InventarioLogic.kt`
+   (`costoFila`, `ventaFila`, `categoriaFila`).
+3. **Registros** (`registros/`): `seleccion: Set<Long>` en el estado, podada con `seleccionVigente` y
+   limpiada al cambiar de pestaña; casilla en ventas, transferencias, movimientos, turnos y clientes
+   fijos; barra de selección con «seleccionar todo», exportar solo lo marcado y quitar la selección.
+4. **Licencia** (`licencia/LicenciaScreen.kt`): fuera el botón de llave «Ya tengo el mensaje de
+   licencia» y su etiqueta; el asistente avanza con «Paso siguiente» del `SpviStepper`.
+5. **Migrar** (`migrar/`): pasa a **Migrar**. Nuevo `MigrarQr.kt` (`CodigoMigracion`, `SPVIM1|…`, puro) y
+   `CanalMigracion.kt` (socket TCP directo por la red local; el `.spvi` cifrado de siempre viaja dentro).
+   **Emisor** muestra el QR y, tras la confirmación del receptor, se borra el teléfono
+   (`MantenimientoRepository.borrarTodo()`); **Receptor** lee el QR con la cámara y aplica el respaldo.
+   Todo detrás del **acceso con clave** definido en Ajustes (si no está, se le dice que lo defina) y
+   del diálogo de biometría del sistema. Nueva sección en el recorrido inicial (`PasoWizard.MIGRAR`).
+6. **Actualizar** (`actualizacion/GestorActualizacion.kt`, `ajustes/AjustesScreen.kt`): «Actualizaciones»
+   pasa a **Actualizar** y abre un cuadro con `SpviCircularProgress` (nuevo en `:designsystem`,
+   `SpviSize.progresoCircular`) y el resultado: «Actualizado», «Estas al día» o «Sin conexión».
+   `descargarEInstalar` refleja el avance solo cuando el cuadro lo abrió (`conProceso`).
+7. **Ayuda** (`ayuda/`): manual por secciones con icono por tema y esquemas dibujados con formas
+   (barra inferior, turno, venta, respaldo y migración). **No lleva capturas**: son esquemas vectoriales
+   para que no se desactualicen; las capturas reales se regeneran con `recordRoborazziDebug`.
+8. **Soporte** (`soporte/SoporteScreen.kt`): filas centradas en el orden Icono → Descripción → Texto.
+9. **Primera apertura** (`root/PermisosIniciales.kt`): `RequestMultiplePermissions` única, **sin textos**,
+   con los permisos peligrosos del manifiesto (cámara, notificaciones, fotos). Marca
+   `ConfiguracionInicial.permisosInicialesPedidos`.
+10. **Animaciones** (`designsystem/token/Tokens.kt`, `navigation/MainScaffold.kt`, `Deslizar.kt`): al tocar
+    la barra inferior, fundido (`screenEnter/screenExit` sin zoom); al **deslizar**, desplazamiento lateral
+    con la dirección del dedo (`cambioSeccion(dir)`, puro); ventanas y diálogos entran desplazados
+    media altura (`ventanaEntra` = `it / 2`).
+
 ## 2026-10-14 — Una sola pestaña de SPVI
 
 - Los dos procesos `SPVI.exe` visibles son una sola instancia: el cargador del portable (padre) y la

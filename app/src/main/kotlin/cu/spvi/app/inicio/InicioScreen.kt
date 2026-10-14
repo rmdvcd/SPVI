@@ -271,15 +271,21 @@ fun InicioContent(
         // Capa propia en vez del hueco del Scaffold: con una fila a todo el ancho dentro del hueco,
         // el Scaffold la medía más ancha que la pantalla y los botones quedaban medio fuera.
         Box(Modifier.fillMaxSize().padding(padding)) {
-            LazyColumn(
-                Modifier.fillMaxSize().testTag(InicioTags.LISTA),
-                contentPadding = PaddingValues(
-                    start = SpviSpacing.md, end = SpviSpacing.md, top = SpviSpacing.md,
-                    // Hueco para que los botones flotantes no tapen la última fila.
-                    bottom = SpviSpacing.md + SpviSize.fabClearance,
-                ),
-                verticalArrangement = Arrangement.spacedBy(SpviSpacing.md),
-            ) {
+            Column(Modifier.fillMaxSize()) {
+                // 0.31.0 (P1): el primer contenedor (turno + selector de período) NO se desplaza: se queda fijo
+                // arriba mientras el resto de Inicio hace scroll.
+                FilaTurnoPeriodo(state, acciones, permisos, zona)
+                LazyColumn(
+                    Modifier.fillMaxSize().testTag(InicioTags.LISTA),
+                    contentPadding = PaddingValues(
+                        start = SpviSpacing.md, end = SpviSpacing.md,
+                        // 0.31.0 (P1): menos hueco entre «SPVI» y lo primero que se ve.
+                        top = SpviSpacing.xs,
+                        // Hueco para que los botones flotantes no tapen la última fila.
+                        bottom = SpviSpacing.md + SpviSize.fabClearance,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(SpviSpacing.md),
+                ) {
             state.banner?.let { texto ->
                 item(key = "banner") {
                     SpviStatusBanner(
@@ -374,7 +380,6 @@ fun InicioContent(
                 }
             }
             if (actualizacion.tarjetaVisible) item(key = "actualizacion") { TarjetaActualizacion(actualizacion, acciones) }
-            item(key = "turno") { TurnoCard(state, acciones, zona, permisos) }
             // 0.21.0 (C12): sin Ventas ni Inventario no hay alertas de existencias.
             if (permisos.verInventario) alertas(state.alertas, acciones, maxAlertas)
             // 0.21.0 (C9): en la secundaria, solo turno, Nueva venta y alertas; los accesos y los gráficos son del dueño.
@@ -408,9 +413,9 @@ fun InicioContent(
                 }
             }
             if (!permisos.esSecundaria) {
-                item(key = "periodo") { SelectorPeriodo(state.opcion, acciones.onPeriodo) }
                 graficosPeriodo(state.graficos, state.opcion, zona, acciones.onReintentar, acordeones)
                 resumenGeneral(state.resumen, acciones.onReintentar, acordeones)
+            }
             }
             }
             // «Nueva venta» (izquierda) y «Movimiento de caja» (derecha): flotantes en las esquinas
@@ -510,20 +515,37 @@ private fun TarjetaActualizacion(a: cu.spvi.app.actualizacion.EstadoActualizacio
 
 
 /**
+ * 0.31.0 (P1): primer contenedor de Inicio y el único que no se desplaza. «Turno cerrado» (o «Turno abierto») a la
+ * izquierda y, a su lado, el selector de período: los dos con el mismo ancho y la misma altura dentro del contenedor
+ * (reparto equitativo). En una secundaria no hay selector: el turno ocupa todo el ancho.
+ */
+@Composable
+private fun FilaTurnoPeriodo(state: InicioUiState, acciones: AccionesInicio, permisos: cu.spvi.domain.model.PermisosApp, zona: ZoneId) {
+    Row(
+        Modifier.fillMaxWidth().height(IntrinsicSize.Min)
+            .padding(horizontal = SpviSpacing.md, vertical = SpviSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(SpviSpacing.md),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TurnoContenedor(state, acciones, zona, ajustar = false, modifier = Modifier.weight(1f).fillMaxHeight())
+        if (!permisos.esSecundaria) {
+            SelectorPeriodo(state.opcion, acciones.onPeriodo, modifier = Modifier.weight(1f).fillMaxHeight())
+        }
+    }
+}
+
+/**
  * Solo el turno: «Nueva venta» y «Movimiento de caja» son botones flotantes (solo con turno abierto).
  * El contenedor se ajusta a su contenido, centrado y con un ligero relleno.
  */
 @Composable
-private fun TurnoCard(state: InicioUiState, acciones: AccionesInicio, zona: ZoneId, permisos: cu.spvi.domain.model.PermisosApp) {
-    // Con o sin permiso de vender, aquí solo va el turno (0.21.0, C12).
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        TurnoContenedor(state, acciones, zona, ajustar = true)
-    }
-}
-
-/** Estado del turno con su interruptor; toda la fila es el interruptor. [ajustar] = ancho del contenido. */
-@Composable
-private fun TurnoContenedor(state: InicioUiState, acciones: AccionesInicio, zona: ZoneId, ajustar: Boolean) {
+private fun TurnoContenedor(
+    state: InicioUiState,
+    acciones: AccionesInicio,
+    zona: ZoneId,
+    ajustar: Boolean,
+    modifier: Modifier = Modifier,
+) {
     val abierto = state.turnoAbierto
     SpviCard(ajustarAlContenido = ajustar, modifier = Modifier.testTag(InicioTags.TURNO)) {
         Row(
@@ -627,7 +649,7 @@ private fun Acceso(titulo: String, detalle: androidx.compose.ui.text.AnnotatedSt
 // ---------------- Período ----------------
 
 @Composable
-private fun SelectorPeriodo(opcion: OpcionPeriodo, onPeriodo: (OpcionPeriodo) -> Unit) {
+private fun SelectorPeriodo(opcion: OpcionPeriodo, onPeriodo: (OpcionPeriodo) -> Unit, modifier: Modifier = Modifier) {
     // P24: combobox (una fila, se ve la opción elegida; el resto al abrir).
     SpviComboBox(
         label = "Período",
@@ -637,7 +659,7 @@ private fun SelectorPeriodo(opcion: OpcionPeriodo, onPeriodo: (OpcionPeriodo) ->
         onSeleccion = onPeriodo,
         leadingIcon = SpviIcons.Fecha,
         tagOpcion = { InicioTags.periodo(it) },
-        modifier = Modifier.fillMaxWidth().testTag(InicioTags.PERIODO),
+        modifier = modifier.fillMaxWidth().testTag(InicioTags.PERIODO),
     )
 }
 

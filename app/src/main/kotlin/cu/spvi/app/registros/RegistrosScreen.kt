@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
@@ -31,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -107,6 +109,10 @@ class AccionesRegistros(
     val onVerVenta: () -> Unit = {},
     val onTurno: (Long) -> Unit = {},
     val onReintentarTurnos: () -> Unit = {},
+    /** 0.31.0 (P3): marcar filas con la casilla (exportar sale solo de lo marcado). */
+    val onAlternar: (Long) -> Unit = {},
+    val onSeleccionarTodo: () -> Unit = {},
+    val onLimpiarSeleccion: () -> Unit = {},
     /** P18 (A23): «Ayuda» desde el estado vacío. */
     val onAyuda: (() -> Unit)? = null,
     /** 0.25.0 (§6bis): anular / modificar en la ficha de una venta (solo principal y turno abierto). */
@@ -164,6 +170,8 @@ fun RegistrosScreen(
             onAbrirTransferencia = viewModel::abrirTransferencia, onAbrirMovimiento = viewModel::abrirMovimiento,
             onCerrarFicha = viewModel::cerrarFicha, onVerVenta = viewModel::verVentaDeTransferencia,
             onTurno = { onNavigate(Route.TurnoDetalle(it)) }, onReintentarTurnos = turnosViewModel::reintentar,
+            onAlternar = viewModel::alternar, onSeleccionarTodo = viewModel::seleccionarTodo,
+            onLimpiarSeleccion = viewModel::limpiarSeleccion,
             accionesVenta = { v ->
                 val accionesVm: VentaAccionesViewModel = hiltViewModel()
                 val scope = androidx.compose.runtime.rememberCoroutineScope()
@@ -232,7 +240,12 @@ fun RegistrosContent(
 @Composable
 private fun HojaExportar(state: RegistrosUiState, tipo: TipoRegistro, acciones: AccionesRegistros) {
     SpviBottomSheet(onDismiss = acciones.onCerrarExportar, title = TextosRegistros.tituloExportar(tipo)) {
-        SpviSecondaryText(TextosRegistros.alcanceExportar(tipo, state.datos?.cantidad ?: 0, detalleFiltro(state)))
+        // 0.31.0 (P3): con filas marcadas, el documento sale de la selección, no de todo lo que se ve.
+        val n = if (state.seleccion.isNotEmpty()) state.seleccion.size else state.datos?.cantidad ?: 0
+        SpviSecondaryText(
+            if (state.seleccion.isNotEmpty()) TextosRegistros.seleccionados(tipo, n)
+            else TextosRegistros.alcanceExportar(tipo, n, detalleFiltro(state)),
+        )
         if (tipo == TipoRegistro.TRANSACCIONES) SpviSecondaryText(TextosRegistros.AVISO_DATOS_CLIENTES)
         listOf(FormatoExport.PDF, FormatoExport.XLSX).forEach { f ->
             val etiqueta = if (f == FormatoExport.PDF) "PDF" else "Excel"
@@ -273,6 +286,9 @@ private fun Pestanas(actual: PestanaRegistros, acciones: AccionesRegistros, orde
 private fun Tabla(state: RegistrosUiState, tipo: TipoRegistro, acciones: AccionesRegistros, zona: ZoneId) {
     Column(Modifier.fillMaxSize()) {
         Buscador(state, tipo, acciones)
+        // 0.31.0 (P3): con casillas marcadas, cuántas son y qué se puede hacer con ellas.
+        if (state.seleccion.isNotEmpty()) BarraSeleccion(state, tipo, acciones)
+        cu.spvi.designsystem.component.BloquearGestos(state.seleccion.isNotEmpty()) // 0.31.0 (P3)
         Box(Modifier.weight(1f)) {
             when (val v = state.vista) {
                 EstadoCarga.Idle, EstadoCarga.Cargando -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { SpviLoading() }
@@ -294,7 +310,7 @@ private fun Tabla(state: RegistrosUiState, tipo: TipoRegistro, acciones: Accione
                         )
                     }
                 } else {
-                    Lista(v.datos, acciones, zona)
+                    Lista(v.datos, state, acciones, zona)
                 }
             }
         }
@@ -330,46 +346,86 @@ private fun Buscador(state: RegistrosUiState, tipo: TipoRegistro, acciones: Acci
 }
 
 @Composable
-private fun Lista(datos: VistaRegistro, acciones: AccionesRegistros, zona: ZoneId) {
+private fun Lista(datos: VistaRegistro, state: RegistrosUiState, acciones: AccionesRegistros, zona: ZoneId) {
     LazyColumn(
         Modifier.fillMaxSize().testTag(RegistrosTags.LISTA),
         contentPadding = PaddingValues(horizontal = SpviSpacing.md, vertical = SpviSpacing.xs),
         verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs / 2),
     ) {
         when (datos) {
-            is VistaRegistro.Ventas -> ventas(datos.items, acciones, zona)
-            is VistaRegistro.Transferencias -> transferencias(datos.items, acciones, zona)
-            is VistaRegistro.Movimientos -> movimientos(datos.items, acciones, zona)
+            is VistaRegistro.Ventas -> ventas(datos.items, state.seleccion, acciones, zona)
+            is VistaRegistro.Transferencias -> transferencias(datos.items, state.seleccion, acciones, zona)
+            is VistaRegistro.Movimientos -> movimientos(datos.items, state.seleccion, acciones, zona)
         }
     }
 }
 
-private fun LazyListScope.ventas(xs: List<Venta>, acciones: AccionesRegistros, zona: ZoneId) {
+/** 0.31.0 (P3): casilla de selección al principio de cada fila, igual que en Inventario. */
+@Composable
+private fun CasillaRegistro(marcado: Boolean, id: Long, nombre: String, onAlternar: (Long) -> Unit) {
+    Checkbox(
+        checked = marcado, onCheckedChange = { onAlternar(id) },
+        modifier = Modifier.testTag(RegistrosTags.check(id)).semantics { contentDescription = "Seleccionar $nombre" },
+    )
+}
+
+private fun LazyListScope.ventas(xs: List<Venta>, marcados: Set<Long>, acciones: AccionesRegistros, zona: ZoneId) {
     items(xs, key = { "v${it.id}" }) { v ->
         SpviListItem(
             tituloEsDato = true, title = tituloFila(v, zona), subtitle = subtituloFila(v), value = valorFila(v), indicatorColor = null,
+            leading = { CasillaRegistro(v.id in marcados, v.id, tituloFila(v, zona), acciones.onAlternar) },
             onClick = { acciones.onAbrirVenta(v.id) }, modifier = spviAnimateItem().testTag(RegistrosTags.venta(v.id)),
         )
     }
 }
 
-private fun LazyListScope.transferencias(xs: List<Transaccion>, acciones: AccionesRegistros, zona: ZoneId) {
+private fun LazyListScope.transferencias(xs: List<Transaccion>, marcados: Set<Long>, acciones: AccionesRegistros, zona: ZoneId) {
     items(xs, key = { "t${it.id}" }) { t ->
         SpviListItem(
             tituloEsDato = true, title = tituloFila(t, zona), subtitle = subtituloFila(t), value = valorFila(t), indicatorColor = null,
+            leading = { CasillaRegistro(t.id in marcados, t.id, tituloFila(t, zona), acciones.onAlternar) },
             onClick = { acciones.onAbrirTransferencia(t.id) }, modifier = spviAnimateItem().testTag(RegistrosTags.transferencia(t.id)),
         )
     }
 }
 
-private fun LazyListScope.movimientos(xs: List<ItemMovimiento>, acciones: AccionesRegistros, zona: ZoneId) {
+private fun LazyListScope.movimientos(xs: List<ItemMovimiento>, marcados: Set<Long>, acciones: AccionesRegistros, zona: ZoneId) {
     items(xs, key = { "m${it.movimiento.id}" }) { i ->
         val estado = descripcionMovimiento(i)
         SpviListItem(
             tituloEsDato = true, title = tituloFila(i, zona), subtitle = subtituloFila(i), value = valorFila(i),
             indicatorColor = colorMovimiento(i),
+            leading = { CasillaRegistro(i.movimiento.id in marcados, i.movimiento.id, tituloFila(i, zona), acciones.onAlternar) },
             onClick = { acciones.onAbrirMovimiento(i.movimiento.id) },
             modifier = spviAnimateItem().testTag(RegistrosTags.movimiento(i.movimiento.id)).semantics { stateDescription = estado },
+        )
+    }
+}
+
+/**
+ * 0.31.0 (P3): barra de selección de Registros. Muestra cuántas filas hay marcadas y deja quitarlas, marcarlas
+ * todas y —donde se puede— exportar solo lo marcado. El reparto es el de Inventario.
+ */
+@Composable
+private fun BarraSeleccion(state: RegistrosUiState, tipo: TipoRegistro, acciones: AccionesRegistros) {
+    val n = state.seleccion.size
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = SpviSpacing.xs).testTag(RegistrosTags.SELECCION),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SpviIconAction(SpviIcons.Cancelar, "Quitar selección", onClick = acciones.onLimpiarSeleccion)
+        Text(
+            TextosRegistros.seleccionados(tipo, n), style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.weight(1f),
+        )
+        SpviIconAction(
+            SpviIcons.Confirmar, if (state.todosSeleccionados) "Desmarcar todo" else "Marcar todo",
+            onClick = acciones.onSeleccionarTodo, selected = state.todosSeleccionados,
+            modifier = Modifier.testTag(RegistrosTags.SELECCIONAR_TODO),
+        )
+        if (LocalPermisosApp.current.exportar) SpviIconAction(
+            SpviIcons.Exportar, "Exportar selección", onClick = acciones.onAbrirExportar,
+            modifier = Modifier.testTag(RegistrosTags.EXPORTAR_SELECCION),
         )
     }
 }
@@ -398,23 +454,52 @@ private fun Turnos(state: EstadoCarga<List<Turno>>, acciones: AccionesRegistros,
 
 @Composable
 private fun ListaTurnos(turnos: List<Turno>, onTurno: (Long) -> Unit, zona: ZoneId) {
-    LazyColumn(
-        Modifier.fillMaxSize().testTag(RegistrosTags.LISTA),
-        contentPadding = PaddingValues(SpviSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
-    ) {
-        items(turnos, key = { it.id }) { t ->
-            SpviListItem(
-                title = tituloTurno(t, zona), tituloEsDato = true,
-                subtitleResaltado = SpviTextos.resaltar(subtituloTurno(t, zona), horasTurno(t, zona)),
-                value = valorTurno(t),
-                valueColor = if (t.abierto) MaterialTheme.colorScheme.primary else Color.Unspecified,
-                indicatorColor = if (t.abierto) MaterialTheme.colorScheme.primary else null,
-                selected = t.abierto,
-                onClick = { onTurno(t.id) },
-                modifier = spviAnimateItem().testTag(RegistrosTags.turno(t.id)),
-            )
+    // 0.31.0 (P3): los turnos también se marcan con casilla. Aquí no hay acción conjunta (no se exportan), así que
+    // la selección es local a la pantalla.
+    var marcados by rememberSaveable { mutableStateOf(emptySet<Long>()) }
+    Column(Modifier.fillMaxSize()) {
+        if (marcados.isNotEmpty()) BarraSeleccionSola(marcados.size) { marcados = emptySet() }
+        LazyColumn(
+            Modifier.fillMaxSize().testTag(RegistrosTags.LISTA),
+            contentPadding = PaddingValues(SpviSpacing.md),
+            verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
+        ) {
+            items(turnos, key = { it.id }) { t ->
+                SpviListItem(
+                    title = tituloTurno(t, zona), tituloEsDato = true,
+                    subtitleResaltado = SpviTextos.resaltar(subtituloTurno(t, zona), horasTurno(t, zona)),
+                    value = valorTurno(t),
+                    valueColor = if (t.abierto) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                    indicatorColor = if (t.abierto) MaterialTheme.colorScheme.primary else null,
+                    selected = t.abierto,
+                    leading = {
+                        Checkbox(
+                            checked = t.id in marcados,
+                            onCheckedChange = { marcados = if (t.id in marcados) marcados - t.id else marcados + t.id },
+                            modifier = Modifier.testTag(RegistrosTags.check(t.id))
+                                .semantics { contentDescription = "Seleccionar ${tituloTurno(t, zona)}" },
+                        )
+                    },
+                    onClick = { onTurno(t.id) },
+                    modifier = spviAnimateItem().testTag(RegistrosTags.turno(t.id)),
+                )
+            }
         }
+    }
+}
+
+/** 0.31.0 (P3): barra de selección donde no hay acción conjunta (Turnos, Clientes): cuántas hay y cómo quitarlas. */
+@Composable
+private fun BarraSeleccionSola(n: Int, onQuitar: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = SpviSpacing.xs).testTag(RegistrosTags.SELECCION),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SpviIconAction(
+            SpviIcons.Cancelar, "Quitar selección", onClick = onQuitar,
+            modifier = Modifier.testTag(RegistrosTags.LIMPIAR_SELECCION),
+        )
+        Text("$n seleccionados", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
     }
 }
 

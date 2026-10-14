@@ -16,7 +16,10 @@ import cu.spvi.app.licencia.LicenciaContent
 import cu.spvi.app.licencia.LicenciaForm
 import cu.spvi.app.licencia.LicenciaUiState
 import cu.spvi.app.migrar.AccionesMigrar
+import cu.spvi.app.migrar.EtapaMigracion
 import cu.spvi.app.migrar.MigrarContent
+import cu.spvi.app.migrar.MigrarQrUiState
+import cu.spvi.app.migrar.RolMigracion
 import cu.spvi.app.migrar.MigrarForm
 import cu.spvi.app.migrar.MigrarUiState
 import cu.spvi.app.onboarding.ModoWizard
@@ -196,10 +199,28 @@ class AjustesCapturas {
 
     // ---------- Migrar ----------
     private val accionesMigrar = AccionesMigrar(
+        onRol = {}, onCambiarRol = {}, onEmpezarEmisor = {}, onQrLeido = {}, onCancelarIntercambio = {},
         onDestino = {}, onPegarDestino = {}, onEnviar = {}, onRespaldo = {}, onAutorizacion = {}, onPegarAutorizacion = {},
         onComprobar = {}, onPedirBorrado = {}, onConfirmacion = {}, onConfirmarBorrado = {}, onCancelarBorrado = {},
     )
     private fun migrar(id: String, f: MigrarForm) = rule.capturar(id) { MigrarContent(MigrarUiState("SPVI:7F3A-92C1-D04E-11B8", f), {}, accionesMigrar) }
+    // 0.31.0 (P6): las dos opciones de la migración por QR.
+    private fun migrarQr(id: String, s: MigrarUiState) = rule.capturar(id) { MigrarContent(s, {}, accionesMigrar) }
+    @Test @Config(qualifiers = Captura.LARGA) fun migrarElegirRol() = migrarQr(
+        "09t_migrar_emisor_receptor", MigrarUiState("SPVI:7F3A-92C1-D04E-11B8", MigrarForm(), MigrarQrUiState(), claveDefinida = true),
+    )
+    @Test @Config(qualifiers = Captura.LARGA) fun migrarEmisor() = migrarQr(
+        "09u_migrar_emisor_qr",
+        MigrarUiState(
+            "SPVI:7F3A-92C1-D04E-11B8", MigrarForm(),
+            MigrarQrUiState(RolMigracion.EMISOR, codigo = "SPVIM1|EMISOR|192.168.1.20|45123|a1b2c3d4e5f60718|SPVI:7F3A", etapa = EtapaMigracion.Esperando),
+            claveDefinida = true,
+        ),
+    )
+    @Test fun migrarSinClave() = migrarQr(
+        "09v_migrar_sin_clave",
+        MigrarUiState("SPVI:7F3A-92C1-D04E-11B8", MigrarForm(), MigrarQrUiState(RolMigracion.EMISOR), claveDefinida = false),
+    )
     private val licNueva = "SPVI-LIC1:eyJ2IjoxLCJsaWQiOiJMLTIwMjYtMDA0MiJ9.MEUCIQDx"
     @Test @Config(qualifiers = Captura.LARGA) fun migrarPaso1() = migrar("09n_migrar_paso1", MigrarForm())
     @Test fun migrarIdError() = migrar("09o_migrar_id_error", MigrarForm(destino = "7F3A-92C1", errorDestino = "Debe empezar por SPVI: (lo ves en Ajustes → Licencia del teléfono nuevo)"))

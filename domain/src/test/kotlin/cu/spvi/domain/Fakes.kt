@@ -287,6 +287,7 @@ class FakeConfiguracionInicial(initial: cu.spvi.domain.model.ConfiguracionInicia
     override val estado: Flow<cu.spvi.domain.model.ConfiguracionInicial> = state
     override suspend fun confirmar(paso: cu.spvi.domain.model.PasoConfiguracion) { state.value = state.value.copy(confirmados = state.value.confirmados + paso) }
     override suspend fun marcarCamaraSolicitada() { state.value = state.value.copy(camaraSolicitada = true) }
+    override suspend fun marcarPermisosInicialesPedidos() { state.value = state.value.copy(permisosInicialesPedidos = true) }
 }
 
 class FakeFotos : cu.spvi.domain.repository.FotoRepository {

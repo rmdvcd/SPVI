@@ -144,7 +144,35 @@ Tras importar un respaldo v4 con bloque `licencia` en un teléfono sin licencia 
 
 Antes de abrir el instalador, la app escribe un `.spvi` **sin contraseña** con el formato normal en `filesDir/respaldo_actualizacion/previo.spvi`, más `previo.version` (`versionName/versionCode` instalada). Es privado de la app (no se comparte ni se exporta) y se borra al restaurarse o al cancelarse la instalación. Al abrir otra versión, `RespaldoPrevio` lo importa con la misma ruta que «Importar» y vuelve a dejar como estaban `ultimoRespaldo` y la licencia recuperable del estado de la app.
 
-## 2. Exportaciones
+## 2. Código de migración entre teléfonos (0.31.0)
+
+No es un archivo: es el texto que lleva el **código QR** de *Ajustes → Migrar*. Su única función es que
+los dos teléfonos se encuentren en la red local y se pongan de acuerdo en la clave de un solo uso; **los
+datos no viajan dentro del código**, sino como el respaldo `.spvi` cifrado de siempre.
+
+```
+SPVIM1|<rol>|<host>|<puerto>|<clave>|<origen>
+```
+
+| Campo | Contenido |
+|---|---|
+| `SPVIM1` | Prefijo y versión del formato |
+| `rol` | `emisor` o `receptor` |
+| `host` | Dirección IPv4 del teléfono emisor en la red local |
+| `puerto` | Puerto TCP realmente abierto (nunca 0) |
+| `clave` | Cadena aleatoria de un solo uso; no se guarda en ningún sitio |
+| `origen` | Identidad del teléfono emisor, para que el receptor sepa de quién recibe |
+
+- El emisor abre el socket, genera la clave **una sola vez** y la pone en el QR; el receptor responde
+  `SPVIM1 <clave>` y, si coincide, el emisor contesta `ok` y transmite el `.spvi` hasta `shutdownOutput()`.
+- El emisor solo llama a `borrarTodo()` cuando el receptor escribe `listo`. Si algo falla, no se borra nada.
+- Implementación: `app/src/main/kotlin/cu/spvi/app/migrar/MigrarQr.kt` (código puro, probado en
+  `MigrarTest.kt`) y `CanalMigracion.kt` (transporte). La app de iOS tiene el mismo código en
+  `flutter_app/lib/src/domain/models/migrar_codigo.dart`, probado en `test/migrar_ayuda_test.dart`.
+- El código se lee con tolerancia: admite un campo extra al final y texto alrededor (lo que pega el
+  escáner). Cualquier otro contenido se rechaza.
+
+## 3. Exportaciones
 
 Todas las tablas salen de una misma fuente neutra, `TablaExport` (título, columnas, filas y pie), definida en `domain/.../service/TablasExport.kt`. Los escritores están en `data/.../export/`.
 

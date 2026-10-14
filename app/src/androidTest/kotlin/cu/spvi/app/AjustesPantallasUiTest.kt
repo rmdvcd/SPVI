@@ -211,6 +211,7 @@ class AjustesPantallasUiTest {
     // ---------- Migrar
 
     private fun accionesMigrar(onPedir: () -> Unit = {}) = AccionesMigrar(
+        onRol = {}, onCambiarRol = {}, onEmpezarEmisor = {}, onQrLeido = {}, onCancelarIntercambio = {},
         onDestino = {}, onPegarDestino = {}, onEnviar = {}, onRespaldo = {}, onAutorizacion = {}, onPegarAutorizacion = {},
         onComprobar = {}, onPedirBorrado = onPedir, onConfirmacion = {}, onConfirmarBorrado = {}, onCancelarBorrado = {},
     )

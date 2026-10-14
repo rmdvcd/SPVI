@@ -105,14 +105,20 @@ SPVI.bannerLicencia = function (licencia) {
 };
 
 SPVI.views.inicio = async function (root) {
-  const dias = Number(sessionStorage.getItem('spvi-periodo') || 7);
-  const [catalogo, licencia, tablero] = await Promise.all([SPVI.load.catalogo(), SPVI.load.licencia(), SPVI.load.dashboard(dias)]);
+  const periodo = SPVI.periodo();
+  const [catalogo, licencia, tablero] = await Promise.all([SPVI.load.catalogo(), SPVI.load.licencia(), SPVI.load.dashboard(periodo)]);
   const prefs = catalogo.preferencias || {};
   root.append(h('div', {class: 'encabezado'}, h('h1', {text: catalogo.name || 'Mi negocio'})));
   const banner = SPVI.bannerLicencia(licencia); if (banner) root.append(banner);
 
-  // Turno
+  // Estado del turno y selector de período en la misma fila; es el primer contenedor fijo al desplazar.
   const turno = tablero.shift;
+  root.append(h('div', {class: 'barra-turno pegajoso'},
+    h('span', {class: 'texto'}, icon('Turno'), h('strong', {text: turno ? 'Turno abierto' : 'Turno cerrado'}),
+      turno ? h('span', {class: 'etiqueta ok', text: 'Desde ' + fechaHora(Date.parse(turno.opened))}) : null),
+    chipsPeriodo(periodo, id => { sessionStorage.setItem('spvi-periodo', id); SPVI.render(); })));
+
+  // Tarjeta del turno
   root.append(turno
     ? h('div', {class: 'card primario'}, h('div', {class: 'cabecera'}, icon('Turno'), h('h3', {text: 'Turno abierto'}), h('span', {class: 'etiqueta ok', text: 'Desde ' + fechaHora(Date.parse(turno.opened))})),
       h('div', {class: 'grid kpi'},
@@ -135,19 +141,16 @@ SPVI.views.inicio = async function (root) {
     aviso('Existencias bajas', niveles.filter(x => x === 'bajo').length, 'var(--alert-bajo)', 'Inventario', 'bajo'),
     aviso('Caducan en 7 días', caducan, 'var(--alert-caducidad)', 'Fecha', 'caduca')));
 
-  // Período
-  const periodo = h('div', {class: 'chips', role: 'group', 'aria-label': 'Período'}, [[7, '7 días'], [30, '30 días'], [90, '90 días']].map(([d, label]) =>
-    h('button', {type: 'button', class: 'chip', 'aria-pressed': String(d === dias), onclick: () => { sessionStorage.setItem('spvi-periodo', d); SPVI.render(); }}, label)));
+  // Resumen del período elegido
   const cambio = tablero.revenue_change_percent;
   const kpi = (titulo, valor, extra = null) => h('div', {class: 'card'}, h('span', {class: 'secundario', text: titulo}), h('span', {class: 'valor', text: valor}), extra);
-  root.append(h('div', {class: 'encabezado'}, h('h3', {text: 'Resumen de ventas'}), periodo), h('div', {class: 'grid kpi seis'},
+  root.append(h('h3', {text: 'Resumen de ventas'}), h('div', {class: 'grid kpi seis'},
     kpi('Ingresos', cup(tablero.revenue), cambio === null ? null : h('span', {class: 'etiqueta ' + (cambio >= 0 ? 'ok' : 'mal'), text: (cambio >= 0 ? '+' : '') + cambio + ' % vs. período anterior'})),
     kpi('Ganancia', cup(tablero.margin)), kpi('Operaciones', String(tablero.operations)),
     kpi('Efectivo', cup(tablero.cash)), kpi('Transferencias', cup(tablero.transfers)), kpi('Valor del inventario', cup(tablero.inventory_cost))));
 
   // Gráfico diario
-  const serie = [];
-  for (let i = dias - 1; i >= 0; i--) { const d = new Date(Date.now() - i * 86400000); serie.push(d.toISOString().slice(0, 10)); }
+  const serie = SPVI.diasSerie(periodo, tablero);
   const porDia = Object.fromEntries(tablero.daily.map(x => [x.day, x.revenue]));
   const maximo = Math.max(1, ...serie.map(d => porDia[d] || 0));
   root.append(h('div', {class: 'dos'},

@@ -55,6 +55,8 @@ data class EstadoActualizacion(
     /** 0.26.0 (P73 §6): aviso con fecha límite o bloqueo (plazo de 30 días vencido). */
     val obligatoria: ActualizacionObligatoria.Estado = ActualizacionObligatoria.Estado.Ninguna,
     val esSecundaria: Boolean = false,
+    /** 0.31.0 (P5): cómo va el proceso que abre «Actualizar» en Ajustes (null = no se ha abierto). */
+    val proceso: ProcesoActualizar? = null,
 ) {
     /** Pantalla de bloqueo en toda la app (MainScaffold la omite durante una venta). */
     val bloqueada: Boolean get() = obligatoria is ActualizacionObligatoria.Estado.Bloqueo
@@ -70,6 +72,34 @@ data class EstadoActualizacion(
     val hayAviso: Boolean get() = disponible != null || desdePrincipal != null
     val version: String? get() = desdePrincipal?.version ?: disponible?.version
     val bytes: Long get() = desdePrincipal?.bytes ?: disponible?.bytes ?: 0
+}
+
+/**
+ * 0.31.0 (P5): lo que muestra el cuadro circular de «Actualizar» (Ajustes). La decisión es pura para poder probarla
+ * sin red: [enCurso] = la barra gira; el resto son los tres resultados que ve el usuario.
+ */
+sealed interface ProcesoActualizar {
+    /** Comprobando si hay versión nueva o descargándola: barra de progreso circular. */
+    data class EnCurso(val progreso: Float?) : ProcesoActualizar
+
+    /** La versión nueva está descargada y el instalador abierto. */
+    data object Actualizado : ProcesoActualizar
+
+    /** No hay versión más nueva que la instalada. */
+    data object AlDia : ProcesoActualizar
+
+    /** No se pudo comprobar o descargar (sin red). */
+    data object SinConexion : ProcesoActualizar
+
+    val enCurso: Boolean get() = this is EnCurso
+}
+
+/** 0.31.0 (P5): texto del resultado para el usuario. */
+fun ProcesoActualizar.texto(): String = when (this) {
+    is ProcesoActualizar.EnCurso -> if (progreso == null) TextosActualizacion.COMPROBANDO else TextosActualizacion.DESCARGANDO
+    ProcesoActualizar.Actualizado -> TextosActualizacion.RESULTADO_ACTUALIZADO
+    ProcesoActualizar.AlDia -> TextosActualizacion.RESULTADO_AL_DIA
+    ProcesoActualizar.SinConexion -> TextosActualizacion.RESULTADO_SIN_CONEXION
 }
 
 object TextosActualizacion {
@@ -98,7 +128,13 @@ object TextosActualizacion {
     const val ERROR_RED = "No se pudo consultar ahora. Se reintentará al abrir la app."
     const val ERROR_DESCARGA = "La descarga no terminó o el archivo no coincide. Vuelve a intentarlo."
     const val INSTALACION_CANCELADA = "La instalación no se completó. Puedes volver a tocar Actualizar."
-    const val BUSCAR = "Actualizaciones"
+    const val BUSCAR = "Actualizar"
+    /** 0.31.0 (P5): resultados del cuadro de «Actualizar». */
+    const val RESULTADO_ACTUALIZADO = "Actualizado"
+    const val RESULTADO_AL_DIA = "Estas al día"
+    const val RESULTADO_SIN_CONEXION = "Sin conexión"
+    const val COMPROBANDO = "Comprobando si hay una versión nueva…"
+    const val BUSCAR_DETALLE_CORTO = "Se comprueba si hay una versión nueva y, si la hay, se descarga y se instala."
     const val BUSCAR_DETALLE = "Una vez por semana, al abrir la app, comprueba si hay una versión nueva. No envía datos del negocio ni un identificador del teléfono. " +
         "Antes de actualizar, SPVI guarda un respaldo de tus datos y, al abrir la versión nueva, lo restaura. " +
         "Las versiones nuevas son obligatorias: puedes aplazarlas hasta 30 días."
@@ -220,24 +256,93 @@ class GestorActualizacion @Inject constructor(
         }
         local.update { it.copy(necesitaPermiso = false) }
         apkListo?.takeIf { it.exists() }?.let { apk -> descarga = scope.launch { instalar(apk) }; return }
-        val e = estado.value
-        descarga = scope.launch {
-            local.update { it.copy(progreso = 0f) }
-            val progreso: (Long, Long) -> Unit = { hecho, total -> if (total > 0) local.update { it.copy(progreso = (hecho.toFloat() / total).coerceIn(0f, 1f)) } }
-            val r: AppResult<File>? = when {
-                // Una sola descarga por internet: la secundaria la pide primero a la principal.
-                e.desdePrincipal != null -> seguro { secundaria.descargarApk(progreso) }
-                e.disponible != null -> seguro { github.descargar(e.disponible, progreso) }
-                else -> { if (e.esSecundaria) mensajes.trySend(TextosActualizacion.SIN_CONEXION_PRINCIPAL); null }
-            }
-            local.update { it.copy(progreso = null) }
-            when (r) {
-                is AppResult.Ok -> {
-                    val rechazo = instalador.comprobar(r.value)
-                    if (rechazo != null) { r.value.delete(); mensajes.trySend(rechazo.texto) } else { apkListo = r.value; local.update { it.copy(listo = true) }; instalar(r.value) }
+        // conProceso = false: la descarga de Inicio no debe dejar abierto el cuadro de «Actualizar» de Ajustes.
+        descarga = scope.launch { descargarEInstalar(estado.value, conMensajes = true, conProceso = false) }
+    }
+
+    /**
+     * 0.31.0 (P5): «Actualizar» de Ajustes. Comprueba si hay versión nueva y, si la hay, la descarga y abre el
+     * instalador. El cuadro de Ajustes muestra la barra circular mientras tanto y, al terminar, el resultado:
+     * «Actualizado», «Estas al día» o «Sin conexión».
+     */
+    fun actualizarAhora() {
+        if (local.value.proceso?.enCurso == true) return
+        scope.launch {
+            local.update { it.copy(proceso = ProcesoActualizar.EnCurso(null)) }
+            val r = if (github.repoConfigurado) seguro { comprobar(info.versionName, forzar = true) } else null
+            when {
+                r == null || r.error -> local.update { it.copy(proceso = ProcesoActualizar.SinConexion) }
+                r.aviso == null -> local.update { it.copy(proceso = ProcesoActualizar.AlDia) }
+                else -> {
+                    val ok = descargarEInstalar(estado.value.copy(disponible = r.aviso), conMensajes = false, conProceso = true)
+                    // La descarga pone ella sola el resultado; si ni llegó a empezar (ya había otra en curso),
+                    // el cuadro se quedaría girando: aquí se cierra.
+                    if (local.value.proceso is ProcesoActualizar.EnCurso) {
+                        local.update { it.copy(proceso = if (ok) ProcesoActualizar.Actualizado else ProcesoActualizar.SinConexion) }
+                    }
                 }
-                is AppResult.Err -> mensajes.trySend(if (r.error is AppError.Red) TextosActualizacion.ERROR_RED else TextosActualizacion.ERROR_DESCARGA)
-                null -> Unit
+            }
+        }
+    }
+
+    /** Cierra el cuadro de «Actualizar» (el usuario ya vio el resultado). */
+    fun cerrarProceso() { local.update { it.copy(proceso = null) } }
+
+    /**
+     * Descarga el APK (informando del progreso) y abre el instalador. [conMensajes] = true en el camino normal
+     * (Inicio y Ajustes por la tarjeta), donde cada paso se avisa con un mensaje; false en el cuadro circular,
+     * que habla por su barra y su resultado. [conProceso] = true refleja el avance en [EstadoActualizacion.proceso]
+     * (lo que ve el cuadro circular). Devuelve true si se llegó a abrir el instalador.
+     */
+    private suspend fun descargarEInstalar(
+        e: EstadoActualizacion,
+        conMensajes: Boolean = true,
+        conProceso: Boolean = true,
+    ): Boolean {
+        if (descarga?.isActive == true) return false
+        local.update { it.copy(progreso = 0f, proceso = if (conProceso) ProcesoActualizar.EnCurso(0f) else null) }
+        val progreso: (Long, Long) -> Unit = { hecho, total ->
+            if (total > 0) {
+                val p = (hecho.toFloat() / total).coerceIn(0f, 1f)
+                local.update { it.copy(progreso = p, proceso = if (conProceso) ProcesoActualizar.EnCurso(p) else null) }
+            }
+        }
+        // El resultado solo se refleja en el cuadro circular si este proceso lo abrió.
+        val resultado: (ProcesoActualizar) -> Unit = { p -> if (conProceso) local.update { it.copy(proceso = p) } }
+        val r: AppResult<File>? = when {
+            // Una sola descarga por internet: la secundaria la pide primero a la principal.
+            e.desdePrincipal != null -> seguro { secundaria.descargarApk(progreso) }
+            e.disponible != null -> seguro { github.descargar(e.disponible, progreso) }
+            else -> {
+                if (e.esSecundaria && conMensajes) mensajes.trySend(TextosActualizacion.SIN_CONEXION_PRINCIPAL)
+                null
+            }
+        }
+        local.update { it.copy(progreso = null) }
+        return when (r) {
+            is AppResult.Ok -> {
+                val rechazo = instalador.comprobar(r.value)
+                if (rechazo != null) {
+                    r.value.delete()
+                    if (conMensajes) mensajes.trySend(rechazo.texto)
+                    resultado(ProcesoActualizar.SinConexion)
+                    false
+                } else {
+                    apkListo = r.value
+                    local.update { it.copy(listo = true) }
+                    resultado(ProcesoActualizar.Actualizado)
+                    instalar(r.value)
+                    true
+                }
+            }
+            is AppResult.Err -> {
+                if (conMensajes) mensajes.trySend(if (r.error is AppError.Red) TextosActualizacion.ERROR_RED else TextosActualizacion.ERROR_DESCARGA)
+                resultado(ProcesoActualizar.SinConexion)
+                false
+            }
+            null -> {
+                resultado(if (e.esSecundaria) ProcesoActualizar.SinConexion else ProcesoActualizar.AlDia)
+                false
             }
         }
     }
@@ -287,4 +392,7 @@ class ActualizacionViewModel @Inject constructor(private val gestor: GestorActua
     fun descartar() = gestor.descartar()
     fun cancelar() = gestor.cancelar()
     fun buscarAhora() = gestor.buscarAhora()
+    /** 0.31.0 (P5): «Actualizar» de Ajustes (cuadro con barra circular y resultado). */
+    fun actualizarAhora() = gestor.actualizarAhora()
+    fun cerrarProceso() = gestor.cerrarProceso()
 }

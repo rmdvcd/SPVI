@@ -775,8 +775,9 @@ class Business:
 
     LEDGERS=('ventas','servicios','transferencias','movimientos','caja','turnos','clientes')
 
-    def ledger(self,kind,query='',page=1,size=50,since=None,until=None):
-        """Una página de Registros, del más reciente al más antiguo, con totales del filtro completo."""
+    def ledger(self,kind,query='',page=1,size=50,since=None,until=None,ids=False):
+        """Una página de Registros, del más reciente al más antiguo, con totales del filtro completo. Con ``ids``
+            se añaden los identificadores de **todo** el filtro (para «marcar todo lo filtrado»)."""
         if kind not in self.LEDGERS: raise ValueError('Registro no válido.')
         if type(page) is not int or page<1 or type(size) is not int or not 1<=size<=200: raise ValueError('Página no válida.')
         query=(query or '').strip().casefold()[:120]
@@ -809,16 +810,30 @@ class Business:
                 summary.update(entradas=sum(x['importeCent'] for x in rows if x['tipo']=='ENTRADA'),
                                salidas=sum(x['importeCent'] for x in rows if x['tipo']=='SALIDA'))
             start=(page-1)*size
-            return dict(items=rows[start:start+size],page=page,size=size,pages=max(1,(len(rows)+size-1)//size),**summary)
+            result=dict(items=rows[start:start+size],page=page,size=size,pages=max(1,(len(rows)+size-1)//size),**summary)
+            if ids: result['ids']=[x['id'] for x in rows if x.get('id') is not None]
+            return result
 
     def dashboard(self,days=30):
-        if days not in (7,30,90): raise ValueError('Período no válido.')
+        """``days``: 1, 7, 30 o 90 días hacia atrás; ``0`` para todo el historial; ``'turno'`` desde que se abrió el
+        turno (si no hay ninguno abierto, desde el inicio del día de hoy). Acepta también el valor como texto."""
+        turno = days=='turno'
+        if type(days) is str and not turno:
+            days = {'hoy': 1, 'todo': 0}.get(days, days)
+            if type(days) is str:
+                try: days=int(days)
+                except ValueError: raise ValueError('Período no válido.')
+        if not turno and (type(days) is not int or days not in (0,1,7,30,90)): raise ValueError('Período no válido.')
         with self.connect() as db:
             db.execute('BEGIN')
-            now=dto.now_ms(); start=now-days*86400000
+            now=dto.now_ms()
+            local=db.execute('SELECT * FROM shifts WHERE closed IS NULL').fetchone()
+            if turno: start=dto.millis(local['opened']) if local else now-now%86400000
+            elif days: start=now-days*86400000
+            else: start=0
             sales=[x for x in objects(db,'ventas') if x.get('anuladaEn') is None]
             current=[s for s in sales if start<=s['fecha']<=now]
-            previous=sum(total(s) for s in sales if start-days*86400000<=s['fecha']<start)
+            previous=0 if turno or not days else sum(total(s) for s in sales if start-days*86400000<=s['fecha']<start)
             items=[];preferences=meta(db,'preferencias',{}) or {}
             for kind in ('productos','servicios','insumos'):
                 for item in objects(db,kind):
@@ -834,7 +849,6 @@ class Business:
             for sale in current:
                 day=dto.iso(sale['fecha'])[:10]; daily[day]['revenue']+=total(sale); daily[day]['margin']+=total(sale)-cost(sale)
                 for line in sale['detalles']: tops[line['nombre']]+=line['precioUnitarioCent']*line['cantidad']
-            local=db.execute('SELECT * FROM shifts WHERE closed IS NULL').fetchone()
             shifts=[]; latest=objects(db,'turnos')[-10:]; wanted={t['id'] for t in latest}
             cash_moves=defaultdict(list); cash_sales=defaultdict(int)
             for m in objects(db,'caja'):
@@ -860,11 +874,16 @@ class Business:
                 shifts=shifts[:10],recent=recent,top=[dict(name=k,total=v) for k,v in sorted(tops.items(),key=lambda x:-x[1])[:5]])
 
     def report(self,scope,query='',ids=None):
+        """Informe de ``turnos`` o de artículos (``inventario``, ``servicios``, ``productos``). Con ``ids`` se
+            limita a esos registros; con ``query``, a los que contengan ese texto."""
+        if ids is not None and (not isinstance(ids,list) or any(type(x) is not int or x<=0 for x in ids)):
+            raise ValueError('Selección no válida.')
         with self.connect() as db:
             db.execute('BEGIN')
             if scope=='turnos':
                 rows=[]; shifts=objects(db,'turnos'); index=self.turn_index(db)
                 for turn in shifts:
+                    if ids is not None and turn['id'] not in ids: continue
                     # Recalcular sin mutar la BD de lectura.
                     sales=[s for s in index[turn['id']]['ventas'] if s.get('anuladaEn') is None]
                     moves=index[turn['id']]['caja']
@@ -874,6 +893,17 @@ class Business:
                                  Decimal(turn.get('fondoCent') or 0)/100,Decimal(expected)/100,Decimal(counted)/100 if counted is not None else '',
                                  Decimal(counted-expected)/100 if counted is not None else ''])
                 return ['Turno','Apertura UTC','Cierre UTC','Fondo CUP','Esperado CUP','Contado CUP','Diferencia CUP'],rows,shifts
+            if scope=='ventas':
+                texto=(query or '').strip().casefold()[:120]; items=[]
+                for sale in objects(db,'ventas'):
+                    if ids is not None and sale['id'] not in ids: continue
+                    detalle=', '.join(d['nombre'] for d in sale['detalles'])
+                    if texto and texto not in detalle.casefold(): continue
+                    items.append(dict(id=sale['id'],fecha=dto.iso(sale['fecha']),detalle=detalle,
+                        cobro='Transferencia' if sale.get('transaccion') else 'Efectivo',total=Decimal(total(sale))/100,
+                        estado='Anulada' if sale.get('anuladaEn') else 'Válida'))
+                rows=[[x['id'],x['fecha'],x['detalle'],x['cobro'],x['total'],x['estado']] for x in items]
+                return ['Venta','Fecha UTC','Detalle','Cobro','Total CUP','Estado'],rows,items
             kinds=('productos','insumos') if scope=='inventario' else ('servicios',) if scope=='servicios' else ('productos',)
             result=[]
             for kind in kinds:

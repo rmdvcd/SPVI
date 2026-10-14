@@ -13,10 +13,13 @@ enum class PasoConfiguracion { DATOS, ALERTAS, PRUEBA }
  * - DATOS se da por hecho si el Perfil tiene datos.
  * - ALERTAS y PRUEBA necesitan confirmación explícita (los niveles tienen valores por defecto; la prueba es informativa).
  * - [camaraSolicitada]: el sistema ya mostró su diálogo de cámara alguna vez (para distinguir "denegado para siempre").
+ * - [permisosInicialesPedidos] (0.31.0, P9): el sistema ya mostró UNA vez su diálogo de permisos al abrir la app por
+ *   primera vez. No se vuelve a pedir en masa: los permisos concretos se piden donde hacen falta (cámara, fotos…).
  */
 data class ConfiguracionInicial(
     val confirmados: Set<PasoConfiguracion> = emptySet(),
     val camaraSolicitada: Boolean = false,
+    val permisosInicialesPedidos: Boolean = false,
 )
 
 /** Datos mínimos del usuario que pide el asistente. Todos opcionales; los que se escriban deben ser válidos. */

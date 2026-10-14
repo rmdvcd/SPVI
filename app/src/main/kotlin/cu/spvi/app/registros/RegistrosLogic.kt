@@ -79,6 +79,9 @@ object TextosRegistros {
     fun alcanceExportar(t: TipoRegistro, n: Int, detalle: String?) =
         "Lo que ves: ${elementos(t, n)}${detalle?.let { " ($it)" }.orEmpty()}"
 
+    /** 0.31.0 (P3): «3 ventas seleccionadas» (la exportación sale solo de lo marcado). */
+    fun seleccionados(t: TipoRegistro, n: Int) = "${elementos(t, n)} seleccionados"
+
     fun guardado(nombre: String) = "Guardado: $nombre"
 
     /** "SPVI_ventas_2026-09-30.pdf". Sin datos personales en el nombre. */
@@ -164,6 +167,11 @@ object RegistrosTags {
     fun venta(id: Long) = "registros_venta_$id"
     fun transferencia(id: Long) = "registros_transferencia_$id"
     fun movimiento(id: Long) = "registros_movimiento_$id"
+    const val SELECCION = "registros_seleccion"
+    const val SELECCIONAR_TODO = "registros_seleccionar_todo"
+    const val EXPORTAR_SELECCION = "registros_exportar_seleccion"
+    const val LIMPIAR_SELECCION = "registros_limpiar_seleccion"
+    fun check(id: Long) = "registros_check_$id"
 }
 
 fun etiqueta(p: PeriodoRegistro): String = when (p) {
@@ -232,6 +240,22 @@ fun tituloFila(i: ItemMovimiento, zona: ZoneId): String = fechaHora(i.movimiento
 fun subtituloFila(i: ItemMovimiento): String =
     listOfNotNull(i.movimiento.nombre, i.movimiento.hechoPor.ifBlank { null }).joinToString(" · ")
 fun valorFila(i: ItemMovimiento): String = cantidadConSigno(i.movimiento.delta, i.movimiento.entidad, i.simbolo)
+
+/**
+ * 0.31.0 (P3): id de cada fila de una tabla de Registros. La casilla de selección marca por id, igual que en
+ * Inventario, y la exportación se limita a lo marcado.
+ */
+fun idsVista(v: VistaRegistro): List<Long> = when (v) {
+    is VistaRegistro.Ventas -> v.items.map { it.id }
+    is VistaRegistro.Transferencias -> v.items.map { it.id }
+    is VistaRegistro.Movimientos -> v.items.map { it.movimiento.id }
+}
+
+/** 0.31.0 (P3): de la selección, lo que todavía se ve (una fila que ya no está deja de estar marcada). */
+fun seleccionVigente(v: VistaRegistro, seleccion: Set<Long>): Set<Long> {
+    val visibles = idsVista(v).toHashSet()
+    return seleccion.filterTo(linkedSetOf()) { it in visibles }
+}
 
 /** Para TalkBack y el color del indicador: entra o sale existencia. */
 fun esEntrada(i: ItemMovimiento): Boolean = i.movimiento.delta >= 0

@@ -30,19 +30,26 @@ class ConfiguracionInicialRepositoryImpl @Inject constructor(private val ds: Sec
 
     override suspend fun marcarCamaraSolicitada() = editar { it.copy(camaraSolicitada = true) }
 
+    override suspend fun marcarPermisosInicialesPedidos() = editar { it.copy(permisosInicialesPedidos = true) }
+
     private suspend fun editar(f: (ConfiguracionInicial) -> ConfiguracionInicial) = mutex.withLock {
         val nuevo = f(decodificar(ds.get(KEY)))
         ds.put(KEY, codificar(nuevo))
     }
 
     @Serializable
-    internal data class Guardada(val confirmados: List<String> = emptyList(), val camaraSolicitada: Boolean = false)
+    internal data class Guardada(
+        val confirmados: List<String> = emptyList(),
+        val camaraSolicitada: Boolean = false,
+        val permisosInicialesPedidos: Boolean = false,
+    )
 
     internal companion object {
         const val KEY = "setup.v1"
 
         fun codificar(c: ConfiguracionInicial): String = SpviJson.encodeToString(
-            Guardada.serializer(), Guardada(c.confirmados.map { it.name }.sorted(), c.camaraSolicitada),
+            Guardada.serializer(),
+            Guardada(c.confirmados.map { it.name }.sorted(), c.camaraSolicitada, c.permisosInicialesPedidos),
         )
 
         /** Pasos desconocidos (versión futura) se ignoran; JSON ilegible = estado inicial. */
@@ -52,6 +59,7 @@ class ConfiguracionInicialRepositoryImpl @Inject constructor(private val ds: Sec
             return ConfiguracionInicial(
                 confirmados = g.confirmados.mapNotNull { n -> PasoConfiguracion.entries.firstOrNull { it.name == n } }.toSet(),
                 camaraSolicitada = g.camaraSolicitada,
+                permisosInicialesPedidos = g.permisosInicialesPedidos,
             )
         }
     }

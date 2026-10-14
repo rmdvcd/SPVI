@@ -133,7 +133,7 @@ fun Licencia.avisos(): List<AvisoLicencia> = buildList {
  * - Sin «Tipo» ni «Vence»: el encabezado ya dice «Licencia Mensual · Vence el …» (o «Sin vencimiento»).
  * - «Tiempo restante» solo con licencia activa; en la prueba el encabezado ya dice «Quedan N días».
  * - Sin «ID de licencia» ni «ID del dispositivo»: son datos internos. La solicitud cifrada ya los lleva, y el ID
- *   del teléfono que pide Migrar se ve en Ajustes → Migrar a otro teléfono.
+ *   del teléfono que pide Migrar se ve en Ajustes → Migrar.
  */
 fun Licencia.detalle(ahora: Instant, zone: ZoneId = ZoneId.systemDefault()): List<Pair<String, String>> = buildList {
     instalada?.let { add("Emitida" to Dates.day(it.emitidaEn, zone)) }
