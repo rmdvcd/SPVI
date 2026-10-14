@@ -48,12 +48,15 @@ enum class ModoWizard { PRIMERA_VEZ, RETOMAR }
 fun planWizard(modo: ModoWizard, resumen: ResumenConfiguracion, soloPaso: PasoConfiguracion? = null): List<PasoWizard> = when {
     soloPaso != null -> listOf(soloPaso.wizard())
     // 0.21.0 (C12): el recorrido de la primera vez empieza por el tipo de app, el objetivo y los empleados.
-    modo == ModoWizard.PRIMERA_VEZ -> listOf(PasoWizard.BIENVENIDA) + PASOS_TOUR + resumen.pasos.map { it.wizard() }
+    // 0.31.0 (P6): Migrar va al final, después de la configuración: solo avisa de que existe
+    // Ajustes → Migrar, y así no desplaza el orden (ni el índice guardado) de los pasos de antes.
+    modo == ModoWizard.PRIMERA_VEZ ->
+        listOf(PasoWizard.BIENVENIDA) + PASOS_TOUR + resumen.pasos.map { it.wizard() } + PasoWizard.MIGRAR
     else -> resumen.pendientes.ifEmpty { resumen.pasos }.map { it.wizard() }
 }
 
 /** 0.21.0 (C12): pasos del recorrido inicial que no dependen de la configuración guardada. */
-val PASOS_TOUR = listOf(PasoWizard.TIPO_APP, PasoWizard.ACCESO_CLAVE, PasoWizard.OBJETIVO, PasoWizard.EMPLEADOS, PasoWizard.MIGRAR)
+val PASOS_TOUR = listOf(PasoWizard.TIPO_APP, PasoWizard.ACCESO_CLAVE, PasoWizard.OBJETIVO, PasoWizard.EMPLEADOS)
 
 /** 0.21.0 (C12): textos del recorrido inicial (puros, probados en JVM). */
 object TextosTour {
