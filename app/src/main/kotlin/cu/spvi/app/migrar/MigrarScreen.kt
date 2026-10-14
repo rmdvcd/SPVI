@@ -370,7 +370,7 @@ private fun EmisorMigracionQr(state: MigrarUiState, acciones: AccionesMigrar, au
             )
             // Sin QR a la vista: el botón que lo fabrica (tras confirmar la identidad).
             qr.codigo.isEmpty() -> SpviPrimaryButton(
-                TextosMigrar.QR_EMISOR_MOSTRAR, onClick = { autorizar(acciones.onEmpezarEmisor) }, icon = SpviIcons.QrCodeScanner,
+                TextosMigrar.QR_EMISOR_MOSTRAR, onClick = { autorizar(acciones.onEmpezarEmisor) }, icon = SpviIcons.Escanear,
                 modifier = Modifier.testTag(MigrarTags.QR_ACCION),
             )
             else -> SpviSecondaryButton(
@@ -400,7 +400,7 @@ private fun ReceptorMigracionQr(state: MigrarUiState, acciones: AccionesMigrar, 
                 )
             } else {
                 SpviSecondaryButton(
-                    TextosMigrar.QR_RECEPTOR_TITULO, onClick = { autorizar { leyendo = true } }, icon = SpviIcons.QrCodeScanner,
+                    TextosMigrar.QR_RECEPTOR_TITULO, onClick = { autorizar { leyendo = true } }, icon = SpviIcons.Escanear,
                     modifier = Modifier.testTag(MigrarTags.QR_ACCION),
                 )
                 SpviSecondaryButton(

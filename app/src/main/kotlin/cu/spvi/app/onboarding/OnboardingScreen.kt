@@ -396,7 +396,7 @@ private fun PasoMigrar() {
     }
     Titulo(TextosTour.MIGRAR_TITULO)
     Explicacion(TextosTour.MIGRAR_EXPLICACION)
-    Punto(SpviIcons.QrCodeScanner, "El teléfono que se va es el Emisor y el nuevo el Receptor.")
+    Punto(SpviIcons.Escanear, "El teléfono que se va es el Emisor y el nuevo el Receptor.")
     Punto(SpviIcons.Bloqueo, TextosTour.MIGRAR_CLAVE)
 }
 
