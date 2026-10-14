@@ -1,5 +1,37 @@
 # SPVI — Guía de los cambios en desarrollo
 
+## Novedades del teléfono (0.31.0)
+
+- **Inicio:** «Turno cerrado» (o «Turno en curso») y el selector de período están en la misma fila, con
+  el mismo tamaño. Ese primer contenedor es el único que **no se desplaza**: queda fijo arriba mientras
+  miras los gráficos y las alertas.
+- **Inventario:** cada fila muestra, debajo del nombre, **cuánto puedes hacer** con lo que tienes y su
+  unidad (u, L, g, kg, cajas), y debajo la **categoría**. A la derecha están el precio de **costo** y el
+  de **venta**, con colores distintos para no confundirlos. Los insumos sin precio de venta no lo muestran.
+- **Registros:** todas las listas (ventas, transferencias, movimientos, turnos y clientes fijos) se
+  pueden **marcar con la casilla redonda**, igual que en Inventario. Con algo marcado aparece la barra de
+  selección: cuántos elementos son, seleccionar todo y quitar la selección. Exportar usa solo lo marcado.
+- **Licencia:** se quitó el botón de llave del final; el asistente avanza con *Paso siguiente*.
+- **Migrar** (antes «Migrar a otro teléfono»): pasa los datos de un teléfono a otro. Elige el rol de cada
+  uno: **Emisor** (entrega la copia y su teléfono se borra al terminar) o **Receptor** (la recibe). El emisor
+  muestra un **código QR**; el receptor lo lee con la cámara. Todo el camino está protegido por el
+  **acceso con clave** de Ajustes: si no lo has definido, la app te lo dice antes de empezar. También se
+  explica en el **recorrido del primer arranque**.
+- **Actualizar** (antes «Actualizaciones»): al tocarlo sale un cuadro con una **barra de progreso
+  circular** y al terminar dice *Actualizado*, *Estas al día* o *Sin conexión*.
+- **Ayuda:** el manual está organizado por **secciones** (Empezar, Vender y cobrar, Inventario, Registros,
+  Tus datos y tu licencia), cada tema con su **icono** y, donde hace falta, un **esquema** dibujado.
+- **Soporte:** las filas están centradas, en el orden **Icono, Descripción, Texto**.
+- **Primera apertura:** la app pide **todos los permisos que necesita de una vez y sin textos** (cámara,
+  notificaciones y fotos): solo sale el cuadro del sistema. Si los negaste, actívalos en Ajustes → Permisos.
+- **Animaciones:** al tocar la barra de abajo el contenido entra y sale con un **fundido**; al
+  **deslizar** el dedo, la pantalla se mueve **hacia los lados** con la dirección del gesto; las ventanas y
+  los diálogos **suben desde el centro de abajo**.
+
+> La app de iOS (`flutter_app/`) recibe los mismos cambios, con dos diferencias honestas: el código de
+> migración se muestra como texto (no trae librería de QR) y los permisos los pide iOS cuando hace falta,
+> no todos al abrir.
+
 ## Pago electrónico
 
 En **Ajustes → Pago electrónico**, marca el teléfono y la tarjeta que usarás al cobrar.
@@ -39,6 +71,8 @@ Tocarla vuelve a la aplicación. No muestra importes, clientes ni números de ta
 
 La primera versión Python se encuentra en `desktop/`. Su instalación, límites y configuración del
 navegador y dominio se explican en [la guía de escritorio](desktop/README.md).
+Lo que el móvil tiene y la web no, con lo que **sí** y lo que **no** conviene llevar a la PC, está en
+[el informe de feedback](desktop/INFORME_FEEDBACK_MOVIL.md).
 Incluye el servidor principal para secundarias Android, pendiente de prueba real con móviles.
 Es independiente y solo principal; no sustituye la aplicación móvil.
 

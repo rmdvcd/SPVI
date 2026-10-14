@@ -4,15 +4,25 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Icon
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cu.spvi.app.common.SecureWindow
@@ -21,6 +31,7 @@ import cu.spvi.core.time.Dates
 import cu.spvi.designsystem.component.SpviBottomSheet
 import cu.spvi.designsystem.component.SpviDialog
 import cu.spvi.designsystem.component.SpviEmptyState
+import cu.spvi.designsystem.component.SpviIconAction
 import cu.spvi.designsystem.component.SpviListItem
 import cu.spvi.designsystem.component.SpviLoading
 import cu.spvi.designsystem.component.SpviSecondaryButton
@@ -105,6 +116,8 @@ object ClientesTags {
     const val QUITAR = "clientes_quitar"
     const val CONFIRMAR_QUITAR = "clientes_confirmar_quitar"
     fun cliente(ci: String) = "clientes_$ci"
+    /** 0.31.0 (P3): casilla de selección de la fila. */
+    fun check(ci: String) = "clientes_check_$ci"
 }
 
 class AccionesClientes(
@@ -124,20 +137,48 @@ fun ClientesFijosTab(state: ClientesUiState, acciones: AccionesClientes, zona: Z
         state.clientes.isEmpty() -> SpviEmptyState(
             title = TextosClientes.VACIO_TITULO, detail = TextosClientes.VACIO_DETALLE, ilustracion = SpviIlustracion.Registros,
         )
-        else -> LazyColumn(
-            Modifier.fillMaxSize().testTag(ClientesTags.LISTA),
-            contentPadding = PaddingValues(horizontal = SpviSpacing.md, vertical = SpviSpacing.xs),
-            verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs / 2),
-        ) {
-            items(state.clientes, key = { it.ci }) { c ->
-                SpviListItem(
-                    title = c.nombreApellidos,
-                    // 0.28.0: el importe («3 compras · 1 250.00 CUP») va en seminegrita.
-                    subtitleResaltado = SpviTextos.resaltar(TextosClientes.resumen(c), Money.format(c.total)),
-                    indicatorColor = null,
-                    leading = { Icon(SpviIcons.Perfil, contentDescription = null) },
-                    onClick = { acciones.onAbrir(c.ci) }, modifier = spviAnimateItem().testTag(ClientesTags.cliente(c.ci)),
-                )
+        else -> {
+            // 0.31.0 (P3): los clientes también se marcan con casilla (no se exportan: la selección es local).
+            var marcados by rememberSaveable { mutableStateOf(emptySet<String>()) }
+            Column(Modifier.fillMaxSize()) {
+                if (marcados.isNotEmpty()) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = SpviSpacing.xs).testTag(RegistrosTags.SELECCION),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        SpviIconAction(
+                            SpviIcons.Cancelar, "Quitar selección", onClick = { marcados = emptySet() },
+                            modifier = Modifier.testTag(RegistrosTags.LIMPIAR_SELECCION),
+                        )
+                        Text(
+                            "${marcados.size} seleccionados", style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+                LazyColumn(
+                    Modifier.fillMaxSize().testTag(ClientesTags.LISTA),
+                    contentPadding = PaddingValues(horizontal = SpviSpacing.md, vertical = SpviSpacing.xs),
+                    verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs / 2),
+                ) {
+                    items(state.clientes, key = { it.ci }) { c ->
+                        SpviListItem(
+                            title = c.nombreApellidos,
+                            // 0.28.0: el importe («3 compras · 1 250.00 CUP») va en seminegrita.
+                            subtitleResaltado = SpviTextos.resaltar(TextosClientes.resumen(c), Money.format(c.total)),
+                            indicatorColor = null,
+                            leading = {
+                                Checkbox(
+                                    checked = c.ci in marcados,
+                                    onCheckedChange = { marcados = if (c.ci in marcados) marcados - c.ci else marcados + c.ci },
+                                    modifier = Modifier.testTag(ClientesTags.check(c.ci))
+                                        .semantics { contentDescription = "Seleccionar ${c.nombreApellidos}" },
+                                )
+                            },
+                            onClick = { acciones.onAbrir(c.ci) }, modifier = spviAnimateItem().testTag(ClientesTags.cliente(c.ci)),
+                        )
+                    }
+                }
             }
         }
     }

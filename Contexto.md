@@ -34,7 +34,7 @@ SPVI (Sistema de Punto de Venta e Inventario) es una app Android nativa para peq
 | **Inventario** | Productos, Elaborados e Insumos. Precio opcional en los insumos, en unidades enteras. Buscador, filtros, escáner (CameraX + ML Kit) y exportar a PDF, Excel, Imagen y Tarjetas |
 | **Servicios** | Tipo libre, importe, foto y descripción. Pueden gastar insumos y tienen su pestaña en Registros |
 | **Registros** | Ventas, Servicios, Transferencias, Movimientos, **Clientes** (0.27.0) y Turnos, ordenados por fecha, con filtros. **Anular o modificar** una venta: solo la principal y solo con el turno abierto |
-| **Ajustes** | Perfil (nombre, apellidos y carné), Licencia, **Acceso con clave** (0.27.0, opcional: huella o PIN del teléfono al abrir y tras ≥ 10 min fuera), Pago electrónico (teléfonos y tarjetas), Precios, Avisos, Permisos, Respaldo, Migrar a otro teléfono (4 pasos), Actualizaciones, Ayuda y Soporte |
+| **Ajustes** | Perfil (nombre, apellidos y carné), Licencia, **Acceso con clave** (0.27.0, opcional: huella o PIN del teléfono al abrir y tras ≥ 10 min fuera), Pago electrónico (teléfonos y tarjetas), Precios, Avisos, Permisos, Respaldo, Migrar (paso de datos por QR: Emisor/Receptor), Actualizar, Ayuda y Soporte |
 | **Apps vinculadas** | Una app **principal** (dueño) y hasta 10 **secundarias** (empleados) en la misma wifi, sin internet ni servidor. Cada empleado tiene sus permisos. La secundaria no crea secundarias y **una principal nunca pasa a secundaria** (0.27.0): el tipo se elige en el recorrido inicial; para cambiarlo hay que exportar el respaldo y borrar los datos de SPVI. Una secundaria activa el acceso con clave solo desde Ajustes |
 
 ### Exportaciones (desde la 0.26.0, sin texto)
@@ -126,7 +126,7 @@ Formato exacto de cada archivo: `FORMATOS.md`.
 ### Respaldo y migración
 
 - **Respaldo:** solo el archivo `.spvi`, siempre cifrado; desde la 0.27.0 la contraseña es opcional y viene apagada (sin ella, cualquiera con SPVI lo abre). Lleva los clientes fijos (sin PDF). Un recordatorio mensual, solo en la principal.
-- **Migrar a otro teléfono:** asistente de 4 pasos.
+- **Migrar:** asistente de 4 pasos + paso de datos por QR entre los dos teléfonos (Emisor/Receptor).
 
 ---
 

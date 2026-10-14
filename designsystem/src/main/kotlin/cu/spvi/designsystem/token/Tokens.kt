@@ -11,8 +11,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
@@ -75,6 +73,8 @@ object SpviSize {
     val fabClearance = 88.dp
     /** Lado del código QR de cobro (se ve bien a 30–40 cm). */
     val qr = 240.dp
+    /** 0.31.0 (P5): diámetro de la barra de progreso circular («Actualizar»). */
+    val progresoCircular = 72.dp
     /** Foto del producto en formularios y en el escáner. */
     val fotoMiniatura = 88.dp
     /** Campo de cantidad (hasta 5 cifras, con letra grande). */
@@ -128,11 +128,13 @@ object SpviMotion {
     val exitVertical = slideOutVertically(muelle()) { it / 4 } + fadeOut(tween(SHORT))
 
     /**
-     * Cambio entre pestañas de la barra inferior (mismo nivel): fundido + zoom sutil (sin dirección, porque no hay
-     * avance ni retroceso). 0.28.1: el fundido solo era imperceptible entre pantallas oscuras; el zoom lo delata.
+     * 0.31.0 (P10): cambio de sección al TOCAR la barra inferior: fundido de entrada y de salida, sin más. Antes
+     * llevaba además un zoom sutil (0.28.1) porque el fundido solo no se notaba entre pantallas oscuras; el usuario
+     * pidió expresamente el fundido para la barra de navegación, y el deslizamiento entre secciones ya se anima con
+     * un desplazamiento lateral (ver [screenForwardEnter] / [screenBackEnter]), que es el que se nota.
      */
-    val screenEnter = fadeIn(tween(MEDIUM)) + scaleIn(tween(MEDIUM), initialScale = ZOOM_ENTRADA)
-    val screenExit = fadeOut(tween(SHORT)) + scaleOut(tween(SHORT), targetScale = ZOOM_ENTRADA)
+    val screenEnter = fadeIn(tween(MEDIUM))
+    val screenExit = fadeOut(tween(SHORT))
 
     /**
      * P18 (A17): navegación con dirección. Avanzar entra desde la derecha (1/4 del ancho) y volver desde la
@@ -162,16 +164,15 @@ object SpviMotion {
      */
     fun <T> muelleEntrada(): SpringSpec<T> = spring(dampingRatio = 0.85f, stiffness = 350f)
 
-    /** 0.28.1: escala inicial/final del zoom sutil de [screenEnter]/[screenExit]. */
-    const val ZOOM_ENTRADA = 0.96f
-
     /**
      * 0.27.0 (N4): las ventanas emergentes suben desde abajo hasta el centro con un fundido y, al cerrarse, hacen el
      * recorrido inverso (bajan y se desvanecen). El recorrido es la altura de la propia ventana. 0.28.1: la entrada
      * usa [muelleEntrada] para que el «llegar» se aprecie; la salida sigue inmediata con [muelle].
+     * 0.31.0 (P10): la entrada es media altura (`it / 2`), no la altura completa: la ventana «salta» desde el centro
+     * de abajo en vez de subir desde el borde, que es lo que se pidió para ventanas y diálogos.
      */
     val ventanaEntra: EnterTransition =
-        slideInVertically(muelleEntrada()) { it } + fadeIn(tween(SHORT))
+        slideInVertically(muelleEntrada()) { it / 2 } + fadeIn(tween(SHORT))
     val ventanaSale: ExitTransition = slideOutVertically(muelle()) { it } + fadeOut(tween(SHORT, easing = easing))
 
     /** Duración del fundido del velo oscuro que hay detrás de una ventana emergente. */

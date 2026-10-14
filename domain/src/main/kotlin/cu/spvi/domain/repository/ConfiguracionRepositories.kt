@@ -79,6 +79,8 @@ interface ConfiguracionInicialRepository {
     val estado: Flow<ConfiguracionInicial>
     suspend fun confirmar(paso: PasoConfiguracion)
     suspend fun marcarCamaraSolicitada()
+    /** 0.31.0 (P9): el sistema ya mostró el diálogo de permisos de la primera apertura. */
+    suspend fun marcarPermisosInicialesPedidos()
 }
 
 /** Qué trajo o llevó un respaldo. Siempre es completo: base de datos + configuración (P17: un solo tipo). */

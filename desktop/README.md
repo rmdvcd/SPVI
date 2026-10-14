@@ -3,6 +3,12 @@
 Aplicación web Python que corre en la PC del dueño, **solo como principal**. No usa cámara, permisos,
 SMS, servicios ni otras funciones de Android. **No sustituye la aplicación móvil: se despliega de forma independiente.**
 
+> **Comparación con el móvil (14/10/2026):** [INFORME_FEEDBACK_MOVIL.md](INFORME_FEEDBACK_MOVIL.md) lista lo que
+> tienen las apps móviles y esta web no, descartando lo que no tiene sentido en una PC (migrar por QR entre
+> teléfonos, actualización en caliente, permisos del sistema, biometría) y señalando lo que sí conviene
+> llevar aquí (selector de período en Inicio, fila de inventario con el costo, casillas de selección en
+> Registros, Ayuda y Soporte mínimos, fundido entre secciones). Nada de eso está implementado todavía.
+
 ## Novedades de la 0.31.0 (10/10/2026)
 
 - **Interfaz nueva** con el mismo estilo que el móvil: menú lateral (hamburguesa), tarjetas, listas, diálogos

@@ -15,6 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -92,6 +94,8 @@ fun MainScaffold(snapshot: Licencia) {
         }
     }
 
+    // 0.31.0 (P10): dirección del último cambio de sección por deslizamiento (0 = toque en la barra).
+    var gesto by remember { mutableIntStateOf(0) }
     // 0.26.0 (P73 §6): plazo de la actualización vencido → bloqueo de toda la app. Nunca en mitad de una venta (ni al
     // elegir artículos o escanear para ella) ni en Respaldo (salida «Exportar respaldo», suposición 3).
     val bloqueoVm: cu.spvi.app.actualizacion.ActualizacionViewModel = hiltViewModel()
@@ -114,7 +118,8 @@ fun MainScaffold(snapshot: Licencia) {
                 SpviNavigationBar(
                     items = items,
                     selectedKey = selected?.name,
-                    onSelect = { item -> nav.navigateTopLevel(TopLevel.valueOf(item.key).route) },
+                    // 0.31.0 (P10): tocar la barra es un fundido (gesto = 0), no un desplazamiento.
+                    onSelect = { item -> gesto = 0; nav.navigateTopLevel(TopLevel.valueOf(item.key).route) },
                 )
             }
         },
@@ -132,15 +137,35 @@ fun MainScaffold(snapshot: Licencia) {
             modifier = Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding)
                 .deslizarEntreSecciones(activo = deslizar && selected != null) { dir ->
                     val actual = selected ?: return@deslizarEntreSecciones
-                    secciones.getOrNull(secciones.indexOf(actual) + dir)?.let { nav.navigateTopLevel(it.route) }
+                    secciones.getOrNull(secciones.indexOf(actual) + dir)?.let {
+                        // 0.31.0 (P10): el desplazamiento lateral lleva la dirección del dedo.
+                        gesto = dir
+                        nav.navigateTopLevel(it.route)
+                    }
                 },
-            // P18 (A17): entre pestañas principales, fundido + zoom sutil; al entrar en una pantalla de detalle,
-            // desliza 1/4 del ancho hacia la izquierda y al volver, hacia la derecha (muelle de entrada blando en el
-            // recorrido, FastOutSlowIn en el fundido). Con «Quitar animaciones» del sistema Compose las acorta a 0.
-            enterTransition = { if (entrePestanas()) SpviMotion.screenEnter else SpviMotion.screenForwardEnter },
-            exitTransition = { if (entrePestanas()) SpviMotion.screenExit else SpviMotion.screenForwardExit },
-            popEnterTransition = { if (entrePestanas()) SpviMotion.screenEnter else SpviMotion.screenBackEnter },
-            popExitTransition = { if (entrePestanas()) SpviMotion.screenExit else SpviMotion.screenBackExit },
+            // P18 (A17): al entrar en una pantalla de detalle, desliza 1/4 del ancho hacia la izquierda y al volver,
+            // hacia la derecha (muelle de entrada blando en el recorrido, FastOutSlowIn en el fundido).
+            // 0.31.0 (P10): entre secciones, el DESLIZAMIENTO lleva ese mismo desplazamiento lateral (con la
+            // dirección del dedo) y el TOQUE en la barra inferior es un fundido. Con «Quitar animaciones» del
+            // sistema Compose acorta todo a 0.
+            enterTransition = {
+                when {
+                    !entrePestanas() -> SpviMotion.screenForwardEnter
+                    cambioSeccion(gesto) == CambioSeccion.ATRAS -> SpviMotion.screenBackEnter
+                    cambioSeccion(gesto) == CambioSeccion.ADELANTE -> SpviMotion.screenForwardEnter
+                    else -> SpviMotion.screenEnter
+                }
+            },
+            exitTransition = { if (entrePestanas() && cambioSeccion(gesto) == CambioSeccion.FUNDIDO) SpviMotion.screenExit else SpviMotion.screenForwardExit },
+            popEnterTransition = {
+                when {
+                    !entrePestanas() -> SpviMotion.screenBackEnter
+                    cambioSeccion(gesto) == CambioSeccion.ATRAS -> SpviMotion.screenBackEnter
+                    cambioSeccion(gesto) == CambioSeccion.ADELANTE -> SpviMotion.screenForwardEnter
+                    else -> SpviMotion.screenEnter
+                }
+            },
+            popExitTransition = { if (entrePestanas() && cambioSeccion(gesto) == CambioSeccion.FUNDIDO) SpviMotion.screenExit else SpviMotion.screenBackExit },
         ) {
             composable<Route.Inicio> { e ->
                 val mensaje = e.savedStateHandle.getStateFlow<String?>(KEY_INICIO_MENSAJE, null).collectAsStateWithLifecycle().value

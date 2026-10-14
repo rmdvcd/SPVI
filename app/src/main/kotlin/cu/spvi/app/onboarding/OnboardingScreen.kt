@@ -194,6 +194,8 @@ fun OnboardingContent(state: OnboardingUiState, acciones: OnboardingAcciones, sn
                         PasoWizard.ACCESO_CLAVE -> PasoAccesoClave(state, acciones)
                         PasoWizard.OBJETIVO -> PasoObjetivo(state, acciones)
                         PasoWizard.EMPLEADOS -> PasoEmpleados(state, acciones)
+                        // 0.31.0 (P6): solo informa de que existe Ajustes → Migrar.
+                        PasoWizard.MIGRAR -> PasoMigrar()
                         PasoWizard.DATOS -> PasoDatos(state, acciones)
                         PasoWizard.ALERTAS -> PasoAlertas(state, acciones)
                         PasoWizard.PRUEBA -> PasoPrueba(state)
@@ -384,6 +386,18 @@ private fun CampoNivelUi(
         )
         SpviIconAction(SpviIcons.Agregar, "Sumar 1 a $etiqueta", onClick = { sumar(campo, 1) }, style = IconActionStyle.Tonal)
     }
+}
+
+/** 0.31.0 (P6): cuenta que existe Ajustes → Migrar (pasar los datos a otro teléfono por QR). */
+@Composable
+private fun PasoMigrar() {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(SpviIcons.Migrar, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(SpviSize.logoLarge))
+    }
+    Titulo(TextosTour.MIGRAR_TITULO)
+    Explicacion(TextosTour.MIGRAR_EXPLICACION)
+    Punto(SpviIcons.QrCodeScanner, "El teléfono que se va es el Emisor y el nuevo el Receptor.")
+    Punto(SpviIcons.Bloqueo, TextosTour.MIGRAR_CLAVE)
 }
 
 @Composable

@@ -12,6 +12,10 @@
 7. Interoperabilidad real con móviles y GL: completar los escenarios de `desktop/VERIFICACION_PC.md`.
 8. Registrar resultados reales, versiones de herramientas y fallos. El estado actual es **sin
    pruebas ni compilación ejecutadas para esta ampliación**, no “aprobado”.
+9. Flutter (app de iOS), desde `flutter_app/`: `flutter pub get`, `flutter analyze` y `flutter test`.
+   Las pruebas nuevas son `test/migrar_ayuda_test.dart` (código de migración, manual de Ayuda y
+   Soporte) e `test/inicio_periodo_test.dart` (períodos de Inicio). **No se han ejecutado aquí**: en
+   este entorno no hay Dart ni acceso a pub.dev.
 
 No usar los datos reales como primera prueba. Conservar copias antes de restaurar, activar licencias
 o cambiar configuraciones de certificados/firewall en la PC.

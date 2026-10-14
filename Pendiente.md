@@ -64,6 +64,40 @@ y `API mínima 26`, los cinco en verde). Lo que sigue pendiente:
 Las pruebas nuevas del sub-token y de la clave maestra pasan en Linux (126 pruebas en total). Falta repetirlas en
 Windows y con la app GL real, como el resto del escritorio.
 
+### Android 0.31.0 (encargo del propietario, 14 de octubre de 2026)
+
+Diez cambios pedidos para el teléfono, implementados en `app/` **sin poder compilar ni probar en este
+entorno** (no hay JDK, Android SDK, Gradle ni Dart: `dl.google.com` y `repo1.maven.org` están
+bloqueados). Falta que el CI y la PC del propietario lo verifiquen.
+
+1. **Inicio**: «Turno cerrado» y el selector de período en la misma fila, del mismo alto; menos espacio
+   bajo la barra «SPVI»; el primer contenedor (turno + período) queda **fijo al desplazar**.
+2. **Inventario**: cada fila reordenada: nombre, cantidad que se puede hacer con su unidad, categoría, y
+   a la derecha precio de costo y de venta (diferenciados por color).
+3. **Registros**: todas las listas (ventas, transferencias, movimientos, turnos y clientes fijos) con
+   **casilla de selección**, como Inventario; barra de selección para exportar solo lo marcado.
+4. **Licencia**: fuera el botón de llave «Ya tengo el mensaje de licencia»; se avanza con «Paso siguiente».
+5. **Migrar**: pasa a llamarse **Migrar** y la copia de datos se hace por **código QR** entre los dos
+   teléfonos (Emisor / Receptor) por la red local; antes hay que definir el **acceso con clave**; al
+   terminar, el teléfono emisor **se borra solo**. Se cuenta en el **recorrido inicial**.
+6. **Actualizar**: «Actualizaciones» pasa a **Actualizar**; al tocarlo sale un cuadro con **barra de
+   progreso circular** y el resultado: «Actualizado», «Estas al día» o «Sin conexión».
+7. **Ayuda**: manual por **secciones** (Empezar, Vender y cobrar, Inventario, Tus datos y tu licencia,
+   Empleados, Ayuda) con **icono por tema** y **esquemas** dibujados con formas del sistema de diseño.
+8. **Soporte**: filas centradas en el orden **Icono, Descripción, Texto**.
+9. **Primera apertura**: se piden **todos los permisos necesarios de una vez y sin textos** (diálogo del
+   sistema): cámara, notificaciones y fotos.
+10. **Animaciones**: deslizar = **desplazamiento lateral** hacia la ventana de destino; barra de
+    navegación = **fundido**; ventanas y diálogos = **suben desde el centro de abajo**.
+
+**Pendiente de verificación (igual que el resto):** `./gradlew spviTests`, capturas Roborazzi, APK en un
+teléfono y la migración real entre dos teléfonos (emisor + receptor en la misma wifi).
+
+**Capturas Roborazzi:** hay que **regenerarlas todas** (`./gradlew :app:recordRoborazziDebug`): cambia la
+interfaz de Inicio, Inventario, Registros, Licencia, Ajustes, Ayuda, Soporte y las animaciones. Además
+faltan las tres capturas nuevas de Migrar (`09t_migrar_emisor_receptor`, `09u_migrar_emisor_qr` y
+`09v_migrar_sin_clave`), que están declaradas en `AjustesCapturas.kt` pero sin PNG de referencia.
+
 ## Android
 
 Conservar los cambios existentes de pago electrónico, exportaciones, Inicio y notificaciones.

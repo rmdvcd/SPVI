@@ -22,14 +22,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import cu.spvi.app.BuildConfig
 import cu.spvi.app.common.abrirAjustesDeLaApp
+import cu.spvi.app.actualizacion.texto
 import cu.spvi.app.navigation.Route
 import cu.spvi.designsystem.component.SpviBadge
+import cu.spvi.designsystem.component.SpviCircularProgress
 import cu.spvi.designsystem.component.SpviDialog
 import cu.spvi.designsystem.component.SpviListItem
 import cu.spvi.designsystem.component.SpviTopBar
@@ -124,6 +127,8 @@ fun AjustesScreen(onNavigate: (Route) -> Unit, viewModel: AjustesViewModel = hil
         mostrarSeed = BuildConfig.DEBUG,
         actualizacion = actualizacion,
         onBuscarAhora = actVm::buscarAhora,
+        onActualizarAhora = actVm::actualizarAhora,
+        onCerrarActualizar = actVm::cerrarProceso,
         snackbar = snackbar,
     )
 }
@@ -137,12 +142,16 @@ fun AjustesContent(
     mostrarSeed: Boolean = false,
     actualizacion: cu.spvi.app.actualizacion.EstadoActualizacion = cu.spvi.app.actualizacion.EstadoActualizacion(),
     onBuscarAhora: () -> Unit = {},
+    /** 0.31.0 (P5): «Actualizar» (cuadro con barra circular) y cerrar ese cuadro. */
+    onActualizarAhora: () -> Unit = {},
+    onCerrarActualizar: () -> Unit = {},
     snackbar: androidx.compose.material3.SnackbarHostState = androidx.compose.runtime.remember { androidx.compose.material3.SnackbarHostState() },
     accesoClave: Boolean = false,
     onAccesoClave: (Boolean) -> Unit = {},
 ) {
-    var dialogoActualizaciones by rememberSaveable { mutableStateOf(false) }
     var dialogoSeed by rememberSaveable { mutableStateOf(false) }
+    // 0.31.0 (P5): el cuadro de «Actualizar» lo abre el propio proceso (barra circular + resultado).
+    val dialogoActualizaciones = actualizacion.proceso != null
     Scaffold(
         topBar = { SpviTopBar(title = "Ajustes") },
         snackbarHost = { cu.spvi.designsystem.component.SpviSnackbarHost(snackbar) },
@@ -185,10 +194,12 @@ fun AjustesContent(
                 }
             }
             if (principal) item {
-                Entry("Migrar a otro teléfono", "Pasar datos y licencia, con autorización del desarrollador", SpviIcons.Migrar, modifier = Modifier.testTag(AjustesTags.MIGRAR)) {
+                // 0.31.0 (P6): pasa a llamarse solo «Migrar» (ahora pasa los datos por QR entre los dos teléfonos).
+                Entry("Migrar", "Pasar datos y licencia a otro teléfono, con autorización del desarrollador", SpviIcons.Migrar, modifier = Modifier.testTag(AjustesTags.MIGRAR)) {
                     onNavigate(Route.Migrar)
                 }
             }
+            // 0.31.0 (P5): se llama «Actualizar» y abre directamente el cuadro con la barra circular.
             item {
                 Entry(
                     cu.spvi.app.actualizacion.TextosActualizacion.BUSCAR,
@@ -197,7 +208,7 @@ fun AjustesContent(
                         else -> "Versión ${BuildConfig.VERSION_NAME}"
                     },
                     SpviIcons.Sincronizar, modifier = Modifier.testTag(AjustesTags.ACTUALIZACIONES),
-                ) { dialogoActualizaciones = true }
+                ) { onActualizarAhora() }
             }
             item { Entry("Ayuda", "Manual breve de uso", SpviIcons.Ayuda, modifier = Modifier.testTag(AjustesTags.AYUDA)) { onNavigate(Route.Ayuda) } }
             item { Entry("Soporte", "Datos de contacto del desarrollador", SpviIcons.Soporte, modifier = Modifier.testTag(AjustesTags.SOPORTE)) { onNavigate(Route.Soporte) } }
@@ -216,18 +227,31 @@ fun AjustesContent(
     }
     if (dialogoActualizaciones) {
         val T = cu.spvi.app.actualizacion.TextosActualizacion
+        val proceso = actualizacion.proceso
         SpviDialog(
             title = T.BUSCAR,
-            onDismiss = { dialogoActualizaciones = false },
+            onDismiss = onCerrarActualizar,
             onConfirm = null,
+            dismissDescription = "Cerrar",
             content = {
-                Column(verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
-                    Text(T.BUSCAR_DETALLE, style = MaterialTheme.typography.bodyMedium)
-                    if (!actualizacion.repoConfigurado) cu.spvi.designsystem.component.SpviSecondaryText(T.SIN_REPO, maxLines = 3)
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                        cu.spvi.designsystem.component.SpviPrimaryButton(
-                            T.BUSCAR_AHORA, onClick = onBuscarAhora, icon = SpviIcons.Sincronizar, loading = actualizacion.buscando,
-                            enabled = !actualizacion.buscando,
+                Column(
+                    Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(SpviSpacing.md),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    if (!actualizacion.repoConfigurado) {
+                        cu.spvi.designsystem.component.SpviSecondaryText(T.SIN_REPO, maxLines = 3, textAlign = TextAlign.Center)
+                    } else {
+                        SpviCircularProgress(
+                            progress = (proceso as? cu.spvi.app.actualizacion.ProcesoActualizar.EnCurso)?.progreso,
+                            contentDescription = T.BUSCAR,
+                        )
+                        Text(
+                            proceso?.texto().orEmpty(), style = MaterialTheme.typography.titleMedium,
+                            textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
+                        )
+                        cu.spvi.designsystem.component.SpviSecondaryText(
+                            T.BUSCAR_DETALLE_CORTO, maxLines = 4, textAlign = TextAlign.Center,
                         )
                     }
                 }

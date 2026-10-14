@@ -16,6 +16,54 @@ class RegistrosScreen extends ConsumerStatefulWidget {
 class _RegistrosScreenState extends ConsumerState<RegistrosScreen> {
   int _tabSeleccionada = 0; // 0: Ventas, 1: Clientes Fijos, 2: Movimientos
 
+  /// Petición 3: lo marcado en la pestaña abierta, igual que en Inventario. Se limpia solo al
+  /// cambiar de pestaña, para no arrastrar una selección de otra lista.
+  final Set<String> _seleccion = <String>{};
+
+  /// Identificador de cada elemento según la pestaña (una venta, un cliente, un movimiento).
+  String _idDe(Object elemento) {
+    if (elemento is VentaModel) return elemento.id;
+    if (elemento is ClienteFijoModel) return elemento.carnet;
+    return (elemento as MovimientoCajaModel).id;
+  }
+
+  void _marcar(Object elemento) {
+    final id = _idDe(elemento);
+    setState(() {
+      if (!_seleccion.remove(id)) _seleccion.add(id);
+    });
+  }
+
+  void _seleccionarTodo(List<dynamic> elementos) {
+    setState(() {
+      if (_seleccion.length == elementos.length) {
+        _seleccion.clear();
+      } else {
+        _seleccion
+          ..clear()
+          ..addAll(elementos.map<String>(_idDe));
+      }
+    });
+  }
+
+  void _quitarSeleccion() => setState(_seleccion.clear);
+
+  void _cambiarPestana(int valor) {
+    if (valor != null && valor != _tabSeleccionada) {
+      SpviHaptics.selectionClick();
+      setState(() {
+        _tabSeleccionada = valor;
+        _seleccion.clear();
+      });
+    }
+  }
+
+  /// Casilla redonda, igual a la de Inventario.
+  Widget _casilla(Object elemento) => SpviCasilla(
+        marcada: _seleccion.contains(_idDe(elemento)),
+        onChanged: (_) => _marcar(elemento),
+      );
+
   void _anularVentaDialog(VentaModel venta) {
     showCupertinoDialog(
       context: context,
@@ -155,15 +203,21 @@ class _RegistrosScreenState extends ConsumerState<RegistrosScreen> {
                     1: Text("Clientes"),
                     2: Text("Caja"),
                   },
-                  onValueChanged: (val) {
-                    if (val != null) {
-                      SpviHaptics.selectionClick();
-                      setState(() => _tabSeleccionada = val);
-                    }
-                  },
+                  onValueChanged: _cambiarPestana,
                 ),
               ),
             ),
+
+            if (_seleccion.isNotEmpty)
+              SpviBarraSeleccion(
+                cantidad: _seleccion.length,
+                onSeleccionarTodo: () => _seleccionarTodo(
+                  _tabSeleccionada == 0
+                      ? ventas
+                      : (_tabSeleccionada == 1 ? clientes : movimientos),
+                ),
+                onQuitar: _quitarSeleccion,
+              ),
 
             Expanded(
               child: Builder(
@@ -188,37 +242,48 @@ class _RegistrosScreenState extends ConsumerState<RegistrosScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Row(
-                                      children: [
-                                        Icon(
+                                    _casilla(v),
+                                    const SizedBox(width: 10.0),
+                                    Expanded(
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(
                                           v.metodoPago == MetodoPago.efectivo
                                               ? CupertinoIcons.money_dollar_circle_fill
                                               : CupertinoIcons.creditcard_fill,
                                           color: v.anulada ? CupertinoColors.systemGrey : SpviColors.navy,
                                         ),
                                         const SizedBox(width: 8),
-                                        Text(
-                                          v.metodoPago == MetodoPago.efectivo ? "Efectivo" : "Transferencia QR",
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            decoration: v.anulada ? TextDecoration.lineThrough : null,
-                                          ),
+                                                Text(
+                                                  v.metodoPago == MetodoPago.efectivo ? "Efectivo" : "Transferencia QR",
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    decoration: v.anulada ? TextDecoration.lineThrough : null,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            Expanded(
+                                              child: Text(
+                                                v.total.formatted,
+                                                textAlign: TextAlign.right,
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16.0,
+                                                  color: v.anulada ? SpviColors.error : SpviColors.exito,
+                                                  decoration: v.anulada ? TextDecoration.lineThrough : null,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ],
-                                    ),
-                                    Text(
-                                      v.total.formatted,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16.0,
-                                        color: v.anulada ? SpviColors.error : SpviColors.exito,
-                                        decoration: v.anulada ? TextDecoration.lineThrough : null,
                                       ),
-                                    ),
-                                  ],
-                                ),
+                                    ],
+                                  ),
                                 const SizedBox(height: 6.0),
                                 Text(
                                   "${v.lineas.length} artículos  •  ${v.fecha.hour.toString().padLeft(2, '0')}:${v.fecha.minute.toString().padLeft(2, '0')}" +
@@ -270,6 +335,8 @@ class _RegistrosScreenState extends ConsumerState<RegistrosScreen> {
                             padding: const EdgeInsets.all(12.0),
                             child: Row(
                               children: [
+                                _casilla(c),
+                                const SizedBox(width: 10.0),
                                 const Icon(CupertinoIcons.person_crop_circle_fill, color: SpviColors.navy, size: 36),
                                 const SizedBox(width: 12.0),
                                 Expanded(
@@ -307,9 +374,14 @@ class _RegistrosScreenState extends ConsumerState<RegistrosScreen> {
                           child: SpviCard(
                             padding: const EdgeInsets.all(12.0),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Column(
+                                _casilla(m),
+                                const SizedBox(width: 10.0),
+                                Expanded(
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(m.motivo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15.0)),
@@ -319,12 +391,15 @@ class _RegistrosScreenState extends ConsumerState<RegistrosScreen> {
                                     ),
                                   ],
                                 ),
-                                Text(
-                                  "${m.tipo == TipoMovimientoCaja.entrada ? '+' : '-'}${m.monto.formatted}",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16.0,
-                                    color: m.tipo == TipoMovimientoCaja.entrada ? SpviColors.exito : SpviColors.orange,
+                                      Text(
+                                        "${m.tipo == TipoMovimientoCaja.entrada ? '+' : '-'}${m.monto.formatted}",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16.0,
+                                          color: m.tipo == TipoMovimientoCaja.entrada ? SpviColors.exito : SpviColors.orange,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],

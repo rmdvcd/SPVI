@@ -169,7 +169,6 @@ object LicenciaTags {
     const val RESUMEN_DATOS = "licencia.resumen"
     const val FORM_DATOS = "licencia.form"
     const val STEPPER = "licencia.stepper"
-    const val YA_TENGO = "licencia.ya_tengo"
     const val RENOVAR_IGUAL = "licencia.renovar_igual"
     const val SIN_PERDER_DIAS = "licencia.sin_perder_dias"
     const val RECUPERA = "licencia.recupera"
@@ -338,12 +337,6 @@ fun LicenciaContent(
                     }
                 }
             }
-        }
-        if (paso != PasoLicencia.ACTIVAR) {
-            SpviTextButton(
-                "Ya tengo el mensaje de licencia", icon = SpviIcons.Licencia, onClick = { paso = PasoLicencia.ACTIVAR },
-                modifier = Modifier.testTag(LicenciaTags.YA_TENGO),
-            )
         }
     }
 }

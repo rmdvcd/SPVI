@@ -8,7 +8,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,6 +18,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -47,9 +48,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.stateDescription
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -379,34 +382,69 @@ private fun Tabla(state: InventarioUiState, acciones: AccionesInventario) {
     }
 }
 
+/**
+ * 0.31.0 (P2): fila del Inventario. Debajo del nombre van la cantidad en stock (o para cuántos alcanza, en un
+ * Elaborado) con su unidad, y debajo la categoría. En el extremo derecho, el precio de costo y el de venta, que se
+ * distinguen solo por un tono más suave del primero. La alerta (stock, caducidad, nombre repetido) sigue al final
+ * para que el color nunca sea el único aviso.
+ */
 @Composable
 private fun Fila(i: ItemInventario, marcado: Boolean, acciones: AccionesInventario, modoVenta: Boolean = false, modifier: Modifier = Modifier) {
+    val cs = MaterialTheme.colorScheme
     val estado = if (modoVenta && !SeleccionVenta.vendible(i)) SeleccionVenta.motivo(i) else descripcionEstado(i)
-    SpviListItem(
-        title = i.producto.nombreCompleto, // 0.24.0: «Nombre · Descripción»
-        // 0.28.0: la fecha de caducidad («Vence 03/10/2026») va en seminegrita.
-        subtitleResaltado = subtituloFila(i)?.let { subt ->
-            SpviTextos.resaltar(subt, cu.spvi.app.common.FechasUi.texto(i.producto.fechaCaducidad))
-        },
-        subtitleMaxLines = if (i.nombreRepetido) 2 else 1,
-        value = valorFila(i),
-        valueMaxLines = if (i.alcanza != null) 2 else 1, // Elaborado: «Alcanza para N» / «Sin insumos suficientes» enteros
-        indicatorColor = colorDe(tonoDe(i)),
-        selected = marcado,
-        leading = {
-            cu.spvi.app.common.ConMiniatura(i.producto.fotoUri) { // 0.21.0 (C11)
-                Checkbox(
-                    checked = marcado,
-                    onCheckedChange = { acciones.onAlternar(i.producto.id) },
-                    modifier = Modifier.testTag(InventarioTags.check(i.producto.id))
-                        .semantics { contentDescription = "Seleccionar ${i.producto.nombreCompleto}" },
+    val costo = costoFila(i)
+    val venta = ventaFila(i)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(if (marcado) cs.primaryContainer else Color.Transparent)
+            .clickable(role = Role.Button) { if (modoVenta) acciones.onAlternar(i.producto.id) else acciones.onAbrirFicha(i.producto.id) }
+            .heightIn(min = SpviSize.touchTarget)
+            .padding(horizontal = SpviSpacing.md, vertical = SpviSpacing.xs)
+            .testTag(InventarioTags.fila(i.producto.id))
+            .semantics(mergeDescendants = true) {
+                this.selected = marcado
+                if (estado != null) stateDescription = estado
+            },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SpviSpacing.md),
+    ) {
+        Box(
+            Modifier.size(SpviSize.indicatorWidth, SpviSize.indicatorHeight)
+                .clip(RoundedCornerShape(SpviRadius.sm))
+                .background(colorDe(tonoDe(i))),
+        )
+        cu.spvi.app.common.ConMiniatura(i.producto.fotoUri) { // 0.21.0 (C11)
+            Checkbox(
+                checked = marcado,
+                onCheckedChange = { acciones.onAlternar(i.producto.id) },
+                modifier = Modifier.testTag(InventarioTags.check(i.producto.id))
+                    .semantics { contentDescription = "Seleccionar ${i.producto.nombreCompleto}" },
+            )
+        }
+        Column(Modifier.weight(1f)) {
+            Text(i.producto.nombreCompleto, style = MaterialTheme.typography.bodyLarge) // 0.24.0: «Nombre · Descripción»
+            // 0.28.0: la fecha de caducidad («Vence 03/10/2026») va en seminegrita.
+            subtituloFila(i)?.let { subt ->
+                SpviSecondaryText(
+                    SpviTextos.resaltar(subt, cu.spvi.app.common.FechasUi.texto(i.producto.fechaCaducidad)),
+                    maxLines = if (i.nombreRepetido) 2 else 1,
                 )
             }
-        },
-        // En modo venta tocar la fila marca/desmarca (no se edita a mitad de una venta).
-        onClick = { if (modoVenta) acciones.onAlternar(i.producto.id) else acciones.onAbrirFicha(i.producto.id) },
-        modifier = modifier.testTag(InventarioTags.fila(i.producto.id)).semantics { if (estado != null) stateDescription = estado },
-    )
+            SpviSecondaryText(valorFila(i)) // cantidad con su unidad (u, L, g, Kg, cajas…)
+            SpviSecondaryText(categoriaFila(i))
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            venta?.let {
+                Text(
+                    Money.format(it), style = SpviTextos.datoEn(MaterialTheme.typography.bodyLarge),
+                    color = cs.onSurface, textAlign = TextAlign.End,
+                )
+            }
+            // El costo va en el mismo sitio, un tono más suave: es el dato secundario de la fila.
+            SpviSecondaryText(Money.format(costo), textAlign = TextAlign.End)
+        }
+    }
 }
 
 @Composable

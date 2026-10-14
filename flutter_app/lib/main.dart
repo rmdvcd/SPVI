@@ -11,6 +11,7 @@ import 'src/presentation/screens/inventario/inventario_screen.dart';
 import 'src/presentation/screens/servicios/servicios_screen.dart';
 import 'src/presentation/screens/registros/registros_screen.dart';
 import 'src/presentation/screens/ajustes/ajustes_screen.dart';
+import 'src/presentation/widgets/spvi_widgets.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -86,7 +87,13 @@ class Arranque extends ConsumerWidget {
   }
 }
 
-/// Contenedor de Navegación Principal con CupertinoTabScaffold
+/// Contenedor de Navegación Principal.
+///
+/// Petición 10 (animaciones): al tocar la barra inferior el contenido entra y sale con un **fundido**
+/// (`SpviAnimacion.fundido`), como en Android. Para conseguirlo se usa un `AnimatedSwitcher` propio en
+/// lugar de `CupertinoTabScaffold`, que no deja elegir la transición entre pestañas. Cada pantalla
+/// conserva su `Navigator` raíz, así que las ventanas que se abren desde ellas siguen entrando con el
+/// **deslizamiento lateral** de iOS.
 class SpviMainNavigation extends StatefulWidget {
   const SpviMainNavigation({super.key});
 
@@ -95,69 +102,76 @@ class SpviMainNavigation extends StatefulWidget {
 }
 
 class _SpviMainNavigationState extends State<SpviMainNavigation> {
-  final CupertinoTabController _tabController = CupertinoTabController();
+  static const List<String> _etiquetas = ['Inicio', 'Inventario', 'Servicios', 'Registros', 'Ajustes'];
+  static const List<IconData> _iconos = [
+    CupertinoIcons.house_fill,
+    CupertinoIcons.cube_box_fill,
+    CupertinoIcons.briefcase_fill,
+    CupertinoIcons.doc_text_fill,
+    CupertinoIcons.gear_alt_fill,
+  ];
+
+  int _pestana = 0;
+
+  void _cambiar(int indice) {
+    if (indice == _pestana) return;
+    SpviHaptics.selectionClick();
+    setState(() => _pestana = indice);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoTabScaffold(
-      controller: _tabController,
-      tabBar: CupertinoTabBar(
-        activeColor: SpviColors.navy,
-        inactiveColor: CupertinoColors.systemGrey,
-        onTap: (index) {
-          SpviHaptics.lightImpact();
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(CupertinoIcons.house_fill),
-            label: 'Inicio',
+    return CupertinoPageScaffold(
+      child: Column(
+        children: [
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: SpviAnimacion.fundido,
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animacion) => FadeTransition(
+                opacity: animacion,
+                child: child,
+              ),
+              child: KeyedSubtree(
+                key: ValueKey(_pestana),
+                child: _pantalla(_pestana),
+              ),
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(CupertinoIcons.cube_box_fill),
-            label: 'Inventario',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(CupertinoIcons.briefcase_fill),
-            label: 'Servicios',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(CupertinoIcons.doc_text_fill),
-            label: 'Registros',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(CupertinoIcons.gear_alt_fill),
-            label: 'Ajustes',
+          SafeArea(
+            top: false,
+            child: CupertinoTabBar(
+              currentIndex: _pestana,
+              activeColor: SpviColors.navy,
+              inactiveColor: CupertinoColors.systemGrey,
+              onTap: _cambiar,
+              items: [
+                for (var i = 0; i < _etiquetas.length; i++)
+                  BottomNavigationBarItem(
+                    icon: Icon(_iconos[i]),
+                    label: _etiquetas[i],
+                  ),
+              ],
+            ),
           ),
         ],
       ),
-      tabBuilder: (BuildContext context, int index) {
-        switch (index) {
-          case 0:
-            return CupertinoTabView(
-              builder: (context) => const InicioScreen(),
-            );
-          case 1:
-            return CupertinoTabView(
-              builder: (context) => const InventarioScreen(),
-            );
-          case 2:
-            return CupertinoTabView(
-              builder: (context) => const ServiciosScreen(),
-            );
-          case 3:
-            return CupertinoTabView(
-              builder: (context) => const RegistrosScreen(),
-            );
-          case 4:
-            return CupertinoTabView(
-              builder: (context) => const AjustesScreen(),
-            );
-          default:
-            return CupertinoTabView(
-              builder: (context) => const InicioScreen(),
-            );
-        }
-      },
     );
+  }
+
+  Widget _pantalla(int indice) {
+    switch (indice) {
+      case 1:
+        return const InventarioScreen();
+      case 2:
+        return const ServiciosScreen();
+      case 3:
+        return const RegistrosScreen();
+      case 4:
+        return const AjustesScreen();
+      default:
+        return const InicioScreen();
+    }
   }
 }

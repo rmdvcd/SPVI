@@ -163,6 +163,28 @@ fun SpviLoading(modifier: Modifier = Modifier, contentDescription: String = "Car
     }
 }
 
+/**
+ * 0.31.0 (P5): progreso circular (determinado si [progress] no es null). Para el cuadro de «Actualizar», donde el
+ * resultado se lee de un vistazo: la barra mientras trabaja y el mensaje cuando termina.
+ */
+@Composable
+fun SpviCircularProgress(
+    modifier: Modifier = Modifier,
+    progress: Float? = null,
+    contentDescription: String = "Progreso",
+) {
+    if (progress == null) {
+        CircularProgressIndicator(
+            modifier.size(SpviSize.progresoCircular).semantics { this.contentDescription = contentDescription },
+        )
+    } else {
+        CircularProgressIndicator(
+            progress = { progress },
+            modifier = modifier.size(SpviSize.progresoCircular).semantics { this.contentDescription = contentDescription },
+        )
+    }
+}
+
 /** Progreso lineal (determinado si [progress] no es null). */
 @Composable
 fun SpviLinearProgress(modifier: Modifier = Modifier, progress: Float? = null) {

@@ -28,6 +28,27 @@ App Android nativa para pequeños negocios: vender en turnos, controlar inventar
 
 Los documentos de trabajo que estaban fuera del proyecto (`DECISIONES_LICENCIA_SPVI.md`, `PRUEBA_COMPATIBILIDAD_GL.md`, `ARQUITECTURA_SPVI.md`, planes y auditorías de los Prompts 17 y 18, entregas `ENTREGA_*`) se retiraron en la 0.18.0. Lo vigente está en `LICENSE_CLIENT.md` (contrato GL y decisiones de licencia), `SECURITY.md`, `docs/HISTORIAL_DESARROLLO.md` y el propio código.
 
+## Cambios en desarrollo — 14 de octubre de 2026
+
+- **Diez cambios en la app del teléfono** (Android 0.31.0, `app/`), pedidos por el dueño: Inicio con el turno y el
+  selector de período en la misma fila y ese primer contenedor fijo al desplazar; Inventario con la fila reordenada
+  (cuánto puedes hacer y su unidad, categoría debajo, costo y venta a la derecha diferenciados); Registros con
+  **casilla de selección** en todas las listas; fuera el botón de llave de Licencia; **Migrar** (antes «Migrar a otro
+  teléfono») con paso de datos por **código QR** entre Emisor y Receptor, protegido por el acceso con clave y con
+  borrado del teléfono emisor al terminar; **Actualizar** con diálogo de progreso circular; **Ayuda** como manual
+  por secciones con icono por tema y esquemas; **Soporte** centrado (Icono, Descripción, Texto); **todos los
+  permisos al abrir por primera vez y sin textos**; y **animaciones** (deslizar lateral, fundido en la barra,
+  ventanas desde el centro-abajo). Detalle en [MANUAL_USUARIO.md](MANUAL_USUARIO.md) y en
+  [docs/HISTORIAL_DESARROLLO.md](docs/HISTORIAL_DESARROLLO.md).
+- **App de iOS** (`flutter_app/`): los mismos diez cambios. Dos diferencias honestas: el código de migración se
+  muestra como texto (no trae librería de QR) y los permisos los pide iOS cuando hace falta.
+- **Escritorio**: [informe de feedback](desktop/INFORME_FEEDBACK_MOVIL.md) con lo que el móvil tiene y la web no,
+  filtrando lo que no tiene sentido en una PC (migrar por QR, actualizar en caliente, permisos del sistema,
+  biometría) y lo que sí conviene (selector de período en Inicio, fila de inventario con costo, casillas en
+  Registros, Ayuda/Soporte mínimos, fundido entre secciones).
+- **Sin verificar:** en este entorno no hay JDK, Android SDK, Gradle ni Dart, así que **nada de esto se ha
+  compilado ni probado aquí**. Lo comprueba el CI y la PC del dueño (`Pruebas.md`).
+
 ## Cambios en desarrollo — 13 de octubre de 2026
 
 - **Licencias en las tres apps** ([LICENSE_CLIENT.md](LICENSE_CLIENT.md) §11–§13), con la 0.31.0 del escritorio: la app iOS
@@ -100,7 +121,7 @@ de Java; no se afirma que el APK se haya validado localmente.
 | **QR de vinculación** | CameraX + ML Kit (modelo empaquetado). Solo lee el QR para vincular la principal con la secundaria |
 | **Servicios** | (0.18.0, sustituye a Elaboración.) Nombre, Tipo, Importe y, opcionales, foto y descripción. Pueden gastar insumos. Se venden aparte de los productos, tienen su pestaña en Registros y sus indicadores en Inicio. Los **insumos** son ahora la categoría «Insumos» del Inventario (precio de venta opcional, en unidades enteras). Los Elaborados muestran «Alcanza para N» |
 | **Registros** | Ventas, Transferencias, Movimientos, **Clientes** (clientes fijos, 0.27.0) y Turnos, con buscador y filtros de fecha e importe. Exportar a PDF/Excel (0.26.0: ya no se comparte como texto) |
-| **Ajustes** | Completar configuración, Perfil, Licencia, Pago electrónico, Precios (preajustes), Avisos de inventario, Permisos, Respaldo, Migrar a otro teléfono, Ayuda, Soporte |
+| **Ajustes** | Completar configuración, Perfil, Licencia, Pago electrónico, Precios (preajustes), Avisos de inventario, Permisos, Respaldo, Migrar, Actualizar, Ayuda, Soporte |
 
 ### Qué no hace
 
@@ -247,7 +268,7 @@ Base de datos v10 (`MIGRACION_9_10`): tabla `cliente_fijo` y `transaccion.client
 |---|---|
 | **Fondo de los empleados** | El encargado asigna en Apps vinculadas el fondo de caja de cada turno de una secundaria («Fondo del próximo turno» → Asignar fondo; puede ser 0). Sin él la secundaria no abre turno: toca «Pedir fondo» y lo recibe al sincronizar, sin poder cambiarlo. Sirve para un solo turno. Inicio de la principal avisa «Luis pide abrir turno» |
 | **Apps de empleados antiguas** | Una secundaria 0.25.x sigue abriendo turno con su propio fondo; la principal muestra «Actualiza la app de X» |
-| **Actualizaciones obligatorias** | Si hay una versión nueva, «Más tarde» la aplaza (hasta 30 días, con la fecha límite visible). Vencido el plazo, la app se bloquea con «Actualiza SPVI para seguir» y solo deja Actualizar, Exportar respaldo y cerrar el turno abierto. La búsqueda semanal ya no se desactiva (Ajustes → Actualizaciones → Buscar ahora) |
+| **Actualizaciones obligatorias** | Si hay una versión nueva, «Más tarde» la aplaza (hasta 30 días, con la fecha límite visible). Vencido el plazo, la app se bloquea con «Actualiza SPVI para seguir» y solo deja Actualizar, Exportar respaldo y cerrar el turno abierto. La búsqueda semanal ya no se desactiva (Ajustes → Actualizar) |
 | **Respaldo solo cifrado** | Respaldo guarda solo el archivo `.spvi` con contraseña; se quitó el «Documento PDF» |
 | **Sin exportaciones de texto** | Registros, Inventario, Servicios y las fichas exportan PDF y Excel (e Imagen/Tarjetas en Inventario); solo la licencia se envía como texto |
 | **«+» en la esquina** | El botón «+» va abajo a la derecha en Inventario, Servicios, Precios y Apps vinculadas |

@@ -104,6 +104,12 @@ class OnboardingViewModelTest {
         vm.siguiente()
         assertEquals(2, prefs.state.value.empleadosPrevistos)
 
+        // 0.31.0 (P6): el recorrido menciona Migrar (solo informa: se puede saltar).
+        assertEquals(PasoWizard.MIGRAR, vm.state.value.paso)
+        assertTrue(vm.state.value.pasoOmitible)
+        vm.siguiente()
+        assertEquals(PasoWizard.DATOS, vm.state.value.paso)
+
         // Datos: inválido no avanza; válido se guarda en el Perfil.
         vm.editarDatos { it.copy(nombre = "Ana", telefono = "12") }
         vm.siguiente()

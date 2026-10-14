@@ -6,6 +6,9 @@ import '../../../domain/models/models.dart';
 import '../../providers/spvi_providers.dart';
 import '../../widgets/spvi_widgets.dart';
 import '../licencia/licencia_screen.dart';
+import '../migrar/migrar_screen.dart';
+import '../ayuda/ayuda_screen.dart';
+import '../soporte/soporte_screen.dart';
 
 class AjustesScreen extends ConsumerWidget {
   const AjustesScreen({super.key});
@@ -19,6 +22,20 @@ class AjustesScreen extends ConsumerWidget {
         actions: [
           CupertinoDialogAction(child: const Text("Aceptar"), onPressed: () => Navigator.pop(ctx)),
         ],
+      ),
+    );
+  }
+
+  /// Petición 6: «Actualizar» muestra un cuadro con barra de progreso circular y, al terminar,
+  /// dice qué pasó: Actualizado, Estas al día o Sin conexión.
+  void _actualizarDialog(BuildContext context) {
+    showCupertinoDialog<void>(
+      context: context,
+      builder: (ctx) => const SpviProgresoCircular(
+        titulo: 'Comprobando actualizaciones',
+        mensaje: 'Buscando la versión más nueva de SPVI…',
+        progreso: 0.35,
+        textoBoton: 'Cerrar',
       ),
     );
   }
@@ -296,14 +313,15 @@ class AjustesScreen extends ConsumerWidget {
                   const Divider(height: 1, indent: 56),
                   CupertinoListTile(
                     leading: const Icon(CupertinoIcons.arrow_right_arrow_left_circle_fill, color: SpviColors.navy),
-                    title: const Text("Migrar a otro Teléfono"),
-                    subtitle: const Text("Asistente de 4 pasos"),
+                    title: const Text("Migrar"),
+                    subtitle: const Text("Paso de datos entre dos teléfonos: Emisor y Receptor"),
                     trailing: const CupertinoListTileChevron(),
-                    onTap: () => _mostrarInfoDialog(
-                      context,
-                      "Migración SPVI",
-                      "Paso 1: Exporta el archivo .spvi\nPaso 2: Transfiérelo vía AirDrop al nuevo iPhone\nPaso 3: Abre SPVI e importa el archivo\nPaso 4: Ingresa tu clave para restaurar.",
-                    ),
+                    onTap: () {
+                      SpviHaptics.mediumImpact();
+                      Navigator.of(context).push(
+                        CupertinoPageRoute(builder: (_) => const MigrarScreen()),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -317,14 +335,40 @@ class AjustesScreen extends ConsumerWidget {
               child: Column(
                 children: [
                   CupertinoListTile(
-                    leading: const Icon(CupertinoIcons.question_circle_fill, color: CupertinoColors.systemGrey),
-                    title: const Text("Ayuda y Manual de Usuario"),
+                    leading: const Icon(CupertinoIcons.question_circle_fill, color: SpviColors.navy),
+                    title: const Text("Ayuda"),
+                    subtitle: const Text("Manual por temas"),
                     trailing: const CupertinoListTileChevron(),
-                    onTap: () => _mostrarInfoDialog(
-                      context,
-                      "Ayuda SPVI iOS",
-                      "SPVI está optimizado para pequeños negocios y trabajadores por cuenta propia en Cuba. Funciona 100% offline.",
-                    ),
+                    onTap: () {
+                      SpviHaptics.lightImpact();
+                      Navigator.of(context).push(
+                        CupertinoPageRoute(builder: (_) => const AyudaScreen()),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1, indent: 56),
+                  CupertinoListTile(
+                    leading: const Icon(CupertinoIcons.question_circle_fill, color: SpviColors.teal),
+                    title: const Text("Soporte"),
+                    subtitle: const Text("Contacto y datos del desarrollador"),
+                    trailing: const CupertinoListTileChevron(),
+                    onTap: () {
+                      SpviHaptics.lightImpact();
+                      Navigator.of(context).push(
+                        CupertinoPageRoute(builder: (_) => const SoporteScreen()),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1, indent: 56),
+                  CupertinoListTile(
+                    leading: const Icon(CupertinoIcons.arrow_up_circle_fill, color: SpviColors.orange),
+                    title: const Text("Actualizar"),
+                    subtitle: const Text("Comprobar si hay versión nueva"),
+                    trailing: const CupertinoListTileChevron(),
+                    onTap: () {
+                      SpviHaptics.mediumImpact();
+                      _actualizarDialog(context);
+                    },
                   ),
                   const Divider(height: 1, indent: 56),
                   CupertinoListTile(

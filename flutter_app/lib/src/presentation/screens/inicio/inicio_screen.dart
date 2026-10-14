@@ -9,117 +9,69 @@ import '../caja/caja_screen.dart';
 import '../venta/venta_screen.dart';
 import '../licencia/licencia_screen.dart';
 
-class InicioScreen extends ConsumerWidget {
+/// Períodos del selector de Inicio (petición 1). Los mismos que en Android.
+enum PeriodoInicio { turno, hoy, semana, mes, anio }
+
+/// Etiqueta corta de cada período.
+String etiquetaPeriodo(PeriodoInicio periodo) {
+  switch (periodo) {
+    case PeriodoInicio.turno:
+      return 'Turno';
+    case PeriodoInicio.hoy:
+      return 'Hoy';
+    case PeriodoInicio.semana:
+      return 'Semana';
+    case PeriodoInicio.mes:
+      return 'Mes';
+    case PeriodoInicio.anio:
+      return 'Año';
+  }
+}
+
+/// Primer día que cuenta para el período elegido, contando desde [ahora].
+DateTime desdePeriodo(PeriodoInicio periodo, DateTime ahora) {
+  switch (periodo) {
+    case PeriodoInicio.turno:
+      return ahora;
+    case PeriodoInicio.hoy:
+      return DateTime(ahora.year, ahora.month, ahora.day);
+    case PeriodoInicio.semana:
+      final hoy = DateTime(ahora.year, ahora.month, ahora.day);
+      return hoy.subtract(Duration(days: hoy.weekday - 1));
+    case PeriodoInicio.mes:
+      return DateTime(ahora.year, ahora.month);
+    case PeriodoInicio.anio:
+      return DateTime(ahora.year);
+  }
+}
+
+/// Total vendido en el período, sin las ventas anuladas. El turno abierto se calcula con sus propios
+/// totales, como en Android.
+Money totalPeriodo(PeriodoInicio periodo, List<VentaModel> ventas, TurnoModel? turno, DateTime ahora) {
+  if (periodo == PeriodoInicio.turno) {
+    final abierto = turno;
+    if (abierto == null) return const Money(0);
+    return abierto.totalVentasEfectivo + abierto.totalVentasTransferencia;
+  }
+  final desde = desdePeriodo(periodo, ahora);
+  var total = const Money(0);
+  for (final venta in ventas) {
+    if (venta.anulada) continue;
+    if (venta.fecha.isBefore(desde)) continue;
+    total += venta.total;
+  }
+  return total;
+}
+
+class InicioScreen extends ConsumerStatefulWidget {
   const InicioScreen({super.key});
 
-  void _abrirTurnoDialog(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController(text: "500");
-    showCupertinoDialog(
-      context: context,
-      builder: (ctx) => CupertinoAlertDialog(
-        title: const Text("Abrir Turno"),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 12.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("Ingresa el fondo inicial obligatorio en efectivo:"),
-              const SizedBox(height: 12.0),
-              CupertinoTextField(
-                controller: controller,
-                placeholder: "Fondo inicial (CUP)",
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                prefix: const Padding(
-                  padding: EdgeInsets.only(left: 8.0),
-                  child: Text("\$", style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text("Cancelar"),
-            onPressed: () => Navigator.pop(ctx),
-          ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            child: const Text("Abrir Turno"),
-            onPressed: () {
-              final monto = double.tryParse(controller.text) ?? 0.0;
-              ref.read(turnoProvider.notifier).abrirTurno(Money.fromDouble(monto));
-              SpviHaptics.mediumImpact();
-              Navigator.pop(ctx);
-            },
-          ),
-        ],
-      ),
-    );
-  }
+  @override
+  ConsumerState<InicioScreen> createState() => _InicioScreenState();
+}
 
-  void _cerrarTurnoDialog(BuildContext context, WidgetRef ref, TurnoModel turno) {
-    final controller = TextEditingController(text: turno.efectivoEsperado.toDouble.toStringAsFixed(0));
-    final notaController = TextEditingController();
-
-    showCupertinoDialog(
-      context: context,
-      builder: (ctx) => CupertinoAlertDialog(
-        title: const Text("Cerrar Turno"),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 12.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text("Efectivo esperado: ${turno.efectivoEsperado.formatted}"),
-              const SizedBox(height: 12.0),
-              CupertinoTextField(
-                controller: controller,
-                placeholder: "Efectivo real contado",
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                prefix: const Padding(
-                  padding: EdgeInsets.only(left: 8.0),
-                  child: Text("\$", style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-              const SizedBox(height: 8.0),
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: () {
-                  controller.text = turno.efectivoEsperado.toDouble.toStringAsFixed(0);
-                  SpviHaptics.lightImpact();
-                },
-                child: const Text("Cuadra exacto", style: TextStyle(fontSize: 14)),
-              ),
-              const SizedBox(height: 8.0),
-              CupertinoTextField(
-                controller: notaController,
-                placeholder: "Nota de cierre (opcional)",
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text("Cancelar"),
-            onPressed: () => Navigator.pop(ctx),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            child: const Text("Confirmar Cierre"),
-            onPressed: () {
-              final real = double.tryParse(controller.text) ?? 0.0;
-              ref.read(turnoProvider.notifier).cerrarTurno(
-                    efectivoReal: Money.fromDouble(real),
-                    nota: notaController.text.trim().isEmpty ? null : notaController.text.trim(),
-                  );
-              SpviHaptics.heavyImpact();
-              Navigator.pop(ctx);
-            },
-          ),
-        ],
-      ),
-    );
-  }
+class _InicioScreenState extends ConsumerState<InicioScreen> {
+  PeriodoInicio _periodo = PeriodoInicio.hoy;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -137,9 +89,37 @@ class InicioScreen extends ConsumerWidget {
         largeTitle: Text("SPVI"),
       ),
       child: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        child: Column(
           children: [
+            // Petición 1: primer contenedor de Inicio y el único que no se desplaza. A la izquierda el
+            // turno («Turno cerrado» o «Turno en curso») y a su lado el selector de período, los dos con
+            // el mismo alto dentro del contenedor (reparto equitativo).
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: _TarjetaTurno(periodo: _periodo)),
+                    const SizedBox(width: 12.0),
+                    Expanded(
+                      child: _TarjetaPeriodo(
+                        periodo: _periodo,
+                        onPeriodo: (valor) {
+                          SpviHaptics.selectionClick();
+                          setState(() => _periodo = valor);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                children: [
             // Banner de Licencia bloqueada (reloj manipulado, licencia vencida/revocada o prueba terminada)
             if (licencia.tipo == TipoLicencia.vencida) ...[
               SpviBanner(
@@ -175,93 +155,6 @@ class InicioScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 16.0),
             ],
-
-            // Tarjeta de Turno
-            SpviCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            CupertinoIcons.circle_fill,
-                            size: 12.0,
-                            color: turno?.estado == EstadoTurno.abierto ? SpviColors.exito : CupertinoColors.systemGrey,
-                          ),
-                          const SizedBox(width: 8.0),
-                          Text(
-                            turno?.estado == EstadoTurno.abierto ? "Turno en curso" : "Turno cerrado",
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0),
-                          ),
-                        ],
-                      ),
-                      if (turno?.estado == EstadoTurno.abierto)
-                        CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          child: const Text("Caja", style: TextStyle(fontWeight: FontWeight.bold)),
-                          onPressed: () {
-                            SpviHaptics.lightImpact();
-                            Navigator.of(context).push(
-                              CupertinoPageRoute(builder: (_) => const CajaScreen()),
-                            );
-                          },
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 12.0),
-                  if (turno?.estado == EstadoTurno.abierto) ...[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text("Fondo inicial:", style: TextStyle(color: CupertinoColors.secondaryLabel)),
-                        Text(turno!.fondoInicial.formatted, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                    const SizedBox(height: 4.0),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text("Total ventas efectivo:", style: TextStyle(color: CupertinoColors.secondaryLabel)),
-                        Text(turno.totalVentasEfectivo.formatted, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                    const SizedBox(height: 4.0),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text("Transferencias QR:", style: TextStyle(color: CupertinoColors.secondaryLabel)),
-                        Text(turno.totalVentasTransferencia.formatted, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                    const SizedBox(height: 16.0),
-                    SizedBox(
-                      width: double.infinity,
-                      child: CupertinoButton(
-                        color: CupertinoColors.systemGrey5,
-                        onPressed: () => _cerrarTurnoDialog(context, ref, turno),
-                        child: const Text("Cerrar Turno y Arqueo", style: TextStyle(color: SpviColors.error, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ] else ...[
-                    const Text(
-                      "Para comenzar a vender y gestionar la caja, abre un turno con el fondo de cambio.",
-                      style: TextStyle(color: CupertinoColors.secondaryLabel, fontSize: 14.0),
-                    ),
-                    const SizedBox(height: 16.0),
-                    SizedBox(
-                      width: double.infinity,
-                      child: CupertinoButton.filled(
-                        onPressed: () => _abrirTurnoDialog(context, ref),
-                        child: const Text("Abrir Turno", style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
 
             const SizedBox(height: 20.0),
 
@@ -388,8 +281,253 @@ class InicioScreen extends ConsumerWidget {
                   ),
                 ),
             ],
+              ],
+            ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Contenedor del turno, a la izquierda del contenedor fijo de Inicio.
+class _TarjetaTurno extends ConsumerWidget {
+  final PeriodoInicio periodo;
+
+  const _TarjetaTurno({required this.periodo});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final turno = ref.watch(turnoProvider);
+    final ventas = ref.watch(ventasHistorialProvider);
+    final total = totalPeriodo(periodo, ventas, turno, DateTime.now());
+    final abierto = turno?.estado == EstadoTurno.abierto;
+
+    return SpviCard(
+      padding: const EdgeInsets.all(12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                CupertinoIcons.circle_fill,
+                size: 10.0,
+                color: abierto ? SpviColors.exito : CupertinoColors.systemGrey,
+              ),
+              const SizedBox(width: 6.0),
+              Expanded(
+                child: Text(
+                  abierto ? "Turno en curso" : "Turno cerrado",
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15.0),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6.0),
+          Text(
+            "Ventas (${etiquetaPeriodo(periodo)})",
+            style: TextStyle(fontSize: 12.0, color: CupertinoColors.secondaryLabel.resolveFrom(context)),
+          ),
+          Text(
+            total.formatted,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18.0, color: SpviColors.navy),
+          ),
+          const SizedBox(height: 10.0),
+          if (abierto)
+            Row(
+              children: [
+                Expanded(
+                  child: CupertinoButton(
+                    color: SpviColors.navy,
+                    padding: const EdgeInsets.symmetric(vertical: 10.0),
+                    onPressed: () {
+                      SpviHaptics.lightImpact();
+                      Navigator.of(context).push(
+                        CupertinoPageRoute(builder: (_) => const CajaScreen()),
+                      );
+                    },
+                    child: const Text("Caja", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.0)),
+                  ),
+                ),
+                const SizedBox(width: 8.0),
+                Expanded(
+                  child: CupertinoButton(
+                    color: CupertinoColors.systemGrey5,
+                    padding: const EdgeInsets.symmetric(vertical: 10.0),
+                    onPressed: () => _cerrarTurno(context, ref, turno!),
+                    child: const Text(
+                      "Cerrar",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.0, color: SpviColors.error),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              child: CupertinoButton.filled(
+                padding: const EdgeInsets.symmetric(vertical: 10.0),
+                onPressed: () => _abrirTurno(context, ref),
+                child: const Text("Abrir turno", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.0)),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _cerrarTurno(BuildContext context, WidgetRef ref, TurnoModel turno) {
+    final controller = TextEditingController(text: turno.efectivoEsperado.toDouble.toStringAsFixed(0));
+    final notaController = TextEditingController();
+    showCupertinoDialog(
+      context: context,
+      builder: (ctx) => CupertinoAlertDialog(
+        title: const Text("Cerrar Turno"),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 12.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Efectivo esperado: ${turno.efectivoEsperado.formatted}"),
+              const SizedBox(height: 12.0),
+              CupertinoTextField(
+                controller: controller,
+                placeholder: "Efectivo real contado",
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+              const SizedBox(height: 8.0),
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () {
+                  controller.text = turno.efectivoEsperado.toDouble.toStringAsFixed(0);
+                  SpviHaptics.lightImpact();
+                },
+                child: const Text("Cuadra exacto", style: TextStyle(fontSize: 14)),
+              ),
+              const SizedBox(height: 8.0),
+              CupertinoTextField(
+                controller: notaController,
+                placeholder: "Nota de cierre (opcional)",
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text("Cancelar"),
+            onPressed: () => Navigator.pop(ctx),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            child: const Text("Confirmar Cierre"),
+            onPressed: () {
+              final real = double.tryParse(controller.text) ?? 0.0;
+              ref.read(turnoProvider.notifier).cerrarTurno(
+                    efectivoReal: Money.fromDouble(real),
+                    nota: notaController.text.trim().isEmpty ? null : notaController.text.trim(),
+                  );
+              SpviHaptics.heavyImpact();
+              Navigator.pop(ctx);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _abrirTurno(BuildContext context, WidgetRef ref) {
+    final controller = TextEditingController(text: "500");
+    showCupertinoDialog(
+      context: context,
+      builder: (ctx) => CupertinoAlertDialog(
+        title: const Text("Abrir Turno"),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 12.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("Ingresa el fondo inicial obligatorio en efectivo:"),
+              const SizedBox(height: 12.0),
+              CupertinoTextField(
+                controller: controller,
+                placeholder: "Fondo inicial (CUP)",
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text("Cancelar"),
+            onPressed: () => Navigator.pop(ctx),
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            child: const Text("Abrir Turno"),
+            onPressed: () {
+              final monto = double.tryParse(controller.text) ?? 0.0;
+              ref.read(turnoProvider.notifier).abrirTurno(Money.fromDouble(monto));
+              SpviHaptics.mediumImpact();
+              Navigator.pop(ctx);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Selector de período, a la derecha del turno. Mismo alto que la tarjeta del turno.
+class _TarjetaPeriodo extends StatelessWidget {
+  final PeriodoInicio periodo;
+  final ValueChanged<PeriodoInicio> onPeriodo;
+
+  const _TarjetaPeriodo({required this.periodo, required this.onPeriodo});
+
+  @override
+  Widget build(BuildContext context) {
+    return SpviCard(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            "Período",
+            style: TextStyle(
+              fontSize: 12.0,
+              fontWeight: FontWeight.bold,
+              color: CupertinoColors.secondaryLabel.resolveFrom(context),
+            ),
+          ),
+          const SizedBox(height: 8.0),
+          for (final opcion in PeriodoInicio.values)
+            CupertinoButton(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              minSize: 0,
+              onPressed: () => onPeriodo(opcion),
+              child: Row(
+                children: [
+                  Icon(
+                    periodo == opcion ? CupertinoIcons.checkmark_circle_fill : CupertinoIcons.circle,
+                    size: 14,
+                    color: periodo == opcion ? SpviColors.navy : CupertinoColors.systemGrey,
+                  ),
+                  const SizedBox(width: 6.0),
+                  Text(
+                    etiquetaPeriodo(opcion),
+                    style: TextStyle(
+                      fontSize: 13.0,
+                      fontWeight: periodo == opcion ? FontWeight.bold : FontWeight.normal,
+                      color: periodo == opcion ? SpviColors.navy : CupertinoColors.label.resolveFrom(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

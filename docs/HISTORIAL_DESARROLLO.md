@@ -4,6 +4,46 @@ Registro **histórico** de lo que se implementó en cada fase y de las suposicio
 
 > **Prevalece la documentación actual.** Si algo de este historial contradice a [README.md](../README.md), [SECURITY.md](../SECURITY.md), [FORMATOS.md](../FORMATOS.md), [LICENSE_CLIENT.md](../LICENSE_CLIENT.md) o [UI_UX_IX.md](../UI_UX_IX.md), vale lo que dicen esos documentos. Las fases posteriores sustituyen a las anteriores.
 
+## 2026-10-14 — Android 0.31.0: diez cambios de la app móvil (encargo del propietario)
+
+Implementado en `app/` **sin compilar ni probar** (en este entorno no hay JDK/Android SDK/Gradle ni Dart, y
+`dl.google.com` y `repo1.maven.org` están bloqueados). Lo verifica el CI y la PC del propietario.
+
+1. **Inicio** (`inicio/InicioScreen.kt`): «Turno cerrado» y el selector de período en una sola fila del
+   mismo alto (`Column` + `height(IntrinsicSize.Min)` + `fillMaxHeight()`, el patrón que ya usaban las
+   tarjetas de Pago/Inventario); padding superior `md → xs`; la fila turno + período se queda **fija al
+   desplazar** (fuera de la `LazyColumn`, dentro de la `Column`). Fuera la `TurnoCard` muerta.
+2. **Inventario** (`inventario/`): `Fila` reescrita como `Row` propia — indicador, miniatura/casilla,
+   nombre con «cantidad que alcanza + unidad» y categoría debajo, y a la derecha costo y venta
+   (`Money.format`, insumos sin venta la omiten). Ayudas puras nuevas en `InventarioLogic.kt`
+   (`costoFila`, `ventaFila`, `categoriaFila`).
+3. **Registros** (`registros/`): `seleccion: Set<Long>` en el estado, podada con `seleccionVigente` y
+   limpiada al cambiar de pestaña; casilla en ventas, transferencias, movimientos, turnos y clientes
+   fijos; barra de selección con «seleccionar todo», exportar solo lo marcado y quitar la selección.
+4. **Licencia** (`licencia/LicenciaScreen.kt`): fuera el botón de llave «Ya tengo el mensaje de
+   licencia» y su etiqueta; el asistente avanza con «Paso siguiente» del `SpviStepper`.
+5. **Migrar** (`migrar/`): pasa a **Migrar**. Nuevo `MigrarQr.kt` (`CodigoMigracion`, `SPVIM1|…`, puro) y
+   `CanalMigracion.kt` (socket TCP directo por la red local; el `.spvi` cifrado de siempre viaja dentro).
+   **Emisor** muestra el QR y, tras la confirmación del receptor, se borra el teléfono
+   (`MantenimientoRepository.borrarTodo()`); **Receptor** lee el QR con la cámara y aplica el respaldo.
+   Todo detrás del **acceso con clave** definido en Ajustes (si no está, se le dice que lo defina) y
+   del diálogo de biometría del sistema. Nueva sección en el recorrido inicial (`PasoWizard.MIGRAR`).
+6. **Actualizar** (`actualizacion/GestorActualizacion.kt`, `ajustes/AjustesScreen.kt`): «Actualizaciones»
+   pasa a **Actualizar** y abre un cuadro con `SpviCircularProgress` (nuevo en `:designsystem`,
+   `SpviSize.progresoCircular`) y el resultado: «Actualizado», «Estas al día» o «Sin conexión».
+   `descargarEInstalar` refleja el avance solo cuando el cuadro lo abrió (`conProceso`).
+7. **Ayuda** (`ayuda/`): manual por secciones con icono por tema y esquemas dibujados con formas
+   (barra inferior, turno, venta, respaldo y migración). **No lleva capturas**: son esquemas vectoriales
+   para que no se desactualicen; las capturas reales se regeneran con `recordRoborazziDebug`.
+8. **Soporte** (`soporte/SoporteScreen.kt`): filas centradas en el orden Icono → Descripción → Texto.
+9. **Primera apertura** (`root/PermisosIniciales.kt`): `RequestMultiplePermissions` única, **sin textos**,
+   con los permisos peligrosos del manifiesto (cámara, notificaciones, fotos). Marca
+   `ConfiguracionInicial.permisosInicialesPedidos`.
+10. **Animaciones** (`designsystem/token/Tokens.kt`, `navigation/MainScaffold.kt`, `Deslizar.kt`): al tocar
+    la barra inferior, fundido (`screenEnter/screenExit` sin zoom); al **deslizar**, desplazamiento lateral
+    con la dirección del dedo (`cambioSeccion(dir)`, puro); ventanas y diálogos entran desplazados
+    media altura (`ventanaEntra` = `it / 2`).
+
 ## 2026-10-14 — Una sola pestaña de SPVI
 
 - Los dos procesos `SPVI.exe` visibles son una sola instancia: el cargador del portable (padre) y la

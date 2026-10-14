@@ -66,11 +66,16 @@ data class RegistrosUiState(
     val exportando: Boolean = false,
     /** 0.20.0 (H1): nombres de quienes abrieron turnos; el filtro «Vendedor» sale solo con 2 o más. */
     val vendedores: List<String> = emptyList(),
+    /** 0.31.0 (P3): filas marcadas con la casilla; si hay alguna, exportar saca solo esas. */
+    val seleccion: Set<Long> = emptySet(),
 ) {
     val tipo: TipoRegistro? get() = pestana.tipo
     val filtro: FiltroRegistros get() = tipo?.let { filtros[it] } ?: FiltroRegistros()
     val datos: VistaRegistro? get() = (vista as? EstadoCarga.Exito)?.datos
     val puedeCompartir: Boolean get() = (datos?.cantidad ?: 0) > 0
+    /** 0.31.0 (P3): todas las filas que se ven están marcadas (el botón pasa a «Desmarcar todo»). */
+    val todosSeleccionados: Boolean
+        get() = seleccion.isNotEmpty() && datos?.let { d -> idsVista(d).all { it in seleccion } } == true
 }
 
 sealed interface EventoRegistros {
@@ -146,15 +151,37 @@ class RegistrosViewModel @Inject constructor(
     private val vendedores = observarRegistro.vendedores().catch { e -> if (e is CancellationException) throw e else emit(emptyList()) }
 
     val state: StateFlow<RegistrosUiState> = combine(local, vista, vendedores) { l, (tipo, v), vs ->
-        l.copy(vista = if (tipo == l.tipo) v else EstadoCarga.Cargando, vendedores = vs)
+        // 0.31.0 (P3): lo marcado se recorta a lo que se ve (un filtro nuevo puede dejar fuera filas marcadas).
+        val datos = (v as? EstadoCarga.Exito)?.datos
+        l.copy(
+            vista = if (tipo == l.tipo) v else EstadoCarga.Cargando,
+            vendedores = vs,
+            seleccion = if (datos != null && tipo == l.tipo) seleccionVigente(datos, l.seleccion) else emptySet(),
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RegistrosUiState())
 
     // ---------------- Pestañas, buscador y filtro ----------------
 
     fun pestana(p: PestanaRegistros) {
-        local.update { it.copy(pestana = p, ficha = null, hojaFiltro = false, hojaExportar = false) }
+        local.update { it.copy(pestana = p, ficha = null, hojaFiltro = false, hojaExportar = false, seleccion = emptySet()) }
         saved[FiltrosGuardados.CLAVE_PESTANA] = p.name
     }
+
+    // ---------------- Selección con casilla (0.31.0, P3) ----------------
+
+    /** Marca o desmarca una fila (la casilla de la lista, igual que en Inventario). */
+    fun alternar(id: Long) = local.update { s ->
+        val marcadas = if (id in s.seleccion) s.seleccion - id else s.seleccion + id
+        s.copy(seleccion = marcadas, ficha = null)
+    }
+
+    /** Marca o desmarca todo lo que se ve en la pestaña actual. */
+    fun seleccionarTodo() = local.update { s ->
+        val ids = (s.datos ?: return@update s).let(::idsVista).toSet()
+        s.copy(seleccion = if (s.seleccion.containsAll(ids)) emptySet() else ids, ficha = null)
+    }
+
+    fun limpiarSeleccion() = local.update { it.copy(seleccion = emptySet()) }
 
     fun buscar(texto: String) = editarFiltro { it.copy(texto = texto.take(80)) }
 
@@ -210,12 +237,22 @@ class RegistrosViewModel @Inject constructor(
     private fun tablaVisible(ocultarCi: Boolean): TablaExport? {
         val s = state.value
         val datos = s.datos?.takeIf { it.cantidad > 0 } ?: return null
+        // 0.31.0 (P3): con algo marcado, el documento sale solo de esas filas.
+        val soloMarcadas = s.seleccion.isNotEmpty()
         val tabla = when (datos) {
-            is VistaRegistro.Ventas -> TablasExport.ventas(datos.items, zona)
-            is VistaRegistro.Transferencias -> TablasExport.transacciones(datos.items, zona, ocultarCi = ocultarCi)
-            is VistaRegistro.Movimientos -> TablasExport.movimientosItems(datos.items, zona)
+            is VistaRegistro.Ventas -> TablasExport.ventas(datos.items.filter { it.id in s.seleccion || !soloMarcadas }, zona)
+            is VistaRegistro.Transferencias -> TablasExport.transacciones(
+                datos.items.filter { it.id in s.seleccion || !soloMarcadas }, zona, ocultarCi = ocultarCi,
+            )
+            is VistaRegistro.Movimientos -> TablasExport.movimientosItems(
+                datos.items.filter { it.movimiento.id in s.seleccion || !soloMarcadas }, zona,
+            )
         }
-        return detalleFiltro(s)?.let { tabla.copy(titulo = "${tabla.titulo} ($it)") } ?: tabla
+        val titulo = buildList {
+            if (soloMarcadas) add("${s.seleccion.size} seleccionadas")
+            detalleFiltro(s)?.let { add(it) }
+        }.takeIf { it.isNotEmpty() }?.joinToString(" · ")
+        return titulo?.let { tabla.copy(titulo = "${tabla.titulo} ($it)") } ?: tabla
     }
 
     // ---------------- Exportar PDF / Excel (Prompt 14) ----------------
