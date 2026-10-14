@@ -19,10 +19,20 @@ No incorpora impuestos ni contabilidad de partida doble.
 
 ### Escritorio 0.31.0
 
-Interfaz nueva, icono de notificación, inicio con Windows, tema, Tiempo en línea, datos de prueba y
-licencia de PC de 16 dígitos y licencias del contrato GL: 126 pruebas Python, autoprueba y recorrido en navegador sin pantalla
-correctos en Linux. **Pendiente:** probar en Windows (icono, registro `Run`, `.exe` sin consola) y la
-licencia de PC de punta a punta con la app GL real en el teléfono (VERIFICACION_PC.md, pasos 19–23).
+Interfaz nueva, icono de notificación, inicio con Windows, tema, Tiempo en línea, datos de prueba,
+licencia de PC de 16 dígitos y licencias del contrato GL: 126 pruebas Python, autoprueba y recorrido en
+navegador sin pantalla correctos en Linux. **Pendiente:** probar en Windows (icono, registro `Run`,
+`.exe` sin consola) y la licencia de PC de punta a punta con la app GL real en el teléfono
+(VERIFICACION_PC.md, pasos 19–23).
+
+### Mejoras del informe de feedback móvil (14 de octubre de 2026)
+
+Implementadas en `desktop/` las cinco mejoras de `desktop/INFORME_FEEDBACK_MOVIL.md` (sección 6 del
+informe): selector de período en Inicio junto al turno, fila de inventario con costo y venta
+diferenciados, casillas y barra de selección en Registros con exportación de lo seleccionado, Ayuda y
+Soporte, y fundido entre secciones con ventanas desde el centro-abajo. 129 pruebas Python y una prueba
+de humo de la interfaz (jsdom) en verde. **Pendiente:** comprobar en Windows/EXE lo que solo se puede
+ver allí (barra fija al desplazar, animaciones, exportación de la selección con muchas ventas).
 
 **GL:** falta publicar en GL `security/SpviPc16.kt` (port de `pc_code.py`), los campos opcionales
 `plataforma`, `transaccion` y `recupera` de `SolicitudSpviV2` y su validación en `Spvi23`, el método

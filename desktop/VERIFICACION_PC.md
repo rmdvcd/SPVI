@@ -1,8 +1,18 @@
 # Verificación de la principal web con OpenCode CLI
 
-Estado 0.31.0 + licencias: las 126 pruebas Python y la autoprueba pasan en Linux y la interfaz se recorrió en un
-navegador sin pantalla. **Falta todo lo propio de Windows** (icono de notificación, inicio con Windows,
-`.exe`) y las pruebas con Android y GL reales. No usar datos reales como primera prueba.
+Estado 0.31.0 + licencias + mejoras del informe móvil: las 129 pruebas Python y la autoprueba pasan en Linux,
+y la interfaz se recorrió en un navegador sin pantalla (con una prueba de humo que verifica las secciones
+nuevas: barra de período en Inicio, fila de inventario con costo, casillas y barra de selección en Registros,
+Ayuda y Soporte, y el fundido entre secciones). **Falta todo lo propio de Windows** (icono de notificación,
+inicio con Windows, `.exe`) y las pruebas con Android y GL reales. No usar datos reales como primera prueba.
+
+Pendiente específico de las mejoras del 14/10/2026, por comprobar en la PC del dueño:
+
+1. La barra de Inicio (turno + período) se queda fija al desplazar y los chips cambian KPIs y gráficos.
+2. «Turno» como período: con turno abierto cuenta desde su apertura; sin turno abierto, desde el inicio del día.
+3. Marcar todo lo filtrado en Registros con muchas ventas (varias páginas) y exportar la selección.
+4. Las ventanas entran desde el centro-abajo y el cambio de sección se desvanece; con «reducir movimiento»
+   activado en el sistema, no hay animación.
 
 ## Encargo para OpenCode
 

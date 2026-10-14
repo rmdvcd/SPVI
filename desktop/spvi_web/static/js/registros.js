@@ -2,24 +2,28 @@
 /* Registros: historial paginado de ventas, servicios, transferencias, inventario, caja, turnos y clientes fijos. */
 
 const FORMATOS = {pdf: ['PDF', 'Pdf'], xlsx: ['Excel', 'Excel'], imagen: ['Imagen', 'Imagen'], tarjetas: ['Tarjetas promocionales', 'Promocion']};
-const ALCANCES = {inventario: ['pdf', 'xlsx'], turnos: ['pdf', 'xlsx'], servicios: ['pdf', 'xlsx', 'imagen', 'tarjetas'], productos: ['imagen', 'tarjetas']};
+const ALCANCES = {inventario: ['pdf', 'xlsx'], turnos: ['pdf', 'xlsx'], ventas: ['pdf', 'xlsx'], servicios: ['pdf', 'xlsx', 'imagen', 'tarjetas'], productos: ['imagen', 'tarjetas']};
 
-/** Exportar a PDF, Excel, imagen o tarjetas promocionales. */
-SPVI.exportar = function (alcance = 'inventario', query = '') {
+/** Exportar a PDF, Excel, imagen o tarjetas promocionales. Con ``ids`` exporta solo lo seleccionado. */
+SPVI.exportar = function (alcance = 'inventario', query = '', ids = null) {
   const formatos = h('div', {class: 'chips', role: 'radiogroup', 'aria-label': 'Formato'});
   const comentario = campo({label: 'Texto de la promoción (opcional)', name: 'comment', maxlength: 160});
-  let formato = null;
+  let formato = null, select = null;
+  const alcanceActual = () => ids ? alcance : select.value;
   const pintarFormatos = () => {
-    const lista = ALCANCES[select.value]; if (!lista.includes(formato)) formato = lista[0];
+    const lista = ALCANCES[alcanceActual()] || ['pdf']; if (!lista.includes(formato)) formato = lista[0];
     formatos.replaceChildren(...lista.map(f => h('button', {type: 'button', class: 'chip', 'aria-pressed': String(f === formato), onclick: () => { formato = f; pintarFormatos(); }}, icon(FORMATOS[f][1], 'sm'), ' ', FORMATOS[f][0])));
     comentario.hidden = formato !== 'tarjetas';
   };
-  const bloque = seleccion({label: 'Qué exportar', name: 'scope', value: alcance, options: [['inventario', 'Inventario'], ['servicios', 'Servicios'], ['productos', 'Productos (catálogo con fotos)'], ['turnos', 'Turnos']]});
-  const select = bloque.querySelector('select'); select.addEventListener('change', pintarFormatos);
+  const bloque = ids
+    ? h('div', {class: 'campo'}, h('span', {text: 'Qué exportar'}),
+      h('p', {text: ids.length + (ids.length === 1 ? ' elemento seleccionado en Registros' : ' elementos seleccionados en Registros')}))
+    : seleccion({label: 'Qué exportar', name: 'scope', value: alcance, options: [['inventario', 'Inventario'], ['servicios', 'Servicios'], ['productos', 'Productos (catálogo con fotos)'], ['turnos', 'Turnos'], ['ventas', 'Ventas']]});
+  if (!ids) { select = bloque.querySelector('select'); select.addEventListener('change', pintarFormatos); }
   pintarFormatos();
   dialog({title: 'Exportar', iconName: 'Exportar', body: [bloque, h('span', {class: 'secundario', text: 'Formato'}), formatos, comentario], actions: [{label: 'Cancelar'},
     {label: 'Descargar', primary: true, icon: 'Exportar', onClick: async ({data}) => {
-      await download('/api/export', {scope: data.scope, format: formato, comment: data.comment || '', query}); snack('Archivo preparado.');
+      await download('/api/export', {scope: alcanceActual(), format: formato, comment: data.comment || '', query, ids}); snack('Archivo preparado.');
     }}]});
 };
 
@@ -37,23 +41,21 @@ SPVI.views.registros = async function (root, sub, params) {
   const tipos = [['ventas', 'Ventas'], ['servicios', 'Servicios'], ['transferencias', 'Transferencias'], ['movimientos', 'Inventario'], ['caja', 'Caja'], ['turnos', 'Turnos'], ['clientes', 'Clientes fijos']];
   const tipo = tipos.some(([id]) => id === (sub || params.get('tipo'))) ? (sub || params.get('tipo')) : 'ventas';
   const estado = SPVI.state.registros = SPVI.state.registros?.tipo === tipo ? SPVI.state.registros : {tipo, q: '', periodo: 'todo', page: 1};
+  estado.marcados = estado.marcados || new Set();
+  // Solo ventas, servicios, transferencias y turnos tienen exportación por selección.
+  const alcanceSel = {ventas: 'ventas', servicios: 'ventas', transferencias: 'ventas', turnos: 'turnos'}[tipo] || null;
   root.append(h('div', {class: 'encabezado'}, h('h1', {text: 'Registros'})), pestanas(tipos, tipo, id => SPVI.go('registros/' + id)));
-  SPVI.actions(iconButton('Exportar', 'Exportar', () => SPVI.exportar(tipo === 'turnos' ? 'turnos' : tipo === 'servicios' ? 'servicios' : 'inventario')));
+  SPVI.actions(iconButton('Exportar', 'Exportar', () => SPVI.exportar(alcanceSel || 'inventario')));
 
   const resumen = h('p', {class: 'secundario'}), lista = h('div', {class: 'lista'}), paginacion = h('div', {class: 'paginacion'});
-  const periodos = h('div', {class: 'chips', role: 'group', 'aria-label': 'Período'}, [['todo', 'Todo'], ['hoy', 'Hoy'], ['7', '7 días'], ['30', '30 días']].map(([id, label]) =>
-    h('button', {type: 'button', class: 'chip', 'aria-pressed': String(estado.periodo === id), onclick: event => {
-      estado.periodo = id; estado.page = 1; for (const c of periodos.children) c.setAttribute('aria-pressed', String(c === event.currentTarget)); cargar();
-    }}, label)));
+  const barra = h('div', {class: 'barra-sel', hidden: true, role: 'status', 'aria-live': 'polite'});
+  const periodos = chipsPeriodo(estado.periodo, id => { estado.periodo = id; estado.page = 1; cargar(); });
   let temporizador = null, generacion = 0;
   async function cargar() {
     const g = ++generacion;
     const args = new URLSearchParams({q: estado.q, page: estado.page, size: 50});
-    if (estado.periodo !== 'todo') {
-      const inicio = new Date(); inicio.setHours(0, 0, 0, 0);
-      if (estado.periodo !== 'hoy') inicio.setDate(inicio.getDate() - Number(estado.periodo) + 1);
-      args.set('desde', inicio.getTime());
-    }
+    const desde = SPVI.desdePeriodo(estado.periodo, catalogo.turnoAbierto?.abiertoEn);
+    if (desde !== null) args.set('desde', desde);
     let datos;
     try { datos = await api('/api/registros/' + tipo + '?' + args); } catch (error) { snack(error.message, true); return; }
     if (g !== generacion) return;
@@ -67,28 +69,68 @@ SPVI.views.registros = async function (root, sub, params) {
       iconButton('AtrasPagina', 'Página anterior', () => { estado.page--; cargar(); }), h('span', {text: 'Página ' + datos.page + ' de ' + datos.pages}),
       iconButton('Siguiente', 'Página siguiente', () => { estado.page++; cargar(); }));
     if (paginacion.children.length) { paginacion.children[0].disabled = datos.page <= 1; paginacion.children[2].disabled = datos.page >= datos.pages; }
+    actualizarBarra();
   }
   const quien = id => id ? (empleados[id] || 'App secundaria') : null;
+  /** Casilla de selección (botón con estado, para no anidar un campo dentro de la fila clicable). */
+  function casilla(id) {
+    const marcado = estado.marcados.has(id);
+    const boton = h('button', {type: 'button', class: 'casilla', 'aria-pressed': String(marcado),
+      'aria-label': marcado ? 'Quitar de la selección' : 'Seleccionar', title: marcado ? 'Quitar de la selección' : 'Seleccionar',
+      onclick: event => {
+        event.stopPropagation();
+        if (estado.marcados.has(id)) estado.marcados.delete(id); else estado.marcados.add(id);
+        const ahora = estado.marcados.has(id);
+        const etiqueta = ahora ? 'Quitar de la selección' : 'Seleccionar';
+        boton.setAttribute('aria-pressed', String(ahora));
+        boton.setAttribute('aria-label', etiqueta); boton.title = etiqueta;
+        actualizarBarra();
+      }}, h('span', {class: 'caja'}));
+    return boton;
+  }
+  const marcar = (id, icono) => h('span', {class: 'lead-casilla'}, casilla(id), leadIcon(icono));
+  /** Barra que aparece al marcar elementos: marcar todo lo filtrado, quitar y exportar la selección. */
+  function actualizarBarra() {
+    const n = estado.marcados.size;
+    barra.hidden = n === 0;
+    if (!n) { barra.replaceChildren(); return; }
+    barra.replaceChildren(...[h('strong', {text: n + (n === 1 ? ' elemento seleccionado' : ' elementos seleccionados')}),
+      n > 1000 ? h('span', {class: 'secundario', text: 'Marca como máximo 1000 para exportar.'}) : null,
+      button('Marcar todo lo filtrado', marcarTodo, {kind: 'texto', iconName: 'Lista'}),
+      button('Quitar selección', () => { estado.marcados.clear(); cargar(); }, {kind: 'texto', iconName: 'Limpiar'}),
+      alcanceSel ? button('Exportar selección', () => SPVI.exportar(alcanceSel, estado.q, [...estado.marcados]), {kind: 'tonal', iconName: 'Exportar', disabled: n > 1000}) : null].filter(Boolean));
+  }
+  /** Marca **todo el filtro**, no solo la página visible: el backend devuelve los identificadores. */
+  async function marcarTodo() {
+    const args = new URLSearchParams({q: estado.q, page: 1, size: 50, ids: '1'});
+    const desde = SPVI.desdePeriodo(estado.periodo, catalogo.turnoAbierto?.abiertoEn);
+    if (desde !== null) args.set('desde', desde);
+    try {
+      const datos = await api('/api/registros/' + tipo + '?' + args);
+      for (const id of datos.ids || []) estado.marcados.add(id);
+      snack('Se marcaron ' + estado.marcados.size + ' elementos del filtro.'); cargar();
+    } catch (error) { snack(error.message, true); }
+  }
   function fila(x) {
     if (['ventas', 'servicios', 'transferencias'].includes(tipo)) {
       const titulo = x.detalles.map(d => d.nombre + (d.cantidad > 1 ? ' ×' + d.cantidad : '')).join(', ');
       const subt = [fechaHora(x.fecha), x.metodoPago === 'TRANSFERENCIA' ? 'Transferencia' + (x.transaccion?.numero ? ' ' + x.transaccion.numero : '') : 'Efectivo', quien(x.empleadoId), x.anuladaEn ? 'Anulada' : null].filter(Boolean).join(' · ');
-      return itemLista({title: titulo, subtitle: subt, value: cup(totalVenta(x)), cls: x.anuladaEn ? 'anulada' : '', lead: leadIcon(x.metodoPago === 'TRANSFERENCIA' ? 'Transferencia' : 'Efectivo'), onclick: () => detalleVenta(x)});
+      return itemLista({title: titulo, subtitle: subt, value: cup(totalVenta(x)), cls: x.anuladaEn ? 'anulada' : '', lead: marcar(x.id, x.metodoPago === 'TRANSFERENCIA' ? 'Transferencia' : 'Efectivo'), onclick: () => detalleVenta(x)});
     }
     if (tipo === 'movimientos') {
       const u = x.entidad === 'INSUMO' ? 1000 : 1;
       const nombres = {ALTA: 'Alta', AJUSTE: 'Ajuste', VENTA: 'Venta', PRODUCCION: 'Producción', CONSUMO: 'Consumo', BAJA: 'Baja', ANULACION: 'Anulación'};
       return itemLista({title: x.nombre, subtitle: [fechaHora(x.fecha) + ' · ' + (nombres[x.tipo] || x.tipo), x.nota].filter(Boolean),
-        value: (x.delta > 0 ? '+' : '') + cantidad(x.delta / u) + ' → ' + cantidad(x.existencia / u), lead: leadIcon('Inventario')});
+        value: (x.delta > 0 ? '+' : '') + cantidad(x.delta / u) + ' → ' + cantidad(x.existencia / u), lead: marcar(x.id, 'Inventario')});
     }
-    if (tipo === 'caja') return itemLista({title: x.motivo, subtitle: fechaHora(x.fecha) + (x.hechoPor ? ' · ' + x.hechoPor : ''), lead: leadIcon('Efectivo'),
+    if (tipo === 'caja') return itemLista({title: x.motivo, subtitle: fechaHora(x.fecha) + (x.hechoPor ? ' · ' + x.hechoPor : ''), lead: marcar(x.id, 'Efectivo'),
       value: (x.tipo === 'ENTRADA' ? '+' : '−') + cup(x.importeCent)});
     if (tipo === 'turnos') {
       const r = x.resumen || {};
-      return itemLista({title: fechaHora(x.abiertoEn) + (quien(x.empleadoId) ? ' · ' + quien(x.empleadoId) : ''), lead: leadIcon('Turno'),
+      return itemLista({title: fechaHora(x.abiertoEn) + (quien(x.empleadoId) ? ' · ' + quien(x.empleadoId) : ''), lead: marcar(x.id, 'Turno'),
         subtitle: x.cerradoEn ? 'Cerrado ' + fechaHora(x.cerradoEn) : 'Abierto', value: r.totalCent !== undefined ? cup(r.totalCent) : null, onclick: () => detalleTurno(x)});
     }
-    return itemLista({title: x.nombreApellidos, subtitle: 'CI ' + x.ci + ' · ' + x.telefono, lead: leadIcon('Perfil'), onclick: () => editarCliente(x)});
+    return itemLista({title: x.nombreApellidos, subtitle: 'CI ' + x.ci + ' · ' + x.telefono, lead: marcar(x.id, 'Perfil'), onclick: () => editarCliente(x)});
   }
 
   function detalleVenta(v) {
@@ -146,7 +188,7 @@ SPVI.views.registros = async function (root, sub, params) {
 
   root.append(h('div', {class: 'fila'}, buscador('Buscar', event => {
     estado.q = event.target.value; estado.page = 1; clearTimeout(temporizador); temporizador = setTimeout(cargar, 300);
-  }, estado.q), periodos), resumen, lista, paginacion);
+  }, estado.q), periodos), resumen, barra, lista, paginacion);
   if (tipo === 'clientes') root.append(h('button', {type: 'button', class: 'fab extendida', onclick: () => editarCliente()}, icon('Agregar'), 'Nuevo cliente'));
   await cargar();
   return () => clearTimeout(temporizador);

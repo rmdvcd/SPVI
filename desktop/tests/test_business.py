@@ -2,6 +2,7 @@
 import base64
 import tempfile
 import unittest
+from decimal import Decimal
 from pathlib import Path
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -44,6 +45,52 @@ class BusinessTest(unittest.TestCase):
 
     def sale(self, quantity=1):
         self.business.operate('cart', {'lines': [{'item_id': 1, 'quantity': quantity}], 'method': 'efectivo'})
+
+    def test_informe_de_ventas_y_seleccion_por_ids(self):
+        """Registros puede exportar solo lo marcado: ventas por id y turnos por id."""
+        self.business.operate('cart', {'lines': [{'item_id': 1, 'quantity': 1}], 'method': 'efectivo'})
+        with self.business.connect() as db:
+            venta = objects(db, 'ventas')[0]['id']
+            turno = objects(db, 'turnos')[0]['id']
+        columns, rows, items = self.business.report('ventas')
+        self.assertEqual(['Venta', 'Fecha UTC', 'Detalle', 'Cobro', 'Total CUP', 'Estado'], columns)
+        self.assertEqual([venta, 'Café', 'Efectivo', Decimal('10'), 'Válida'], [rows[0][0], rows[0][2], rows[0][3], rows[0][4], rows[0][5]])
+        self.assertEqual([], self.business.report('ventas', ids=[venta + 500])[1])
+        self.assertEqual(1, len(self.business.report('ventas', ids=[venta])[1]))
+        self.assertEqual([], self.business.report('ventas', query='nada')[1])
+        for mal in (['x'], [0], [-1], 'no-lista'):
+            with self.subTest(ids=mal), self.assertRaises(ValueError): self.business.report('ventas', ids=mal)
+        self.assertEqual(1, len(self.business.report('turnos', ids=[turno])[1]))
+        self.assertEqual(0, len(self.business.report('turnos', ids=[turno + 500])[1]))
+
+    def test_ledger_devuelve_ids_del_filtro_completo(self):
+        """«Marcar todo lo filtrado» necesita los identificadores de todas las páginas, no solo la visible."""
+        for _ in range(3):
+            self.business.operate('cart', {'lines': [{'item_id': 1, 'quantity': 1}], 'method': 'efectivo'})
+        pagina = self.business.ledger('ventas', page=1, size=2, ids=True)
+        self.assertEqual(3, len(pagina['ids']))
+        self.assertEqual(2, len(pagina['items']))
+        self.assertNotIn('ids', self.business.ledger('ventas', page=1, size=2))
+        pass
+
+    def test_tablero_por_periodo(self):
+        """Inicio puede filtrar por turno, hoy, N días o todo el historial."""
+        self.business.operate('cart', {'lines': [{'item_id': 1, 'quantity': 1}], 'method': 'efectivo'})
+        with self.business.connect() as db:
+            vieja = objects(db, 'ventas')[0]
+            vieja['fecha'] -= 40 * 86400000
+            put(db, 'ventas', vieja)
+        self.business.operate('cart', {'lines': [{'item_id': 1, 'quantity': 1}], 'method': 'efectivo'})
+        self.assertEqual(2, self.business.dashboard(0)['operations'])
+        self.assertEqual(1, self.business.dashboard(1)['operations'])
+        self.assertEqual(1, self.business.dashboard(30)['operations'])
+        self.assertEqual(1, self.business.dashboard('turno')['operations'])
+        self.assertIsNone(self.business.dashboard('turno')['revenue_change_percent'])
+        self.business.operate('close', {'counted': '0'})
+        # Sin turno abierto, «turno» cuenta desde el inicio del día de hoy.
+        self.assertEqual(1, self.business.dashboard('turno')['operations'])
+        for value in (2, -1, 15, 'x', True):
+            with self.subTest(days=value), self.assertRaises(ValueError): self.business.dashboard(value)
 
     def test_carrito_es_una_operacion_y_persiste(self):
         self.business.operate('cart', {'lines': [{'item_id': 1, 'quantity': 2}, {'item_id': 1, 'quantity': 3}], 'method': 'efectivo'})

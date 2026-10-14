@@ -141,6 +141,12 @@ main { padding: calc(var(--bar) + var(--lg)) var(--lg) 96px; max-width: 1440px; 
 .vacio { padding: var(--xl) var(--md); text-align: center; color: var(--on-surface-variant); display: flex; flex-direction: column;
   align-items: center; gap: var(--xs); }
 .vacio .icon { width: 48px; height: 48px; opacity: .6; }
+/* Barra de Inicio: estado del turno y selector de período en la misma fila (primer contenedor fijo). */
+.barra-turno { display: flex; align-items: center; gap: var(--md); flex-wrap: wrap; padding: var(--xs) var(--md);
+  background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow); }
+.barra-turno .texto { flex: 1 1 240px; min-width: 0; display: flex; align-items: center; gap: var(--xs); font-weight: 500; }
+.barra-turno .texto .icon { color: var(--primary); }
+.barra-turno .texto .etiqueta { font-weight: 400; }
 
 /* Listas (SpviListItem). */
 .lista { display: flex; flex-direction: column; background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow); overflow: hidden; }
@@ -154,11 +160,34 @@ button.item-lista:hover, a.item-lista:hover { background: var(--surface-containe
 .item-lista .texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .item-lista .titulo { font-size: 16px; line-height: 24px; }
 .item-lista .valor { font-weight: 500; font-variant-numeric: tabular-nums; text-align: right; max-width: 45%; }
+.item-lista .valores { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex: none; }
 .item-lista .lead { width: 40px; height: 40px; border-radius: 50%; background: var(--primary-container); color: var(--on-primary-container);
   display: inline-flex; align-items: center; justify-content: center; flex: none; }
 .item-lista .foto { width: 48px; height: 48px; border-radius: var(--r-sm); object-fit: cover; flex: none; background: var(--surface-container); }
 .item-lista .indicador { width: 4px; align-self: stretch; border-radius: 2px; flex: none; }
 .anulada .titulo, .anulada .valor { text-decoration: line-through; opacity: .7; }
+.item-lista.centro { justify-content: center; text-align: center; }
+.item-lista.centro .texto { align-items: center; }
+details.bloque { background: transparent; }
+details.bloque > summary { list-style: none; }
+details.bloque > summary::-webkit-details-marker { display: none; }
+details.bloque > summary .icon { color: var(--on-surface-variant); margin-left: auto; }
+details.bloque[open] > summary .icon { transform: rotate(180deg); }
+details.bloque .detalle { padding: 0 var(--md) var(--md) calc(var(--md) + 40px); display: flex; flex-direction: column; gap: var(--xs); }
+/* Selección en Registros: casilla por fila y barra con las acciones de la selección. */
+.lead-casilla { display: inline-flex; align-items: center; gap: 2px; flex: none; }
+.casilla { width: 40px; height: 40px; border-radius: 50%; border: 0; background: transparent; color: var(--on-surface-variant);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none; }
+.casilla:hover { background: var(--surface-high); }
+.casilla .caja { width: 18px; height: 18px; border-radius: 4px; border: 2px solid currentColor; display: inline-flex;
+  align-items: center; justify-content: center; flex: none; }
+.casilla[aria-pressed="true"] { color: var(--primary); }
+.casilla[aria-pressed="true"] .caja { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.casilla[aria-pressed="true"] .caja::after { content: '✓'; font-size: 13px; font-weight: 700; line-height: 1; }
+.barra-sel { display: flex; align-items: center; gap: var(--xs); flex-wrap: wrap; padding: var(--xs) var(--md);
+  background: var(--primary-container); color: var(--on-primary-container); border-radius: var(--r-lg); }
+.barra-sel strong { font-weight: 500; margin-right: var(--xs); }
+.barra-sel .btn.texto { color: var(--on-primary-container); }
 
 /* Botones. */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--xs); min-height: 40px; padding: 0 var(--lg);
@@ -252,10 +281,14 @@ button.item-lista:hover, a.item-lista:hover { background: var(--surface-containe
 .btn:hover:not(:disabled), .icon-btn:hover:not(:disabled), .fab:hover { transform: translateY(-1px); }
 .btn:active:not(:disabled), .icon-btn:active:not(:disabled), .fab:active, .articulo:active, .chip:active { transform: translateY(0) scale(.98); }
 .vista { animation: aparecer .22s ease both; }
-dialog[open] { animation: aparecer .18s ease both; }
+.vista.saliendo { animation: desvanecer .12s ease both; }
+dialog[open] { animation: ventana-entra .22s cubic-bezier(.05,.7,.1,1) both; }
 dialog[open]::backdrop { animation: aparecer .18s ease both; }
 .snackbar { animation: aparecer .2s ease both; }
 @keyframes aparecer { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+/* Cambio de sección: fundido de salida y entrada. Ventanas: desde el centro-abajo. */
+@keyframes desvanecer { from { opacity: 1; } to { opacity: 0; } }
+@keyframes ventana-entra { from { opacity: 0; transform: translateY(48px) scale(.97); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
 }

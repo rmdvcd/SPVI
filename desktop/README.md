@@ -6,8 +6,25 @@ SMS, servicios ni otras funciones de Android. **No sustituye la aplicación móv
 > **Comparación con el móvil (14/10/2026):** [INFORME_FEEDBACK_MOVIL.md](INFORME_FEEDBACK_MOVIL.md) lista lo que
 > tienen las apps móviles y esta web no, descartando lo que no tiene sentido en una PC (migrar por QR entre
 > teléfonos, actualización en caliente, permisos del sistema, biometría) y señalando lo que sí conviene
-> llevar aquí (selector de período en Inicio, fila de inventario con el costo, casillas de selección en
-> Registros, Ayuda y Soporte mínimos, fundido entre secciones). Nada de eso está implementado todavía.
+> llevar aquí. **Las cinco mejoras que proponía están implementadas** (ver la sección 6 del informe):
+> selector de período en Inicio, fila de inventario con el costo, casillas de selección en Registros,
+> Ayuda y Soporte, y fundido entre secciones con ventanas desde el centro-abajo.
+
+## Novedades de la 0.31.0 (14/10/2026)
+
+- **Inicio:** el estado del turno y el **selector de período** (Turno / Hoy / 7 / 30 / 90 días / Todo) están
+  en la misma fila, y esa barra se queda fija al desplazar. Los KPIs y los dos gráficos (formas de cobro y
+  ganancia por día) se leen para el período elegido. Registros usa ahora los mismos chips.
+- **Inventario:** cada fila muestra a la derecha **costo y venta diferenciados**; en los elaborados se
+  añade cuántos se pueden hacer con las existencias actuales de sus insumos.
+- **Registros:** casilla de selección en todas las listas y barra con «Marcar todo lo filtrado» (marca todo
+  el filtro, no solo la página visible), «Quitar selección» y «Exportar selección».
+- **Ayuda y Soporte:** dos secciones nuevas en el menú lateral. Ayuda reúne nueve temas con icono; Soporte
+  muestra los datos del desarrollador (teléfono y WhatsApp) en filas centradas.
+- **Animaciones:** al cambiar de sección del menú lateral la vista anterior se desvanece y la nueva aparece
+  con fundido; las ventanas emergentes entran desde el centro-abajo. Se respeta «reducir movimiento».
+- **Exportar:** alcance nuevo **Ventas** (PDF y Excel) y posibilidad de exportar solo lo seleccionado en
+  Registros (máximo 1000 elementos).
 
 ## Novedades de la 0.31.0 (10/10/2026)
 
@@ -15,8 +32,8 @@ SMS, servicios ni otras funciones de Android. **No sustituye la aplicación móv
   centrados con el icono de SPVI, iconos de `SpviIcons` y las fuentes Roboto/Orbitron de la app. Se adapta
   a pantallas anchas (menú fijo), medianas y estrechas (menú desplegable). Tema **Claro/Oscuro/Sistema**
   en Ajustes › Tema. Pantallas: Inicio, Venta, Inventario (e insumos), Servicios, Registros, Apps vinculadas,
-  Tiempo en línea y Ajustes. Las funciones propias del teléfono (SMS, cámara, huella, notificaciones de
-  Android) no están.
+  Tiempo en línea, Ajustes, Ayuda y Soporte. Las funciones propias del teléfono (SMS, cámara, huella,
+  notificaciones de Android) no están.
 - **Icono de notificación** junto al reloj en lugar de la consola. Clic derecho: Pantalla principal, Apps
   conectadas, Tiempo en línea, Ajustes, Reiniciar, Salir. Si SPVI ya está abierto, abrirlo otra vez solo
   muestra la pantalla principal.
@@ -58,7 +75,7 @@ SMS, servicios ni otras funciones de Android. **No sustituye la aplicación móv
 - Reintentos HTTP idempotentes y validación anidada de DTO, relaciones y fotos.
 - PDF/Excel solo de inventario, servicios y turnos; imágenes/tarjetas de productos y servicios.
 
-**Estado real (0.31.0 + licencias):** 126 pruebas Python y la autoprueba pasan en Linux, y la interfaz se recorrió en
+**Estado real (0.31.0 + licencias):** 129 pruebas Python y la autoprueba pasan en Linux, y la interfaz se recorrió en
 un navegador sin pantalla (Chromium) a 1440×900, 800×1000 y 390×844, en claro y oscuro, sin errores. **No
 se ha probado en Windows** (icono de notificación, inicio con Windows, `.exe`) ni con teléfonos reales.
 Sigue [VERIFICACION_PC.md](VERIFICACION_PC.md) antes de usar datos reales.
@@ -189,7 +206,8 @@ Las tarjetas incluyen la foto local del artículo, si está cargada. El encabeza
 contiene PNG separados (no se genera un collage).
 
 La búsqueda de catálogo se aplica a los informes de inventario/servicios y a imágenes. Turnos exporta
-el historial completo, no solo los diez mostrados en Inicio. Máximos: 10000 filas por informe,
+el historial completo, no solo los diez mostrados en Inicio. **Ventas** exporta el historial completo o,
+desde Registros, solo lo que tengas seleccionado (máximo 1000 elementos). Máximos: 10000 filas por informe,
 300 artículos por exportación de imágenes. Al excederlos, se rechaza la operación, sin truncar datos.
 Excel guarda importes numéricos y trata los nombres como texto, nunca como fórmulas.
 

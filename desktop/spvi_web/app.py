@@ -157,7 +157,8 @@ def create_app(data_dir, password_hash=None, secret=None, secure=False, hosts=No
                 value = request.args.get(name)
                 return int(value) if value not in (None, '') else None
             return jsonify(store.ledger(kind, request.args.get('q', ''), int(request.args.get('page', '1')),
-                                        int(request.args.get('size', '50')), optional('desde'), optional('hasta')))
+                                        int(request.args.get('size', '50')), optional('desde'), optional('hasta'),
+                                        request.args.get('ids') == '1'))
         except ValueError as error: return jsonify(error=str(error) if 'válid' in str(error) else 'Consulta no válida.'), 400
 
     @app.post('/api/seed')
@@ -174,7 +175,7 @@ def create_app(data_dir, password_hash=None, secret=None, secure=False, hosts=No
     @app.get('/api/dashboard')
     def dashboard():
         try:
-            return jsonify(store.dashboard(int(request.args.get('days', '30'))))
+            return jsonify(store.dashboard(request.args.get('days', '30')))
         except ValueError as error:
             return jsonify(error=str(error)), 400
 

@@ -42,6 +42,12 @@ SPVI.bloqueFoto = function (kind, id) {
   return h('div', {class: 'form'}, img, h('div', {class: 'fila'}, button('Elegir foto', () => archivo.click(), {kind: 'tonal', iconName: 'Imagen'}), quitar), archivo);
 };
 
+/** Costo y precio de venta a la derecha de la fila, diferenciados (el costo en segundo plano). */
+function precios(costoCent, ventaCent) {
+  return h('span', {class: 'valores'}, h('span', {class: 'secundario', text: 'Costo ' + cup(costoCent)}),
+    ventaCent === null || ventaCent === undefined ? null : h('span', {class: 'dato', text: cup(ventaCent)}));
+}
+
 SPVI.views.inventario = async function (root, sub, params) {
   const catalogo = await SPVI.load.catalogo();
   const prefs = catalogo.preferencias || {};
@@ -83,17 +89,29 @@ SPVI.views.inventario = async function (root, sub, params) {
     if (tab === 'insumos') {
       const nivel = SPVI.nivel(x, 'insumos', prefs);
       return itemLista({title: x.nombre, indicator: SPVI.colorNivel(nivel), lead: leadIcon('Inventario'),
-        subtitle: ['Existencias: ' + cantidad(x.cantidadMil / 1000) + ' ' + UNIDAD_CORTA[x.unidad] + (nivel !== 'ok' ? (nivel === 'critico' ? ' · Crítico' : ' · Bajo') : ''),
-          'Costo ' + cup(x.precioCent) + ' / ' + UNIDAD_CORTA[x.unidad] + (x.precioVentaCent !== null && x.precioVentaCent !== undefined ? ' · Venta ' + cup(x.precioVentaCent) : '')],
-        onclick: () => editarInsumo(x)});
+        subtitle: 'Existencias: ' + cantidad(x.cantidadMil / 1000) + ' ' + UNIDAD_CORTA[x.unidad] + (nivel !== 'ok' ? (nivel === 'critico' ? ' · Crítico' : ' · Bajo') : ''),
+        trailing: precios(x.precioCent, x.precioVentaCent), onclick: () => editarInsumo(x)});
     }
     const nivel = SPVI.nivel(x, 'productos', prefs);
     const foto = h('img', {class: 'foto', alt: '', loading: 'lazy', src: '/api/photo/productos/' + x.id, onerror: e => e.target.replaceWith(leadIcon('Inventario'))});
-    const sub = elaborado(x) ? ['Costo de insumos ' + cup(x.precioCostoCent)]
-      : [(x.categoria ? x.categoria + ' · ' : '') + 'Existencias: ' + cantidad(x.cantidad) + (nivel !== 'ok' ? (nivel === 'critico' ? ' · Crítico' : ' · Bajo') : ''),
+    // Elaborados: cuántos se pueden hacer con las existencias actuales de sus insumos.
+    const posibles = p => {
+      const receta = catalogo.recetas.find(r => r.productoId === p.id);
+      if (!receta || !receta.lineas.length) return null;
+      let n = Infinity;
+      for (const linea of receta.lineas) {
+        const insumo = catalogo.insumos.find(i => i.id === linea.insumoId);
+        if (!insumo) return 0;
+        n = Math.min(n, Math.floor(insumo.cantidadMil / linea.cantidadMil));
+      }
+      return n === Infinity ? null : n;
+    };
+    const sub = elaborado(x)
+      ? ['Categoría ' + (x.categoria || 'Elaborado'), 'Se pueden hacer ' + cantidad(posibles(x) ?? 0) + ' con las existencias']
+      : [(x.categoria || 'Sin categoría'), 'Existencias: ' + cantidad(x.cantidad) + (nivel !== 'ok' ? (nivel === 'critico' ? ' · Crítico' : ' · Bajo') : ''),
         x.fechaCaducidad ? 'Caduca el ' + x.fechaCaducidad.split('-').reverse().join('/') : null];
-    return itemLista({title: x.nombre, subtitle: sub, value: cup(x.precioVentaCent), indicator: SPVI.caduca(x) ? 'var(--alert-caducidad)' : SPVI.colorNivel(nivel), lead: foto,
-      onclick: () => elaborado(x) ? editarElaborado(x) : editarProducto(x)});
+    return itemLista({title: x.nombre, subtitle: sub, indicator: SPVI.caduca(x) ? 'var(--alert-caducidad)' : SPVI.colorNivel(nivel), lead: foto,
+      trailing: precios(x.precioCostoCent, x.precioVentaCent), onclick: () => elaborado(x) ? editarElaborado(x) : editarProducto(x)});
   };
 
   const categorias = [...new Set(catalogo.productos.filter(p => !elaborado(p)).map(p => p.categoria).filter(Boolean))].sort();

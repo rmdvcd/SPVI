@@ -4,6 +4,44 @@ Registro **histórico** de lo que se implementó en cada fase y de las suposicio
 
 > **Prevalece la documentación actual.** Si algo de este historial contradice a [README.md](../README.md), [SECURITY.md](../SECURITY.md), [FORMATOS.md](../FORMATOS.md), [LICENSE_CLIENT.md](../LICENSE_CLIENT.md) o [UI_UX_IX.md](../UI_UX_IX.md), vale lo que dicen esos documentos. Las fases posteriores sustituyen a las anteriores.
 
+## 2026-10-14 — Escritorio 0.31.0: las cinco mejoras del informe de feedback móvil
+
+Cierra [desktop/INFORME_FEEDBACK_MOVIL.md](../desktop/INFORME_FEEDBACK_MOVIL.md): se implementan las cinco
+mejoras que el informe recomendaba, en su orden sugerido. **No se toca el modelo de datos ni el protocolo de
+sincronización**, así que las apps móviles no se modifican.
+
+1. **1.1 Selector de período en Inicio** (`static/js/core.js`, `inicio.js`, `app.css`): barra fija
+   (`.barra-turno` + `.pegajoso`) con el estado del turno y los chips de período en la misma fila
+   (Turno / Hoy / 7 / 30 / 90 días / Todo). `Business.dashboard()` acepta `1, 7, 30, 90`, `0` (todo el
+   historial) y `'turno'` (desde la apertura del turno; sin turno abierto, desde el inicio del día);
+   `/api/dashboard` pasa el valor tal cual. La serie diaria del gráfico se deriva del período
+   (`SPVI.diasSerie`: en «Todo» usa los días con datos, máximo 30 barras). Con «Turno» y «Todo» no hay
+   comparación con el período anterior. Registros usa los mismos chips (`chipsPeriodo`) y gana «Turno»
+   y «90 días».
+2. **1.5 Animaciones** (`static/app.css`, `core.js`): `SPVI.fundir()` desvanece la sección anterior
+   120 ms antes de pintar la nueva y los diálogos entran desde el centro-abajo
+   (`@keyframes ventana-entra`, `translateY(48px) scale(.97)`). Se respeta `prefers-reduced-motion`.
+3. **1.2 Fila de inventario** (`static/js/inventario.js`): nombre, categoría y existencias a la izquierda;
+   a la derecha **costo y venta diferenciados** (`.valores`). En elaborados se añade «Se pueden hacer N con
+   las existencias», calculado de la receta y de las existencias de insumos (lo que en el móvil hace
+   `InventarioLogic.kt`).
+4. **1.4 Ayuda y Soporte** (`static/js/ayuda.js`, secciones nuevas del menú): Ayuda con nueve secciones
+   desplegables con icono (turno y caja, venta, inventario, servicios, registros y exportar, respaldo,
+   apps vinculadas, licencia y ajustes) y Soporte con los datos del desarrollador en filas centradas
+   Icono → Descripción → Texto, con WhatsApp y copiar teléfono.
+5. **1.3 Casillas en Registros** (`static/js/registros.js`, `business.py`, `exports.py`, `app.css`):
+   casilla en todas las listas y barra de selección con **«Marcar todo lo filtrado»** — que marca todo el
+   filtro activo, no solo la página visible, porque `ledger(..., ids=True)` devuelve los identificadores de
+   todo el filtro —, «Quitar selección» y «Exportar selección». Alcance de exportación nuevo **ventas**
+   (PDF/Excel) y filtrado por selección también en **turnos**. En caja, movimientos y clientes la casilla
+   está pero no ofrece exportar: no hay informe para ese contenido.
+
+**Pruebas:** 129 pruebas Python (`desktop/tests/`), con nuevas regresiones para `dashboard` por período,
+`report('ventas')`, la selección por `ids` en turnos y ventas, y `ledger` con los identificadores del
+filtro. La interfaz se verificó con una prueba de humo temporal (jsdom, no incluida en el repositorio) que
+recorre Inicio, Registros, Inventario, Ayuda y Soporte y comprueba 31 comportamientos. **No se ha probado
+en Windows ni con el `.exe`.**
+
 ## 2026-10-14 — Android 0.31.0: diez cambios de la app móvil (encargo del propietario)
 
 Implementado en `app/` **sin compilar ni probar** (en este entorno no hay JDK/Android SDK/Gradle ni Dart, y

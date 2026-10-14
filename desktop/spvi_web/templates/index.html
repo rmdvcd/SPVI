@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/spvi-192.png') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
 {% if authenticated %}
-{% for name in ['core', 'inicio', 'venta', 'inventario', 'servicios', 'registros', 'vinculadas', 'tiempo', 'ajustes'] %}
+{% for name in ['core', 'inicio', 'venta', 'inventario', 'servicios', 'registros', 'vinculadas', 'tiempo', 'ajustes', 'ayuda'] %}
 <script defer src="{{ url_for('static', filename='js/' + name + '.js') }}"></script>
 {% endfor %}
 {% else %}

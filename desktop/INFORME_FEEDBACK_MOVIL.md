@@ -133,3 +133,32 @@ tocar las apps móviles** ni a migrar respaldos.
 - **Licencia**: mismo contrato GL en las tres (ver [LICENSE_CLIENT.md](../LICENSE_CLIENT.md)).
 - **Sincronización**: la web manda la instantánea con el sub-token firmado de cada secundaria; los
   diez cambios del móvil no tocan ese protocolo.
+
+---
+
+## 6. Estado de la implementación (14/10/2026)
+
+Las cinco mejoras de la sección 3 **están implementadas** en `desktop/spvi_web/`, en el orden sugerido.
+Ninguna cambia el modelo de datos ni el protocolo de sincronización, así que las apps móviles no se tocan.
+
+| Mejora | Dónde | Qué se hizo |
+|---|---|---|
+| **1.1** Período en Inicio | `core.js`, `inicio.js`, `app.css` | Barra fija (`.barra-turno` + `.pegajoso`) con el estado del turno y los chips de período en la misma fila: Turno / Hoy / 7 / 30 / 90 días / Todo. `Business.dashboard()` acepta `1, 7, 30, 90`, `0` (todo) y `'turno'` (desde la apertura del turno; sin turno abierto, desde el inicio del día). La serie diaria del gráfico se deriva del período (`SPVI.diasSerie`). Registros usa ahora los mismos chips (`chipsPeriodo`). |
+| **1.5** Animaciones | `app.css`, `core.js` | `SPVI.fundir()` desvanece la sección anterior 120 ms antes de pintar la nueva y los diálogos entran desde el centro-abajo (`@keyframes ventana-entra`). Se respeta `prefers-reduced-motion`. |
+| **1.2** Fila de inventario | `inventario.js`, `app.css` | Nombre, categoría y existencias a la izquierda; **costo y venta a la derecha, diferenciados** (`.valores`). En elaborados se añade «Se pueden hacer N con las existencias», calculado de la receta y de las existencias de insumos. |
+| **1.4** Ayuda y Soporte | `ayuda.js` (nuevo), `core.js`, `index.html`, `app.css` | Dos secciones nuevas en el menú lateral. **Ayuda**: nueve secciones desplegables con icono (turno y caja, venta, inventario, servicios, registros y exportar, respaldo, apps vinculadas, licencia y ajustes). **Soporte**: datos del desarrollador en filas centradas, en el orden Icono → Descripción → Texto, con WhatsApp y copiar teléfono. |
+| **1.3** Casillas en Registros | `registros.js`, `business.py`, `exports.py`, `app.css` | Casilla en todas las listas y barra de selección con **«Marcar todo lo filtrado»** (exacto, no solo la página visible: `ledger(..., ids=True)` devuelve los identificadores de todo el filtro), «Quitar selección» y «Exportar selección». Alcance de exportación nuevo **ventas** (PDF/Excel) y filtrado por selección también en **turnos**. |
+
+**Decisión sobre «seleccionar todo» con paginación** (la que el informe pedía tomar antes de programar): la
+casilla marca la fila visible, pero **«Marcar todo lo filtrado» marca todo lo que devuelve el filtro activo**
+(búsqueda + período), no solo la página de 50. Para eso el backend envía, solo cuando se piden, los
+identificadores de todo el filtro. La selección sobrevive al cambio de página y de filtro, y se limpia al
+cambiar de pestaña de Registros.
+
+**Límites conocidos:** en Caja, Movimientos y Clientes fijos la casilla aparece (todas las listas la tienen,
+como en el móvil) pero la barra no ofrece exportar, porque no existe informe para ese contenido. La
+exportación por selección admite como máximo 1000 elementos, igual que antes.
+
+**Verificado:** 129 pruebas Python (`desktop/tests/`) y una prueba de humo temporal de la interfaz con jsdom
+que recorre Inicio, Registros, Inventario, Ayuda y Soporte y comprueba los 31 comportamientos anteriores.
+**Sin probar en Windows ni con el `.exe`**: sigue pendiente [VERIFICACION_PC.md](VERIFICACION_PC.md).

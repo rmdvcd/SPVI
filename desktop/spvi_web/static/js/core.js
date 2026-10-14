@@ -268,6 +268,38 @@ function pestanas(items, selected, onselect) {
     h('button', {type: 'button', role: 'tab', 'aria-selected': String(id === selected), onclick: () => onselect(id)}, label)));
 }
 function vacio(iconName, text) { return h('div', {class: 'vacio'}, icon(iconName), h('p', {text})); }
+
+/* ---------- Período: los mismos chips en Inicio y en Registros (se guarda en la sesión). ---------- */
+const PERIODOS = [['turno', 'Turno'], ['hoy', 'Hoy'], ['7', '7 días'], ['30', '30 días'], ['90', '90 días'], ['todo', 'Todo']];
+function chipsPeriodo(actual, onchange, lista = PERIODOS) {
+  return h('div', {class: 'chips', role: 'group', 'aria-label': 'Período'}, lista.map(([id, label]) =>
+    h('button', {type: 'button', class: 'chip', 'aria-pressed': String(actual === id), onclick: () => onchange(id)}, label)));
+}
+SPVI.periodo = () => {
+  const guardado = sessionStorage.getItem('spvi-periodo');
+  return PERIODOS.some(([id]) => id === guardado) ? guardado : '7';
+};
+/** Instante desde el que cuenta el período (``null`` = todo el historial). */
+SPVI.desdePeriodo = function (periodo, aperturaTurno) {
+  if (periodo === 'todo') return null;
+  const inicio = new Date(); inicio.setHours(0, 0, 0, 0);
+  if (periodo === 'turno') return aperturaTurno ? Date.parse(aperturaTurno) : inicio.getTime();
+  if (periodo === 'hoy') return inicio.getTime();
+  inicio.setDate(inicio.getDate() - Number(periodo) + 1);
+  return inicio.getTime();
+};
+/** Días que debe cubrir la serie del gráfico según el período elegido. */
+SPVI.diasSerie = function (periodo, tablero) {
+  if (periodo === 'todo') {
+    const dias = [...new Set((tablero.daily || []).map(x => x.day))].sort();
+    return (dias.length ? dias : [new Date().toISOString().slice(0, 10)]).slice(-30);
+  }
+  const desde = periodo === 'turno' && tablero.shift ? Date.parse(tablero.shift.opened) : Date.now();
+  const cuantos = periodo === 'hoy' ? 1 : Math.max(1, Math.ceil((Date.now() - desde) / 86400000) + 1);
+  const serie = [];
+  for (let i = cuantos - 1; i >= 0; i--) serie.push(new Date(Date.now() - i * 86400000).toISOString().slice(0, 10));
+  return serie;
+};
 function itemLista({title, subtitle = null, value = null, lead = null, onclick = null, trailing = null, cls = '', indicator = null}) {
   const tag = onclick ? 'button' : 'div';
   return h(tag, {class: ('item-lista ' + cls).trim(), type: onclick ? 'button' : null, onclick},
@@ -300,6 +332,9 @@ SPVI.routes = [
   {id: 'tiempo', title: 'Tiempo en línea', icon: 'Cronometro'},
   null,
   {id: 'ajustes', title: 'Ajustes', icon: 'Ajustes'},
+  null,
+  {id: 'ayuda', title: 'Ayuda', icon: 'Ayuda'},
+  {id: 'soporte', title: 'Soporte', icon: 'Soporte'},
 ];
 let cleanup = null;
 function parseHash() {
@@ -340,11 +375,20 @@ SPVI.render = async function () {
     const container = h('div', {class: 'vista'});
     const result = await SPVI.views[id](container, sub, params);
     if (typeof result === 'function') cleanup = result;
+    await SPVI.fundir(view.firstElementChild);
     view.replaceChildren(container);
   } catch (error) {
     view.replaceChildren(h('div', {class: 'vista'}, h('div', {class: 'card error centro'}, icon('Alerta', 'lg'), h('p', {text: error.message}),
       button('Reintentar', () => SPVI.changed(), {iconName: 'Reintentar'}))));
   }
+};
+/** Fundido de salida de la sección anterior antes de pintar la nueva (respeta «reducir movimiento»). */
+SPVI.fundir = function (anterior) {
+  return new Promise(resolve => {
+    if (!anterior || !anterior.classList.contains('vista') || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { resolve(); return; }
+    anterior.classList.add('saliendo');
+    setTimeout(resolve, 120);
+  });
 };
 SPVI.go = route => { if (location.hash === '#/' + route) SPVI.render(); else location.hash = '#/' + route; };
 
