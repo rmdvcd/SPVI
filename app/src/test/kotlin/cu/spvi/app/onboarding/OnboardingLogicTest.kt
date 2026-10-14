@@ -19,7 +19,12 @@ class OnboardingLogicTest {
     @Test fun primeraVezEmpiezaConBienvenidaYMuestraTodo() {
         val plan = planWizard(ModoWizard.PRIMERA_VEZ, ResumenConfiguracion(todos, listOf(PasoConfiguracion.ALERTAS)))
         // 0.21.0 (C12): tras la bienvenida, el recorrido (tipo de app, objetivo, empleados).
-        assertEquals(listOf(PasoWizard.BIENVENIDA) + PASOS_TOUR + listOf(PasoWizard.DATOS, PasoWizard.ALERTAS, PasoWizard.PRUEBA), plan)
+        // 0.31.0 (P6): al final, el aviso de que existe Ajustes → Migrar.
+        assertEquals(
+            listOf(PasoWizard.BIENVENIDA) + PASOS_TOUR +
+                listOf(PasoWizard.DATOS, PasoWizard.ALERTAS, PasoWizard.PRUEBA, PasoWizard.MIGRAR),
+            plan,
+        )
     }
 
     @Test fun retomarMuestraSoloLoPendiente() {
