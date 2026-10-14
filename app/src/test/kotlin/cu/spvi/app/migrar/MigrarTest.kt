@@ -177,7 +177,7 @@ class MigrarTest {
         assertEquals(20, claves.distinct().size)
     }
 
-    @Test fun elegirRolNoEmpiezaNadaTodavia() {
+    @Test fun elegirRolNoEmpiezaNadaTodavia() = runTest {
         val vm = vm()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
         vm.elegirRol(RolMigracion.EMISOR)
@@ -188,11 +188,11 @@ class MigrarTest {
         assertFalse(vm.state.value.qr.empezado)
     }
 
-    @Test fun sinRedLocalElEmisorAvisaYNoAbreElCanal() {
+    @Test fun sinRedLocalElEmisorAvisaYNoAbreElCanal() = runTest {
         val vm = MigrarViewModel(
             lic, ConstruirSolicitudMigracion(lic, PerfilRepo(Perfil(nombre = "Ana"))),
             VerificarAutorizacionMigracion(lic), CompletarMigracion(lic, mant),
-            ajustes, respaldo, mant, object : DireccionesLocales { override fun ipv4() = emptyList() },
+            ajustes, respaldo, mant, object : DireccionesLocales { override fun ipv4(): List<String> = emptyList() },
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
         vm.empezarEmisor()
@@ -200,7 +200,7 @@ class MigrarTest {
         assertFalse(vm.state.value.qr.trabajando)
     }
 
-    @Test fun elReceptorRechazaUnCodigoQueNoEsDeEmisor() {
+    @Test fun elReceptorRechazaUnCodigoQueNoEsDeEmisor() = runTest {
         val vm = vm()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
         vm.empezarReceptor(CodigoMigracion(RolMigracion.RECEPTOR, "192.168.1.20", 45123, "a1b2c3d4e5f60718"))
@@ -214,7 +214,7 @@ class MigrarTest {
         assertEquals(TextosMigrar.ERROR_GENERICO, TextosMigrar.errorQr(cu.spvi.core.result.AppError.Cripto))
     }
 
-    @Test fun cancelarVuelveAElegirPapel() {
+    @Test fun cancelarVuelveAElegirPapel() = runTest {
         val vm = vm()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
         vm.elegirRol(RolMigracion.RECEPTOR)

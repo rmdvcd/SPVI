@@ -80,4 +80,6 @@ class ConfRepo(inicial: ConfiguracionInicial = ConfiguracionInicial()) : Configu
     override val estado = state
     override suspend fun confirmar(paso: PasoConfiguracion) { state.value = state.value.copy(confirmados = state.value.confirmados + paso) }
     override suspend fun marcarCamaraSolicitada() { state.value = state.value.copy(camaraSolicitada = true) }
+    // 0.31.0 (P9)
+    override suspend fun marcarPermisosInicialesPedidos() { state.value = state.value.copy(permisosInicialesPedidos = true) }
 }
