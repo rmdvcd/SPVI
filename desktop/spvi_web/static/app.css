@@ -243,7 +243,7 @@ details.bloque .detalle { padding: 0 var(--md) var(--md) calc(var(--md) + 40px);
 /* Pestañas y opciones (resaltado invertido, como SpviTabs). */
 .pestanas { display: flex; flex-wrap: wrap; gap: 4px; background: var(--surface); padding: 4px; border-radius: var(--r-md); box-shadow: var(--shadow); }
 .pestanas button { min-height: 48px; padding: 0 var(--md); border: 0; border-radius: var(--r-sm); background: transparent; cursor: pointer;
-  color: var(--on-surface-variant); font-weight: 500; flex: 1 1 auto; }
+  color: var(--on-surface-variant); font-weight: 600; flex: 1 1 auto; }
 .pestanas button[aria-selected="true"] { background: var(--primary); color: var(--on-primary); }
 .chips { display: flex; flex-wrap: wrap; gap: var(--xs); }
 .chip { min-height: 32px; padding: 6px var(--md); border-radius: var(--r-sm); border: 1px solid var(--outline); background: transparent; cursor: pointer;

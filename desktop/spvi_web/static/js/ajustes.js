@@ -24,7 +24,7 @@ SPVI.views.ajustes = async function (root, sub) {
       h('div', {class: 'lista'}, secciones.map(s => itemLista({title: s.titulo, subtitle: s.detalle, lead: leadIcon(s.icono), onclick: () => SPVI.go('ajustes/' + s.id), trailing: icon('Siguiente')}))));
     if (app.controles.length) root.append(h('div', {class: 'fila'},
       app.controles.includes('restart') ? button('Reiniciar SPVI', reiniciar, {kind: 'borde', iconName: 'Reiniciar'}) : null,
-      app.controles.includes('quit') ? button('Salir de SPVI', salir, {kind: 'borde', iconName: 'Apagar'}) : null));
+      app.controles.includes('quit') ? button('Salir de SPVI', salir, {kind: 'texto', iconName: 'Apagar'}) : null));
     return;
   }
   root.append(h('div', {class: 'encabezado'}, iconButton('AtrasPagina', 'Volver a Ajustes', () => SPVI.go('ajustes')), h('h1', {text: seccion.titulo})));
@@ -202,7 +202,7 @@ SPVI.views.ajustes = async function (root, sub) {
       h('p', {class: 'secundario', text: 'Si no se inicia con Windows, abre SPVI desde su acceso directo. El icono junto al reloj da acceso a la pantalla principal, las apps conectadas y el tiempo en línea.'}));
     if (app.controles.length) root.append(h('div', {class: 'fila'},
       app.controles.includes('restart') ? button('Reiniciar SPVI', reiniciar, {kind: 'borde', iconName: 'Reiniciar'}) : null,
-      app.controles.includes('quit') ? button('Salir de SPVI', salir, {kind: 'borde', iconName: 'Apagar'}) : null));
+      app.controles.includes('quit') ? button('Salir de SPVI', salir, {kind: 'texto', iconName: 'Apagar'}) : null));
   }
 
   if (sub === 'tema') {
@@ -276,11 +276,16 @@ function vistaLicencia(root, catalogo, licencia) {
     ], onClose: () => URL.revokeObjectURL(url)});
   }); });
 
-  // Paso 2: activación
-  const codigo = h('input', {class: 'codigo', name: 'codigo', inputmode: 'numeric', autocomplete: 'off', placeholder: '0000-0000-0000-0000', 'aria-label': 'Código de licencia', maxlength: 19, required: true});
+  // Paso 2: activación (código de 16 caracteres o clave maestra de desarrollo)
+  const codigo = h('input', {class: 'codigo', name: 'codigo', inputmode: 'text', autocomplete: 'off', placeholder: '0000-0000-0000-0000', 'aria-label': 'Código de licencia', maxlength: 19, required: true, spellcheck: false});
   codigo.addEventListener('input', () => {
-    const digitos = codigo.value.replace(/\D/g, '').slice(0, 16);
-    codigo.value = digitos.replace(/(\d{4})(?=\d)/g, '$1-');
+    const texto = codigo.value.toUpperCase().slice(0, 19);
+    if (/[A-Z]/.test(texto)) {
+      codigo.value = texto.replace(/[^0-9A-Z\s-]/g, '');  // maestra: letras, números y guiones
+    } else {
+      const digitos = texto.replace(/\D/g, '').slice(0, 16);
+      codigo.value = digitos.replace(/(\d{4})(?=\d)/g, '$1-');
+    }
   });
   const activar = h('form', {class: 'card form'},
     h('div', {class: 'cabecera'}, h('span', {class: 'lead paso', text: '2'}), h('h3', {text: 'Activar licencia'})),
@@ -288,7 +293,7 @@ function vistaLicencia(root, catalogo, licencia) {
     h('label', {class: 'campo'}, h('span', {text: 'Código de licencia'}), codigo),
     h('div', {class: 'fila fin'}, button('Activar', null, {type: 'submit', iconName: 'Licencia'})));
   activar.addEventListener('submit', event => { event.preventDefault(); busy(activar.querySelector('button[type=submit]'), async () => {
-    if (codigo.value.replace(/\D/g, '').length !== 16) throw new Error('El código tiene 16 dígitos.');
+    if (!/^[0-9A-Z]{16}$/.test(codigo.value.replace(/[\s-]/g, '').toUpperCase())) throw new Error('El código tiene 16 caracteres.');
     await api('/api/license/activate', {code: codigo.value}); snack('Licencia activada.'); await SPVI.changed();
   }); });
   root.append(h('div', {class: 'dos'}, form, activar));

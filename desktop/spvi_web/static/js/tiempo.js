@@ -27,10 +27,10 @@ SPVI.views.tiempo = async function (root) {
   const tic = () => {
     const ahora = Date.now() + desfase;
     relojApp.textContent = duracion(ahora - datos.app.since);
-    detalleApp.textContent = 'Abierto desde ' + fechaHora(datos.app.since);
+    detalleApp.textContent = duracionCorta(ahora - datos.app.since) + ' · Abierto desde ' + fechaHora(datos.app.since);
     if (datos.lan.running && datos.lan.since) {
       relojRed.textContent = duracion(ahora - datos.lan.since); estadoRed.textContent = 'Activa'; estadoRed.className = 'etiqueta ok';
-      detalleRed.textContent = 'Activa desde ' + fechaHora(datos.lan.since) + (datos.lan.address ? ' en ' + datos.lan.address.join(':') : '');
+      detalleRed.textContent = duracionCorta(ahora - datos.lan.since) + ' · Activa desde ' + fechaHora(datos.lan.since) + (datos.lan.address ? ' en ' + datos.lan.address.join(':') : '');
     } else {
       relojRed.textContent = '--:--:--'; estadoRed.textContent = 'Detenida'; estadoRed.className = 'etiqueta';
       detalleRed.textContent = 'Inicia la red local en Apps vinculadas para que las secundarias sincronicen.';

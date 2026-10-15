@@ -59,6 +59,14 @@ function duracion(ms) {
   if (d) return d + ' d ' + hh + ' h ' + pad(mm) + ' min';
   return pad(hh) + ':' + pad(mm) + ':' + pad(ss);
 }
+/** Duración en formato humano («6 min», «2 h 5 min», «3 días»), sin segundos. */
+function duracionCorta(ms) {
+  ms = Math.max(0, ms || 0);
+  const m = Math.floor(ms / 60000), h = Math.floor(m / 60), d = Math.floor(h / 24);
+  if (d) return d + (d === 1 ? ' día' : ' días');
+  if (h) return h + ' h ' + (m % 60) + ' min';
+  return Math.max(1, m) + ' min';
+}
 function hace(ms) {
   if (!ms) return 'Nunca';
   const s = Math.max(0, Math.round((Date.now() - ms) / 1000));

@@ -4,6 +4,33 @@ Registro **histórico** de lo que se implementó en cada fase y de las suposicio
 
 > **Prevalece la documentación actual.** Si algo de este historial contradice a [README.md](../README.md), [SECURITY.md](../SECURITY.md), [FORMATOS.md](../FORMATOS.md), [LICENSE_CLIENT.md](../LICENSE_CLIENT.md) o [UI_UX_IX.md](../UI_UX_IX.md), vale lo que dicen esos documentos. Las fases posteriores sustituyen a las anteriores.
 
+## 2026-10-15 — Web 0.31.0: siete mejoras UI de la revisión visual
+
+Capturas de las 10 secciones y correcciones solo en `desktop/spvi_web/static` (sin API ni modelo):
+
+1. La lista deja 80 px bajo el FAB (`app.css`, `.vista:has(.fab)`): «Nuevo servicio» ya no tapa el precio de la última fila.
+2. Banner de licencia global: `SPVI.render` (`core.js`) lo antepone en las 10 secciones; se quitan las llamadas por vista (`inicio.js`, `venta.js`, `vinculadas.js`).
+3. Registros: buscador y chips de período en filas separadas (`registros.js`).
+4. Interruptor «Costos» en Inventario (`inventario.js`, flag `spvi-ver-costos` en `localStorage`): oculta los costos sin desalinear la fila.
+5. Pestañas inactivas con más peso (`font-weight: 600`).
+6. «Salir de SPVI» pasa a botón de texto (`kind: 'texto'`) en Ajustes; «Reiniciar» conserva el borde.
+7. `duracionCorta()` (`core.js`: «6 min», «2 h 5 min», «3 días») junto a los cronómetros de Tiempo en línea.
+
+**Pruebas:** 131 pruebas Python OK (1 omitida) y las 10 capturas Playwright revisadas.
+
+## 2026-10-14 — Compilación: revierte subidas de Dependabot incompatibles con AGP 8.7.3
+
+`gradle/libs.versions.toml`: el proyecto no compilaba (`:app:assembleDebug`) por cuatro subidas
+automáticas incompatibles con la pila documentada en `AGENTS.md` (AGP 8.7.3, compileSdk 35,
+Kotlin 2.0.21). Se devuelven a sus valores buenos conocidos, sin cambios de comportamiento:
+`kotlin` 2.4.21 → 2.0.21 (no existe KSP para Kotlin 2.4; el último es 2.3.12), `hilt` 2.60.1 → 2.52
+(el plugin 2.60 exige AGP 9), `navigation` 2.10.2 → 2.8.5 (arrastraba AndroidX que exigen
+compileSdk 36/37 y AGP 8.9.1/9.1) y `coroutines` 1.11.0 → 1.9.0 (su stdlib trae metadatos 2.2,
+ilegibles para el compilador 2.0).
+
+**Pruebas:** `assembleDebug` OK con JDK 17; APK `arm64` instalado en el teléfono (23021RAAEG,
+API 35) y `MainActivity` en primer plano. No se corrió `spviTests`.
+
 ## 2026-10-14 — Escritorio 0.31.0: las cinco mejoras del informe de feedback móvil
 
 Cierra [desktop/INFORME_FEEDBACK_MOVIL.md](../desktop/INFORME_FEEDBACK_MOVIL.md): se implementan las cinco
