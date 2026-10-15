@@ -211,6 +211,8 @@ details.bloque .detalle { padding: 0 var(--md) var(--md) calc(var(--md) + 40px);
   background: var(--primary-container); color: var(--on-primary-container); box-shadow: var(--shadow-high); border: 0; cursor: pointer;
   display: inline-flex; align-items: center; gap: var(--md); font-weight: 500; z-index: 20; }
 .fab.extendida { padding-right: var(--lg); }
+/* La lista deja hueco para que el FAB no tape su última fila. */
+.vista:has(.fab) .lista:last-of-type { margin-bottom: 80px; }
 
 /* Campos (SpviTextField con contorno). */
 .campo { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
