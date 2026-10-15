@@ -14,11 +14,14 @@ import cu.spvi.domain.model.Perfil
 import cu.spvi.domain.model.Periodo
 import cu.spvi.domain.model.Porcion
 import cu.spvi.domain.model.PuntoSerie
+import cu.spvi.domain.model.ResumenGeneral
 import cu.spvi.domain.model.Serie
 import cu.spvi.domain.model.TarjetaBancaria
 import cu.spvi.domain.model.Telefono
 import cu.spvi.domain.model.TipoAlerta
+import cu.spvi.domain.model.Top3
 import cu.spvi.domain.model.TopItem
+import cu.spvi.domain.model.TopPersona
 import cu.spvi.domain.model.Turno
 import cu.spvi.licencia.LicenseState
 import cu.spvi.licencia.contract.TipoLicencia
@@ -141,6 +144,28 @@ class InicioLogicTest {
         assertEquals("20.00 CUP", valorTop(TipoTop.RENTABILIDAD, t))
         assertEquals("1 unidad vendida", subtituloTop(TipoTop.RENTABILIDAD, t))
         assertEquals("12 unidades", valorTop(TipoTop.LENTO, t.copy(unidades = 12)))
+    }
+
+    @Test fun resumenesDeLosAcordeones() {
+        val g = GraficosPeriodo(
+            Periodo.Rango(ahora, ahora.plusSeconds(7200)),
+            Serie(Granularidad.HORA, listOf(PuntoSerie(ahora, Cup.ofPesos(100), Cup.ofPesos(60)), PuntoSerie(ahora.plusSeconds(3600), Cup.ofPesos(300), Cup.ofPesos(140)))),
+        )
+        assertEquals("400.00 CUP", resumenVentas(g))
+        assertEquals("200.00 CUP", resumenGanancia(g))
+        val r = ResumenGeneral(
+            categorias = listOf(Porcion("Abarrotes", 1000, 0.6), Porcion("Otros", 500, 0.4)),
+            metodosPago = listOf(Porcion("Efectivo", 300, 0.75), Porcion("Transferencia", 100, 0.25)),
+            top3 = Top3(listOf(TopItem(1, "Pan", 12, Cup.ofPesos(50), Cup.ofPesos(20))), emptyList(), emptyList()),
+            dias = 7,
+        )
+        assertEquals("2 categorías", resumenInventario(r))
+        assertEquals("Efectivo", resumenMetodos(r))
+        assertEquals("Pan · 12 unidades", resumenTop(TipoTop.MAS_VENDIDO, r.top3.masVendidos))
+        assertNull(resumenTop(TipoTop.LENTO, r.top3.lentoMovimiento))
+        val p = listOf(TopPersona("Ana", Cup.ofPesos(500), 3))
+        assertEquals("Ana · 500.00 CUP", resumenTopPersonas(p))
+        assertNull(resumenTopPersonas(emptyList()))
     }
 
     /** 0.27.0 (T14): reparto equitativo de las alertas por filas. */

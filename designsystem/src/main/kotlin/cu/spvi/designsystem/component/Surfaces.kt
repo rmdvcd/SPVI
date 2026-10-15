@@ -134,6 +134,7 @@ fun SpviAccordionCard(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
     tone: CardTone = CardTone.Default,
+    subtitle: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val giro by animateFloatAsState(if (expanded) 180f else 0f, SpviMotion.tween(SpviMotion.SHORT), label = "acordeon")
@@ -150,12 +151,15 @@ fun SpviAccordionCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Spacer(Modifier.size(SpviSize.icon))
-            Text(
-                title,
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.weight(1f),
-            )
+            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                subtitle?.let { SpviSecondaryText(it, modifier = Modifier.fillMaxWidth(), maxLines = 1, textAlign = TextAlign.Center) }
+            }
             Icon(SpviIcons.Desplegar, contentDescription = null, modifier = Modifier.size(SpviSize.icon).rotate(giro))
         }
         AnimatedVisibility(

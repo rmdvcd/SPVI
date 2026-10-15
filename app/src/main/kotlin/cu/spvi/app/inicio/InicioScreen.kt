@@ -695,7 +695,7 @@ private fun LazyListScope.graficosPeriodo(
 @Composable
 private fun VentasCard(g: GraficosPeriodo, opcion: OpcionPeriodo, zona: ZoneId, ac: AcordeonesInicio) {
     val puntos = g.serie.puntos
-    CardGrafico("Ventas", InicioTags.VENTAS, ac) {
+    CardGrafico("Ventas", InicioTags.VENTAS, ac, subtitle = resumenVentas(g)) {
         // 0.28.0: la hora o fecha del turno («Turno actual, desde las 08:30») va en seminegrita.
         val t = g.turno
         Subtitulo(
@@ -719,7 +719,7 @@ private fun VentasCard(g: GraficosPeriodo, opcion: OpcionPeriodo, zona: ZoneId, 
 private fun GananciaCard(g: GraficosPeriodo, ac: AcordeonesInicio) {
     val colores = SpviTheme.colors.chart
     val puntos = g.serie.puntos
-    CardGrafico("Ganancia Neta", InicioTags.GANANCIA, ac) {
+    CardGrafico("Ganancia Neta", InicioTags.GANANCIA, ac, subtitle = resumenGanancia(g)) {
         // P24/P28: dos columnas del mismo ancho (Costo y Ganancia); el importe se reduce si no cabe, nunca se parte.
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
             // P28: sin «Venta»: es el mismo total que muestra la tarjeta Ventas justo encima.
@@ -756,7 +756,7 @@ private fun LazyListScope.resumenGeneral(estado: EstadoCarga<ResumenGeneral>, on
 
 private fun LazyListScope.resumenCon(r: ResumenGeneral, ac: AcordeonesInicio) {
     item(key = "inventario") {
-        CardGrafico("Inventario", InicioTags.INVENTARIO, ac) {
+        CardGrafico("Inventario", InicioTags.INVENTARIO, ac, subtitle = resumenInventario(r)) {
             if (r.categorias.isEmpty()) Vacio(TextosInicio.SIN_INVENTARIO) else {
                 // 0.27.0 (N1): valores en milésimas (productos e insumos, cada uno en su medida) → números sin unidad.
                 val slices = porcionesUi(r.categorias) { cantidadInventario(it) }
@@ -766,7 +766,7 @@ private fun LazyListScope.resumenCon(r: ResumenGeneral, ac: AcordeonesInicio) {
         }
     }
     item(key = "metodos") {
-        CardGrafico("Métodos de pago", InicioTags.METODOS, ac) {
+        CardGrafico("Métodos de pago", InicioTags.METODOS, ac, subtitle = resumenMetodos(r)) {
             Subtitulo("Últimos ${r.dias} días")
             if (r.metodosPago.isEmpty()) Vacio(TextosInicio.SIN_PAGOS) else {
                 val slices = porcionesUi(r.metodosPago) { Money.format(Cup(it)) }
@@ -789,7 +789,8 @@ private fun LazyListScope.top(tipo: TipoTop, items: List<TopItem>, dias: Int, ac
     if (items.isEmpty()) return
     item(key = "top_${tipo.name}") {
         SpviAccordionCard(
-            title = tipo.titulo, expanded = ac.abierto(InicioTags.top(tipo)), onToggle = { ac.alternar(InicioTags.top(tipo)) },
+            title = tipo.titulo, subtitle = resumenTop(tipo, items),
+            expanded = ac.abierto(InicioTags.top(tipo)), onToggle = { ac.alternar(InicioTags.top(tipo)) },
             modifier = Modifier.testTag(InicioTags.top(tipo)).then(spviAnimateItem()),
         ) {
             Subtitulo("Últimos $dias días")
@@ -812,7 +813,8 @@ private fun LazyListScope.topPersonas(tipo: TipoTop, items: List<TopPersona>, di
     if (items.isEmpty()) return
     item(key = "top_${tipo.name}") {
         SpviAccordionCard(
-            title = tipo.titulo, expanded = ac.abierto(InicioTags.top(tipo)), onToggle = { ac.alternar(InicioTags.top(tipo)) },
+            title = tipo.titulo, subtitle = resumenTopPersonas(items),
+            expanded = ac.abierto(InicioTags.top(tipo)), onToggle = { ac.alternar(InicioTags.top(tipo)) },
             modifier = Modifier.testTag(InicioTags.top(tipo)).then(spviAnimateItem()),
         ) {
             Subtitulo("Últimos $dias días")
@@ -832,9 +834,9 @@ private fun LazyListScope.topPersonas(tipo: TipoTop, items: List<TopPersona>, di
 // ---------------- Piezas comunes ----------------
 
 @Composable
-private fun CardGrafico(titulo: String, tag: String, ac: AcordeonesInicio, content: @Composable () -> Unit) {
+private fun CardGrafico(titulo: String, tag: String, ac: AcordeonesInicio, subtitle: String? = null, content: @Composable () -> Unit) {
     // Acordeón cerrado de inicio; la clave es el tag (único por tarjeta).
-    SpviAccordionCard(title = titulo, expanded = ac.abierto(tag), onToggle = { ac.alternar(tag) }, modifier = Modifier.testTag(tag)) { content() }
+    SpviAccordionCard(title = titulo, subtitle = subtitle, expanded = ac.abierto(tag), onToggle = { ac.alternar(tag) }, modifier = Modifier.testTag(tag)) { content() }
 }
 
 @Composable
