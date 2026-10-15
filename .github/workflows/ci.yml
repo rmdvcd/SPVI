@@ -64,7 +64,7 @@ jobs:
         run: python3 tools/verificacion/resumen_ok.py tests
       - name: Informes de test (solo si falla)
         if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: informes-tests
           path: "**/build/reports/tests/**"
@@ -101,7 +101,7 @@ jobs:
         run: python3 tools/verificacion/resumen_ok.py lint
       - name: Informe de lint
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: informe-lint
           path: "app/build/reports/lint-results-*"
@@ -169,7 +169,7 @@ jobs:
         run: python3 tools/verificacion/resumen_ok.py apk
       - name: APK debug y APK release sin firmar
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: apk
           path: |
@@ -271,7 +271,7 @@ jobs:
         run: bash tools/verificacion/resumen_fallos.sh /tmp/salida.log
       - name: Informes de test (solo si falla)
         if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: informes-instrumentados
           path: "**/build/reports/androidTests/**"
