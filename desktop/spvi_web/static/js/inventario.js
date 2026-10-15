@@ -43,8 +43,9 @@ SPVI.bloqueFoto = function (kind, id) {
 };
 
 /** Costo y precio de venta a la derecha de la fila, diferenciados (el costo en segundo plano). */
+const verCostos = () => localStorage.getItem('spvi-ver-costos') !== '0';
 function precios(costoCent, ventaCent) {
-  return h('span', {class: 'valores'}, h('span', {class: 'secundario', text: 'Costo ' + cup(costoCent)}),
+  return h('span', {class: 'valores'}, verCostos() ? h('span', {class: 'secundario', text: 'Costo ' + cup(costoCent)}) : null,
     ventaCent === null || ventaCent === undefined ? null : h('span', {class: 'dato', text: cup(ventaCent)}));
 }
 
@@ -203,6 +204,10 @@ SPVI.views.inventario = async function (root, sub, params) {
     const nuevo = {productos: ['Nuevo producto', () => editarProducto()], elaborados: ['Nuevo elaborado', () => editarElaborado()], insumos: ['Nuevo insumo', () => editarInsumo()]}[tab];
     root.append(h('button', {type: 'button', class: 'fab extendida', onclick: nuevo[1]}, icon('Agregar'), nuevo[0]));
   }
-  root.append(h('div', {class: 'fila'}, buscador('Buscar en ' + {productos: 'productos', elaborados: 'elaborados', insumos: 'insumos', archivados: 'archivados'}[tab], event => { texto = event.target.value; pintar(); })), lista);
+  root.append(h('div', {class: 'fila'}, buscador('Buscar en ' + {productos: 'productos', elaborados: 'elaborados', insumos: 'insumos', archivados: 'archivados'}[tab], event => { texto = event.target.value; pintar(); }),
+    h('button', {type: 'button', class: 'chip', 'aria-pressed': String(verCostos()), title: 'Mostrar u ocultar los costos', onclick: event => {
+      const visible = !verCostos(); localStorage.setItem('spvi-ver-costos', visible ? '1' : '0');
+      event.currentTarget.setAttribute('aria-pressed', String(visible)); pintar();
+    }}, 'Costos')), lista);
   pintar();
 };
