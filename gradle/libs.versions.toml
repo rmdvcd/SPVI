@@ -5,7 +5,7 @@ kotlin = "2.4.21"
 ksp = "2.0.21-1.0.28"
 # --- DI ---
 hilt = "2.60.1"
-hiltNavigationCompose = "1.2.0"
+hiltNavigationCompose = "1.4.0"
 # --- AndroidX / Compose ---
 composeBom = "2024.12.01"
 coreKtx = "1.15.0"
