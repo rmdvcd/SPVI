@@ -38,7 +38,7 @@ androidxTestCore = "1.6.1"
 androidxTestRunner = "1.6.2"
 androidxTestExtJunit = "1.2.1"
 # P23 — capturas de pantalla en la JVM (solo tests; ver CAPTURAS.md)
-roborazzi = "1.38.0"
+roborazzi = "1.76.0"
 robolectric = "4.14.1"
 # Android 15 (SDK 35) preinstrumentado que usa Robolectric 4.14.1; Gradle lo descarga y Robolectric corre sin red.
 robolectricAndroidAll = "15-robolectric-12650502-i7"
