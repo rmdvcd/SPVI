@@ -40,8 +40,8 @@ Con las imágenes ya grabadas, para detectar cambios visuales:
 |---|---|---|
 | Plugin `io.github.takahirom.roborazzi` 1.38.0 | `build.gradle.kts` (apply false) y `app/build.gradle.kts` | Añade las tareas `record/compare/verifyRoborazziDebug`. No toca el APK. |
 | `testImplementation`: robolectric, roborazzi, roborazzi-compose, ui-test-junit4, androidx.test.ext.junit | `app/build.gradle.kts` | Solo tests: **no entran en el APK** (restricción P18 «sin dependencias nuevas sin justificar»: son de test y la justificación es esta tarea). |
-| `unitTests.isIncludeAndroidResources = true` | `app/build.gradle.kts` | Robolectric necesita los recursos (logo, iconos vectoriales). No afecta a los tests JVM existentes. |
-| Configuración `robolectricSdk` + tarea `prepararRobolectricSdk` | `app/build.gradle.kts` | Gradle descarga `android-all-instrumented:15-robolectric-12650502-i7` (SDK 35) y Robolectric se ejecuta con `robolectric.offline=true`. Así se mantiene la regla del Prompt 15: **los tests no salen a internet** (el proxy inexistente de los tests sigue activo). |
+| `unitTests.isIncludeAndroidResources = true` | `app/build.gradle.kts` | Proporciona a Robolectric los recursos Android que necesitan las capturas y los tests JVM de `:app`; no entra en el APK. |
+| Configuración `robolectricSdk` + tarea `prepararRobolectricSdk` | `app/build.gradle.kts` | Gradle resuelve `android-all-instrumented:15-robolectric-12650502-i7` (SDK 35), lo copia a `app/build/robolectric-sdk` y configura ese directorio con `robolectric.offline=true` para todos los tests JVM de `:app`. La descarga ocurre durante la resolución de Gradle, no desde el proceso de tests; se mantiene la regla de **tests sin red**. |
 | Exclusión `**/capturas/**` | `app/build.gradle.kts` | En `test`, `testDebugUnitTest`, `spviTests` y `spviCheck` las capturas **no se ejecutan** (son lentas y no validan lógica). Solo corren cuando el nombre de la tarea pedida contiene «Roborazzi». |
 | `@Config(application = Application::class)` | cada clase | No arranca `SpviApplication` (Hilt, SQLCipher, Keystore): las pantallas se pintan sin datos reales ni claves. |
 | `captureScreenRoboImage` | `Capturas.kt` | Captura toda la pantalla, así los diálogos y hojas (que viven en su propia ventana) también salen. |
@@ -96,8 +96,10 @@ Límites del arnés:
 
 `tools/capturas/` genera las maquetas HTML de Apps vinculadas (0.19.x) con los iconos de `SpviIcons.kt` (`iconos.json`), los colores de `ColorTokens.kt`, el logo y la fuente de marca del módulo `designsystem`, y los textos de `VinculacionLogic`, `BloqueoSecundaria`, `AjustesScreen` y `PlanAviso`. Son maquetas, no capturas: si cambian esos textos o la disposición, hay que actualizar `generar.py` a mano.
 
+Las herramientas Python auxiliares comparten `tools/requirements.txt` (qrcode, PyMuPDF, Pillow y cryptography); usa Python 3.10 o posterior.
+
 ```bash
-pip install qrcode pymupdf
+python3 -m pip install -r tools/requirements.txt
 npm i playwright && npx playwright install chromium   # y fonts-roboto en el sistema
 python3 tools/capturas/generar.py /tmp/caps 25         # 13 páginas, numeradas desde el 25
 node tools/capturas/render.js /tmp/caps                # pNN.pdf (842.88 × 595.92 pt)

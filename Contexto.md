@@ -1,6 +1,6 @@
 # Contexto de SPVI para la IA de OpenCode
 
-Este documento resume todo lo que necesitas para trabajar en SPVI sin leer el historial. Las reglas obligatorias están en `AGENTS.md`. Lo que falta por hacer está en `Pendiente.md` y cómo probarlo, en `Pruebas.md`. El PDF `SPVI_0.26.0_capturas_y_exportaciones.pdf` muestra cómo debe verse cada pantalla y cada exportación de la 0.26.0; lo nuevo de la 0.27.0 está en `README.md` (Novedades) y `docs/PROMPT_0.27.0.md`.
+Este documento resume el proyecto mantenido en este repositorio: la app Android nativa. Las reglas obligatorias están en `AGENTS.md`; lo pendiente está en `Pendiente.md`, y el orden de pruebas, en `Pruebas.md`. El estado medido de las verificaciones está en `docs/VERIFICACION.md`. Los documentos de versiones anteriores se conservan como referencia histórica.
 
 > **Idioma:** responde siempre en español. Todo el texto de la interfaz, los comentarios y la documentación también están en español.
 
@@ -15,7 +15,7 @@ SPVI (Sistema de Punto de Venta e Inventario) es una app Android nativa para peq
 | Versión | **0.30.0** (`versionCode 51`) |
 | Paquete | `cu.spvi.app` (debug: `cu.spvi.app.debug`) |
 | SDK | minSdk 26 · targetSdk 35 · compileSdk 35 |
-| Base de datos | Room **v10** cifrada con SQLCipher |
+| Base de datos | Room **v12** cifrada con SQLCipher |
 | Respaldo | `.spvi` v4 cifrado, contraseña opcional (lee también v3); `RespaldoDto` v4 (importa también v3) |
 | Protocolo de la red local | `VERSION_PROTOCOLO = 1` (los campos nuevos son opcionales) |
 | Licencias | Offline, emitidas por la app GL del desarrollador (contrato GL v1) |
@@ -28,10 +28,10 @@ SPVI (Sistema de Punto de Venta e Inventario) es una app Android nativa para peq
 
 | Área | Qué hace |
 |---|---|
-| **Inicio** | Banner de licencia, turno (abrir/cerrar), **Nueva venta** y **Escanear** centrados (solo icono, con tooltip), alertas (stock e insumos bajos o críticos, caducidad), gráficos sin rejilla y top 3. En la principal: avisos de solicitudes de cierre, de fondo pedido y de «Actualiza la app de X» |
+| **Inicio** | Estado de licencia y turno; apertura/cierre, **Nueva venta** y movimiento de caja cuando corresponde; alertas de inventario y accesos a Pago electrónico/Precios. La principal muestra además gráficos y resúmenes del negocio, avisos de vinculación/actualización y recordatorio de respaldo |
 | **Venta** | Solo con turno abierto. **Efectivo**, o **Transferencia** con QR de Transfermóvil (el total se muestra debajo) y nº de transacción; el SMS de PAGOxMOVIL se puede pegar/compartir o capturar opcionalmente desde una notificación con permiso manual. **Cliente fijo** (0.27.0): se guarda por carné y se sugiere al escribir el nombre (hasta 3). Un Elaborado descuenta sus insumos y muestra «Alcanza para N» |
 | **Caja (arqueo)** | Fondo obligatorio al abrir, entradas y salidas con motivo, esperado = fondo + efectivo + entradas − salidas. Al cerrar se cuenta, con «Cuadra» en un toque |
-| **Inventario** | Productos, Elaborados e Insumos. Precio opcional en los insumos, en unidades enteras. Buscador, filtros, escáner (CameraX + ML Kit) y exportar a PDF, Excel, Imagen y Tarjetas |
+| **Inventario** | Productos, Elaborados e Insumos. Precio opcional en los insumos, en unidades enteras. Buscador, filtros y exportación a PDF, Excel, imágenes y tarjetas |
 | **Servicios** | Tipo libre, importe, foto y descripción. Pueden gastar insumos y tienen su pestaña en Registros |
 | **Registros** | Ventas, Servicios, Transferencias, Movimientos, **Clientes** (0.27.0) y Turnos, ordenados por fecha, con filtros. **Anular o modificar** una venta: solo la principal y solo con el turno abierto |
 | **Ajustes** | Perfil (nombre, apellidos y carné), Licencia, **Acceso con clave** (0.27.0, opcional: huella o PIN del teléfono al abrir y tras ≥ 10 min fuera), Pago electrónico (teléfonos y tarjetas), Precios, Avisos, Permisos, Respaldo, Migrar (paso de datos por QR: Emisor/Receptor), Actualizar, Ayuda y Soporte |
@@ -52,7 +52,7 @@ Formato exacto de cada archivo: `FORMATOS.md`.
 
 ## 2. Arquitectura
 
-**Pila:** Kotlin 2.0.21 · AGP 8.7.3 · Gradle 8.11.1 (wrapper) · JDK 17 · Compose BOM 2024.12.01 (Material 3) · Hilt 2.52 (KSP) · Room 2.6.1 + SQLCipher 4.6.1 · DataStore · OkHttp 4.12 + kotlinx.serialization · fastexcel · CameraX + ML Kit · ZXing · Coil · Robolectric 4.14.1 + Roborazzi 1.38.0.
+**Pila:** Kotlin 2.0.21 · AGP 8.7.3 · Gradle 8.11.1 (wrapper) · JDK 17 · Compose BOM 2024.12.01 (Material 3) · Hilt 2.52 (KSP) · Room 2.6.1 + SQLCipher 4.6.1 · DataStore · OkHttp 4.12 + kotlinx.serialization · fastexcel · CameraX + ML Kit (QR de vinculación) · ZXing · Coil · Robolectric 4.14.1 + Roborazzi 1.38.0.
 
 | Módulo | Contenido | Depende de |
 |---|---|---|
@@ -125,7 +125,7 @@ Formato exacto de cada archivo: `FORMATOS.md`.
 
 ### Respaldo y migración
 
-- **Respaldo:** solo el archivo `.spvi`, siempre cifrado; desde la 0.27.0 la contraseña es opcional y viene apagada (sin ella, cualquiera con SPVI lo abre). Lleva los clientes fijos (sin PDF). Un recordatorio mensual, solo en la principal.
+- **Respaldo:** solo el archivo `.spvi`, siempre cifrado; la contraseña es opcional pero viene activada por defecto desde la corrección S-01 (10/2026). Sin ella, cualquiera que obtenga el archivo puede abrirlo con SPVI. Lleva los clientes fijos (sin PDF). Un recordatorio mensual, solo en la principal.
 - **Migrar:** asistente de 4 pasos + paso de datos por QR entre los dos teléfonos (Emisor/Receptor).
 
 ---
@@ -156,19 +156,11 @@ Formato exacto de cada archivo: `FORMATOS.md`.
 
 ## 5. Estado de la verificación
 
-- **`tools/verificacion/verificar.sh`** (sin Gradle ni Android SDK; compila con kotlinc, KSP de Room y Hilt, y Robolectric): **«Todo correcto»**.
-  - **850 tests JVM** (0.27.1, Gradle real): core 19, licencia 99, domain 242, data 96, designsystem 27, app 367.
-  - **41 tests de Room** en la JVM, con SQLite real.
-  - El esquema `10.json` coincide con `MIGRACION_9_10`.
-  - Los permisos del manifiesto de `:app` están dentro de la lista autorizada (`USE_BIOMETRIC`/`USE_FINGERPRINT` llegan al fusionar `androidx.biometric`: solo los ve `spviPermisos` con Gradle).
-- **Lo que nunca se ha ejecutado:**
-  - Gradle real, lint y R8 (release);
-  - las capturas Roborazzi;
-  - el APK en un teléfono y la prueba con dos teléfonos;
-  - `BiometricPrompt`, la cámara con `FileProvider` y las animaciones de ventanas (0.27.0);
-  - MediaStore (registro de la prueba), la instalación de actualizaciones y la descarga desde GitHub.
+La fuente de verdad es [docs/VERIFICACION.md](docs/VERIFICACION.md). El último CI observado sobre `main` (run **38802995010**, commit `84afc87`) detectó que dos tests de `ProcesoActualizarTest` no pudieron obtener el SDK instrumentado de Robolectric por la red bloqueada del proceso de tests. Lint, permisos del manifiesto y API mínima pasaron; no se debe declarar ese CI como verde.
 
-  Eso es lo que toca ahora; ver `Pruebas.md`.
+En esta rama se ha corregido la configuración para que todos los tests de `:app` usen el SDK de Robolectric resuelto por Gradle en modo offline. La corrección aún requiere una corrida de CI. En este entorno no hay JDK/Android SDK, por lo que no se puede ejecutar Gradle localmente.
+
+Siguen pendientes la comprobación en un teléfono real, la migración entre dos teléfonos, las capturas Roborazzi y la firma de release; consulta `Pendiente.md`.
 
 ---
 
@@ -185,7 +177,6 @@ Formato exacto de cada archivo: `FORMATOS.md`.
 ./gradlew :domain:test --tests "cu.spvi.domain.EstadoPruebaTest"   # un solo test
 ```
 
-Comandos de OpenCode ya preparados en `.opencode/commands/`: `/compilar`, `/probar`, `/capturas`, `/release` y `/retoque`.
 
 ---
 
@@ -237,16 +228,11 @@ Comandos de OpenCode ya preparados en `.opencode/commands/`: `/compilar`, `/prob
 | `DESIGN_SYSTEM.md` / `UI_UX_IX.md` | Componentes, colores y tipografía |
 | `MANUAL_USUARIO.md` | Manual del usuario final |
 | `docs/VINCULACION.md` | Protocolo principal ⇄ secundaria |
-| `docs/PROMPT_0.27.0.md` | Especificación de la versión actual (T1–T14); el resto, en la entrada 0.27.0 del historial |
+| `docs/PROMPT_0.27.0.md` | Especificación histórica de la versión 0.27.0 (T1–T14) |
 | `docs/PLAN_0.26.md` / `docs/PLAN_ANTIREINSTALACION.md` | Decisiones de la 0.26.0 |
 | `docs/HISTORIAL_DESARROLLO.md` | Registro de decisiones de cada versión |
 | `docs/OPENCODE_DESKTOP.md` | Guía paso a paso con OpenCode Desktop |
 
-## Actualización de escritorio (2026-10-09, implementación sin ejecutar)
+## Alcance del repositorio (2026-10-15)
 
-`desktop/` es la principal web Python independiente, no una sustitución del móvil. Incluye servidor
-TCP principal, licencias GL, respaldos compartidos, carrito/cotización/correcciones, insumos, clientes,
-metadatos/fotos e idempotencia HTTP. El alcance actual está en `desktop/README.md` y la guía de pruebas
-para la PC del propietario, en `desktop/VERIFICACION_PC.md`. Los resultados históricos de 45 pruebas
-no validan esta ampliación: no se ejecutaron pruebas, validadores, compilaciones ni empaquetado en
-esta fase. `Pendiente.md` y `Pruebas.md` distinguen implementación y verificación pendiente.
+El producto mantenido aquí es la app Android nativa. Se retiraron `desktop/` (web-escritorio) y `flutter_app/` (iOS/Flutter), junto con sus dependencias, pruebas y workflows. La sincronización Android principal/secundaria, el formato `.spvi` y el cliente de licencias GL siguen activos. Las menciones a las plataformas retiradas en `docs/HISTORIAL_DESARROLLO.md` y las auditorías fechadas son contexto histórico, no instrucciones para el código actual.

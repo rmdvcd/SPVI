@@ -13,19 +13,16 @@ keystore.properties
 # Contexto para OpenCode (17 MB): no se sube al repositorio
 SPVI_*_capturas_y_exportaciones.pdf
 
-# Escritorio Python: datos privados y artefactos portables
+# Entornos y cachés locales para las herramientas Python
 __pycache__/
 .venv/
-desktop/datos/
-desktop/dist/
-desktop/*.spec
-*.sqlite3
-*.sqlite3-wal
-*.sqlite3-shm
-*.spvidesk
+
+# Caché local de Kotlin
+.kotlin/
+
+# Material sensible generado localmente
 *.pem
 *.key
-desktop/tls/
 
 # Sesiones de navegador de depuración (logs/capturas locales, no código): auditoría 2026-10-14 (D-06)
 .playwright-mcp/

@@ -97,7 +97,7 @@ fun MainScaffold(snapshot: Licencia) {
     // 0.31.0 (P10): dirección del último cambio de sección por deslizamiento (0 = toque en la barra).
     var gesto by remember { mutableIntStateOf(0) }
     // 0.26.0 (P73 §6): plazo de la actualización vencido → bloqueo de toda la app. Nunca en mitad de una venta (ni al
-    // elegir artículos o escanear para ella) ni en Respaldo (salida «Exportar respaldo», suposición 3).
+    // elegir artículos para ella) ni en Respaldo (salida «Exportar respaldo», suposición 3).
     val bloqueoVm: cu.spvi.app.actualizacion.ActualizacionViewModel = hiltViewModel()
     val actualizacion by bloqueoVm.estado.collectAsStateWithLifecycle()
     val permitidaConBloqueo = enSeleccionVenta || current?.hasRoute(Route.Venta::class) == true ||
@@ -232,8 +232,7 @@ fun MainScaffold(snapshot: Licencia) {
                 InsumoFormScreen(
                     onBack = { nav.popBackStack() },
                     onGuardado = { msg ->
-                        // P29: los insumos viven en Inventario: se vuelve allí con el aviso (P31: también si se llegó
-                        // desde el escáner o desde Inicio, como hace el formulario de producto).
+                        // P29: los insumos viven en Inventario; al guardar se vuelve allí con el aviso.
                         val volvio = nav.popBackStack<Route.Inventario>(inclusive = false)
                         if (!volvio) nav.navigate(Route.Inventario()) { popUpTo<Route.InsumoForm> { inclusive = true } }
                         nav.currentBackStackEntry?.savedStateHandle?.set(KEY_PRODUCTO_GUARDADO, msg)

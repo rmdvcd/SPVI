@@ -22,7 +22,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 class PermisoState(val estado: EstadoPermiso, val solicitar: () -> Unit)
 
 /**
- * Permiso de CÁMARA para el escáner. [yaSolicitado] se persiste cifrado (ConfiguracionInicial) porque
+ * Permiso de CÁMARA para leer el QR de vinculación. [yaSolicitado] se persiste cifrado (ConfiguracionInicial) porque
  * Android no dice si el permiso se pidió alguna vez. Se re-evalúa al volver a primer plano (el usuario
  * pudo activarlo en Ajustes del sistema).
  */

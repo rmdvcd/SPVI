@@ -1,4 +1,6 @@
-# Prompt para OpenCode: cerrar lo pendiente de SPVI (versión 2)
+# Prompt histórico para OpenCode: cerrar lo pendiente de SPVI (versión 2)
+
+> Este prompt pertenece a una sesión de 2026-10-08. Sus decisiones y pasos se conservan para trazabilidad; no sustituyen las reglas vigentes de `AGENTS.md`, `Pendiente.md` y `Pruebas.md`.
 
 > **Versión 2 · 2026-10-08.** Sustituye a la versión anterior, que tenía una fase de preguntas. Las decisiones D1–D7 ya están tomadas (ver `docs/ESTADO_INSTRUCCIONES.md`, §7).
 >

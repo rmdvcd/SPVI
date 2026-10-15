@@ -35,7 +35,7 @@ val firmaKeyAlias = datoFirma("keyAlias", "SPVI_KEY_ALIAS")
 val firmaKeyPassword = datoFirma("keyPassword", "SPVI_KEY_PASSWORD")
 val firmaCompleta = listOf(firmaStoreFile, firmaStorePassword, firmaKeyAlias, firmaKeyPassword).all { it != null }
 
-/** P23: android-all de Robolectric (SDK 35), resuelto por Gradle para ejecutar las capturas sin red. */
+/** P23: SDK android-all-instrumented de Robolectric (SDK 35), resuelto por Gradle para tests y capturas sin red. */
 val robolectricSdk: Configuration by configurations.creating { isTransitive = false }
 
 android {
@@ -153,7 +153,7 @@ dependencies {
     // nada y sumaba un permiso/dependencia. Si se genera el perfil (Macrobenchmark), se repone junto con él.
     implementation(libs.kotlinx.serialization.core)
 
-    // Inventario: escáner (CameraX + ML Kit con modelo empaquetado, sin Play Services) y fotos (Coil, solo archivos locales).
+    // Vinculación: lector QR con CameraX + ML Kit (modelo empaquetado, sin Play Services). Inventario: fotos (Coil, solo archivos locales).
     implementation(libs.camerax.core)
     implementation(libs.camerax.camera2)
     implementation(libs.camerax.lifecycle)
@@ -190,11 +190,11 @@ dependencies {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// P23 — Capturas (cu.spvi.app.capturas). Solo se ejecutan con las tareas de Roborazzi:
+// P23 — Capturas (cu.spvi.app.capturas) y SDK offline para los tests JVM de :app.
 //   ./gradlew :app:recordRoborazziDebug   → app/capturas/{claro,oscuro}/*.png
-// En `test`, `spviTests` y `spviCheck` quedan excluidas (son lentas y no validan lógica).
-// Robolectric corre SIN RED: el android-all de SDK 35 lo resuelve Gradle (configuración robolectricSdk) y se
-// pasa en modo offline, coherente con la regla de tests sin red del Prompt 15.
+// Las capturas se excluyen de `test`, `spviTests` y `spviCheck` (solo corren con tareas Roborazzi).
+// Gradle resuelve android-all-instrumented con `robolectricSdk`; todos los tests de :app reciben el directorio
+// local y `robolectric.offline=true`, así el proceso de tests no necesita red (incluye ProcesoActualizarTest).
 // ---------------------------------------------------------------------------------------------------------------
 val robolectricSdkDir = layout.buildDirectory.dir("robolectric-sdk")
 val prepararRobolectricSdk = tasks.register<Copy>("prepararRobolectricSdk") {
@@ -203,10 +203,14 @@ val prepararRobolectricSdk = tasks.register<Copy>("prepararRobolectricSdk") {
 }
 val conCapturas = gradle.startParameter.taskNames.any { it.contains("Roborazzi", ignoreCase = true) }
 tasks.withType<Test>().configureEach {
+    // Robolectric descarga android-all-instrumented al arrancar cada test si no le damos una ruta local.
+    // Los tests JVM tienen el proxy externo bloqueado desde build.gradle.kts; preparar el SDK para todos
+    // evita fallos de red en tests como ProcesoActualizarTest, no solo al regenerar capturas.
+    dependsOn(prepararRobolectricSdk)
+    systemProperty("robolectric.offline", "true")
+    systemProperty("robolectric.dependency.dir", robolectricSdkDir.get().asFile.absolutePath)
+
     if (conCapturas) {
-        dependsOn(prepararRobolectricSdk)
-        systemProperty("robolectric.offline", "true")
-        systemProperty("robolectric.dependency.dir", robolectricSdkDir.get().asFile.absolutePath)
         maxHeapSize = "2g"
     } else {
         exclude("**/capturas/**")

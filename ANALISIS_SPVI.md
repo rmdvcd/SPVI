@@ -1,5 +1,7 @@
 # SPVI — Auditoría técnica sin anestesia
 
+> **Archivo histórico:** análisis estático de un commit anterior. Sus cifras, riesgos y propuestas no necesariamente describen el código actual; prevalecen `docs/VERIFICACION.md`, `SECURITY.md` y el resto de la documentación vigente. No usarlo como checklist de trabajo.
+
 **Alcance:** commit `2e5a149` («Primer commit: Proyecto inicial»), rama de trabajo `arena/3c116bea-spvi`.
 **Método:** lectura completa de los 6 módulos (38 903 líneas Kotlin en `src/main`, 434 archivos `.kt`),
 manifiesto, Gradle, documentación (4 673 líneas Markdown), capturas y herramientas. Análisis **estático**.

@@ -43,7 +43,7 @@ data class ProductoFormUiState(
     val categorias: List<String> = Categorias.PREDEFINIDAS,
     val insumos: List<Insumo> = emptyList(),
     val hojaInsumos: Boolean = false,
-    /** La fecha se completó sola con la recordada para ese código (escáner). */
+    /** El producto solicitado por id no existe o está archivado. */
     val noEncontrado: Boolean = false,
     /** P18 (A03): el usuario cambió algo desde que se abrió: salir sin guardar pide confirmación. */
     val cambios: Boolean = false,
