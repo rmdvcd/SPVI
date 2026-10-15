@@ -15,7 +15,6 @@ SPVI.views.vinculadas = async function (root) {
   const activos = empleados.filter(e => e.active);
   root.append(h('div', {class: 'encabezado'}, h('h1', {text: 'Apps vinculadas'})));
   SPVI.actions(iconButton('Sincronizar', 'Actualizar', () => SPVI.render()));
-  const banner = SPVI.bannerLicencia(licencia); if (banner) root.append(banner);
 
   // Red local
   const tarjetaRed = h('div', {class: 'card'}, h('div', {class: 'cabecera'}, icon('RedLocal'), h('h3', {text: 'Red local'}),

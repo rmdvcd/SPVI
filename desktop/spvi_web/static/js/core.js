@@ -375,6 +375,7 @@ SPVI.render = async function () {
     const container = h('div', {class: 'vista'});
     const result = await SPVI.views[id](container, sub, params);
     if (typeof result === 'function') cleanup = result;
+    const banner = SPVI.bannerLicencia(licencia); if (banner) container.prepend(banner);
     await SPVI.fundir(view.firstElementChild);
     view.replaceChildren(container);
   } catch (error) {

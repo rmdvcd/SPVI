@@ -109,7 +109,6 @@ SPVI.views.inicio = async function (root) {
   const [catalogo, licencia, tablero] = await Promise.all([SPVI.load.catalogo(), SPVI.load.licencia(), SPVI.load.dashboard(periodo)]);
   const prefs = catalogo.preferencias || {};
   root.append(h('div', {class: 'encabezado'}, h('h1', {text: catalogo.name || 'Mi negocio'})));
-  const banner = SPVI.bannerLicencia(licencia); if (banner) root.append(banner);
 
   // Estado del turno y selector de período en la misma fila; es el primer contenedor fijo al desplazar.
   const turno = tablero.shift;

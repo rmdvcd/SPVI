@@ -35,7 +35,6 @@ SPVI.views.venta = async function (root) {
   const [catalogo, licencia] = await Promise.all([SPVI.load.catalogo(), SPVI.load.licencia()]);
   const carrito = SPVI.state.carrito;
   root.append(h('div', {class: 'encabezado'}, h('h1', {text: carrito.correccion ? 'Corregir venta' : 'Venta'})));
-  const banner = SPVI.bannerLicencia(licencia); if (banner) root.append(banner);
   if (!catalogo.turnoAbierto) {
     root.append(h('div', {class: 'card centro'}, vacio('Turno', 'Para vender, primero abre un turno.'),
       button('Abrir turno', SPVI.turno.abrir, {iconName: 'Turno', disabled: licencia.clase === 'BLOQUEADA'})));
