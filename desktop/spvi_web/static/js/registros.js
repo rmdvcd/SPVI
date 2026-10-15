@@ -188,7 +188,7 @@ SPVI.views.registros = async function (root, sub, params) {
 
   root.append(h('div', {class: 'fila'}, buscador('Buscar', event => {
     estado.q = event.target.value; estado.page = 1; clearTimeout(temporizador); temporizador = setTimeout(cargar, 300);
-  }, estado.q), periodos), resumen, barra, lista, paginacion);
+  }, estado.q)), h('div', {class: 'fila'}, periodos), resumen, barra, lista, paginacion);
   if (tipo === 'clientes') root.append(h('button', {type: 'button', class: 'fab extendida', onclick: () => editarCliente()}, icon('Agregar'), 'Nuevo cliente'));
   await cargar();
   return () => clearTimeout(temporizador);
