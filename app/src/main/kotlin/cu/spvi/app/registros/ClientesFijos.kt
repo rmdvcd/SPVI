@@ -94,7 +94,7 @@ class ClientesFijosViewModel @Inject constructor(private val repo: ClienteFijoRe
 
 object TextosClientes {
     const val VACIO_TITULO = "Aún no hay clientes fijos"
-    const val VACIO_DETALLE = "En una venta por transferencia, marca «Cliente fijo» para guardar sus datos y rellenarlos solos la próxima vez."
+    const val VACIO_DETALLE = "En una venta por transferencia, marca «Cliente fijo» para guardar sus datos."
     const val QUITAR = "Quitar de clientes fijos"
     const val QUITAR_TITULO = "¿Quitar de clientes fijos?"
     const val QUITAR_TEXTO = "Sus datos ya no se sugerirán en las ventas. Sus compras siguen en Registros."

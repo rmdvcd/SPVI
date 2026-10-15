@@ -11,7 +11,7 @@ import java.time.ZoneId
 
 object TextosRespaldo {
     const val TITULO = "Respaldo"
-    const val EXPLICACION = "Guarda una copia protegida de todo el negocio. Si la proteges con contraseña, nadie puede abrirla sin ella, ni siquiera el desarrollador."
+    const val EXPLICACION = "Guarda una copia protegida de todo el negocio."
     /** 0.27.0 (T10): contraseña opcional. Auditoría 2026-10-14 (S-01): ENCENDIDA por defecto. */
     const val PROTEGER = "Proteger con contraseña"
     const val SIN_CONTRASENA_AVISO = "Sin contraseña, quien consiga este archivo podrá leer tus ventas y los datos de tus clientes sin ninguna clave."
@@ -24,10 +24,10 @@ object TextosRespaldo {
     const val NO_SE_PUDO_LEER = "No se pudo abrir el archivo"
     const val NO_SE_PUDO_GUARDAR = "No se pudo guardar el respaldo"
     const val ERROR_GENERICO = "No se pudo completar. Inténtalo de nuevo."
-    const val CONTENIDO = "Se guarda todo: productos, insumos, inventario, turnos, ventas, perfil, teléfonos y cuentas, precios y preferencias."
+    const val CONTENIDO = "Se guarda todo lo del negocio."
     const val AVISO_IMPORTAR = "Se reemplazarán TODOS los datos de este teléfono: productos, insumos, inventario, turnos, ventas y configuración. No se puede deshacer."
-    const val CONTRASENA_LISTA = "Contraseña lista. Ahora elige dónde guardar el respaldo."
-    const val IMPORTAR_AYUDA = "Elige un archivo .spvi del almacenamiento interno del teléfono."
+    const val CONTRASENA_LISTA = "Contraseña lista."
+    const val IMPORTAR_AYUDA = "Elige un archivo .spvi."
 
     const val MIME = "application/octet-stream"
     const val EXTENSION = "spvi"

@@ -16,8 +16,10 @@ import cu.spvi.domain.model.Licencia
 import cu.spvi.domain.model.OpcionPeriodo
 import cu.spvi.domain.model.Perfil
 import cu.spvi.domain.model.Porcion
+import cu.spvi.domain.model.ResumenGeneral
 import cu.spvi.domain.model.TipoAlerta
 import cu.spvi.domain.model.TopItem
+import cu.spvi.domain.model.TopPersona
 import cu.spvi.licencia.LicenseState
 import cu.spvi.licencia.bannerText
 import java.time.Duration
@@ -78,7 +80,7 @@ object TextosInicio {
     fun avisoRespaldo(dias: Long?) = if (dias == null) "Aún no has hecho ningún respaldo. Toca para hacerlo." else "Último respaldo hace $dias días. Toca para hacer otro."
     /** 0.21.0 (C6): en la secundaria el empleado no cierra su turno: lo solicita al encargado. */
     const val SOLICITAR_CIERRE_TITULO = "¿Solicitar el cierre del turno?"
-    const val SOLICITAR_CIERRE_TEXTO = "Cuenta el efectivo de la caja: el encargado verá la diferencia antes de aprobar. Mientras tanto puedes seguir vendiendo."
+    const val SOLICITAR_CIERRE_TEXTO = "Cuenta el efectivo de la caja. Mientras tanto puedes seguir vendiendo."
     const val CIERRE_SOLICITADO = "Pediste cerrar el turno. Se cerrará cuando el encargado lo apruebe; mientras, puedes seguir vendiendo."
     const val CIERRE_RECHAZADO = "El encargado no aprobó cerrar el turno. Sigue abierto."
     const val SOLICITUD_ENVIADA = "Solicitud de cierre guardada. Se envía al encargado al sincronizar."
@@ -330,3 +332,19 @@ fun subtituloTop(tipo: TipoTop, item: TopItem): String? = when (tipo) {
     TipoTop.EMPLEADO -> if (item.unidades == 1L) "1 venta" else "${item.unidades} ventas"
     TipoTop.CLIENTE -> if (item.unidades == 1L) "1 compra" else "${item.unidades} compras"
 }
+
+/** Subtítulos de los acordeones de Inicio (de un vistazo, sin abrir): null = sin datos. */
+fun resumenVentas(g: GraficosPeriodo): String = Money.format(g.totalVentas)
+
+fun resumenGanancia(g: GraficosPeriodo): String = Money.format(g.ganancia)
+
+fun resumenInventario(r: ResumenGeneral): String =
+    if (r.categorias.size == 1) "1 categoría" else "${r.categorias.size} categorías"
+
+fun resumenMetodos(r: ResumenGeneral): String? = r.metodosPago.firstOrNull()?.etiqueta
+
+fun resumenTop(tipo: TipoTop, items: List<TopItem>): String? =
+    items.firstOrNull()?.let { "${it.nombre} · ${valorTop(tipo, it)}" }
+
+fun resumenTopPersonas(personas: List<TopPersona>): String? =
+    personas.firstOrNull()?.let { "${it.nombre} · ${Money.format(it.importe)}" }

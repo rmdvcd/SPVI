@@ -105,7 +105,7 @@ fun ProcesoActualizar.texto(): String = when (this) {
 object TextosActualizacion {
     fun disponible(version: String, bytes: Long) =
         "Versión $version disponible${if (bytes > 0) " (${"%.1f".format(java.util.Locale.US, bytes / 1_048_576.0)} MB)" else ""}."
-    fun desdePrincipal(version: String) = "Versión $version disponible desde la app principal (red local, sin gastar datos)."
+    fun desdePrincipal(version: String) = "Versión $version disponible desde la app principal."
     const val ACTUALIZAR = "Actualizar"
     /** 0.26.0: «Más tarde» solo oculta el aviso hasta mañana; la fecha límite no cambia. */
     const val DESCARTAR = "Más tarde"
@@ -114,7 +114,7 @@ object TextosActualizacion {
     const val BLOQUEO_TITULO = "Actualiza SPVI para seguir"
     fun bloqueoDetalle(version: String?, limite: java.time.Instant, zona: java.time.ZoneId = java.time.ZoneId.systemDefault()) =
         "La versión ${version ?: "nueva"} es obligatoria desde el ${java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy").format(limite.atZone(zona))}. " +
-            "Hasta actualizar, SPVI no se puede usar. Tus datos no se tocan."
+            "Hasta actualizar, SPVI no se puede usar."
     const val BLOQUEO_SECUNDARIA = "Pon los dos teléfonos en la misma wifi y toca «Actualizar desde la principal»."
     const val ACTUALIZAR_DESDE_PRINCIPAL = "Actualizar desde la principal"
     const val SIN_CONEXION_PRINCIPAL = "Aún no se ve la app principal. Conéctate a su misma wifi y sincroniza."
@@ -135,9 +135,6 @@ object TextosActualizacion {
     const val RESULTADO_SIN_CONEXION = "Sin conexión"
     const val COMPROBANDO = "Comprobando si hay una versión nueva…"
     const val BUSCAR_DETALLE_CORTO = "Se comprueba si hay una versión nueva y, si la hay, se descarga y se instala."
-    const val BUSCAR_DETALLE = "Una vez por semana, al abrir la app, comprueba si hay una versión nueva. No envía datos del negocio ni un identificador del teléfono. " +
-        "Antes de actualizar, SPVI guarda un respaldo de tus datos y, al abrir la versión nueva, lo restaura. " +
-        "Las versiones nuevas son obligatorias: puedes aplazarlas hasta 30 días."
     const val GUARDANDO_RESPALDO = "Guardando un respaldo de tus datos antes de actualizar…"
     const val ERROR_RESPALDO_PREVIO = "No se pudo guardar el respaldo de tus datos, así que no se actualizó. Libera espacio en el teléfono e inténtalo de nuevo."
     const val RESPALDO_RESTAURADO = "SPVI se actualizó y tus datos se restauraron desde el respaldo."
@@ -175,6 +172,8 @@ class GestorActualizacion @Inject constructor(
     private var comprobado = false
     private var descarga: Job? = null
     private var apkListo: File? = null
+    /** Trabajo del cuadro de «Actualizar»: cerrarlo lo cancela para que no reaparezca solo. */
+    private var procesoJob: Job? = null
 
     /** Re-evalúa el plazo cada hora con la app abierta (el día 30 llega sin reiniciar). */
     private val reloj = flow { while (true) { emit(Unit); delay(3_600_000) } }
@@ -267,26 +266,38 @@ class GestorActualizacion @Inject constructor(
      */
     fun actualizarAhora() {
         if (local.value.proceso?.enCurso == true) return
-        scope.launch {
+        procesoJob?.cancel()
+        procesoJob = scope.launch {
             local.update { it.copy(proceso = ProcesoActualizar.EnCurso(null)) }
             val r = if (github.repoConfigurado) seguro { comprobar(info.versionName, forzar = true) } else null
             when {
-                r == null || r.error -> local.update { it.copy(proceso = ProcesoActualizar.SinConexion) }
-                r.aviso == null -> local.update { it.copy(proceso = ProcesoActualizar.AlDia) }
+                r == null || r.error -> resultadoProceso(ProcesoActualizar.SinConexion)
+                r.aviso == null -> resultadoProceso(ProcesoActualizar.AlDia)
                 else -> {
                     val ok = descargarEInstalar(estado.value.copy(disponible = r.aviso), conMensajes = false, conProceso = true)
                     // La descarga pone ella sola el resultado; si ni llegó a empezar (ya había otra en curso),
                     // el cuadro se quedaría girando: aquí se cierra.
-                    if (local.value.proceso is ProcesoActualizar.EnCurso) {
-                        local.update { it.copy(proceso = if (ok) ProcesoActualizar.Actualizado else ProcesoActualizar.SinConexion) }
-                    }
+                    if (ok) resultadoProceso(ProcesoActualizar.Actualizado)
+                    else resultadoProceso(ProcesoActualizar.SinConexion)
                 }
             }
         }
     }
 
-    /** Cierra el cuadro de «Actualizar» (el usuario ya vio el resultado). */
-    fun cerrarProceso() { local.update { it.copy(proceso = null) } }
+    /** Cierra el cuadro de «Actualizar»: cancela lo que estuviera en curso para que no reaparezca solo. */
+    fun cerrarProceso() {
+        procesoJob?.cancel()
+        procesoJob = null
+        local.update { it.copy(proceso = null) }
+    }
+
+    /**
+     * Escribe el resultado del cuadro solo si sigue abierto: si el usuario lo cerró a mitad, el resultado
+     * tardío no lo reabre solo (el cuadro se quedaba colgado).
+     */
+    private fun resultadoProceso(p: ProcesoActualizar) {
+        local.update { if (it.proceso is ProcesoActualizar.EnCurso) it.copy(proceso = p) else it }
+    }
 
     /**
      * Descarga el APK (informando del progreso) y abre el instalador. [conMensajes] = true en el camino normal
@@ -307,8 +318,8 @@ class GestorActualizacion @Inject constructor(
                 local.update { it.copy(progreso = p, proceso = if (conProceso) ProcesoActualizar.EnCurso(p) else null) }
             }
         }
-        // El resultado solo se refleja en el cuadro circular si este proceso lo abrió.
-        val resultado: (ProcesoActualizar) -> Unit = { p -> if (conProceso) local.update { it.copy(proceso = p) } }
+        // El resultado solo se refleja en el cuadro circular si este proceso lo abrió y sigue abierto.
+        val resultado: (ProcesoActualizar) -> Unit = { p -> if (conProceso) resultadoProceso(p) }
         val r: AppResult<File>? = when {
             // Una sola descarga por internet: la secundaria la pide primero a la principal.
             e.desdePrincipal != null -> seguro { secundaria.descargarApk(progreso) }

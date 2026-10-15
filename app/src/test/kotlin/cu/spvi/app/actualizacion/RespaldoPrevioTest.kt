@@ -110,7 +110,7 @@ class RespaldoPrevioTest {
         val notas = "Mejoras en Inicio\nDescarga en github.com/x/y\nVer el repositorio\nNueva tarjeta de Licencia"
         val visibles = TextosActualizacion.notasVisibles(notas)
         assertEquals("Mejoras en Inicio\nNueva tarjeta de Licencia", visibles)
-        listOf(TextosActualizacion.BUSCAR_DETALLE, TextosActualizacion.SIN_REPO, TextosActualizacion.GUARDANDO_RESPALDO,
+        listOf(TextosActualizacion.SIN_REPO, TextosActualizacion.GUARDANDO_RESPALDO,
             TextosActualizacion.ERROR_RESPALDO_PREVIO, TextosActualizacion.RESPALDO_RESTAURADO, TextosActualizacion.RESPALDO_NO_RESTAURADO,
             TextosActualizacion.disponible("0.30.1", 1_048_576), TextosActualizacion.desdePrincipal("0.30.1"),
         ).forEach { texto ->

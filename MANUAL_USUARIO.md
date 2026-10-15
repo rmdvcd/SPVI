@@ -41,9 +41,11 @@ Antes de cobrar por transferencia, comprueba que tienes ambos seleccionados.
 
 ## Inicio
 
-El estado del turno y las acciones **Nueva venta** y **Movimiento de caja** forman parte del contenido de Inicio y
-se desplazan con la pantalla. El selector de período aparece antes de los gráficos y el resumen; gráficos y tops
-empiezan cerrados y se abren al tocarlos. No se fijan controles en la cabecera ni se añaden acciones flotantes.
+El interruptor del turno (tocarlo abre o cierra el turno) y la lista de período forman el primer
+contenedor de Inicio y **no se desplazan**: queda fijo arriba. Debajo hay dos zonas: la **principal**
+(indicadores, alertas, las 7 listas del móvil —más vendido, lento movimiento, rentabilidad, servicios top/menos,
+empleado y cliente, cada una oculta si no tiene datos— y listas recientes) y la **secundaria**, solo de datos (gráficos de
+ingresos, cobro y ganancia, red local, conexiones y tiempo en línea, con enlaces a sus secciones).
 
 ## Buscar y consultar transferencias
 
@@ -90,10 +92,9 @@ Es independiente y solo principal; no sustituye la aplicación móvil.
 - **Tema:** *Ajustes › Tema*: Claro, Oscuro o el del sistema.
 - **Tiempo en línea:** cuánto lleva abierto SPVI en esta PC y la red local, y por cada app vinculada si está
   conectada, el tiempo conectada y su última sincronización.
-- **Licencia:** en *Ajustes › Licencia* completa tus datos, el tipo, las apps secundarias y el número de
-  transacción del pago, y pulsa *Generar QR de solicitud*. Escanea el QR con la cámara del teléfono para abrir WhatsApp
-  con el mensaje listo y envíalo. El desarrollador responde con un código `XXXX-XXXX-XXXX-XXXX`: escríbelo
-  (o pega el mensaje) en *Activar licencia* y pulsa *Activar*.
+- **Licencia:** en *Ajustes › Licencia* envía tu solicitud al desarrollador por WhatsApp con tus datos,
+  el tipo, las apps secundarias y el número de transacción del pago. El desarrollador responde con un código
+  `XXXX-XXXX-XXXX-XXXX`: escríbelo en *Activar licencia* y pulsa *Activar*.
 
 ### Exportar y respaldar en escritorio
 

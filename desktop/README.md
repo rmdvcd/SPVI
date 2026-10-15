@@ -12,9 +12,13 @@ SMS, servicios ni otras funciones de Android. **No sustituye la aplicación móv
 
 ## Novedades de la 0.31.0 (14/10/2026)
 
-- **Inicio:** el estado del turno y el **selector de período** (Turno / Hoy / 7 / 30 / 90 días / Todo) están
-  en la misma fila, y esa barra se queda fija al desplazar. Los KPIs y los dos gráficos (formas de cobro y
-  ganancia por día) se leen para el período elegido. Registros usa ahora los mismos chips.
+- **Inicio:** el **interruptor del turno** y la **lista de período** (Turno / Hoy / 7 / 30 / 90 días / Todo) están
+  en el mismo contenedor, y esa barra se queda fija al desplazar (opaca, siempre por encima del contenido). Debajo,
+  zona **principal** (indicadores, alertas, los 7 tops del móvil con medallas y listas) y zona **secundaria** solo de datos
+  (gráficos, IP de la red local, conexiones y tiempo en línea). Gráficos al estilo del móvil: barras con
+  intensidad, dona con pista y huecos, área de venta + costo con leyenda y hasta 4 etiquetas en el eje.
+  Tipos y proporciones según los tokens del móvil (cuerpo 14, secundario 13, botones 40–48/r12, campos 56).
+  Registros conserva sus chips.
 - **Inventario:** cada fila muestra a la derecha **costo y venta diferenciados**; en los elaborados se
   añade cuántos se pueden hacer con las existencias actuales de sus insumos.
 - **Registros:** casilla de selección en todas las listas y barra con «Marcar todo lo filtrado» (marca todo
@@ -44,7 +48,7 @@ SMS, servicios ni otras funciones de Android. **No sustituye la aplicación móv
 - **Tiempo en línea:** tiempo que lleva abierto SPVI en la PC y la red local, y por cada app vinculada si
   está conectada, desde cuándo, el tiempo conectada en esta sesión y la última sincronización.
 - **Licencia de PC por código de 16 dígitos** (ver [LICENSE_CLIENT.md](../LICENSE_CLIENT.md), sección 10):
-  la solicitud se envía por WhatsApp con un QR que se escanea con el teléfono, con los datos, la
+  la solicitud se envía por WhatsApp con los datos, la
   plataforma (PC) y el número de transacción del pago. El desarrollador responde con
   `XXXX-XXXX-XXXX-XXXX`, que se escribe en Ajustes › Licencia.
 - **Permiso firmado de las apps secundarias** ([LICENSE_CLIENT.md](../LICENSE_CLIENT.md) §12): la PC, como
@@ -66,7 +70,7 @@ SMS, servicios ni otras funciones de Android. **No sustituye la aplicación móv
 - Modelo canónico compatible con DTO Android, recetas, insumos y preajustes de productos.
 - Administración de empleados, permisos, fondos, cuentas de cobro y QR de vinculación LAN.
 - Servidor TCP separado del navegador; sesiones cifradas y comandos remotos con deduplicación.
-- Cliente de licencias GL, prueba local, activación y carga manual de revocaciones firmadas.
+- Cliente de licencias GL, prueba local, activación y lista firmada de revocaciones.
 - Respaldo Android `.spvi` v4 (lectura v3/v4) y escritorio `.spvidesk` v2 (lectura v1/v2).
 - Cotización del carrito, anulación y corrección atómica de ventas locales o de secundarias en turno abierto.
 - Venta directa de insumos en unidades enteras, transferencia con número de operación y clientes fijos editables.

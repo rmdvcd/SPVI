@@ -15,41 +15,52 @@ SPVI.caduca = item => item.fechaCaducidad && new Date(item.fechaCaducidad + 'T23
 SPVI.colorNivel = nivel => nivel === 'critico' ? 'var(--alert-critico)' : nivel === 'bajo' ? 'var(--alert-bajo)' : null;
 
 /* ---------- Gráficos SVG propios (sin librerías ni líneas de rejilla). ---------- */
-/** Dona de reparto. segmentos: [{label, value, color}]. */
+/** Dona de reparto. segmentos: [{label, value, color}]. Pista completa y 1 % de hueco entre porciones. */
 function donaSvg(segmentos) {
   const total = segmentos.reduce((suma, x) => suma + (x.value || 0), 0);
-  const radio = 40, perimetro = 2 * Math.PI * radio;
+  const radio = 40;
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 100 100'); svg.setAttribute('role', 'img');
   svg.setAttribute('aria-label', segmentos.map(x => x.label + ': ' + (total ? Math.round(x.value * 100 / total) : 0) + ' %').join('. '));
-  let offset = 0;
+  const pista = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  pista.setAttribute('cx', '50'); pista.setAttribute('cy', '50'); pista.setAttribute('r', String(radio));
+  pista.setAttribute('fill', 'none'); pista.setAttribute('stroke', 'var(--surface-variant)'); pista.setAttribute('stroke-width', '16');
+  svg.append(pista);
+  let inicio = 0;
   for (const segmento of segmentos) {
     const parte = total ? (segmento.value || 0) / total : 0;
     if (!parte) continue;
     const circulo = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     circulo.setAttribute('cx', '50'); circulo.setAttribute('cy', '50'); circulo.setAttribute('r', String(radio));
     circulo.setAttribute('fill', 'none'); circulo.setAttribute('stroke', segmento.color); circulo.setAttribute('stroke-width', '16');
-    circulo.setAttribute('stroke-dasharray', (perimetro * parte).toFixed(2) + ' ' + (perimetro * (1 - parte)).toFixed(2));
-    circulo.setAttribute('stroke-dashoffset', (-offset).toFixed(2));
+    circulo.setAttribute('pathLength', '100');
+    circulo.setAttribute('stroke-dasharray', Math.max(parte * 100 - 1, 0.2).toFixed(2) + ' ' + (100 - parte * 100 + 1).toFixed(2));
+    circulo.setAttribute('stroke-dashoffset', (-inicio).toFixed(2));
     circulo.setAttribute('transform', 'rotate(-90 50 50)');
-    svg.append(circulo); offset += perimetro * parte;
+    svg.append(circulo); inicio += parte * 100;
   }
   return svg;
 }
-/** Área de una serie numérica; los valores negativos se recortan a cero. */
-function areaSvg(valores) {
-  const ancho = 100, alto = 40, maximo = Math.max(1, ...valores.map(v => Math.max(0, v)));
-  const puntos = valores.map((v, i) => [(valores.length < 2 ? 0 : i * ancho / (valores.length - 1)).toFixed(2), (alto - Math.max(0, v) * alto / maximo).toFixed(2)]);
-  const linea = puntos.map((p, i) => (i ? 'L' : 'M') + p[0] + ' ' + p[1]).join(' ');
+/** Área de 1–2 series numéricas; los valores negativos se recortan a cero. series: [{valores, color}]. */
+function areaSvg(series) {
+  const ancho = 100, alto = 40;
+  const maximo = Math.max(1, ...series.flatMap(s => s.valores.map(v => Math.max(0, v))));
+  const linea = valores => {
+    const puntos = valores.map((v, i) => [(valores.length < 2 ? 0 : i * ancho / (valores.length - 1)).toFixed(2), (alto - Math.max(0, v) * alto / maximo).toFixed(2)]);
+    return puntos.map((p, i) => (i ? 'L' : 'M') + p[0] + ' ' + p[1]).join(' ');
+  };
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 100 40'); svg.setAttribute('preserveAspectRatio', 'none'); svg.setAttribute('role', 'img');
   svg.setAttribute('aria-label', 'Ganancia por día');
-  const relleno = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  relleno.setAttribute('d', linea + ' L ' + ancho + ' ' + alto + ' L 0 ' + alto + ' Z'); relleno.setAttribute('fill', 'var(--primary)'); relleno.setAttribute('opacity', '.18');
-  const trazo = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  trazo.setAttribute('d', linea); trazo.setAttribute('fill', 'none'); trazo.setAttribute('stroke', 'var(--primary)');
-  trazo.setAttribute('stroke-width', '1.5'); trazo.setAttribute('stroke-linejoin', 'round'); trazo.setAttribute('vector-effect', 'non-scaling-stroke');
-  svg.append(relleno, trazo);
+  for (const {valores, color} of series) {
+    const d = linea(valores);
+    const relleno = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    relleno.setAttribute('d', d + ' L ' + ancho + ' ' + alto + ' L 0 ' + alto + ' Z'); relleno.setAttribute('fill', color); relleno.setAttribute('opacity', '.18');
+    const trazo = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    trazo.setAttribute('d', d); trazo.setAttribute('fill', 'none'); trazo.setAttribute('stroke', color);
+    trazo.setAttribute('stroke-width', '1.5'); trazo.setAttribute('stroke-linejoin', 'round'); trazo.setAttribute('stroke-linecap', 'round'); trazo.setAttribute('vector-effect', 'non-scaling-stroke');
+    svg.append(relleno, trazo);
+  }
   return svg;
 }
 
@@ -106,28 +117,35 @@ SPVI.bannerLicencia = function (licencia) {
 
 SPVI.views.inicio = async function (root) {
   const periodo = SPVI.periodo();
-  const [catalogo, licencia, tablero] = await Promise.all([SPVI.load.catalogo(), SPVI.load.licencia(), SPVI.load.dashboard(periodo)]);
+  const [catalogo, licencia, tablero, uptime, red] = await Promise.all(
+    [SPVI.load.catalogo(), SPVI.load.licencia(), SPVI.load.dashboard(periodo), api('/api/uptime'), api('/api/network')]);
   const prefs = catalogo.preferencias || {};
   root.append(h('div', {class: 'encabezado'}, h('h1', {text: catalogo.name || 'Mi negocio'})));
 
-  // Estado del turno y selector de período en la misma fila; es el primer contenedor fijo al desplazar.
-  const turno = tablero.shift;
-  root.append(h('div', {class: 'barra-turno pegajoso'},
-    h('span', {class: 'texto'}, icon('Turno'), h('strong', {text: turno ? 'Turno abierto' : 'Turno cerrado'}),
-      turno ? h('span', {class: 'etiqueta ok', text: 'Desde ' + fechaHora(Date.parse(turno.opened))}) : null),
-    chipsPeriodo(periodo, id => { sessionStorage.setItem('spvi-periodo', id); SPVI.render(); })));
+  // Turno (interruptor, como en el móvil) y período (combobox) en el mismo contenedor fijo.
+  const turno = tablero.shift, abierto = !!turno;
+  const toggle = interruptor({label: abierto ? 'Turno abierto' : 'Turno cerrado',
+    help: abierto ? 'Desde ' + fechaHora(Date.parse(turno.opened)) : 'Ábrelo para vender', checked: abierto,
+    onchange: event => { event.target.checked = abierto; (abierto ? SPVI.turno.cerrar : SPVI.turno.abrir)(); }});
+  toggle.insertBefore(icon('Turno'), toggle.firstChild);
+  if (!abierto && licencia.clase === 'BLOQUEADA') toggle.querySelector('input').disabled = true;
+  root.append(h('div', {class: 'barra-turno'},
+    toggle,
+    comboPeriodo(periodo, id => { sessionStorage.setItem('spvi-periodo', id); SPVI.render(); })));
 
-  // Tarjeta del turno
-  root.append(turno
-    ? h('div', {class: 'card primario'}, h('div', {class: 'cabecera'}, icon('Turno'), h('h3', {text: 'Turno abierto'}), h('span', {class: 'etiqueta ok', text: 'Desde ' + fechaHora(Date.parse(turno.opened))})),
+  // Tres zonas (tras el menú lateral): principal (indicadores, alertas y listas) y secundaria (datos).
+  const principal = h('div', {class: 'col-principal'});
+  const secundaria = h('aside', {class: 'col-secundaria', 'aria-label': 'Datos'});
+  root.append(h('div', {class: 'panel-inicio'}, principal, secundaria));
+  const medalla = i => h('span', {class: 'medalla ' + ['oro', 'plata', 'bronce'][i], text: String(i + 1)});
+
+  // Tarjeta del turno: solo con turno abierto (si no, se abre desde el interruptor de la barra).
+  if (turno) principal.append(h('div', {class: 'card primario'}, h('div', {class: 'cabecera'}, icon('Turno'), h('h3', {text: 'Turno abierto'}), h('span', {class: 'etiqueta ok', text: 'Desde ' + fechaHora(Date.parse(turno.opened))})),
       h('div', {class: 'grid kpi'},
         h('div', null, h('span', {class: 'secundario', text: 'Fondo inicial'}), h('div', {class: 'valor dato', text: cup(turno.fund)})),
         h('div', null, h('span', {class: 'secundario', text: 'Efectivo esperado'}), h('div', {class: 'valor dato', text: cup(tablero.expected)}))),
       h('div', {class: 'fila'}, button('Vender', () => SPVI.go('venta'), {iconName: 'Venta'}), button('Caja', SPVI.turno.caja, {kind: 'tonal', iconName: 'Efectivo'}),
-        button('Cerrar turno', SPVI.turno.cerrar, {kind: 'borde', iconName: 'Turno'})))
-    : h('div', {class: 'card tonal'}, h('div', {class: 'cabecera'}, icon('Turno'), h('h3', {text: 'Sin turno abierto'})),
-      h('p', {class: 'secundario', text: 'Abre un turno para empezar a vender.'}),
-      h('div', {class: 'fila'}, button('Abrir turno', SPVI.turno.abrir, {iconName: 'Turno', disabled: licencia.clase === 'BLOQUEADA'}))));
+        button('Cerrar turno', SPVI.turno.cerrar, {kind: 'borde', iconName: 'Turno'}))));
 
   // Avisos de inventario
   const productos = catalogo.productos.filter(x => !x.eliminado), insumos = catalogo.insumos.filter(x => !x.eliminado);
@@ -135,7 +153,7 @@ SPVI.views.inicio = async function (root) {
   const caducan = productos.filter(SPVI.caduca).length;
   const aviso = (titulo, n, color, iconName, filtro) => h('button', {type: 'button', class: 'card centro', onclick: () => SPVI.go('inventario?filtro=' + filtro)},
     h('span', {class: 'alerta-num', style: n ? 'color:' + color : '', text: String(n)}), h('span', {class: 'fila centro'}, icon(iconName, 'sm'), titulo));
-  root.append(h('h3', {text: 'Avisos de inventario'}), h('div', {class: 'grid kpi'},
+  principal.append(h('h3', {text: 'Avisos de inventario'}), h('div', {class: 'grid kpi'},
     aviso('Existencias críticas', niveles.filter(x => x === 'critico').length, 'var(--alert-critico)', 'Alerta', 'critico'),
     aviso('Existencias bajas', niveles.filter(x => x === 'bajo').length, 'var(--alert-bajo)', 'Inventario', 'bajo'),
     aviso('Caducan en 7 días', caducan, 'var(--alert-caducidad)', 'Fecha', 'caduca')));
@@ -143,45 +161,42 @@ SPVI.views.inicio = async function (root) {
   // Resumen del período elegido
   const cambio = tablero.revenue_change_percent;
   const kpi = (titulo, valor, extra = null) => h('div', {class: 'card'}, h('span', {class: 'secundario', text: titulo}), h('span', {class: 'valor', text: valor}), extra);
-  root.append(h('h3', {text: 'Resumen de ventas'}), h('div', {class: 'grid kpi seis'},
+  principal.append(h('h3', {text: 'Resumen de ventas'}), h('div', {class: 'grid kpi seis'},
     kpi('Ingresos', cup(tablero.revenue), cambio === null ? null : h('span', {class: 'etiqueta ' + (cambio >= 0 ? 'ok' : 'mal'), text: (cambio >= 0 ? '+' : '') + cambio + ' % vs. período anterior'})),
     kpi('Ganancia', cup(tablero.margin)), kpi('Operaciones', String(tablero.operations)),
     kpi('Efectivo', cup(tablero.cash)), kpi('Transferencias', cup(tablero.transfers)), kpi('Valor del inventario', cup(tablero.inventory_cost))));
 
-  // Gráfico diario
-  const serie = SPVI.diasSerie(periodo, tablero);
-  const porDia = Object.fromEntries(tablero.daily.map(x => [x.day, x.revenue]));
-  const maximo = Math.max(1, ...serie.map(d => porDia[d] || 0));
-  root.append(h('div', {class: 'dos'},
-    h('div', {class: 'card'}, h('div', {class: 'cabecera'}, icon('Registros'), h('h3', {text: 'Ingresos por día'})),
-      h('div', {class: 'barras', role: 'img', 'aria-label': 'Ingresos por día'}, serie.map((d, i) => h('div', {class: 'barra', style: 'height:' + Math.round((porDia[d] || 0) * 100 / maximo) + '%;animation-delay:' + (i * 12) + 'ms', title: fecha(Date.parse(d + 'T12:00:00')) + ': ' + cup(porDia[d] || 0)}))),
-      h('div', {class: 'ejes'}, h('span', {text: fecha(Date.parse(serie[0] + 'T12:00:00'))}), h('span', {text: 'Hoy'}))),
-    h('div', {class: 'card'}, h('div', {class: 'cabecera'}, icon('Recomendados'), h('h3', {text: 'Más vendidos'})),
-      tablero.top.length ? h('div', {class: 'lista plana'}, tablero.top.map((x, i) => itemLista({title: x.name, value: cup(x.total), lead: h('span', {class: 'lead', text: String(i + 1)})})))
-        : vacio('Venta', 'Aún no hay ventas en este período.'))));
+  // Principal: las 7 listas del móvil (cada una se oculta si no tiene datos).
+  const tops = tablero.tops || {};
+  const subt = periodo === 'turno' ? 'Turno actual' : periodo === 'todo' ? 'Todo el historial' : periodo === 'hoy' ? 'Hoy' : 'Últimos ' + periodo + ' días';
+  const uni = n => n === 1 ? '1 unidad' : n + ' unidades';
+  const cardTop = (titulo, iconName, filas) => {
+    if (!filas.length) return;
+    principal.append(h('details', {class: 'card acordeon'},
+      h('summary', null, icon(iconName),
+        h('span', {class: 'texto'}, h('span', {class: 'titulo', text: titulo}), h('span', {class: 'secundario', text: subt})),
+        h('span', {class: 'dato', text: filas[0].nombre + ' · ' + filas[0].val})),
+      h('div', {class: 'lista plana'}, filas.map((x, i) => itemLista({title: x.nombre, subtitle: x.sub || null, value: x.val, lead: medalla(i)})))));
+  };
+  cardTop('Más vendido', 'Recomendados', (tops.mas || []).map(x => ({nombre: x.nombre, val: uni(x.unidades), sub: cup(x.ingresos)})));
+  cardTop('Lento movimiento', 'Inventario', (tops.lento || []).map(x => ({nombre: x.nombre, val: uni(x.unidades)})));
+  cardTop('Rentabilidad', 'Efectivo', (tops.rentabilidad || []).map(x => ({nombre: x.nombre, val: cup(x.ganancia),
+    sub: x.unidades === 1 ? '1 unidad vendida' : x.unidades + ' unidades vendidas'})));
+  cardTop('Servicios: top ventas', 'Servicios', (tops.serviciosMas || []).map(x => ({nombre: x.nombre,
+    val: x.unidades === 1 ? '1 vez' : x.unidades + ' veces', sub: cup(x.ingresos)})));
+  cardTop('Servicios: menos vendidos', 'Servicios', (tops.serviciosMenos || []).map(x => ({nombre: x.nombre,
+    val: x.unidades === 1 ? '1 vez' : x.unidades + ' veces'})));
+  cardTop('Empleado', 'Perfil', (tops.empleados || []).map(x => ({nombre: x.nombre, val: cup(x.importe),
+    sub: x.operaciones === 1 ? '1 venta' : x.operaciones + ' ventas'})));
+  cardTop('Cliente', 'Perfil', (tops.clientes || []).map(x => ({nombre: x.nombre, val: cup(x.importe),
+    sub: x.operaciones === 1 ? '1 compra' : x.operaciones + ' compras'})));
 
-  // Formas de cobro y ganancia por día.
-  const margenPorDia = Object.fromEntries(tablero.daily.map(x => [x.day, x.margin]));
-  const metodos = [{label: 'Efectivo', value: tablero.cash, color: 'var(--chart-1)'}, {label: 'Transferencias', value: tablero.transfers, color: 'var(--chart-2)'}];
-  const totalMetodos = tablero.cash + tablero.transfers;
-  root.append(h('div', {class: 'dos'},
-    h('div', {class: 'card'}, h('div', {class: 'cabecera'}, icon('Efectivo'), h('h3', {text: 'Formas de cobro'})),
-      totalMetodos ? h('div', {class: 'dona'}, donaSvg(metodos),
-        h('div', {class: 'leyenda'}, metodos.map(x => h('div', {class: 'fila'},
-          h('span', {class: 'punto', style: 'background:' + x.color}),
-          h('span', {text: x.label + ': ' + Math.round(x.value * 100 / totalMetodos) + ' %'}),
-          h('span', {class: 'dato', style: 'margin-left:auto', text: cup(x.value)})))))
-        : vacio('Efectivo', 'Sin ventas en este período.')),
-    h('div', {class: 'card'}, h('div', {class: 'cabecera'}, icon('Registros'), h('h3', {text: 'Ganancia por día'})),
-      h('div', {class: 'area'}, areaSvg(serie.map(d => margenPorDia[d] || 0))),
-      h('div', {class: 'ejes'}, h('span', {text: fecha(Date.parse(serie[0] + 'T12:00:00'))}), h('span', {text: 'Hoy'})))));
-
-  // Bajo costo y movimientos recientes
+  // Principal: precio igual o menor que el costo, ventas recientes y últimos turnos.
   if (tablero.below_cost.length) {
-    root.append(h('div', {class: 'card error'}, h('div', {class: 'cabecera'}, icon('Alerta'), h('h3', {text: 'Precio igual o menor que el costo'})),
+    principal.append(h('div', {class: 'card error'}, h('div', {class: 'cabecera'}, icon('Alerta'), h('h3', {text: 'Precio igual o menor que el costo'})),
       h('div', {class: 'lista plana'}, tablero.below_cost.slice(0, 8).map(x => itemLista({title: x.name, subtitle: 'Costo ' + cup(x.cost), value: cup(x.price)})))));
   }
-  root.append(h('div', {class: 'dos'},
+  principal.append(h('div', {class: 'dos'},
     h('div', {class: 'card'}, h('div', {class: 'cabecera'}, icon('Venta'), h('h3', {text: 'Ventas recientes'}), button('Ver todo', () => SPVI.go('registros'), {kind: 'texto'})),
       tablero.recent.length ? h('div', {class: 'lista plana'}, tablero.recent.slice(0, 8).map(x => itemLista({title: x.name, subtitle: fechaHora(Date.parse(x.created)) + ' · ' + (x.method === 'transferencia' ? 'Transferencia' : 'Efectivo'), value: cup(x.total)})))
         : vacio('Venta', 'Sin ventas todavía.')),
@@ -191,4 +206,59 @@ SPVI.views.inicio = async function (root) {
         return itemLista({title: fechaHora(Date.parse(t.opened)), subtitle: t.closed ? 'Cerrado ' + fechaHora(Date.parse(t.closed)) : 'Abierto',
           value: diff === null ? cup(t.expected) : diff === 0 ? 'Cuadra' : (diff > 0 ? '+' : '−') + cup(Math.abs(diff))});
       })) : vacio('Turno', 'Sin turnos todavía.'))));
+
+  // Secundaria: gráficos del período (barras con intensidad, dona con pista y huecos, área de 2 series).
+  const serie = SPVI.diasSerie(periodo, tablero);
+  const porDia = Object.fromEntries(tablero.daily.map(x => [x.day, x.revenue]));
+  const porMargen = Object.fromEntries(tablero.daily.map(x => [x.day, x.margin]));
+  const maximo = Math.max(1, ...serie.map(d => porDia[d] || 0));
+  const indices = serie.length < 2 ? [0] : serie.length <= 4 ? serie.map((_, i) => i)
+    : [0, Math.round((serie.length - 1) / 3), Math.round(2 * (serie.length - 1) / 3), serie.length - 1];
+  const etiquetaEje = i => i === serie.length - 1 ? 'Hoy' : fecha(Date.parse(serie[i] + 'T12:00:00'));
+  secundaria.append(h('div', {class: 'card'}, h('div', {class: 'cabecera'}, icon('Registros'), h('h3', {text: 'Ingresos por día'})),
+      h('div', {class: 'barras', role: 'img', 'aria-label': 'Ingresos por día'}, serie.map((d, i) => {
+        const v = porDia[d] || 0;
+        return h('div', {class: 'barra', style: 'height:' + Math.round(v * 100 / maximo) + '%;opacity:' + (0.3 + 0.7 * v / maximo).toFixed(2) + ';animation-delay:' + (i * 12) + 'ms',
+          title: fecha(Date.parse(d + 'T12:00:00')) + ': ' + cup(v)});
+      })),
+      h('div', {class: 'ejes'}, indices.map(i => h('span', {text: etiquetaEje(i)})))));
+
+  const metodos = [{label: 'Efectivo', value: tablero.cash, color: 'var(--chart-1)'}, {label: 'Transferencias', value: tablero.transfers, color: 'var(--chart-2)'}];
+  const totalMetodos = tablero.cash + tablero.transfers;
+  secundaria.append(h('div', {class: 'card'}, h('div', {class: 'cabecera'}, icon('Efectivo'), h('h3', {text: 'Formas de cobro'})),
+    totalMetodos ? h('div', {class: 'dona'}, donaSvg(metodos),
+        h('div', {class: 'leyenda'}, metodos.map(x => h('div', {class: 'fila'},
+          h('span', {class: 'punto', style: 'background:' + x.color}),
+          h('span', {text: x.label + ': ' + Math.round(x.value * 100 / totalMetodos) + ' %'}),
+          h('span', {class: 'dato', style: 'margin-left:auto', text: cup(x.value)})))))
+      : vacio('Efectivo', 'Sin ventas en este período.')));
+
+  const ventaDiaria = serie.map(d => porDia[d] || 0), costoDiario = serie.map(d => (porDia[d] || 0) - (porMargen[d] || 0));
+  const leyendaArea = h('div', {class: 'leyenda horizontal'},
+    h('span', {class: 'fila'}, h('span', {class: 'punto', style: 'background:var(--chart-1)'}), h('span', {text: 'Venta'})),
+    h('span', {class: 'fila'}, h('span', {class: 'punto', style: 'background:var(--chart-2)'}), h('span', {text: 'Costo'})));
+  secundaria.append(h('div', {class: 'card'}, h('div', {class: 'cabecera'}, icon('Registros'), h('h3', {text: 'Ganancia por día'})),
+    h('div', {class: 'area'}, areaSvg([{valores: ventaDiaria, color: 'var(--chart-1)'}, {valores: costoDiario, color: 'var(--chart-2)'}])),
+    h('div', {class: 'ejes'}, indices.map(i => h('span', {text: etiquetaEje(i)}))), leyendaArea));
+
+  // Secundaria: red local (IP), conexiones y tiempo en línea (solo visualización).
+  const ahora = Date.now() + (uptime.ahora - Date.now());
+  const conectadas = (uptime.apps || []).filter(a => a.connected);
+  secundaria.append(h('div', {class: 'card'}, h('div', {class: 'cabecera'}, icon('RedLocal'), h('h3', {text: 'Red local'}),
+      button('Ver', () => SPVI.go('vinculadas'), {kind: 'texto'})),
+    h('div', {class: 'lista plana'}, itemLista({title: red.running && red.address ? red.address.join(':') : 'Detenida',
+      subtitle: red.running ? 'IP y puerto donde sincronizan las secundarias' : 'Iníciala en Apps vinculadas',
+      value: red.running ? 'Activa' : '—'}))));
+  secundaria.append(h('div', {class: 'card'}, h('div', {class: 'cabecera'}, icon('Vinculacion'), h('h3', {text: 'Conexiones'}),
+      button('Ver', () => SPVI.go('vinculadas'), {kind: 'texto'})),
+    h('div', {class: 'lista plana'}, conectadas.length
+      ? conectadas.slice(0, 3).map(a => itemLista({title: a.nombre, lead: h('span', {class: 'lead'}, h('span', {class: 'punto on'})),
+        subtitle: 'Última sincronización: ' + hace(Math.max(a.last_sync || 0, a.ultimaSincronizacion || 0) || null), value: ''}))
+      : [itemLista({title: 'Sin conexiones ahora', subtitle: (uptime.apps || []).length + ' apps vinculadas'})])));
+  secundaria.append(h('div', {class: 'card'}, h('div', {class: 'cabecera'}, icon('Cronometro'), h('h3', {text: 'Tiempo en línea'}),
+      button('Ver', () => SPVI.go('tiempo'), {kind: 'texto'})),
+    h('div', {class: 'lista plana'},
+      itemLista({title: 'SPVI en esta PC', subtitle: 'Abierto desde ' + fechaHora(uptime.app.since), value: duracion(ahora - uptime.app.since)}),
+      itemLista({title: 'Red local', subtitle: uptime.lan.running && uptime.lan.since ? 'Activa desde ' + fechaHora(uptime.lan.since) : 'Detenida',
+        value: uptime.lan.running && uptime.lan.since ? duracion(ahora - uptime.lan.since) : '--:--:--'}))));
 };

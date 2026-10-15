@@ -7,15 +7,14 @@ import cu.spvi.domain.usecase.CamposMigracion
 object TextosMigrar {
     /** 0.31.0 (P6): paso a llamarse solo «Migrar». */
     const val TITULO = "Migrar"
-    const val EXPLICACION = "Pasa tus datos y tu licencia a un teléfono nuevo. Al final, SPVI se borra de este teléfono. " +
-        "Hace falta la autorización del desarrollador."
+    const val EXPLICACION = "Pasa tus datos y tu licencia a un teléfono nuevo. Al final, SPVI se borra de este teléfono."
     const val PASO1 = "1. Pide la migración"
-    const val PASO1_TEXTO = "Instala SPVI en el teléfono nuevo y ábrelo. Allí entra en Ajustes → Migrar, " +
+    const val PASO1_TEXTO = "Instala SPVI en el teléfono nuevo. Allí entra en Ajustes → Migrar, " +
         "mantén pulsado el \"ID de este teléfono\" para copiarlo y escríbelo o pégalo aquí."
     const val PASO2 = "2. Copia tus datos"
-    const val PASO2_TEXTO = "Crea un respaldo completo (la contraseña es opcional) y envíalo al teléfono nuevo. Allí: Ajustes → Respaldo → Importar."
+    const val PASO2_TEXTO = "Crea un respaldo y envíalo al teléfono nuevo. Allí: Ajustes → Respaldo → Importar."
     /** 0.20.0 (H7): el respaldo lleva las fichas de los empleados, pero no sus claves. */
-    const val PASO2_EMPLEADOS = "Si tienes apps de empleados vinculadas, sincronízalas antes: en el teléfono nuevo habrá que vincularlas otra vez y se borran sus datos no enviados."
+    const val PASO2_EMPLEADOS = "Sincroniza antes tus apps de empleados: en el teléfono nuevo hay que vincularlas otra vez."
     const val PASO3 = "3. Autorización del desarrollador"
     const val PASO3_TEXTO = "El desarrollador te enviará la licencia del teléfono nuevo. Actívala allí y pega aquí el mismo mensaje."
     const val PASO4 = "4. Borra este teléfono"
@@ -26,12 +25,12 @@ object TextosMigrar {
 
     const val QR_TITULO = "Pasar los datos por QR"
     const val QR_EXPLICACION = "Con los dos teléfonos conectados a la misma wifi (o a la zona wifi del emisor) y con " +
-        "SPVI ya instalado en el nuevo, se pasan todos los datos de un teléfono a otro. Nada sale a internet."
+        "SPVI ya instalado en el nuevo, se pasan todos los datos de un teléfono a otro."
     const val EMISOR = "Emisor"
-    const val EMISOR_TEXTO = "Este teléfono (el que se va): enseña el código QR y envía los datos. Al terminar, " +
+    const val EMISOR_TEXTO = "Este teléfono: enseña el código QR y envía los datos. Al terminar, " +
         "SPVI se borra aquí solo."
     const val RECEPTOR = "Receptor"
-    const val RECEPTOR_TEXTO = "El teléfono nuevo: lee el código QR del emisor y recibe los datos en este."
+    const val RECEPTOR_TEXTO = "Lee el código QR del emisor y recibe los datos."
     const val QR_EMISOR_TITULO = "Código QR de migración"
     const val QR_EMISOR_DETALLE = "En el teléfono nuevo: Ajustes → Migrar → Receptor, y lee este código. " +
         "No se apague ninguna de las dos pantallas hasta que termine."

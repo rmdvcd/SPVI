@@ -48,7 +48,7 @@ object TextosCaja {
     /** 0.26.0 (P73 §4): en una secundaria, el fondo lo asigna el encargado. */
     const val FONDO_ASIGNADO_TEXTO = "El encargado asignó el fondo de caja de este turno."
     const val FONDO_PEDIR_TEXTO = "Pide al encargado el fondo de caja. Sin él no se puede abrir el turno."
-    const val FONDO_PEDIDO_TEXTO = "Fondo pedido. Llegará al sincronizar, en cuanto el encargado lo asigne."
+    const val FONDO_PEDIDO_TEXTO = "Fondo pedido. Llegará al sincronizar."
     const val PEDIR_FONDO = "Pedir fondo"
     const val FONDO_PEDIDO = "Fondo pedido al encargado."
     const val FONDO_FALTA = "Pide al encargado el fondo de caja para abrir el turno."

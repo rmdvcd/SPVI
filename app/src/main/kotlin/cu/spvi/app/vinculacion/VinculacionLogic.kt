@@ -12,9 +12,9 @@ import java.time.Instant
 object VinculacionLogic {
     const val TITULO = "Apps vinculadas"
     const val PRINCIPAL_DETALLE =
-        "Esta es la app principal: guarda todos los datos y la licencia. Las apps de tus empleados se vinculan con un código QR y envían sus ventas por la wifi del local."
+        "Esta es la app principal: guarda todos los datos y la licencia. Tus empleados se vinculan con un código QR."
     const val SIN_SECUNDARIAS = "Aún no hay apps secundarias"
-    const val SIN_SECUNDARIAS_DETALLE = "Agrega la app de cada empleado. Necesitan estar en la misma wifi que este teléfono (o en su zona wifi)."
+    const val SIN_SECUNDARIAS_DETALLE = "Agrega la app de cada empleado. Necesitan estar en la misma wifi que este teléfono."
     const val USAR_COMO_SECUNDARIA = "Usar esta app como secundaria"
     /** 0.27.0 (T9). */
     const val PRINCIPAL_NO_SECUNDARIA = "Esta app es la principal del negocio y no puede pasar a secundaria."
@@ -22,7 +22,7 @@ object VinculacionLogic {
     const val ABRIR_WIFI = "Abrir ajustes de wifi"
     const val CONFIRMAR_SECUNDARIA =
         "Escanearás el código que te muestre la app principal. Al vincularse, se borran los datos de este teléfono y se usan los de la principal."
-    const val QR_DETALLE = "Escanéalo en el teléfono del empleado: al instalar SPVI elige «Secundaria» y escanea este código."
+    const val QR_DETALLE = "En el teléfono del empleado, elige «Secundaria» y escanea este código."
     const val DESVINCULAR = "Desvincular"
     const val CONFIRMAR_DESVINCULAR = "Se borran los datos de este teléfono y vuelve a ser una app principal independiente."
     const val SINCRONIZAR = "Sincronizar ahora"
@@ -38,7 +38,7 @@ object VinculacionLogic {
     const val COBRO_TARJETA = "Cobrar en la tarjeta"
     /** 0.21.0 (C2): el teléfono lo escribe el empleado al vincularse; el SMS de Transfermóvil le llega a él. */
     const val COBRO_TELEFONO = "Teléfono del empleado"
-    const val COBRO_DETALLE = "Su app solo recibe esta tarjeta para el QR de cobro, junto con el teléfono que escribió el empleado."
+    const val COBRO_DETALLE = "Su app solo recibe esta tarjeta para el QR de cobro."
     const val SIN_TELEFONO = "Lo escribe el empleado al vincular su app"
     const val TELEFONO_SECUNDARIA = "Tu número de teléfono"
     const val TELEFONO_SECUNDARIA_AYUDA = "8 dígitos. Va en tu QR de cobro: el SMS de la transferencia te llegará a ti."
@@ -53,7 +53,7 @@ object VinculacionLogic {
     // 0.20.0 (H5): pedir el cierre del turno.
     const val PEDIR_CIERRE = "Pedir cierre del turno"
     const val CONFIRMAR_CIERRE =
-        "Su app lo cerrará al conectarse, nunca durante una venta: si está cobrando, al terminar. Las ventas del turno se quedan registradas."
+        "Su app lo cerrará al conectarse, nunca durante una venta. Las ventas del turno se quedan registradas."
     const val SIN_TURNO = "Ese turno ya está cerrado."
 
     // 0.26.0 (P73 §4): el fondo de cada turno de una secundaria lo asigna el dueño.

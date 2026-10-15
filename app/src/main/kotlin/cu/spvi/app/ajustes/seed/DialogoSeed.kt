@@ -29,7 +29,7 @@ fun DialogoSeed(vm: SeedViewModel, onCerrar: () -> Unit) {
                 when (val e = estado) {
                     is SeedViewModel.Estado.Idle -> {
                         Text(
-                            "Borra TODO lo actual y genera la bodega de prueba (año y medio de ventas).",
+                            "Borra TODO lo actual y genera la bodega de prueba.",
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {

@@ -27,7 +27,7 @@ object TextosPago {
     const val TITULO = "Pago electrónico"
     const val EXPLICACION = "Cuando un cliente paga por transferencia, el código QR lleva la tarjeta o cuenta que recibe " +
         "el dinero y el teléfono que recibe el mensaje de confirmación. Elige cuáles usar."
-    const val AVISO_BANCOS = "Los logos se estiman por el prefijo; no verifican el banco ni la titularidad. Algunos prefijos son ambiguos."
+    const val AVISO_BANCOS = "Los logos se estiman por el prefijo; no verifican el banco ni la titularidad."
     const val BANCO_ESTIMADO = "Identificación orientativa por prefijo"
     const val TELEFONO = "Teléfono de confirmación"
     const val TARJETA = "Tarjeta o cuenta que recibe el dinero"

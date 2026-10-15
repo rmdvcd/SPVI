@@ -117,7 +117,7 @@ class CajaViewModel @Inject constructor(
                 when {
                     r is AppResult.Ok -> TextosCaja.MOVIMIENTO_GUARDADO
                     r is AppResult.Err && r.error == AppError.TurnoCerrado -> "No hay turno abierto."
-                    else -> "No se pudo registrar el movimiento. Revisa el importe y el motivo."
+                    else -> "No se pudo registrar el movimiento."
                 },
             )
         }

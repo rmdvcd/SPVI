@@ -302,7 +302,7 @@ private fun PasoBienvenida() {
         SpviLogo(size = SpviSize.logoLarge, contentDescription = "SPVI")
         Text("Bienvenido a SPVI", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center, modifier = Modifier.semantics { heading() })
         Text(
-            "Tu punto de venta e inventario. Funciona sin internet y guarda tus datos protegidos en este teléfono.",
+            "Tu punto de venta e inventario. Funciona sin internet.",
             style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center,
         )
     }
@@ -311,14 +311,14 @@ private fun PasoBienvenida() {
     Punto(SpviIcons.Registros, "Revisa todo lo que vendiste.")
     SpviCard(tone = CardTone.Tonal) {
         Text("Te haremos unas pocas preguntas (unos 2 minutos).", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-        SpviSecondaryText("Puedes saltar cualquiera y completarla después en Ajustes → Completar configuración.", textAlign = TextAlign.Center)
+        SpviSecondaryText("Puedes saltar cualquiera.", textAlign = TextAlign.Center)
     }
 }
 
 @Composable
 private fun PasoDatos(state: OnboardingUiState, acciones: OnboardingAcciones) {
     // P28: sin título propio: la cabecera ya dice «Paso 2 de 4: Tus datos».
-    Explicacion("Se usan para pedir tu licencia y para cobrar por transferencia. Solo se guardan en este teléfono, protegidos. Puedes dejarlos en blanco.")
+    Explicacion("Se usan para pedir tu licencia y para cobrar por transferencia. Puedes dejarlos en blanco.")
     val d = state.datos
     val err = erroresDatos(d)
     val forzar = state.mostrarErroresDatos
@@ -353,7 +353,7 @@ private fun PasoDatos(state: OnboardingUiState, acciones: OnboardingAcciones) {
 private fun PasoAlertas(state: OnboardingUiState, acciones: OnboardingAcciones) {
     // P28: sin título propio: la cabecera ya dice «Avisos de inventario».
     Text("SPVI te avisará cuando quede poco de algo.", style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-    Explicacion("«Bajo»: conviene reponer pronto. «Crítico»: casi no queda, repón ya. Cada producto puede tener sus propios niveles más adelante.")
+    Explicacion("«Bajo»: conviene reponer pronto. «Crítico»: casi no queda, repón ya.")
     val err = state.niveles.errores()
     // Los botones − / + cuentan como una edición terminada: su resultado se valida al momento.
     var conBotones by rememberSaveable { mutableStateOf(false) }

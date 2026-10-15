@@ -283,6 +283,13 @@ function chipsPeriodo(actual, onchange, lista = PERIODOS) {
   return h('div', {class: 'chips', role: 'group', 'aria-label': 'Período'}, lista.map(([id, label]) =>
     h('button', {type: 'button', class: 'chip', 'aria-pressed': String(actual === id), onclick: () => onchange(id)}, label)));
 }
+/** Combobox de período para la barra fija de Inicio (misma lista que los chips de Registros). */
+function comboPeriodo(actual, onchange, lista = PERIODOS) {
+  const select = h('select', {'aria-label': 'Período', onchange: event => onchange(event.target.value)},
+    lista.map(([id, label]) => h('option', {value: id, text: label})));
+  select.value = actual;
+  return select;
+}
 SPVI.periodo = () => {
   const guardado = sessionStorage.getItem('spvi-periodo');
   return PERIODOS.some(([id]) => id === guardado) ? guardado : '7';
@@ -302,8 +309,12 @@ SPVI.diasSerie = function (periodo, tablero) {
     const dias = [...new Set((tablero.daily || []).map(x => x.day))].sort();
     return (dias.length ? dias : [new Date().toISOString().slice(0, 10)]).slice(-30);
   }
-  const desde = periodo === 'turno' && tablero.shift ? Date.parse(tablero.shift.opened) : Date.now();
-  const cuantos = periodo === 'hoy' ? 1 : Math.max(1, Math.ceil((Date.now() - desde) / 86400000) + 1);
+  let cuantos;
+  if (periodo === 'hoy') cuantos = 1;
+  else if (periodo === 'turno') {
+    const desde = tablero.shift ? Date.parse(tablero.shift.opened) : Date.now();
+    cuantos = Math.max(1, Math.ceil((Date.now() - desde) / 86400000) + 1);
+  } else cuantos = Math.max(1, Number(periodo) || 1);
   const serie = [];
   for (let i = cuantos - 1; i >= 0; i--) serie.push(new Date(Date.now() - i * 86400000).toISOString().slice(0, 10));
   return serie;

@@ -1,8 +1,92 @@
-# SPVI — Historial de desarrollo (Prompts 1–15)
+# SPVI - Historial de desarrollo (Prompts 1-15)
 
 Registro **histórico** de lo que se implementó en cada fase y de las suposiciones que se tomaron en ese momento, tal como figuraba en el README hasta la versión 0.12.0. Se conserva para trazabilidad.
 
 > **Prevalece la documentación actual.** Si algo de este historial contradice a [README.md](../README.md), [SECURITY.md](../SECURITY.md), [FORMATOS.md](../FORMATOS.md), [LICENSE_CLIENT.md](../LICENSE_CLIENT.md) o [UI_UX_IX.md](../UI_UX_IX.md), vale lo que dicen esos documentos. Las fases posteriores sustituyen a las anteriores.
+
+## 2026-10-15 - Web: ejes de gráficos y tops en acordeones (verificado en navegador)
+
+`core.js` (`diasSerie`): los períodos 7/30/90 devolvían 1 día (los ejes salían con solo «Hoy»); ahora devuelven sus N días.
+`inicio.js` + `app.css`: las 7 listas son `<details>` cerrados con resumen («primero · valor») y flecha, como el móvil.
+Verificado en Chrome real contra la app (7 barras, 4 etiquetas, dona con huecos, área de 2 series, acordeón con 3 filas).
+
+**Pruebas:** 132 pruebas Python OK (1 omitida); `node --check` del JS.
+
+## 2026-10-15 - Web: las 7 listas del móvil en Inicio + tipos según tokens
+
+`business.py` (`tops_periodo`, usado por `/api/dashboard`): Más vendido, Lento movimiento (con no vendidos en 0),
+Rentabilidad (ganancia > 0), Servicios top/menos, Empleado (empleado o dueño) y Cliente (transferencia con nombre),
+con las reglas de `Estadisticas` del móvil (empates por creado/reciente, margen y alfabético). `inicio.js` muestra
+las 7 tarjetas (vacías ocultas) con medallas y los formatos de `valorTop/subtituloTop`. `test_business.py`: prueba nueva.
+`app.css`: secundario 12→13, botones radio 20→12, campos/buscador/combo 48→56, casilla 40→48, h1 28→24 (tokens UI_UX_IX).
+
+**Pruebas:** 132 pruebas Python OK (1 omitida); `node --check` del JS. Pendiente: verlo en navegador real.
+
+## 2026-10-15 - Móvil: recorte de textos descriptivos excesivos
+
+Se acortan 14 textos (Vinculación, Respaldo, Migrar, cierre de turno, bancos, niveles, acceso con clave,
+subtítulo de Precios) y se elimina `BUSCAR_DETALLE` (3 frases que no se mostraban). Segunda pasada: bienvenida,
+datos, empleados, objetivo (recorrido inicial), explicación y pasos 1–2 de Migrar, QR, Perfil y clientes fijos.
+Tercera pasada: aviso de secundaria, bloqueo de actualización, datos de prueba, fondo pedido, error de caja,
+saltar pasos, importar, contraseña lista y QR de vinculación.
+Se conservan intactos los avisos de borrado, los de seguridad (contraseña, licencia, recuperación), los consentimientos (cámara, SMS,
+notificaciones) y las guías de error. El manual no citaba esos textos.
+
+**Pruebas:** `spviTests` en verde.
+
+## 2026-10-15 - Web: Inicio en 3 zonas (principal + secundaria de datos)
+
+`inicio.js` + `app.css`: tras el menú lateral, Inicio se parte en `.panel-inicio`: la **principal** trae turno,
+indicadores, alertas, top 3 de más vendidos (con medallas oro/plata/bronce, como el móvil), bajo costo y listas;
+la **secundaria** (`aside`, solo visualización) trae los 3 gráficos, IP/estado de la red (`/api/network`),
+conexiones y tiempo en línea (`/api/uptime`), con enlaces a sus secciones. En estrecho se apila.
+Gráficos al estilo del móvil: barras con intensidad por altura, dona con pista y 1 % de huecos, área de
+venta + costo con leyenda de puntos y hasta 4 etiquetas en el eje. MANUAL_USUARIO.md y desktop/README.md actualizados.
+
+**Pruebas:** 131 pruebas Python OK (1 omitida); `node --check` del JS. Pendiente: verlo en navegador real.
+
+## 2026-10-15 - Móvil: el cuadro de «Actualizar» ya no se queda colgado al cerrarlo a mitad
+
+`GestorActualizacion`: cerrar el cuadro (`cerrarProceso`) cancela el trabajo en curso (`procesoJob`) y los
+resultados tardíos solo se escriben si el cuadro sigue abierto (`resultadoProceso`). Antes, cerrar durante la
+comprobación o la descarga no detenía nada y, al terminar, el resultado reabría el cuadro solo, pasara lo que
+pasara. Test nuevo `ProcesoActualizarTest` (cerrar a mitad no reabre; sin cerrar sale el resultado y cierra).
+
+De paso: `libs.versions.toml` vuelve a `roborazzi = "1.38.0"` (el que fija AGENTS.md; el 1.76.0 trae metadata de
+Kotlin 2.3 y con Kotlin 2.0.21 no compilaba ningún test de `:app`) y se crean en `InicioLogic.kt` los subtítulos
+de acordeones (`resumenVentas`, `resumenGanancia`, `resumenInventario`, `resumenMetodos`, `resumenTop`,
+`resumenTopPersonas`) que `InicioLogicTest.resumenesDeLosAcordeones` ya exigía.
+
+**Pruebas:** `spviTests` en verde (todos los módulos JVM, incluido `ProcesoActualizarTest`).
+
+## 2026-10-15 - Web: Inicio sin tarjeta «Sin turno abierto», barra compacta
+
+`inicio.js` + `app.css`: se elimina el segundo contenedor («Sin turno abierto»; abrir/cerrar vive en el
+interruptor de la barra). La lista de período mide lo que su texto más largo (`width: auto`, nativa) y el
+interruptor queda acoplado a la izquierda (`flex: none` + `margin-left: auto` en la lista).
+
+**Pruebas:** `node --check` del JS; suite Python sin cambios en esta parte (131 OK antes del cambio).
+
+## 2026-10-15 - Web: barra de Inicio con interruptor de turno y combobox de período
+
+`inicio.js` + `core.js` + `app.css`: la barra fija de Inicio ahora es un contenedor con dos mitades, como el
+móvil (`FilaTurnoPeriodo`): a la izquierda el turno como **interruptor** (tocarlo abre los diálogos de abrir/cerrar;
+se revierte si se cancela; bloqueado sin licencia) y a la derecha el período como **combobox** nativo
+(`comboPeriodo`, misma lista que los chips que conserva Registros). La barra lleva su propio `sticky` + `z-index`
+(opaca, ya no depende de `.pegajoso`, que se desactiva bajo 1000 px). MANUAL_USUARIO.md y desktop/README.md actualizados.
+
+**Pruebas:** 131 pruebas Python OK (1 omitida); `node --check` del JS.
+
+## 2026-10-15 - Web: Licencia solo activa, y la maestra se puede teclear
+
+`desktop/spvi_web/static/js/ajustes.js` (`vistaLicencia`): se elimina el paso 1 «Solicitar licencia»
+(formulario y «Generar QR de solicitud») y el botón «Importar lista de revocaciones»; la sección queda
+en estado + «Activar licencia». La API (`/api/license/request`, `/api/license/qr`, revocaciones) no cambia.
+El campo de activación acepta la clave maestra `GLMK-PERM-MAXS-9999` (antes el formateo solo dejaba dígitos)
+y el envío la deja pasar al backend, que la valida solo con `SPVI_DESARROLLO=1`.
+MANUAL_USUARIO.md y desktop/README.md actualizados.
+
+**Pruebas:** 131 pruebas Python OK (1 omitida); `node --check` del JS.
 
 ## 2026-10-15 — Web 0.31.0: siete mejoras UI de la revisión visual
 

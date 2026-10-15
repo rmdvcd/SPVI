@@ -62,7 +62,7 @@ html, body { margin: 0; min-height: 100%; }
 body { font-family: Roboto, system-ui, 'Segoe UI', sans-serif; font-size: 14px; line-height: 20px; letter-spacing: .25px;
   background: var(--background); color: var(--on-background); -webkit-font-smoothing: antialiased; overflow-wrap: anywhere; }
 h1, h2, h3, h4, p { margin: 0; }
-h1 { font-size: 28px; line-height: 36px; font-weight: 400; }
+h1 { font-size: 24px; line-height: 32px; font-weight: 400; }
 h2 { font-size: 22px; line-height: 28px; font-weight: 400; }
 h3 { font-size: 16px; line-height: 24px; font-weight: 500; letter-spacing: .15px; }
 a { color: var(--primary); }
@@ -70,7 +70,7 @@ button, input, select, textarea { font: inherit; color: inherit; letter-spacing:
 [hidden] { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .dato { font-weight: 500; font-variant-numeric: tabular-nums; }
-.secundario { color: var(--on-surface); opacity: .65; font-size: 12px; line-height: 16px; letter-spacing: .4px; }
+.secundario { color: var(--on-surface); opacity: .65; font-size: 13px; line-height: 18px; letter-spacing: .4px; }
 .marca { font-family: Orbitron, Roboto, sans-serif; letter-spacing: 2px; font-weight: 400; }
 :focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
 
@@ -141,12 +141,40 @@ main { padding: calc(var(--bar) + var(--lg)) var(--lg) 96px; max-width: 1440px; 
 .vacio { padding: var(--xl) var(--md); text-align: center; color: var(--on-surface-variant); display: flex; flex-direction: column;
   align-items: center; gap: var(--xs); }
 .vacio .icon { width: 48px; height: 48px; opacity: .6; }
-/* Barra de Inicio: estado del turno y selector de período en la misma fila (primer contenedor fijo). */
+/* Barra de Inicio: interruptor de turno y combobox de período en el mismo contenedor fijo y opaco. */
 .barra-turno { display: flex; align-items: center; gap: var(--md); flex-wrap: wrap; padding: var(--xs) var(--md);
-  background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow); }
-.barra-turno .texto { flex: 1 1 240px; min-width: 0; display: flex; align-items: center; gap: var(--xs); font-weight: 500; }
-.barra-turno .texto .icon { color: var(--primary); }
-.barra-turno .texto .etiqueta { font-weight: 400; }
+  background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow);
+  position: sticky; top: calc(var(--bar) + var(--lg)); z-index: 10; }
+.barra-turno .interruptor { flex: none; min-height: 48px; }
+.barra-turno .interruptor .texto { flex: none; }
+.barra-turno select { flex: none; width: auto; margin-left: auto; min-height: 56px; padding: 10px 14px;
+  border-radius: var(--r-sm); border: 1px solid var(--outline); background: var(--surface); }
+.barra-turno .interruptor > .icon { color: var(--primary); align-self: center; }
+.barra-turno select:focus { outline: none; border: 2px solid var(--primary); padding: 9px 13px; }
+
+/* Inicio en 3 zonas (tras el menú lateral): principal y secundaria de solo datos. */
+.panel-inicio { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 360px); gap: var(--lg); align-items: start; }
+.col-principal, .col-secundaria { display: flex; flex-direction: column; gap: var(--lg); min-width: 0; }
+@media (max-width: 1000px) { .panel-inicio { grid-template-columns: 1fr; } }
+/* Medallas del top 3, como en el móvil: oro, plata y bronce. */
+.medalla { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 700; flex: none; }
+.medalla.oro { background: #F2C94C; color: #3D2E00; }
+.medalla.plata { background: #C5CCD6; color: #1F2933; }
+.medalla.bronce { background: #C98A4B; color: #2B1600; }
+.leyenda.horizontal { flex-direction: row; justify-content: center; gap: var(--lg); padding-top: var(--xs); }
+/* Acordeones de listas (cerrados por defecto, como en el móvil). */
+.card.acordeon { padding: 0; }
+.card.acordeon summary { display: flex; align-items: center; gap: var(--md); padding: var(--md); cursor: pointer; list-style: none; }
+.card.acordeon summary::-webkit-details-marker { display: none; }
+.card.acordeon summary > .icon { color: var(--primary); }
+.card.acordeon summary .texto { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.card.acordeon summary .titulo { font-size: 16px; font-weight: 500; }
+.card.acordeon summary .dato { font-variant-numeric: tabular-nums; max-width: 45%; text-align: right; }
+.card.acordeon summary::after { content: ''; width: 9px; height: 9px; border-right: 2px solid var(--on-surface-variant);
+  border-bottom: 2px solid var(--on-surface-variant); transform: rotate(45deg); flex: none; margin-right: 2px; }
+.card.acordeon[open] summary::after { transform: rotate(225deg); }
+.card.acordeon .lista { padding: 0 var(--md) var(--md); }
 
 /* Listas (SpviListItem). */
 .lista { display: flex; flex-direction: column; background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow); overflow: hidden; }
@@ -191,7 +219,7 @@ details.bloque .detalle { padding: 0 var(--md) var(--md) calc(var(--md) + 40px);
 
 /* Botones. */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--xs); min-height: 40px; padding: 0 var(--lg);
-  border-radius: 20px; border: 0; cursor: pointer; font-weight: 500; letter-spacing: .1px; background: var(--primary); color: var(--on-primary); }
+  border-radius: 12px; border: 0; cursor: pointer; font-weight: 500; letter-spacing: .1px; background: var(--primary); color: var(--on-primary); }
 .btn:hover { box-shadow: var(--shadow); filter: brightness(1.05); }
 .btn.tonal { background: var(--primary-container); color: var(--on-primary-container); }
 .btn.texto { background: transparent; color: var(--primary); padding: 0 var(--md); }
@@ -217,7 +245,7 @@ details.bloque .detalle { padding: 0 var(--md) var(--md) calc(var(--md) + 40px);
 /* Campos (SpviTextField con contorno). */
 .campo { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .campo > span { font-size: 12px; line-height: 16px; color: var(--on-surface-variant); letter-spacing: .4px; padding-left: 4px; }
-.campo input, .campo select, .campo textarea { min-height: 48px; padding: 10px 14px; border-radius: var(--r-sm); border: 1px solid var(--outline);
+.campo input, .campo select, .campo textarea { min-height: 56px; padding: 10px 14px; border-radius: var(--r-sm); border: 1px solid var(--outline);
   background: var(--surface); width: 100%; font-size: 16px; line-height: 24px; }
 .campo textarea { resize: vertical; min-height: 96px; }
 .campo input:focus, .campo select:focus, .campo textarea:focus { outline: none; border: 2px solid var(--primary); padding: 9px 13px; }
@@ -228,7 +256,7 @@ details.bloque .detalle { padding: 0 var(--md) var(--md) calc(var(--md) + 40px);
 .form .par { display: grid; gap: var(--md); grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 .buscar { position: relative; flex: 1; min-width: 220px; }
 .buscar .icon { position: absolute; left: 14px; top: 12px; color: var(--on-surface-variant); }
-.buscar input { width: 100%; min-height: 48px; border-radius: 24px; border: 0; background: var(--surface-high); padding: 0 var(--md) 0 48px; font-size: 16px; }
+.buscar input { width: 100%; min-height: 56px; border-radius: 24px; border: 0; background: var(--surface-high); padding: 0 var(--md) 0 48px; font-size: 16px; }
 .buscar input:focus { outline: 2px solid var(--primary); }
 .interruptor { display: flex; align-items: center; gap: var(--md); min-height: 48px; cursor: pointer; }
 .interruptor .texto { flex: 1; display: flex; flex-direction: column; }
@@ -237,7 +265,7 @@ details.bloque .detalle { padding: 0 var(--md) var(--md) calc(var(--md) + 40px);
 .interruptor input::after { content: ''; position: absolute; top: 6px; left: 6px; width: 16px; height: 16px; border-radius: 50%; background: var(--outline); transition: all .15s; }
 .interruptor input:checked { background: var(--primary); border-color: var(--primary); }
 .interruptor input:checked::after { left: 24px; top: 2px; width: 24px; height: 24px; background: var(--on-primary); }
-.casilla { display: flex; align-items: center; gap: var(--xs); min-height: 40px; cursor: pointer; }
+.casilla { display: flex; align-items: center; gap: var(--xs); min-height: 48px; cursor: pointer; }
 .casilla input { width: 18px; height: 18px; accent-color: var(--primary); }
 
 /* Pestañas y opciones (resaltado invertido, como SpviTabs). */

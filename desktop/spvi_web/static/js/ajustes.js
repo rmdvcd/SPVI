@@ -1,7 +1,6 @@
 'use strict';
 /* Ajustes: negocio, licencia, pago electrónico, precios, avisos, respaldo, clave de acceso, inicio con Windows y tema. */
 
-const TIPOS_LICENCIA = {MENSUAL: ['Mensual', 600000, 100000], SEMESTRAL: ['Semestral', 3000000, 500000], ANUAL: ['Anual', 5000000, 900000], PERPETUA: ['Perpetua', 9000000, 1700000]};
 const RETRASOS = [[0, 'Sin retraso'], [15, '15 segundos'], [30, '30 segundos'], [60, '1 minuto'], [120, '2 minutos'], [300, '5 minutos']];
 
 SPVI.views.ajustes = async function (root, sub) {
@@ -223,9 +222,8 @@ SPVI.views.ajustes = async function (root, sub) {
   }
 };
 
-/* ---------- Licencia: solicitud por QR de WhatsApp y activación con código de 16 dígitos. ---------- */
+/* ---------- Licencia: estado y activación con código de 16 caracteres. ---------- */
 function vistaLicencia(root, catalogo, licencia) {
-  const p = catalogo.perfil || {};
   const nombres = {MENSUAL: 'Mensual', SEMESTRAL: 'Semestral', ANUAL: 'Anual', PERPETUA: 'Perpetua'};
   const estado = h('div', {class: 'card ' + (licencia.clase === 'BLOQUEADA' ? 'error' : 'primario')}, h('div', {class: 'cabecera'}, icon(licencia.clase === 'BLOQUEADA' ? 'Bloqueo' : 'Verificado'),
     h('h3', {text: {PRUEBA: 'Periodo de prueba', ACTIVA: 'Licencia ' + (nombres[licencia.tipo] || '').toLowerCase() + ' activa', PERPETUA: 'Licencia perpetua', BLOQUEADA: 'Sin licencia vigente'}[licencia.clase]})),
@@ -233,50 +231,7 @@ function vistaLicencia(root, catalogo, licencia) {
     h('span', {text: 'Apps secundarias incluidas: ' + licencia.secundarias}));
   root.append(estado);
 
-  // Paso 1: solicitud
-  let tipo = 'ANUAL', secundarias = 0;
-  const total = h('p', {class: 'dato'});
-  const tipos = h('div', {class: 'chips', role: 'radiogroup', 'aria-label': 'Tipo de licencia'});
-  const pintarTipos = () => {
-    tipos.replaceChildren(...Object.entries(TIPOS_LICENCIA).map(([id, [label, precio]]) => h('button', {type: 'button', class: 'chip', 'aria-pressed': String(id === tipo), onclick: () => { tipo = id; pintarTipos(); }},
-      label, ' ', h('small', {text: cup(precio)}))));
-    const [, base, extra] = TIPOS_LICENCIA[tipo];
-    total.textContent = secundarias ? 'Total: ' + cup(base + secundarias * extra) + ' (' + cup(base) + ' + ' + secundarias + ' × ' + cup(extra) + ')' : 'Total: ' + cup(base);
-  };
-  const selectSec = seleccion({label: 'Apps secundarias (empleados)', name: 'secundarias', value: '0', options: Array.from({length: 11}, (_, n) => [String(n), n === 0 ? 'Sin apps secundarias' : n === 1 ? '1 app secundaria' : n + ' apps secundarias'])});
-  selectSec.querySelector('select').addEventListener('change', event => { secundarias = Number(event.target.value); pintarTipos(); });
-  const recuperar = h('details', null, h('summary', {text: '¿Reinstalaste SPVI o cambiaste de PC?'}),
-    campo({label: 'ID de la licencia anterior (opcional)', name: 'recupera', maxlength: 36, autocomplete: 'off', help: 'Si lo tienes, el desarrollador puede reemitirla sin un nuevo pago.'}));
-  const form = h('form', {class: 'card form'},
-    h('div', {class: 'cabecera'}, h('span', {class: 'lead paso', text: '1'}), h('h3', {text: licencia.clase === 'PERPETUA' ? 'Solicitar otra licencia' : 'Solicitar licencia'})),
-    h('p', {class: 'secundario', text: 'Paga el total al desarrollador y escribe el número de transacción del pago. Se generará un código QR para enviar la solicitud por WhatsApp desde tu teléfono.'}),
-    h('span', {class: 'secundario', text: 'Tipo de licencia'}), tipos, selectSec, total,
-    h('div', {class: 'par'}, campo({label: 'Nombre', name: 'nombre', required: true, maxlength: 80, value: p.nombre || ''}), campo({label: 'Apellidos', name: 'apellidos', required: true, maxlength: 80, value: p.apellidos || ''})),
-    h('div', {class: 'par'}, campo({label: 'Carné de identidad', name: 'ci', required: true, maxlength: 20, inputmode: 'numeric', value: p.ci || ''}), campo({label: 'Teléfono', name: 'telefono', required: true, maxlength: 20, inputmode: 'tel'})),
-    campo({label: 'Número de transacción del pago', name: 'transaccion', maxlength: 40, autocomplete: 'off', help: 'De 4 a 40 letras, números o guiones.'}),
-    recuperar,
-    h('div', {class: 'fila fin'}, button('Generar QR de solicitud', null, {type: 'submit', iconName: 'WhatsApp', kind: 'whatsapp'})));
-  pintarTipos();
-  form.addEventListener('submit', event => { event.preventDefault(); busy(form.querySelector('button[type=submit]'), async () => {
-    if (!form.reportValidity()) return;
-    const d = Object.fromEntries(new FormData(form));
-    if (!d.transaccion.trim() && !d.recupera?.trim()) throw new Error('Escribe el número de transacción del pago.');
-    const solicitud = await api('/api/license/request', {nombre: d.nombre, apellidos: d.apellidos, ci: d.ci, telefono: d.telefono, tipo, secundarias, transaccion: d.transaccion, recupera: d.recupera || ''});
-    const png = await apiBlob('/api/license/qr', {url: solicitud.url});
-    const url = URL.createObjectURL(await png.blob());
-    dialog({title: 'Enviar solicitud', iconName: 'WhatsApp', body: [
-      h('div', {class: 'centro form'}, h('img', {class: 'qr', src: url, alt: 'Código QR de la solicitud'}),
-        h('ol', {class: 'pasos'}, h('li', {text: 'Abre la cámara del teléfono (o el lector de QR) y apunta a este código.'}),
-          h('li', {text: 'Toca el enlace: se abrirá WhatsApp con la solicitud ya escrita.'}), h('li', {text: 'Envía el mensaje sin modificarlo.'}),
-          h('li', {text: 'Cuando el desarrollador verifique el pago, te enviará un código de 16 dígitos. Escríbelo en el paso 2.'}))),
-      h('details', null, h('summary', {text: 'Ver el mensaje'}), h('pre', {class: 'mensaje', text: solicitud.message})),
-    ], actions: [
-      {label: 'Copiar mensaje', icon: 'Copiar', onClick: async () => { await navigator.clipboard.writeText(solicitud.message); snack('Mensaje copiado.'); return false; }},
-      {label: 'Listo', primary: true},
-    ], onClose: () => URL.revokeObjectURL(url)});
-  }); });
-
-  // Paso 2: activación (código de 16 caracteres o clave maestra de desarrollo)
+  // Activación (código de 16 caracteres o clave maestra de desarrollo)
   const codigo = h('input', {class: 'codigo', name: 'codigo', inputmode: 'text', autocomplete: 'off', placeholder: '0000-0000-0000-0000', 'aria-label': 'Código de licencia', maxlength: 19, required: true, spellcheck: false});
   codigo.addEventListener('input', () => {
     const texto = codigo.value.toUpperCase().slice(0, 19);
@@ -288,7 +243,7 @@ function vistaLicencia(root, catalogo, licencia) {
     }
   });
   const activar = h('form', {class: 'card form'},
-    h('div', {class: 'cabecera'}, h('span', {class: 'lead paso', text: '2'}), h('h3', {text: 'Activar licencia'})),
+    h('div', {class: 'cabecera'}, h('h3', {text: 'Activar licencia'})),
     h('p', {class: 'secundario', text: 'Escribe el código de 16 dígitos que te envió el desarrollador.'}),
     h('label', {class: 'campo'}, h('span', {text: 'Código de licencia'}), codigo),
     h('div', {class: 'fila fin'}, button('Activar', null, {type: 'submit', iconName: 'Licencia'})));
@@ -296,15 +251,7 @@ function vistaLicencia(root, catalogo, licencia) {
     if (!/^[0-9A-Z]{16}$/.test(codigo.value.replace(/[\s-]/g, '').toUpperCase())) throw new Error('El código tiene 16 caracteres.');
     await api('/api/license/activate', {code: codigo.value}); snack('Licencia activada.'); await SPVI.changed();
   }); });
-  root.append(h('div', {class: 'dos'}, form, activar));
-
-  // Lista de revocaciones (la entrega el desarrollador si hace falta)
-  const archivo = h('input', {type: 'file', accept: '.json,application/json', hidden: true, onchange: () => busy(null, async () => {
-    const file = archivo.files[0]; if (!file) return;
-    let envelope; try { envelope = JSON.parse(await file.text()); } catch { throw new Error('Archivo no válido.'); }
-    await api('/api/license/revocations', envelope); snack('Lista actualizada.'); await SPVI.changed();
-  })});
-  root.append(h('div', {class: 'fila'}, button('Importar lista de revocaciones', () => archivo.click(), {kind: 'texto', iconName: 'Importar'}), archivo));
+  root.append(activar);
 }
 
 /* ---------- Reiniciar / salir (también desde el icono junto al reloj). ---------- */

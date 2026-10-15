@@ -179,13 +179,13 @@ fun AjustesContent(
                     onNavigate(Route.PagoElectronico)
                 }
             }
-            if (state.permisos.cambiarPrecios) item { Entry("Precios", "Ajustes de precio por pago o por importe", SpviIcons.Precios) { onNavigate(Route.Precios) } }
+            if (state.permisos.cambiarPrecios) item { Entry("Precios", "Por pago o por importe", SpviIcons.Precios) { onNavigate(Route.Precios) } }
             if (principal) item {
                 Entry("Avisos de inventario", "Cuándo avisar de stock bajo o crítico", SpviIcons.Alerta) {
                     onNavigate(Route.ConfiguracionInicial(PasoConfiguracion.ALERTAS.name))
                 }
             }
-            item { Entry("Permisos del teléfono", "Cámara: se pide solo al vincular o al hacer una foto", SpviIcons.Camara, onClick = onPermisos) }
+            item { Entry("Permisos", "", SpviIcons.Bloqueo, onClick = onPermisos) }
             item { cu.spvi.app.acceso.FilaAccesoClave(accesoClave, onAccesoClave) } // 0.27.0 (T11)
             if (principal) item {
                 Entry("Respaldo", "Copia cifrada de todo e importar", SpviIcons.Respaldo, modifier = Modifier.testTag(AjustesTags.RESPALDO)) {
