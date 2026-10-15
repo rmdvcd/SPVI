@@ -4,7 +4,7 @@ agp = "8.7.3"
 kotlin = "2.0.21"
 ksp = "2.0.21-1.0.28"
 # --- DI ---
-hilt = "2.52"
+hilt = "2.60.1"
 hiltNavigationCompose = "1.2.0"
 # --- AndroidX / Compose ---
 composeBom = "2024.12.01"
