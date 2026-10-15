@@ -44,6 +44,16 @@ Cómo cumple SPVI el contrato v1 del emisor offline **GL** (`CONTEXTO_LICENCIAS.
 
 Si el Perfil está vacío, el panel pide los datos y los guarda en el Perfil al solicitar.
 
+**Frescura y límites que GL aplica al emitir (PR #3 de GL, 2026-10-14, commit `005288d`; análisis en
+`docs/ANALISIS_GL_2026-10-15.md`):** la emisión SPVI2 exige `solicitadaEn` con ≤ 72 h de antigüedad y
+≤ 2 h de adelanto contra el reloj del emisor (comparación exacta; antes el flujo corto no lo aplicaba),
+nonce de 16–128 caracteres, `devicePub` de exactamente 33 B (44 en Base64url), `renueva` con formato
+`[A-Za-z0-9._:-]{1,64}` y solicitud ≤ 12 288 B. SPVI ya generaba todo eso; lo nuevo es el aviso
+`Vale 72 horas…` en la parte legible del mensaje (Android, escritorio y Flutter) y la validación de
+nombre alineada con la de GL en escritorio y Flutter (en Android `Validators.nombre` ya es un
+subconjunto estricto de la regla de GL). El nonce **no** se consume en GL: la misma solicitud puede
+reemitirse dentro de la ventana si el operador vuelve a confirmar el pago.
+
 ### Cifrado (`SolicitudCifrada`) y mensaje (`MensajesLicencia.solicitud`)
 
 1. Par efímero P-256; `epk` = su pública comprimida (33 B).

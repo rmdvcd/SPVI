@@ -101,8 +101,20 @@ class ActivacionPcTest(unittest.TestCase):
         for line in ('Solicitud de licencia SPVI', 'Plataforma: PC', 'Tipo: Anual', 'Apps secundarias: 2', 'Transacción: TMS-12345'):
             self.assertIn(line, text)
         self.assertIn('SPVIR1:', text)
+        # GL (PR #3, 2026-10-14) solo emite solicitudes frescas: el mensaje avisa de las 72 h.
+        self.assertIn('Vale 72 horas', text)
         with self.assertRaises(ValueError):
             self.client.request_message(dict(nombre='Ana', apellidos='Pérez', ci='85010112345', telefono='52123456', tipo='ANUAL'))
+
+    def test_nombre_como_el_que_exige_gl(self):
+        # Lo que GL rechazaría con InvalidPayload debe fallar aquí con mensaje claro, no en el emisor.
+        for malo in ('A', 'Juan123', 'Ana_', 'x' * 81):
+            with self.assertRaises(ValueError, msg=malo):
+                self.client.request(dict(nombre=malo, apellidos='Pérez', ci='85010112345', telefono='52123456',
+                                         tipo='ANUAL', secundarias=0, transaccion='TMS-12345'))
+        for bueno in ('Ana', 'María José', "D'Angelo", 'García-López', 'J. Pérez'):
+            self.client.request(dict(nombre=bueno, apellidos='Pérez', ci='85010112345', telefono='52123456',
+                                     tipo='ANUAL', secundarias=0, transaccion='TMS-12345'))
 
 
 class PreferenciasTest(unittest.TestCase):
