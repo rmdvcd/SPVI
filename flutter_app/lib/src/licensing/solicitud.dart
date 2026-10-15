@@ -136,6 +136,8 @@ class Solicitud {
     ];
     if (transaccion != null && transaccion.trim().isNotEmpty) lineas.add('Transacción: ${transaccion.trim()}');
     if (recupera != null && recupera.trim().isNotEmpty) lineas.add('Licencia anterior: ${recupera.trim()}');
+    // GL (PR #3, 2026-10-14) emite solo solicitudes frescas (≤72 h, ≤2 h de adelanto): se avisa en el mensaje.
+    lineas.add('Vale 72 horas: envíala y paga cuanto antes; si pasa ese tiempo, genera otra solicitud.');
     return '${lineas.join('\n')}\n\n$codigo';
   }
 

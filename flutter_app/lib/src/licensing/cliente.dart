@@ -297,7 +297,12 @@ class ClienteLicencia {
     final apellidos = datos.apellidos.trim();
     final ci = datos.ci.trim();
     final telefono = datos.telefono.trim();
-    if (nombre.isEmpty || apellidos.isEmpty) throw const LicenciaInvalida('Completa nombre y apellidos.');
+    // Misma regla que aplica GL al validar (PR #3): letras Unicode, espacio, punto, apóstrofo o guion, 2-80.
+    // Mejor fallar aquí con mensaje claro que un rechazo mudo en el emisor.
+    final nombreValido = RegExp(r"^[\p{L} .'-]{2,80}$", unicode: true);
+    if (!nombreValido.hasMatch(nombre) || !nombreValido.hasMatch(apellidos)) {
+      throw const LicenciaInvalida('Escribe nombre y apellidos válidos (solo letras, entre 2 y 80 caracteres).');
+    }
     if (ci.isEmpty) throw const LicenciaInvalida('Escribe el carné de identidad.');
     if (telefono.isEmpty) throw const LicenciaInvalida('Escribe el teléfono.');
     if (datos.secundarias < 0 || datos.secundarias > secundariasMax) {

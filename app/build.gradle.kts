@@ -81,6 +81,18 @@ android {
         }
     }
 
+    // Auditoría 2026-10-14 (O-05): un APK por ABI (+ universal) para no cargar las librerías nativas de todas
+    // las arquitecturas (ML Kit/SQLCipher) en cada teléfono. El APK universal sigue existiendo para distribuir
+    // un solo archivo, como hasta ahora.
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86_64")
+            isUniversalApk = true
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -137,7 +149,8 @@ dependencies {
     implementation(libs.androidx.biometric)          // 0.27.0 (T11): añade USE_BIOMETRIC y USE_FINGERPRINT (permisos normales)
     implementation(libs.androidx.fragment)           // 0.27.0 (T11): MainActivity es FragmentActivity (BiometricPrompt)
     implementation(libs.androidx.lifecycle.process)  // 0.27.0 (T11): la app pasa a segundo plano y vuelve
-    implementation(libs.androidx.profileinstaller)   // 0.27.0 (T4): perfiles de Compose en release
+    // Auditoría 2026-10-14 (D-04): fuera androidx-profileinstaller: sin baseline profile generado no aportaba
+    // nada y sumaba un permiso/dependencia. Si se genera el perfil (Macrobenchmark), se repone junto con él.
     implementation(libs.kotlinx.serialization.core)
 
     // Inventario: escáner (CameraX + ML Kit con modelo empaquetado, sin Play Services) y fotos (Coil, solo archivos locales).

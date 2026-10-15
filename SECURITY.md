@@ -189,3 +189,14 @@ Android/GL antes de producción; véase `desktop/VERIFICACION_PC.md`.
 
 Estado: implementación sin ejecutar en esta fase. Las pruebas añadidas deben correr en la PC y
 complementarse con los ensayos de móviles, Windows y GL antes de uso real.
+
+## 4 quinquies. Correcciones de la auditoría 2026-10-14
+
+| Área | Medida |
+|---|---|
+| **Respaldo sin contraseña (S-01)** | La exportación trae «Proteger con contraseña» ENCENDIDO por defecto. El modo sin contraseña sigue existiendo como opción expresa (hace falta para la migración interna), pero la pantalla avisa de que quien consiga el archivo puede leer ventas y datos de clientes sin ninguna clave. Nada cambia en el formato `.spvi` v4: los respaldos anteriores se siguen abriendo igual. |
+| **Migración teléfono a teléfono (S-02)** | El transporte deja de viajar «solo ofuscado»: apretón de manos con reto-respuesta HMAC-SHA256 (la clave del QR nunca sale por el cable), clave de sesión ligada a los nonces de esa conexión y marcos AES-256-GCM. La clave del QR sube de 64 a 128 bits. Un observador de la wifi ya no puede reconstruir los datos; un intermediario sin la clave no supera el reto. |
+| **Servidor de sincronización (S-03/S-04)** | Android ya no registra la sesión (ni desplaza a la legítima, ni anota el `deviceId`) hasta recibir el primer mensaje cifrado, igual que el escritorio; el escritorio hace lo mismo con el `device` del saludo. Tope de 24 conexiones simultáneas en Android (el escritorio ya lo tenía). |
+| **Clave web del escritorio (S-05)** | `/login` se frena: 5 fallos seguidos → 60 s de espera (429). La clave nueva exige mínimo 12 caracteres (antes 8). Las claves ya creadas no se invalidan. |
+| **Claves de GL en el escritorio (D-02)** | `trust.comprobar_fijadas()` se llama al arrancar la app (`create_app`): si una clave fijada no coincide con su huella, la app no arranca. |
+| **Cadena de suministro (S-08)** | Acciones del CI fijadas por SHA (antes etiquetas mutables `@v4`/`@v5`) y Dependabot mensual para acciones, Gradle y pip. |

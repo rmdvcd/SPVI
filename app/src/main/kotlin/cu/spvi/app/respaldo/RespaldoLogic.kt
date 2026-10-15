@@ -12,9 +12,9 @@ import java.time.ZoneId
 object TextosRespaldo {
     const val TITULO = "Respaldo"
     const val EXPLICACION = "Guarda una copia protegida de todo el negocio. Si la proteges con contraseña, nadie puede abrirla sin ella, ni siquiera el desarrollador."
-    /** 0.27.0 (T10): contraseña opcional, apagada por defecto. */
+    /** 0.27.0 (T10): contraseña opcional. Auditoría 2026-10-14 (S-01): ENCENDIDA por defecto. */
     const val PROTEGER = "Proteger con contraseña"
-    const val SIN_CONTRASENA_AVISO = "Sin contraseña, cualquiera con SPVI podrá abrir este archivo."
+    const val SIN_CONTRASENA_AVISO = "Sin contraseña, quien consiga este archivo podrá leer tus ventas y los datos de tus clientes sin ninguna clave."
     const val LISTO_SIN_CONTRASENA = "Ahora elige dónde guardar el respaldo."
     const val SIN_LICENCIA = "La licencia no viaja en el respaldo: en otro teléfono hace falta una licencia nueva."
     const val ERROR_CONTRASENA = "Mínimo ${Validadores.MIN_CONTRASENA} caracteres"
@@ -40,10 +40,12 @@ fun nombreRespaldo(fecha: LocalDate): String = "SPVI_respaldo_$fecha.${TextosRes
 
 /**
  * Contraseña de exportación (se repite: si se olvida o se escribe mal, el respaldo es irrecuperable).
- * 0.27.0 (T10): [conContrasena] apagado por defecto; apagado no se valida nada y se exporta sin contraseña.
+ * 0.27.0 (T10): [conContrasena] opcional. Auditoría 2026-10-14 (S-01): encendido por defecto — el modo sin
+ * contraseña solo OFUSCA (su «secreto» se deriva de constantes publicadas en el código), no cifra de verdad;
+ * apagarlo es una decisión expresa del usuario y la pantalla lo advierte. Apagado no se valida nada.
  */
 data class ExportForm(
-    val conContrasena: Boolean = false,
+    val conContrasena: Boolean = true,
     val contrasena: String = "",
     val repetir: String = "",
     val mostrarErrores: Boolean = false,

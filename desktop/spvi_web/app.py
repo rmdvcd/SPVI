@@ -5,10 +5,11 @@ from pathlib import Path
 from flask import Flask, abort, jsonify, render_template, request, session, send_file
 from io import BytesIO
 from .exports import export, MIMES
-from .backups import backup, restore, MAX_BYTES
+from .backups import MAX_BYTES  # backup/restore viven en Business (export_backup/import_backup); aquí solo el tope
 from .store import Store
 from .secrets import SecretBox
 from .licensing.client import LicenseClient
+from .licensing import trust
 from .business import Business
 from .sync.server import SyncManager
 from . import android_backup, VERSION
@@ -31,6 +32,11 @@ def create_app(data_dir, password_hash=None, secret=None, secure=False, hosts=No
     box = SecretBox(secret)
     identity = Path(identity_dir) if identity_dir else Path(data_dir)
     identity.mkdir(parents=True, exist_ok=True)
+    # Auditoría 2026-10-14 (D-02): la comprobación huella↔clave fijada existía sin que nadie la llamara.
+    # Se verifica al arrancar con las claves reales del build; si una clave se cambió sin actualizar su
+    # huella, la app no arranca (mejor aquí que al vender). LicenseClient a secas no la hace: los tests
+    # trabajan con claves sustituidas.
+    trust.comprobar_fijadas()
     licensing = LicenseClient(identity, box)
     store = Business(Store(Path(data_dir) / 'spvi.sqlite3'), licensing, box)
     sync = SyncManager(store)
@@ -74,14 +80,24 @@ def create_app(data_dir, password_hash=None, secret=None, secure=False, hosts=No
     def favicon():
         return app.send_static_file('icons/spvi.ico')
 
+    # Auditoría 2026-10-14 (S-05): freno a la fuerza bruta contra /login (antes: intentos ilimitados sobre una
+    # clave que protege todo el negocio). 5 fallos seguidos → 60 s de espera; el acierto reinicia la cuenta.
+    login_fallos = {'n': 0, 'hasta': 0.0}
+
     @app.post('/login')
     def login():
+        if time.monotonic() < login_fallos['hasta']:
+            return jsonify(error='Demasiados intentos. Espera un minuto e inténtalo de nuevo.'), 429
         data = request.get_json(silent=True)
         if not isinstance(data, dict):
             return jsonify(error='Datos no válidos.'), 400
         password = data.get('password', '')
         if not isinstance(password, str) or len(password) > 256 or not config.check(password):
+            login_fallos['n'] += 1
+            if login_fallos['n'] >= 5:
+                login_fallos.update(n=0, hasta=time.monotonic() + 60)
             return jsonify(error='Clave incorrecta.'), 401
+        login_fallos.update(n=0, hasta=0.0)
         session.clear()
         session.update(csrf=secrets.token_urlsafe(32)); grant()
         return jsonify(ok=True)

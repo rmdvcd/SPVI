@@ -92,10 +92,20 @@ def decode_license(code, private, device_id, keys=trust.SIGN):
         raise ValueError('Licencia no válida para esta instalación.') from error
 
 
+# Regla de nombre de GL al validar la solicitud (PR #3 de GL, 2026-10-14): letras Unicode, espacio, punto,
+# apóstrofo o guion, 2-80. Se comprueba aquí para que el error se vea en SPVI y no como rechazo mudo en GL.
+NAME_RE = re.compile(r"(?:[^\W\d_]|[ .'\-]){2,80}")
+
+# GL exige la solicitud fresca al emitir (≤72 h, ≤2 h de adelanto): se avisa en el propio mensaje.
+AVISO_FRESCURA = 'Vale 72 horas: envíala y paga cuanto antes; si pasa ese tiempo, genera otra solicitud.'
+
+
 class LicenseClient:
     def __init__(self, directory, box, clock=time.time, firma_keys=trust.SIGN):
         self.path = Path(directory) / 'licencia.bin'
         # Claves de firma de GL fijadas en el build (los tests usan las suyas: nunca se tocan las reales).
+        # Auditoría 2026-10-14 (D-02): la verificación huella↔clave se hace al arrancar la app (create_app),
+        # no aquí: los tests sustituyen las claves por las suyas y eso no es un error de fijación.
         self.firma_keys = tuple(firma_keys)
         self.box, self.clock, self.lock = box, clock, threading.RLock()
         if self.path.exists():
@@ -303,8 +313,8 @@ class LicenseClient:
     def request(self, data):
         """Solicitud cifrada ``SPVIR1`` de la plataforma PC con el número de transacción del pago."""
         fields = {k: str(data.get(k, '')).strip() for k in ('nombre', 'apellidos', 'ci', 'telefono', 'tipo')}
-        if not fields['nombre'] or not fields['apellidos'] or any(len(fields[k]) > 80 for k in ('nombre','apellidos')):
-            raise ValueError('Completa nombre y apellidos.')
+        if not NAME_RE.fullmatch(fields['nombre']) or not NAME_RE.fullmatch(fields['apellidos']):
+            raise ValueError('Escribe nombre y apellidos válidos (solo letras, entre 2 y 80 caracteres).')
         from ..dto import identity_number, telephone
         fields['ci']=identity_number(fields['ci']);fields['telefono']=telephone(fields['telefono'])
         if fields['tipo'] not in TYPES: raise ValueError('Elige el tipo de licencia.')
@@ -344,6 +354,7 @@ class LicenseClient:
         lines += ['Tipo: ' + TYPE_LABELS[data['tipo']], 'Apps secundarias: %d' % data.get('secundarias', 0)]
         if str(data.get('transaccion', '') or '').strip(): lines.append('Transacción: ' + str(data['transaccion']).strip())
         if str(data.get('recupera', '') or '').strip(): lines.append('Recuperar licencia: ' + str(data['recupera']).strip())
+        lines.append(AVISO_FRESCURA)
         message = '\n'.join(lines) + '\n\n' + code
         return dict(code=code, message=message, url='https://wa.me/%s?text=%s' % (DEVELOPER, quote(message, safe='')))
 

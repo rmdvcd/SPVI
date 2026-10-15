@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import cu.spvi.domain.model.TipoApp
@@ -69,6 +70,8 @@ class ServidorSync @Inject constructor(
     val estado: StateFlow<EstadoPrincipal> = _estado.asStateFlow()
 
     private val sesiones = ConcurrentHashMap<Long, Sesion>()
+    /** Auditoría 2026-10-14 (S-04): tope de conexiones simultáneas (el escritorio ya limita; Android no). */
+    private val cupoConexiones = Semaphore(MAX_CONEXIONES)
     private val vinculando = Mutex()
     private val avisos = Channel<Unit>(Channel.CONFLATED)
     private var trabajo: Job? = null
@@ -103,7 +106,18 @@ class ServidorSync @Inject constructor(
             try {
                 while (isActive) {
                     val s = withContext(Dispatchers.IO) { ss.accept() }
-                    launch { atender(s) }
+                    // S-04: sin cupo, una ráfaga de conexiones agota hilos y memoria; la de más se corta.
+                    if (!cupoConexiones.tryAcquire()) {
+                        runCatching { s.close() }
+                        continue
+                    }
+                    launch {
+                        try {
+                            atender(s)
+                        } finally {
+                            cupoConexiones.release()
+                        }
+                    }
                 }
             } catch (e: IOException) {
                 // socket cerrado al detener
@@ -228,19 +242,24 @@ class ServidorSync @Inject constructor(
             val mac = CriptoSync.enc(CriptoSync.macRechazo(clave, nonceC, Rechazo.QUITADA))
             return Saludos.enviar(out, Rechazo(Rechazo.QUITADA, mac)).also { socket.close() }
         }
-        // 0.31.0 (mitigación 7): el saludo repite el `deviceId` de la secundaria (p. ej. tras reinstalar la principal
-        // desde un respaldo, que no guarda los `deviceId`). Se ignora cualquier valor que no sea un `deviceId` válido.
-        if (h.device != null) anotarDevice(e.id, h.device)
         val nonceS = CriptoSync.aleatorio(CriptoSync.NONCE_BYTES)
         withContext(Dispatchers.IO) { Saludos.enviar(out, HolaOk(CriptoSync.enc(nonceS), comandosUnicos = true)) }
         val canal = CanalCifrado.paraPrincipal(input, out, CriptoSync.clavesSesion(clave, nonceC, nonceS))
         clave.fill(0)
         val s = Sesion(e.id, socket, canal)
-        sesiones.put(e.id, s)?.cerrar() // la misma app reconectando: se queda la conexión nueva
-        _estado.update { it.copy(conectadas = it.conectadas + e.id) }
         try {
+            // Auditoría 2026-10-14 (S-03): la sesión NO se registra (ni desplaza a la legítima, ni anota el
+            // `deviceId`) hasta recibir el PRIMER mensaje cifrado: hasta ahí, el saludo solo prueba conocer
+            // identificadores, no poseer la clave del empleado. El escritorio ya lo hacía así.
+            var pendiente: Mensaje? = withContext(Dispatchers.IO) { canal.recibir() }
+            // 0.31.0 (mitigación 7): el saludo repite el `deviceId` de la secundaria (p. ej. tras reinstalar la
+            // principal desde un respaldo, que no guarda los `deviceId`); ya autenticada, se anota el válido.
+            if (h.device != null) anotarDevice(e.id, h.device)
+            sesiones.put(e.id, s)?.cerrar() // la misma app reconectando: se queda la conexión nueva
+            _estado.update { it.copy(conectadas = it.conectadas + e.id) }
             while (true) {
-                val m = withContext(Dispatchers.IO) { canal.recibir() }
+                val m = pendiente ?: withContext(Dispatchers.IO) { canal.recibir() }
+                pendiente = null
                 val actual = db.syncDao().empleado(e.id)
                 if (actual == null || !actual.activo) { runCatching { s.enviar(Quitada) }; break }
                 when (m) {
@@ -369,5 +388,7 @@ class ServidorSync @Inject constructor(
         const val PUERTO = 47_811
         /** La secundaria hace ping cada 30 s; sin noticias en 90 s se da la conexión por perdida. */
         const val LECTURA_MS = 90_000
+        /** S-04: conexiones simultáneas máximas (una por secundaria real basta; el resto es ruido o abuso). */
+        const val MAX_CONEXIONES = 24
     }
 }

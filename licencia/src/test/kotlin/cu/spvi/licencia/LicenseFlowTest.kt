@@ -9,7 +9,6 @@ import cu.spvi.licencia.crypto.EcP256
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -59,6 +58,7 @@ class LicenseFlowTest {
             listOf(
                 "Solicitud de licencia SPVI", "Nombre: María Pérez González", "Carné de identidad: 85010112345",
                 "Teléfono: +5352345678", "Tipo: Semestral", "Apps secundarias: 3", "Precio: 45,000.00 CUP",
+                cu.spvi.licencia.contract.MensajesLicencia.AVISO_FRESCURA,
             ),
             intro.lines(),
         )

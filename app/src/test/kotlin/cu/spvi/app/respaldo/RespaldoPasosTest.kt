@@ -19,7 +19,8 @@ class RespaldoPasosTest {
     @Test fun trasExportarSeMuestraElPaso3AunqueElFormularioSeVacie() {
         assertEquals(3, PasosRespaldo.pasoExportar(2, ExportForm(), hecho = true))
         assertEquals(1, PasosRespaldo.pasoExportar(2, ExportForm(true), hecho = false))
-        assertEquals(2, PasosRespaldo.pasoExportar(2, ExportForm(), hecho = false)) // 0.27.0: sin contraseña ya es válido
+        assertEquals(2, PasosRespaldo.pasoExportar(2, ExportForm(conContrasena = false), hecho = false)) // sin contraseña (apagada a propósito) ya es válido
+        assertEquals(1, PasosRespaldo.pasoExportar(2, ExportForm(), hecho = false)) // S-01: por defecto pide contraseña; sin escribirla no avanza
         assertEquals(3, PasosRespaldo.TOTAL_EXPORTAR)
     }
 

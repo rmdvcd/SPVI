@@ -5,9 +5,6 @@ import cu.spvi.core.result.AppError
 import cu.spvi.core.time.Dates
 import cu.spvi.core.validation.Phone
 import cu.spvi.core.validation.Validators
-import cu.spvi.app.common.EstadoPermiso
-import cu.spvi.app.common.Explicacion
-import cu.spvi.app.common.explicacionCamara
 import cu.spvi.core.money.Money
 import cu.spvi.domain.model.Licencia
 import cu.spvi.domain.model.LicenciaInstalada

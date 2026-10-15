@@ -4,7 +4,6 @@ import cu.spvi.licencia.crypto.AesGcm
 import cu.spvi.licencia.crypto.DeviceKey
 import cu.spvi.licencia.crypto.EcP256
 import cu.spvi.licencia.crypto.Hkdf
-import cu.spvi.licencia.crypto.fail
 import java.nio.ByteBuffer
 import java.security.KeyPair
 import java.security.MessageDigest

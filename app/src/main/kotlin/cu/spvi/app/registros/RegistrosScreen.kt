@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -52,7 +51,6 @@ import cu.spvi.app.common.Compartir
 import cu.spvi.app.common.SecureWindow
 import cu.spvi.app.inicio.EstadoCarga
 import cu.spvi.app.navigation.Route
-import cu.spvi.designsystem.component.IconActionStyle
 import cu.spvi.designsystem.component.SpviBadge
 import cu.spvi.designsystem.component.SpviBottomSheet
 import cu.spvi.designsystem.component.SpviChip

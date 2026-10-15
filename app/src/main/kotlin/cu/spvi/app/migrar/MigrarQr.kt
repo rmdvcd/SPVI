@@ -11,7 +11,9 @@ enum class RolMigracion { EMISOR, RECEPTOR }
 
 /**
  * 0.31.0 (P6): lo que va dentro del código QR de la migración. Lo genera el emisor y lo lee el receptor con la
- * cámara: dónde conectarse ([host]:[puerto]) y con qué [clave] (aleatoria, de un solo uso, 16 caracteres).
+ * cámara: dónde conectarse ([host]:[puerto]) y con qué [clave] (aleatoria, de un solo uso, 32 caracteres hex).
+ * Auditoría 2026-10-14 (S-02): la clave sube de 8 a 16 bytes (128 bits): es la llave maestra del apretón de
+ * manos del transporte cifrado y no debe poder probarse por fuerza bruta fuera de línea.
  *
  * Texto: `SPVIM1|<EMISOR|RECEPTOR>|<host>|<puerto>|<clave>|<origen>`.
  * El [origen] es solo informativo: el identificador del teléfono emisor, para que el receptor vea a quién le está
@@ -29,7 +31,7 @@ data class CodigoMigracion(
     companion object {
         const val PREFIJO = "SPVIM1"
         const val SEP = "|"
-        const val LARGO_CLAVE = 16
+        const val LARGO_CLAVE = 32
 
         /** null si no es un código de SPVI, si el rol no es Emisor/Receptor o si falta o sobra algún dato. */
         fun parsear(texto: String): CodigoMigracion? {
@@ -44,9 +46,9 @@ data class CodigoMigracion(
             return CodigoMigracion(rol, partes[2], puerto, clave, partes.drop(5).joinToString(SEP))
         }
 
-        /** Clave de un solo uso: 8 bytes aleatorios en hexadecimal (64 bits). */
+        /** Clave de un solo uso: 16 bytes aleatorios en hexadecimal (128 bits). */
         fun clave(): String {
-            val b = ByteArray(8).also { SecureRandom().nextBytes(it) }
+            val b = ByteArray(16).also { SecureRandom().nextBytes(it) }
             return b.joinToString("") { "%02x".format(it.toInt() and 0xFF) }
         }
     }

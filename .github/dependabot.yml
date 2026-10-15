@@ -1,0 +1,16 @@
+# Auditoría 2026-10-14 (S-08): las acciones del CI van fijadas por SHA; Dependabot avisa cuando salen
+# versiones nuevas para que la actualización sea una decisión revisada, no una sorpresa.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "pip"
+    directory: "/desktop"
+    schedule:
+      interval: "monthly"

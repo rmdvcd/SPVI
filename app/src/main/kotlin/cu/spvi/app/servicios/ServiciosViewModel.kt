@@ -25,7 +25,6 @@ import cu.spvi.domain.usecase.ExportarTablas
 import cu.spvi.domain.usecase.ObservarServicios
 import cu.spvi.domain.usecase.ObtenerFichaServicio
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.time.LocalDate
 import java.time.ZoneId
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi

@@ -25,6 +25,13 @@ data class Cotizacion(
     val ajustes: Map<Long, Int>,
     /** Elaborados de la venta (productoId → unidades): se venden descontando sus insumos (P26). */
     val elaborados: Map<Long, Long> = emptyMap(),
+    /**
+     * Auditoría 2026-10-14 (§6.1): nombres de líneas cuyo precio final (con ajustes) quedó al costo o por debajo.
+     * Ya NO bloquean la venta: vender a pérdida puede ser intencional (oferta, merma, error a corregir luego).
+     * Es una advertencia visible en el comprobante/QR; el bloqueo duro precio>costo sigue en Validadores al
+     * crear/editar el producto, que es donde nace el precio.
+     */
+    val advertencias: List<String> = emptyList(),
 ) {
     val totalBase: Cup get() = detalles.sumOfCup { it.precioBase * it.cantidad }
     val total: Cup get() = detalles.sumOfCup { it.subtotal }
@@ -83,10 +90,10 @@ object PlanificadorVenta {
                 costoUnitario = if (p.esElaborado) costosReceta[p.id] ?: p.precioCosto else p.precioCosto,
             )
         }
-        // También protege descuentos acumulados y costos de recetas que hayan cambiado.
-        if (detalles.any { it.precioUnitario <= it.costoUnitario }) {
-            return AppResult.Err(AppError.Validacion("precioVenta", AppError.Regla.RANGO))
-        }
-        return AppResult.Ok(Cotizacion(metodoPago, detalles, ajustes, elaborados))
+        // Auditoría 2026-10-14 (§6.1): antes esto devolvía un error y la venta NO se podía registrar (un descuento
+        // acumulado o una receta encarecida dejaban al vendedor sin salida). Ahora se cotiza y se advierten las
+        // líneas al costo o por debajo; la decisión es del vendedor y queda visible antes de confirmar.
+        val advertencias = detalles.filter { it.precioUnitario <= it.costoUnitario }.map { it.nombre }
+        return AppResult.Ok(Cotizacion(metodoPago, detalles, ajustes, elaborados, advertencias))
     }
 }

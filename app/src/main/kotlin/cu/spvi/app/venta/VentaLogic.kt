@@ -225,6 +225,9 @@ object TextosVenta {
     const val TOTAL_ESTIMADO = "Total estimado"
     const val TOTAL = "Total"
     fun registrada(total: Cup, m: MetodoPago) = "Venta registrada: ${Money.format(total)} en ${metodo(m).lowercase()}."
+    /** Auditoría 2026-10-14 (§6.1): advertencia (no bloqueo) cuando una línea queda al costo o por debajo. */
+    fun bajoCosto(nombres: List<String>) =
+        "Ojo: vendes al costo o por debajo en: ${nombres.joinToString(", ")}. Revisa los precios antes de confirmar."
     fun ajuste(base: Cup, total: Cup) = "Precio con ajuste: antes ${Money.format(base)}"
     fun smsOtroImporte(sms: Cup, total: Cup) =
         "Ojo: el SMS indica ${Money.format(sms)} y la venta es de ${Money.format(total)}. Revisa que sea la transferencia correcta."

@@ -37,10 +37,6 @@ workflows:
       - flutter_app/build/ios/iphonesimulator/SPVI-Simulator.zip
       - flutter_app/build/ios/archive/Runner.xcarchive
       - flutter_app/build/ios/ipa/*.ipa
-    publishing:
-      email:
-        recipients:
-          - user@example.com
-        notify:
-          success: true
-          failure: true
+    # Sin `publishing.email`: llevaba un correo de ejemplo (user@example.com, auditoría I-08) que no
+    # es de nadie. Quien use Codemagic debe poner aquí su correo real o activar las notificaciones
+    # en la interfaz de Codemagic. Los artefactos quedan disponibles igualmente en la corrida.

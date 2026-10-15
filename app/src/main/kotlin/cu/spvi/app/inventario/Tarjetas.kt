@@ -126,9 +126,27 @@ class TarjetasAndroid @Inject constructor(
         dibujarTexto(c, Money.format(p.precioVenta), precio, r.left + pad, r.bottom - pad - precio.textSize * 1.2f, ancho, 1)
     }
 
+    /**
+     * Auditoría 2026-10-14 (O-04): decodifica la foto ACOTADA a la zona donde se va a dibujar (antes se cargaba
+     * a resolución completa de la cámara: varios MP por tarjeta y riesgo de memoria al compartir muchas).
+     * Primero lee solo las dimensiones y luego submuestrea con inSampleSize (potencias de 2).
+     */
+    private fun decodificarAcotada(ruta: String, anchoZona: Int, altoZona: Int): Bitmap? {
+        val limites = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(ruta, limites)
+        if (limites.outWidth <= 0 || limites.outHeight <= 0) return null
+        var muestra = 1
+        while (limites.outWidth / (muestra * 2) >= anchoZona.coerceAtLeast(1) &&
+            limites.outHeight / (muestra * 2) >= altoZona.coerceAtLeast(1)
+        ) muestra *= 2
+        return BitmapFactory.decodeFile(ruta, BitmapFactory.Options().apply { inSampleSize = muestra })
+    }
+
     /** Foto local recortada al centro; sin foto, un bloque de color con la inicial. */
     private fun foto(c: Canvas, p: Producto, zona: RectF, radio: Float) {
-        val bmp = p.fotoUri?.takeIf { it.startsWith("file://") }?.let { runCatching { BitmapFactory.decodeFile(it.removePrefix("file://")) }.getOrNull() }
+        val bmp = p.fotoUri?.takeIf { it.startsWith("file://") }?.let {
+            runCatching { decodificarAcotada(it.removePrefix("file://"), zona.width().toInt(), zona.height().toInt()) }.getOrNull()
+        }
         c.save()
         val clip = android.graphics.Path().apply {
             addRoundRect(zona, floatArrayOf(radio, radio, radio, radio, 0f, 0f, 0f, 0f), android.graphics.Path.Direction.CW)
