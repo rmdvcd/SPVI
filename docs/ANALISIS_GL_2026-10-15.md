@@ -1,5 +1,7 @@
 # Análisis de los últimos cambios de GL y su impacto en SPVI
 
+> **Instantánea histórica (2026-10-15):** los comentarios sobre clientes de escritorio o Flutter describen el árbol existente al redactarse. Solo el cliente Android se mantiene ahora; conserva la compatibilidad con licencias GL heredadas ya instaladas.
+
 - **Fecha:** 2026-10-15
 - **GL revisado:** `rmdvcd/GL` en `59b73d8` (merge del PR #3, 2026-10-15 00:03 UTC), commit principal
   `005288d` «Harden licensing validation and archive handling». También revisado `ec5ecf1` (PR #2,

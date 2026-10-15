@@ -1,5 +1,7 @@
 # Auditoría crítica — SPVI 0.30.0
 
+> **Archivo histórico:** auditoría del código y del alcance existentes el 2026-10-09. La web de escritorio y la app Flutter/iOS mencionadas en el informe se retiraron el 2026-10-15; otros hallazgos también pueden haber cambiado. Prevalece la documentación vigente.
+
 **Fecha:** 2026-10-09 · **Base:** `main` @ `331a9cde` (merge de la PR #7) · **App:** 0.30.0, `versionCode 51`
 **Método:** lectura del árbol completo, conteos medidos con `grep`/`find` sobre los `src/main` versionados, y consulta de la CI real de GitHub (runs + check-run annotations). Una prueba de concepto criptográfica ejecutada en Python.
 **Límite declarado:** en este entorno no hay JDK ni Android SDK ni acceso a Maven/Google. **No se compiló ni se ejecutó nada de la app.** Todo lo relativo a builds, tests y tamaños de APK viene de la API de GitHub o de `docs/VERIFICACION.md` (se indica cuál). Nada de esto es medición propia con Gradle.

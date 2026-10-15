@@ -168,8 +168,8 @@ object ProductoFormLogic {
     fun unaLinea(v: String): String = v.replace(Regex("[\r\n]+"), " ")
 
     /**
-     * Limpia lo que llega por la ruta (antes lo hacía el escáner): decodifica entidades básicas, colapsa el
-     * espacio en blanco, quita la puntuación colgada al final y corta a [max].
+     * Limpia el nombre inicial recibido por la ruta: decodifica entidades básicas, colapsa el espacio en blanco,
+     * quita la puntuación colgada al final y corta a [max].
      */
     fun limpiarNombre(v: String, max: Int): String = v
         .replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"").replace("&#39;", "'")

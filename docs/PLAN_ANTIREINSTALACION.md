@@ -29,7 +29,7 @@ Hueco real: `trialStart` vive solo en filesDir → al desinstalar se borra y la 
 
 ## 3. Diseño aplicado
 
-- **Dónde se guarda** (formato en [FORMATOS.md §2.7](../FORMATOS.md)):
+- **Dónde se guarda** (formato en [FORMATOS.md §3.7](../FORMATOS.md)):
   - `filesDir/.sys_<huella>.bin` (copia interna);
   - `Pictures/SPVI/sys_<huella>.png`: imagen de 48 × 48 con el registro en un fragmento PNG privado. Es la vía principal en Android 10+: una app reinstalada **sí** puede leer sus imágenes antiguas con el permiso de fotos;
   - `.sys_<huella>.bin` en Download y Documents (MediaStore en 10+, `File` en 8–9). Solo se pueden leer tras reinstalar en Android 8–9.

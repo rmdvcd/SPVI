@@ -1,8 +1,14 @@
-# SPVI - Historial de desarrollo (Prompts 1-15)
+# SPVI - Historial de desarrollo
 
-Registro **histórico** de lo que se implementó en cada fase y de las suposiciones que se tomaron en ese momento, tal como figuraba en el README hasta la versión 0.12.0. Se conserva para trazabilidad.
+Registro **histórico** de lo implementado en cada fase y de las suposiciones vigentes en ese momento. Se conserva para trazabilidad; no es una lista de productos o tareas actuales.
 
-> **Prevalece la documentación actual.** Si algo de este historial contradice a [README.md](../README.md), [SECURITY.md](../SECURITY.md), [FORMATOS.md](../FORMATOS.md), [LICENSE_CLIENT.md](../LICENSE_CLIENT.md) o [UI_UX_IX.md](../UI_UX_IX.md), vale lo que dicen esos documentos. Las fases posteriores sustituyen a las anteriores.
+> **Prevalece la documentación actual.** Si algo de este historial contradice a [README.md](../README.md), [SECURITY.md](../SECURITY.md), [FORMATOS.md](../FORMATOS.md), [LICENSE_CLIENT.md](../LICENSE_CLIENT.md) o [UI_UX_IX.md](../UI_UX_IX.md), vale lo que dicen esos documentos. Las fases posteriores sustituyen a las anteriores. Las entradas de la web de escritorio y Flutter/iOS describen código retirado el 2026-10-15; no indican que esas apps sigan en mantenimiento.
+
+## 2026-10-15 - Limpieza del repositorio: solo Android
+
+Se retiraron las aplicaciones `desktop/` (web de escritorio) y `flutter_app/` (Flutter/iOS), además de sus workflows, configuración de Codemagic, dependencias Python de desarrollo y documentos de usuario específicos. Se eliminó también `tools/escaner/`, un auxiliar obsoleto distinto del escáner Android, y archivos locales/candidatos sin referencias (`.kotlin/`, `icono.jpg` y los planes web). Se conservaron el escáner Android, las herramientas activas `tools/licencia/` y `tools/verificacion/`, las licencias GL para Android y el plan móvil que comparte fecha con el plan web.
+
+Se actualizaron los documentos vigentes para reflejar el alcance Android-only y el esquema Room v12. `docs/VERIFICACION.md` registra el estado observado del CI. La corrida 38802995010 falló porque dos tests de `ProcesoActualizarTest` no pudieron descargar el SDK instrumentado de Robolectric; la configuración de `app/build.gradle.kts` ahora prepara el SDK con Gradle y pasa a Robolectric un directorio local en modo offline para todos los tests JVM de `:app`. **Pendiente:** verificar esa corrección en una corrida CI; no hubo JDK/Android SDK para probarla localmente.
 
 ## 2026-10-15 - Web: ejes de gráficos y tops en acordeones (verificado en navegador)
 
@@ -117,9 +123,7 @@ API 35) y `MainActivity` en primer plano. No se corrió `spviTests`.
 
 ## 2026-10-14 — Escritorio 0.31.0: las cinco mejoras del informe de feedback móvil
 
-Cierra [desktop/INFORME_FEEDBACK_MOVIL.md](../desktop/INFORME_FEEDBACK_MOVIL.md): se implementan las cinco
-mejoras que el informe recomendaba, en su orden sugerido. **No se toca el modelo de datos ni el protocolo de
-sincronización**, así que las apps móviles no se modifican.
+Cierra el informe de feedback móvil (`desktop/INFORME_FEEDBACK_MOVIL.md`, retirado junto con la web de escritorio el 2026-10-15): se implementan las cinco mejoras que el informe recomendaba, en su orden sugerido. **No se toca el modelo de datos ni el protocolo de sincronización**, así que las apps Android no se modifican.
 
 1. **1.1 Selector de período en Inicio** (`static/js/core.js`, `inicio.js`, `app.css`): barra fija
    (`.barra-turno` + `.pegajoso`) con el estado del turno y los chips de período en la misma fila

@@ -1,6 +1,6 @@
 # SPVI — Formatos de respaldo y de exportación
 
-Formatos de archivo que SPVI escribe y lee en la versión **0.27.0** (contenedor `.spvi` v4, se leen v3 y v4; contenido `RespaldoDto` v4, se importan v3 y v4).
+Formatos de archivo que la app Android SPVI escribe y lee (versión declarada **0.30.0**): contenedor `.spvi` v4 (lee v3 y v4) y contenido `RespaldoDto` v4 (importa v3 y v4).
 
 | Formato | Extensión | Tipo MIME | Cifrado | Se importa |
 |---|---|---|---|---|
@@ -14,7 +14,7 @@ Nombres de archivo sin datos personales: `SPVI_<qué>_<aaaa-mm-dd>.<ext>`, con l
 
 ---
 
-## Alcance de exportación en desarrollo (2026-10-09)
+## Alcance de exportación vigente (revisado el 2026-10-09)
 
 Esta tabla sustituye los alcances de las versiones anteriores descritas más abajo; no cambia el formato
 binario de los respaldos ni los escritores PDF/XLSX.
@@ -33,9 +33,6 @@ binario de los respaldos ni los escritores PDF/XLSX.
 - El campo «Encabezado de promoción (opcional)» admite 160 caracteres, solo afecta a tarjetas y se repite
   encima de cada PNG. Vacío mantiene el diseño sin encabezado. El texto se ajusta en altura sin recortar.
 - La tabla de transferencias conserva la columna Vendedor; el registro original y su ficha también se conservan.
-- `desktop/` también genera PDF/XLSX para inventario, servicios y turnos, e imágenes para productos/servicios.
-  Sus promociones son textuales (aún no admite fotos); varias imágenes se entregan como PNG separados en ZIP.
-  Exporta y restaura `.spvidesk`, no `.spvi` Android. La base activa SQLite permanece **sin cifrar**.
 
 ## 1. Respaldo `.spvi`
 
@@ -140,7 +137,7 @@ Tras importar un respaldo v4 con bloque `licencia` en un teléfono sin licencia 
 
 ---
 
-### Respaldo previo a la actualización (0.30.1)
+### 1.5 Respaldo previo a la actualización (0.30.1)
 
 Antes de abrir el instalador, la app escribe un `.spvi` **sin contraseña** con el formato normal en `filesDir/respaldo_actualizacion/previo.spvi`, más `previo.version` (`versionName/versionCode` instalada). Es privado de la app (no se comparte ni se exporta) y se borra al restaurarse o al cancelarse la instalación. Al abrir otra versión, `RespaldoPrevio` lo importa con la misma ruta que «Importar» y vuelve a dejar como estaban `ultimoRespaldo` y la licencia recuperable del estado de la app.
 
@@ -167,8 +164,7 @@ SPVIM1|<rol>|<host>|<puerto>|<clave>|<origen>
   `SPVIM1 <clave>` y, si coincide, el emisor contesta `ok` y transmite el `.spvi` hasta `shutdownOutput()`.
 - El emisor solo llama a `borrarTodo()` cuando el receptor escribe `listo`. Si algo falla, no se borra nada.
 - Implementación: `app/src/main/kotlin/cu/spvi/app/migrar/MigrarQr.kt` (código puro, probado en
-  `MigrarTest.kt`) y `CanalMigracion.kt` (transporte). La app de iOS tiene el mismo código en
-  `flutter_app/lib/src/domain/models/migrar_codigo.dart`, probado en `test/migrar_ayuda_test.dart`.
+  `MigrarTest.kt`) y `CanalMigracion.kt` (transporte).
 - El código se lee con tolerancia: admite un campo extra al final y texto alrededor (lo que pega el
   escáner). Cualquier otro contenido se rechaza.
 
@@ -176,7 +172,7 @@ SPVIM1|<rol>|<host>|<puerto>|<clave>|<origen>
 
 Todas las tablas salen de una misma fuente neutra, `TablaExport` (título, columnas, filas y pie), definida en `domain/.../service/TablasExport.kt`. Los escritores están en `data/.../export/`.
 
-### 2.1 Qué se exporta y desde dónde
+### 3.1 Qué se exporta y desde dónde
 
 | Pantalla | Contenido | Formatos | Nombre del archivo |
 |---|---|---|---|
@@ -191,7 +187,7 @@ Todas las tablas salen de una misma fuente neutra, `TablaExport` (título, colum
 
 «Guardar» usa el selector del sistema (SAF: almacenamiento, Drive, OneDrive…). «Enviar» crea el archivo en `cacheDir/compartir` y abre el menú Compartir mediante FileProvider. Imagen y Tarjetas solo se envían, porque pueden ser varios archivos.
 
-### 2.2 Columnas
+### 3.2 Columnas
 
 | Tabla | Columnas | Pie |
 |---|---|---|
@@ -211,7 +207,7 @@ Formatos de celda: importes «1,450.00 CUP»; fechas con hora `dd/MM/aaaa HH:mm`
 
 **Datos personales:** en PDF y Excel de Transferencias el carné va **completo** (es el registro del negocio). Desde la 0.26.0 no hay exportaciones de texto (solo la licencia se envía como mensaje); las fichas se ven en la app.
 
-### 2.3 PDF
+### 3.3 PDF
 
 - `android.graphics.pdf.PdfDocument` del sistema, sin dependencias.
 - Tamaño **A4**, márgenes de 36 pt, filas de 16 pt. Desde la 0.25.1 (`DisenoPdf.kt`): una tabla de **más de 5 columnas** va en una hoja **horizontal** (842 × 595 pt); las demás, en vertical. En un mismo PDF pueden alternarse (p. ej. el turno: resumen y arqueo en vertical, ventas en horizontal).
@@ -220,7 +216,7 @@ Formatos de celda: importes «1,450.00 CUP»; fechas con hora `dd/MM/aaaa HH:mm`
 - 0.26.0 (§5): las columnas de importes, cantidades y fechas, y la columna «Valor» de las tablas Dato/Valor, van en **seminegrita** (Roboto 600; en Android 8 negrita) y se miden así para no cortarse. Los teléfonos (8 o más cifras seguidas) no se destacan.
 - Escala de grises de alto contraste. Pie de página «SPVI · página N».
 
-### 2.4 Excel (`.xlsx`)
+### 3.4 Excel (`.xlsx`)
 
 - **fastexcel** (sin Apache POI). Una hoja por tabla; el nombre de la hoja es el título (máx. 31 caracteres, sin `[]:*?/\`, sin repetir; desde la 0.25.1 `/` pasa a `-` y `:` a `.`, p. ej. «Turno del 02-10-2026 08.00»).
 - Fila 1 = cabecera en negrita con fondo `#DDE3F0`, **inmovilizada**.
@@ -228,7 +224,7 @@ Formatos de celda: importes «1,450.00 CUP»; fechas con hora `dd/MM/aaaa HH:mm`
 - El pie (totales) va dos filas debajo de la tabla.
 - 0.26.0 (§8): cada columna mide lo que su contenido más largo (cabecera incluida, de 4 a 80 unidades); el texto que no cabe en 80 baja de línea (ajuste de texto). Importes, cantidades y fechas en **negrita** (las mismas columnas que la seminegrita del PDF).
 
-### 2.5 Imágenes PNG
+### 3.5 Imágenes PNG
 
 | | Lista de precios (Imagen) | Tarjetas promocionales |
 |---|---|---|
@@ -236,11 +232,11 @@ Formatos de celda: importes «1,450.00 CUP»; fechas con hora `dd/MM/aaaa HH:mm`
 | Contenido | Título, tabla Categoría / Producto / Precio, pie «SPVI» | Foto (o la inicial si no tiene), nombre, categoría y precio de venta |
 | Tamaño | 1080 px de ancho, **25 filas** por imagen; si hay más, varias imágenes numeradas | 1080 px de ancho, **6 tarjetas** por imagen (una imagen con un solo producto lo muestra en una tarjeta grande) |
 
-### 2.6 Texto
+### 3.6 Texto
 
 Desde la 0.26.0 SPVI no exporta texto: Registros, Inventario, Servicios y las fichas usan PDF y Excel (e Imagen/Tarjetas en Inventario). Solo la **solicitud de licencia** (y el contacto de Soporte) se envían como mensaje; ver [docs/LICENCIA_0.23.md](docs/LICENCIA_0.23.md).
 
-### 2.7 Registro de la prueba (0.26.0)
+### 3.7 Registro de la prueba (0.26.0)
 
 Para que el periodo de prueba no vuelva a empezar al desinstalar y reinstalar, la app principal guarda la fecha de inicio cifrada en cuatro sitios:
 
@@ -260,45 +256,3 @@ No se generan archivos `.txt`: el escritor de texto plano (`TextoWriter`) se eli
 ### Entrada numérica en pantalla (09/10/2026)
 
 Los campos de dinero admiten punto o coma decimal y hasta dos decimales, sin separadores de miles; las cantidades decimales admiten hasta tres. Una entrada ambigua se rechaza conservando el texto anterior, sin cambiar los formatos de archivos exportados/importados. Tarjeta/cuenta: hasta 20 cifras en edición (validación final de 12 a 20). La venta debe superar el costo, incluso tras descuentos; no se cambian comprobantes históricos.
-
-## Respaldo de escritorio `.spvidesk` (JSON v1/v2)
-
-No es un archivo Android `.spvi` y no se ofrece como tal. Formato:
-`SPVIDSK1` (8 bytes) | salt aleatorio (16) | nonce (12) | AES-256-GCM(gzip(JSON)) con tag de 16 bytes.
-La cabecera completa de 36 bytes es AAD. Clave: PBKDF2-HMAC-SHA256, 310000 iteraciones,
-contraseña UTF-8 de 12–256 caracteres, 32 bytes de salida. Máximo actual: 128 MiB tanto cifrado como descomprimido.
-JSON v1: `format=spvi-desktop`, `version=1`, tablas `items`, `shifts`, `sales`, `movements`.
-JSON v2: conserva esas tablas y añade `business` (DTO canónicos Android), `name` y fotos dentro de `business.webFotos`. La escritura actual usa v2; la lectura migra v1.
-No contiene credenciales, licencias ni datos de vinculación. No se ejecuta SQL procedente del archivo.
-La restauración valida tipos, restricciones y referencias en una base temporal, exige turnos cerrados,
-guarda una copia cifrada previa y reemplaza los datos transaccionalmente. No cambia la clave de acceso web.
-
-### Ampliación de escritorio: formatos compartidos (pendiente de verificación)
-
-El código Python incorpora lectura `.spvi` v3/v4 y escritura v4, además de `.spvidesk` v2
-con migración del v1. La restauración exige turnos cerrados y genera una copia cifrada previa;
-para importar Android sin contraseña se solicita otra contraseña para esa copia de seguridad.
-No se transfieren activación de licencia ni secretos de vinculación. Véase
-`desktop/VERIFICACION_PC.md` para las comprobaciones de ida/vuelta todavía pendientes.
-
-### Fotos y operaciones de la principal web
-
-`webFotos` es una extensión de escritorio: lista de `{kind, id, jpeg}`, con `kind` igual a `productos`
-o `servicios` y JPEG normalizado en Base64. Máximo conjunto de imágenes decodificadas: 64 MiB.
-No se leen rutas ni URL de `fotoUri`. Android ignora esta extensión y no la conserva al volver a
-exportar; su formato nativo sigue almacenando URI, no los archivos de fotos.
-
-Las correcciones usan `corrigeVentaId` y conservan el original con `anuladaEn`/motivo. La principal
-notifica a la secundaria mediante `CambioVenta.nueva` y `corrigeUuid`, sin cambiar TCP v1.
-Las cantidades de venta de insumos son enteras; existencias y recetas usan milésimas. La cotización
-no persiste registros. Los reintentos HTTP se identifican por `Idempotency-Key`; el resultado y la
-mutación se confirman en la misma transacción SQLite. Esas claves no se exportan al respaldo.
-
-### Datos de la PC (escritorio 0.31.0)
-
-`datos/config.json` (JSON, permisos solo del usuario): `secret` (secreto de sesión), `password_hash`
-(`null` = sin clave de acceso) y `preferencias` = `{tema: claro|oscuro|sistema, inicioConWindows: bool,
-retrasoSegundos: 0|15|30|60|120|300, abrirAlIniciar: bool, red: null | {host, port}}`. `red` es la última
-red local iniciada y se reanuda al abrir SPVI. `datos/instancia.json` guarda el puerto de la instancia en
-marcha para que una segunda solo muestre su pantalla principal. Ninguno de los dos va en los respaldos.
-El código de licencia de 16 dígitos se describe en [LICENSE_CLIENT.md](LICENSE_CLIENT.md), sección 10.

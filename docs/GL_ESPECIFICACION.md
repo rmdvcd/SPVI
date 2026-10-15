@@ -5,7 +5,7 @@ Texto aportado por el usuario en el Prompt 70 y comprobado contra el código de 
 Única corrección respecto al original: el punto 2a (fin del código `SPVI2:`), marcado con **[corregido]**.
 Las ampliaciones de la 0.25.0 (recuperación y lista de revocaciones) están en `docs/GL_PROMPT_0.25.md`.
 Las mitigaciones del sistema de licencias de GL (clave maestra solo en builds de depuración, sub-tokens de las apps
-secundarias y AAD canónica del envelope v1) están en `LICENSE_CLIENT.md` §11–§13.
+secundarias y AAD canónica del envelope v1) están en `LICENSE_CLIENT.md` §10–§11.
 
 ```
 Contexto. SPVI es la app cliente; GL es el emisor offline en otro teléfono.

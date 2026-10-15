@@ -38,7 +38,7 @@ Cómo protege SPVI los datos del negocio y la licencia en el teléfono. Describe
 | Licencia recibida | Verificación ECDSA con la clave de firma de GL sobre `epk‖iv‖ct‖tag`, ECDH con la clave del dispositivo, HKDF (`gl-lic-v1`), AES-256-GCM con AAD `1|alg|<licenseId>` | `licencia/.../crypto/GlCodec.kt`, `LicenseValidator.kt` |
 | Red | Solo HTTPS (`usesCleartextTraffic=false` y un interceptor que rechaza cualquier petición no HTTPS, también tras redirecciones) | `data/.../network/Red.kt` (OkHttp, sin Retrofit desde la 0.13.0) |
 
-**Contraseñas:** desde la 0.27.0 la contraseña del respaldo es **opcional** («Proteger con contraseña», apagado por defecto); si se activa, exige 8 caracteres como mínimo, repetidos. La contraseña llega al caso de uso como `CharArray` y se borra al terminar; el JSON en claro se sobrescribe con ceros tras cifrarlo.
+**Contraseñas:** desde la 0.27.0 la contraseña del respaldo es opcional; desde la corrección S-01 (10/2026), «Proteger con contraseña» viene **encendido por defecto**. Si se usa, exige 8 caracteres como mínimo, repetidos. La contraseña llega al caso de uso como `CharArray` y se borra al terminar; el JSON en claro se sobrescribe con ceros tras cifrarlo.
 
 ## 4. Superficie expuesta
 
@@ -50,7 +50,7 @@ Cómo protege SPVI los datos del negocio y la licencia en el teléfono. Describe
 | **Componentes exportados** | `MainActivity`: launcher y `SEND text/plain` (SMS compartido). `CapturaSmsPagoService` también se declara `exported` para que Android pueda enlazarlo como `NotificationListenerService`, pero solo con `android.permission.BIND_NOTIFICATION_LISTENER_SERVICE`; otras apps no pueden enlazarse con ese permiso de nivel de sistema. Solo recibe notificaciones si el usuario activa el acceso especial. |
 | **Archivos recibidos** | El `.spvi` no se recibe de otras apps ni se abre desde fuera: solo entra con «Elegir archivo» del gestor del dispositivo desde Respaldo. Nunca se importa solo: siempre pide contraseña (si la tiene) y confirmación |
 | **FileProvider** | No exportado; solo expone `cache/compartir/` (permiso temporal de lectura para la app elegida) y, desde la 0.27.0, `cache/fotos/`: el archivo temporal donde la app de cámara escribe la foto de Nuevo producto/servicio (`TakePicture`, permiso temporal de escritura solo para esa URI). La foto se copia reducida (lado ≤ 1024 px, JPEG 85) a `filesDir/fotos` y la carpeta temporal se vacía. Nada de base de datos, preferencias ni las fotos guardadas |
-| **Almacenamiento externo** | Guardar y abrir pasa por el selector del sistema (SAF). El `.spvi` además va enraizado en Descargas internas y limitado a proveedores locales (sin nubes ni otras apps). Única excepción (0.26.0): el registro cifrado de la prueba (`Pictures/SPVI/sys_<huella>.png` y `.sys_<huella>.bin` en Download y Documents, ver FORMATOS.md §2.7). El permiso de fotos se pide una sola vez, recién instalada; si se niega, la prueba sigue funcionando (solo no se detecta una instalación anterior). La app no lee ninguna otra imagen |
+| **Almacenamiento externo** | Guardar y abrir pasa por el selector del sistema (SAF). El `.spvi` además va enraizado en Descargas internas y limitado a proveedores locales (sin nubes ni otras apps). Única excepción (0.26.0): el registro cifrado de la prueba (`Pictures/SPVI/sys_<huella>.png` y `.sys_<huella>.bin` en Download y Documents, ver FORMATOS.md §3.7). El permiso de fotos se pide una sola vez, recién instalada; si se niega, la prueba sigue funcionando (solo no se detecta una instalación anterior). La app no lee ninguna otra imagen |
 | **Visibilidad de paquetes** | Sin `<queries>`: SPVI no consulta ni abre otras apps de pago (Enzona se quitó en la 0.13.0 y el botón «Abrir Transfermóvil» en la 0.17.0) |
 | **Portapapeles** | Solo se lee al tocar «Pegar» / «Pegar SMS», nunca en segundo plano |
 | **Capturas y Recientes** | `FLAG_SECURE` en Perfil, Licencia, Pago electrónico, Respaldo, Migrar, el paso «Tus datos» del asistente, los pasos QR (tarjeta del vendedor, desde la 0.14.0) y de datos del cliente en Venta y Registros mientras se ven transferencias |
@@ -83,17 +83,25 @@ Cómo protege SPVI los datos del negocio y la licencia en el teléfono. Describe
 
 **Riesgos residuales:** la revocación solo llega al teléfono antiguo si se conecta a internet. Si alguien controla el repositorio de GitHub puede publicar un APK, pero Android no lo instala como actualización si no lleva la firma del desarrollador. No puede falsificar la lista de revocadas sin la clave de GL.
 
-## 4 quater. Licencias en las tres apps (13/10/2026, en curso)
+## 4 quater. Licencias Android y apps secundarias (13/10/2026)
 
 | Área | Medida |
 |---|---|
-| **Clave maestra de desarrollo** | `GLMK-PERM-MAXS-9999` solo vale en builds de depuración (mitigación 1, Opción A del contrato de GL). Android la habilita en `SpviApplication` con `BuildConfig.DEBUG`; el escritorio, con `SPVI_DESARROLLO=1`; la app iOS, con `kDebugMode`. El valor por defecto es `false` (**fail-closed**: si nadie lo activa, la clave maestra no vale nada). `licencia/.../ModoDesarrollo.kt`, `desktop/spvi_web/licensing/trust.py`, `flutter_app/lib/src/licensing/trust.dart` |
-| **Sub-token de apps secundarias** | La cuota de secundarias deja de ser una auto-declaración: la app **principal** firma un permiso por ranura y dispositivo (`SISTEMA_LICENCIAS_CLIENTES.md` §8.4) con una clave P-256 propia (`FirmanteLicenciaAndroid`, Keystore, `PURPOSE_SIGN`), y la secundaria no da por buena la licencia recibida si el permiso no la autoriza a ella. Sin permiso (principal anterior) se acepta la licencia como siempre **solo** para no romper la convivencia de versiones. `licencia/.../secondary/SubToken.kt`, `data/.../licencia/{FirmanteLicenciaAndroid,VerificadorPermisoSecundaria}.kt`, `desktop/spvi_web/licensing/subtokens.py` |
+| **Clave maestra de desarrollo** | `GLMK-PERM-MAXS-9999` solo vale en builds de depuración. Android la habilita en `SpviApplication` con `BuildConfig.DEBUG`; el valor por defecto es `false` (**fail-closed**). `licencia/.../ModoDesarrollo.kt` |
+| **Sub-token de apps secundarias** | La cuota de secundarias deja de ser una auto-declaración: la app **principal** firma un permiso por ranura y dispositivo (`SISTEMA_LICENCIAS_CLIENTES.md` §8.4) con una clave P-256 propia (`FirmanteLicenciaAndroid`, Keystore, `PURPOSE_SIGN`), y la secundaria no da por buena la licencia recibida si el permiso no la autoriza a ella. Sin permiso (principal anterior) se acepta la licencia como siempre **solo** para no romper la convivencia de versiones. `licencia/.../secondary/SubToken.kt`, `data/.../licencia/{FirmanteLicenciaAndroid,VerificadorPermisoSecundaria}.kt` |
 | **Ranura por dispositivo** | La principal guarda el `deviceId` de cada secundaria (columna `empleado.device`, esquema v12) y firma la ranura que ocupa entre los empleados activos. Un permiso de otra secundaria, de otra ranura o vencido no autoriza; la licencia queda bloqueada también en la secundaria |
 | **Borde de la licencia larga v1** | La AAD se canonicaliza con longitud prefijada (mitigación 8, Opción A) al **emitir**; al re-verificar lo ya emitido se acepta además la AAD heredada `1|alg|…`, y nada más (`CanonicalAadTest`, `EnvelopeV1Test`). El flujo corto `SPVI2:`/`SPVIR1` no cambia |
-| **Reloj de la app iOS** | Misma marca de agua que Android y el escritorio: la hora del equipo no puede retroceder respecto a la última vista (tolerancia 5 min). La app iOS no existía como cliente de licencias antes de esta versión |
 
-**Riesgos residuales:** una secundaria sin permiso válido queda bloqueada, pero quien modifique el APK de una secundaria puede saltarse la comprobación, igual que en el teléfono principal; la clave de firma de los sub-tokens vive en el Keystore del principal, así que si se pierde hay que volver a vincular las secundarias. La revocación solo llega al teléfono antiguo si se conecta a internet; un APK de la app iOS o del escritorio parcheado localmente también puede saltarse la verificación (es una licencia offline).
+**Riesgos residuales:** una secundaria sin permiso válido queda bloqueada, pero quien modifique el APK de una secundaria puede saltarse la comprobación, igual que en el teléfono principal; la clave de firma de los sub-tokens vive en el Keystore del principal, así que si se pierde hay que volver a vincular las secundarias. La revocación solo llega al teléfono antiguo si se conecta a internet; un APK modificado localmente también puede saltarse la verificación (es una licencia offline).
+
+## 4 quinquies. Correcciones de la auditoría 2026-10-14
+
+| Área | Medida |
+|---|---|
+| **Respaldo sin contraseña (S-01)** | La exportación trae «Proteger con contraseña» ENCENDIDO por defecto. El modo sin contraseña sigue existiendo como opción expresa (hace falta para la migración interna), pero la pantalla avisa de que quien consiga el archivo puede leer ventas y datos de clientes sin ninguna clave. Nada cambia en el formato `.spvi` v4: los respaldos anteriores se siguen abriendo igual. |
+| **Migración teléfono a teléfono (S-02)** | El transporte deja de viajar «solo ofuscado»: apretón de manos con reto-respuesta HMAC-SHA256 (la clave del QR nunca sale por el cable), clave de sesión ligada a los nonces de esa conexión y marcos AES-256-GCM. La clave del QR sube de 64 a 128 bits. Un observador de la wifi ya no puede reconstruir los datos; un intermediario sin la clave no supera el reto. |
+| **Servidor de sincronización (S-03/S-04)** | Android no registra la sesión (ni desplaza a la legítima, ni anota el `deviceId`) hasta recibir el primer mensaje cifrado. Tope de 24 conexiones simultáneas. |
+| **Cadena de suministro (S-08)** | Acciones del CI fijadas por SHA y Dependabot mensual para GitHub Actions y Gradle. |
 
 ## 5. Modelo de amenazas
 
@@ -133,70 +141,12 @@ Cómo protege SPVI los datos del negocio y la licencia en el teléfono. Describe
 - **Clave de firma del APK** (no confundir con la de GL): guárdala fuera del repositorio (`keystore.properties` y `*.jks` están en `.gitignore`) y con copia de seguridad. Si se pierde, no se puede actualizar la app y cambian todos los `deviceId`. Ver [RELEASE.md](RELEASE.md).
 - No hagas configurable la clave de firma de GL. Para rotarla, **añade** la nueva a `SIGN_KEYS` sin quitar la anterior y publica un build nuevo.
 - Ejecuta `LicenseTrustTest` y `GoldenVectorTest` antes de cada versión; repite la prueba de extremo a extremo con GL (ver `LICENSE_CLIENT.md`) si GL cambia.
-- La clave maestra `GLMK-PERM-MAXS-9999` no debe funcionar nunca en release: comprueba que `BuildConfig.DEBUG` es el único que habilita `ModoDesarrollo.esDebug` (`MasterKeyTest`) y que en el escritorio hace falta `SPVI_DESARROLLO=1`.
-- Al cambiar una entidad de Room, sube `SpviDatabase.VERSION` con su migración y **commitea el `<VERSION>.json` que exporta Room en la primera compilación** (base: `3.json`; comprobado por `EsquemaTest` y por `tools/verificacion/jvm-room`).
+- La clave maestra `GLMK-PERM-MAXS-9999` no debe funcionar nunca en release: comprueba que `BuildConfig.DEBUG` es el único que habilita `ModoDesarrollo.esDebug` (`MasterKeyTest`).
+- La base actual es Room v12 (`data/schemas/cu.spvi.data.db.SpviDatabase/12.json`). Cada cambio de entidad requiere subir `SpviDatabase.VERSION`, añadir una `Migration` explícita, conservar el esquema exportado por Room y cubrirla en `EsquemaTest`; no se inventa el JSON a mano. La recreación vacía solo se permite para las versiones de desarrollo 1 y 2.
 - Ejecuta `./gradlew spviCheck` antes de entregar: incluye `spviPermisos`, que falla si el manifiesto fusionado pide algo fuera de la lista autorizada: `CAMERA`, `INTERNET`, `POST_NOTIFICATIONS`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE`, `CHANGE_NETWORK_STATE`, `REQUEST_INSTALL_PACKAGES`, `REQUEST_DELETE_PACKAGES`, `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`, `USE_BIOMETRIC` y `USE_FINGERPRINT`.
 - No añadas logs con datos de usuario ni dependencias con telemetría.
-- Cada cambio de entidad necesita subir `SpviDatabase.VERSION` con su `Migration` explícita y el esquema JSON versionado (base: `3.json`, comprobado por `EsquemaTest`). La recreación vacía solo se permite para las versiones de desarrollo 1 y 2.
 - Si cambia el formato del respaldo, sube la versión y mantén la lectura de las anteriores. Hay una excepción, y es única: en la 0.13.0 se dejaron de leer v1 y v2 porque no había clientes.
 
 ## 7. Comunicar un problema de seguridad
 
 Escribe al desarrollador por WhatsApp o SMS al **+53 51815604** (Ajustes → Soporte). No publiques el detalle hasta que haya una versión corregida.
-
-## Base de escritorio Python (en desarrollo, 2026-10-09)
-
-Las garantías SQLCipher/Keystore y licencia Android de este documento **no se aplican** a `desktop/`.
-La base de escritorio escucha solo en loopback, exige acceso con clave, valida Host y CSRF; el servidor TCP LAN es un canal separado. SQLite y el secreto de sesión se guardan **sin cifrado de aplicación** en la
-carpeta del dueño: usar ACL de Windows y cifrado de disco. No usarla como sistema de producción hasta
-completar interoperabilidad, licencias, protección de claves/datos y pruebas de Windows.
-HTTPS requiere certificado válido para el nombre y confianza explícita; no se desactiva TLS ni se
-modifican automáticamente DNS, firewall o almacenes de certificados. Detalles en `desktop/README.md`.
-
-El respaldo web `.spvidesk` sí se cifra con AES-GCM y contraseña, aunque la base activa no esté cifrada.
-Se valida antes de restaurar y no admite SQL, archivos ejecutables ni rutas del usuario. Las descargas y
-restauraciones requieren sesión y CSRF. Las imágenes comerciales no incluyen datos internos; los nombres
-exportados a Excel se marcan como texto para evitar fórmulas. El servidor TCP valida vinculación, sesiones y comandos; las confirmaciones de lotes se guardan
-junto con sus datos, sin publicar la administración HTTP en la red.
-
-### Principal web: separación de canales e identidad
-
-La ampliación Python mantiene el navegador administrativo separado del listener TCP LAN.
-El listener requiere IPv4 privada explícita, limita trabajadores y usa emparejamiento QR
-con token temporal de un uso; no debe publicarse mediante reenvío de puertos del router.
-La identidad y secretos usan DPAPI del usuario en Windows; la identidad se conserva fuera
- de la carpeta portable, en `%LOCALAPPDATA%/SPVI-Web/identidad`. Copiar el EXE o el respaldo
-no traslada activación ni emparejamientos. El respaldo está cifrado, la base SQLite activa no:
-proteger la cuenta Windows, permisos del directorio y disco. No compartir QR ni contraseñas.
-
-Estas medidas están implementadas pero **no verificadas en esta ampliación**. Deben probarse
-límites, reconexión, revocación, lotes repetidos, restauración y contratos criptográficos con
-Android/GL antes de producción; véase `desktop/VERIFICACION_PC.md`.
-
-### Reintentos, fotos y recuperación local
-
-- Mutaciones HTTP con clave de idempotencia: resultado y datos en una transacción. Reutilizar una
-  clave con otro cuerpo devuelve conflicto. La interfaz envía también el identificador del negocio
-  para rechazar solicitudes anteriores a una restauración.
-- Una conexión TCP no sustituye la sesión anterior hasta autenticar su primera trama cifrada.
-  La instantánea solo entrega las cuentas de cobro asignadas al empleado, sin perfil personal.
-- Las fotos admitidas se decodifican con límites de bytes/píxeles y se recodifican sin EXIF. Nunca
-  se accede a rutas o URL incluidas en un DTO. Hay límites por imagen, conjunto y respaldo.
-- `--reset-password` necesita acceso local al directorio y exige detener el proceso. Cambia el hash
-  sin rotar secretos de cifrado/identidad; las sesiones previas quedan inválidas al reiniciar.
-  El bloqueo de instancia impide dos lanzadores simultáneos sobre los mismos datos.
-- Los contadores de rechazo de sincronización no incluyen payloads, claves, QR ni datos personales.
-
-Estado: implementación sin ejecutar en esta fase. Las pruebas añadidas deben correr en la PC y
-complementarse con los ensayos de móviles, Windows y GL antes de uso real.
-
-## 4 quinquies. Correcciones de la auditoría 2026-10-14
-
-| Área | Medida |
-|---|---|
-| **Respaldo sin contraseña (S-01)** | La exportación trae «Proteger con contraseña» ENCENDIDO por defecto. El modo sin contraseña sigue existiendo como opción expresa (hace falta para la migración interna), pero la pantalla avisa de que quien consiga el archivo puede leer ventas y datos de clientes sin ninguna clave. Nada cambia en el formato `.spvi` v4: los respaldos anteriores se siguen abriendo igual. |
-| **Migración teléfono a teléfono (S-02)** | El transporte deja de viajar «solo ofuscado»: apretón de manos con reto-respuesta HMAC-SHA256 (la clave del QR nunca sale por el cable), clave de sesión ligada a los nonces de esa conexión y marcos AES-256-GCM. La clave del QR sube de 64 a 128 bits. Un observador de la wifi ya no puede reconstruir los datos; un intermediario sin la clave no supera el reto. |
-| **Servidor de sincronización (S-03/S-04)** | Android ya no registra la sesión (ni desplaza a la legítima, ni anota el `deviceId`) hasta recibir el primer mensaje cifrado, igual que el escritorio; el escritorio hace lo mismo con el `device` del saludo. Tope de 24 conexiones simultáneas en Android (el escritorio ya lo tenía). |
-| **Clave web del escritorio (S-05)** | `/login` se frena: 5 fallos seguidos → 60 s de espera (429). La clave nueva exige mínimo 12 caracteres (antes 8). Las claves ya creadas no se invalidan. |
-| **Claves de GL en el escritorio (D-02)** | `trust.comprobar_fijadas()` se llama al arrancar la app (`create_app`): si una clave fijada no coincide con su huella, la app no arranca. |
-| **Cadena de suministro (S-08)** | Acciones del CI fijadas por SHA (antes etiquetas mutables `@v4`/`@v5`) y Dependabot mensual para acciones, Gradle y pip. |

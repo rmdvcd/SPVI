@@ -1,6 +1,8 @@
 # Auditoría integral de SPVI — 2026-10-14
 
 **Base auditada:** `main` @ `29f909fead49bd3cd77aa4d680bc659b7e7011db` (rama de trabajo `arena/48e006de-spvi`, sin cambios de código: esta auditoría es solo lectura + este informe).
+
+> **Archivo histórico:** esta auditoría describe el árbol de 2026-10-14, antes de retirar `desktop/` y `flutter_app/` el 2026-10-15. Sus hallazgos de esas aplicaciones no describen componentes vigentes del repositorio.
 **Alcance:** app Android (Kotlin/Compose, 6 módulos Gradle), principal de escritorio (`desktop/`, Python/Flask + JS), app iOS (`flutter_app/`, Flutter/Dart), herramientas (`tools/`), CI (`.github/workflows/`), dependencias y documentación.
 **Método:** lectura del árbol completo, conteos medidos con scripts sobre el código versionado, revisión manual de criptografía/red/BD, contraste con las auditorías previas (`ANALISIS_SPVI.md`, `docs/AUDITORIA_CRITICA_2026-10-09.md`, `PLAN_CORRECCIONES.md`) verificando qué sigue vigente, y ejecución real de lo ejecutable en este entorno.
 

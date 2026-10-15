@@ -1,4 +1,6 @@
-# SPVI — Estado de las instrucciones de sesiones anteriores
+# SPVI — Estado histórico de instrucciones de sesiones anteriores
+
+> Instantánea de 2026-10-08. Los estados de ramas y tareas aquí descritos ya no son actuales; prevalecen `AGENTS.md`, `Pendiente.md` y `docs/VERIFICACION.md`.
 
 > **Comprobación:** 2026-10-08 · **Base:** `main` @ `82672fd` (movida a `8ef4842` después, ver la novedad) · **Rama de la sesión:** `arena/cb554258-spvi`
 >

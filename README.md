@@ -7,7 +7,7 @@ App Android nativa para pequeños negocios: vender en turnos, controlar inventar
 | Versión | **0.30.0** (`versionCode 51`) |
 | Paquete | `cu.spvi.app` (debug: `cu.spvi.app.debug`) |
 | minSdk / targetSdk / compileSdk | 26 / 35 / 35 |
-| Base de datos | Room **v10** cifrada con SQLCipher (respaldo `RespaldoDto` v4; archivo `.spvi` v4) |
+| Base de datos | Room **v12** cifrada con SQLCipher (respaldo `RespaldoDto` v4; archivo `.spvi` v4) |
 | Contrato de licencias | GL v1 (`ECIES-P256-AES256GCM-v1`) |
 | Permisos | Solo `CAMERA`, `INTERNET` y `POST_NOTIFICATIONS` (aviso «Turno abierto», Android 13+), más `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE` y `CHANGE_NETWORK_STATE` (servicio de la app principal con secundarias, 0.19.2), `REQUEST_INSTALL_PACKAGES` / `REQUEST_DELETE_PACKAGES` (actualizaciones y licencia transferida, 0.25.0) y `READ_MEDIA_IMAGES` / `READ_EXTERNAL_STORAGE` (hasta Android 12) / `WRITE_EXTERNAL_STORAGE` (hasta Android 9) para el registro de la prueba (0.26.0), y `USE_BIOMETRIC` / `USE_FINGERPRINT` (acceso con clave opcional, 0.27.0; permisos normales que añade `androidx.biometric`). La captura SMS opcional requiere habilitar manualmente el Acceso especial a notificaciones; no solicita `READ_SMS`. |
 
@@ -28,86 +28,13 @@ App Android nativa para pequeños negocios: vender en turnos, controlar inventar
 
 Los documentos de trabajo que estaban fuera del proyecto (`DECISIONES_LICENCIA_SPVI.md`, `PRUEBA_COMPATIBILIDAD_GL.md`, `ARQUITECTURA_SPVI.md`, planes y auditorías de los Prompts 17 y 18, entregas `ENTREGA_*`) se retiraron en la 0.18.0. Lo vigente está en `LICENSE_CLIENT.md` (contrato GL y decisiones de licencia), `SECURITY.md`, `docs/HISTORIAL_DESARROLLO.md` y el propio código.
 
-## Cambios en desarrollo — 14 de octubre de 2026
+## Alcance actual y cambios recientes — 15 de octubre de 2026
 
-- **Diez cambios en la app del teléfono** (Android 0.31.0, `app/`), pedidos por el dueño: Inicio con el turno y el
-  selector de período en la misma fila y ese primer contenedor fijo al desplazar; Inventario con la fila reordenada
-  (cuánto puedes hacer y su unidad, categoría debajo, costo y venta a la derecha diferenciados); Registros con
-  **casilla de selección** en todas las listas; fuera el botón de llave de Licencia; **Migrar** (antes «Migrar a otro
-  teléfono») con paso de datos por **código QR** entre Emisor y Receptor, protegido por el acceso con clave y con
-  borrado del teléfono emisor al terminar; **Actualizar** con diálogo de progreso circular; **Ayuda** como manual
-  por secciones con icono por tema y esquemas; **Soporte** centrado (Icono, Descripción, Texto); **todos los
-  permisos al abrir por primera vez y sin textos**; y **animaciones** (deslizar lateral, fundido en la barra,
-  ventanas desde el centro-abajo). Detalle en [MANUAL_USUARIO.md](MANUAL_USUARIO.md) y en
-  [docs/HISTORIAL_DESARROLLO.md](docs/HISTORIAL_DESARROLLO.md).
-- **App de iOS** (`flutter_app/`): los mismos diez cambios. Dos diferencias honestas: el código de migración se
-  muestra como texto (no trae librería de QR) y los permisos los pide iOS cuando hace falta.
-- **Escritorio**: [informe de feedback](desktop/INFORME_FEEDBACK_MOVIL.md) con lo que el móvil tiene y la web no,
-  filtrando lo que no tiene sentido en una PC (migrar por QR, actualizar en caliente, permisos del sistema,
-  biometría) y lo que sí conviene (selector de período en Inicio, fila de inventario con costo, casillas en
-  Registros, Ayuda/Soporte mínimos, fundido entre secciones).
-- **Sin verificar:** en este entorno no hay JDK, Android SDK, Gradle ni Dart, así que **nada de esto se ha
-  compilado ni probado aquí**. Lo comprueba el CI y la PC del dueño (`Pruebas.md`).
+Este repositorio mantiene la aplicación **Android nativa**. La app Flutter/iOS y la aplicación web de escritorio se retiraron; también se eliminaron sus proyectos, pruebas y pipelines propios. La sincronización por red local entre teléfonos Android sigue siendo parte de la app.
 
-## Cambios en desarrollo — 13 de octubre de 2026
+La rama contiene mejoras recientes en Inicio, Inventario, Registros, Migrar, Actualizar y Licencia. El detalle para usuarios está en [MANUAL_USUARIO.md](MANUAL_USUARIO.md), los cambios técnicos en [docs/HISTORIAL_DESARROLLO.md](docs/HISTORIAL_DESARROLLO.md) y el estado medido de las pruebas en [docs/VERIFICACION.md](docs/VERIFICACION.md).
 
-- **Licencias en las tres apps** ([LICENSE_CLIENT.md](LICENSE_CLIENT.md) §11–§13), con la 0.31.0 del escritorio: la app iOS
-  (`flutter_app/`) implementa por fin el flujo real —solicitud `SPVIR1`, licencia corta `SPVI2:`, licencia larga v1,
-  maestra, marca de agua del reloj, revocadas y sub-tokens— con `pointycastle`; el teléfono y el escritorio
-  completan lo que les faltaba del contrato de GL.
-- **Clave maestra solo en depuración** (mitigación 1, Opción A): `GLMK-PERM-MAXS-9999` vale con `BuildConfig.DEBUG`
-  en Android, `SPVI_DESARROLLO=1` en el escritorio y `kDebugMode` en iOS. En release no vale nada (fail-closed).
-- **Sub-tokens de secundarias** (mitigación 7, Opción A): la principal firma un permiso por ranura y dispositivo
-  (`<licenseId>|<device>|<ranura>|<permitidas>|<vence>.<firma>`) con una clave P-256 propia del Keystore y la
-  secundaria no acepta la licencia heredada si el permiso no la autoriza. Nueva columna `empleado.device` (**esquema
-  v12**, `MIGRACION_11_12`) para recordar el `deviceId` de cada secundaria.
-- **AAD canónica del envelope v1** (mitigación 8, Opción A): se sella con longitud prefijada y se sigue abriendo lo
-  ya emitido con la heredada `1|alg|…` (`EnvelopeV1.kt`, `CanonicalAadTest`).
-- Verificación: 126 pruebas Python del escritorio correctas; Android compila y pasa `spviTests` en el CI del repositorio
-  (con lint, R8 y los permisos del manifiesto), y **la app iOS no se ha compilado ni probado aquí** (no hay Dart en este
-  entorno): `flutter test` y el build los corre Codemagic. Falta commitear `data/schemas/…/12.json`, que Room exporta al
-  compilar (ver [Pendiente.md](Pendiente.md)).
-
-## Cambios en desarrollo — 10 de octubre de 2026
-
-- **Escritorio 0.31.0** ([desktop/README.md](desktop/README.md#novedades-de-la-0310-10102026)): interfaz
-  nueva con el estilo del móvil (menú lateral, tarjetas, diálogos, iconos y fuentes de la app), tema
-  claro/oscuro, icono de notificación en lugar de la consola, clave de acceso opcional, inicio con Windows
-  con retraso, Tiempo en línea (PC, red local y cada app vinculada) y datos de prueba «Bodega La Esquina».
-- **Licencia de PC:** código de 16 dígitos `XXXX-XXXX-XXXX-XXXX`; la solicitud lleva plataforma PC y número
-  de transacción y se envía por WhatsApp escaneando un QR ([LICENSE_CLIENT.md](LICENSE_CLIENT.md), sección 10).
-  El teléfono sigue usando `SPVI2`. **Falta publicar en GL** la parte que emite el código (`SpviPc16`): se
-  escribió y probó en esta sesión pero aún no está en el repositorio GL (ver [Pendiente.md](Pendiente.md)).
-- **Móvil:** ver «Cambios de la 0.30.1 en curso» (textos y pestañas que no se cortan).
-- Verificación: 103 pruebas Python, autoprueba y recorrido de la web en Chromium sin pantalla correctos;
-  el código de 16 dígitos se comprobó de punta a punta entre Python y el Kotlin de GL. Sin compilar Android
-  (no hay Java aquí) ni probar en Windows.
-
-## Cambios en desarrollo — 9 de octubre de 2026
-
-- Pago electrónico: tarjetas con icono genérico monocromático, casillas de selección (máximo un teléfono y
-  una tarjeta; tocar la elegida la desmarca) y editar/eliminar en una fila.
-- Inicio: se conserva la distribución de la pantalla con el turno y las acciones dentro del contenido desplazable;
-  el selector de período permanece antes de los gráficos y el resumen. Los gráficos y tops son acordeones cerrados.
-- Registros conserva los textos de ejemplo de sus buscadores y muestra el vendedor en la lista de transferencias.
-- PDF/Excel están disponibles también en Ventas, Transferencias y Movimientos de Registros, además de los informes
-  de inventario, servicios y turnos. Imagen y tarjetas promocionales quedan para productos/servicios, no insumos;
-  el comentario opcional de hasta 160 caracteres se usa como encabezado de tarjetas. Cada formato tiene icono,
-  incluido Excel monocromático.
-- Notificación expandida con estado del turno, turnos abiertos en el negocio y sincronización, más duración
-  del turno propio; sin importes ni datos personales.
-- **Escritorio Python:** primera base independiente en [desktop/](desktop/README.md), con catálogo,
-  turnos, ventas, caja y dashboard. Incluye PDF/Excel/PNG, respaldo cifrado `.spvidesk`, preparación HTTPS,
-  comparación entre períodos y proceso Windows que prueba antes y después de empaquetar.
-  **Ampliación implementada:** QR/TCP principal, licencias GL, respaldo Android, correcciones,
-  insumos, clientes, fotos e idempotencia. La web es independiente y exclusivamente principal;
-  no sustituye la aplicación móvil. Quedan pendientes la validación en Windows y la interoperabilidad
-  real con Android y GL.
-
-Ver [manual de estos cambios](MANUAL_USUARIO.md) y [alcance técnico de escritorio](desktop/README.md).
-La suite web actual tiene 103 pruebas Python y autoprueba del paquete; la validación visual y los flujos
-con Windows, Android y GL siguen siendo pendientes. Gradle/Android no se ejecutó en este entorno por ausencia
-de Java; no se afirma que el APK se haya validado localmente.
+La versión declarada por el código sigue siendo **0.30.0 (`versionCode 51`)**; los cambios en curso no se consideran un release hasta actualizar esa versión y completar su verificación.
 
 ## Descripción
 
@@ -145,7 +72,7 @@ Versiones principales (`gradle/libs.versions.toml`): Kotlin 2.0.21, AGP 8.7.3, C
 1. **Claves públicas de GL.** Ya están fijadas en `licencia/src/main/kotlin/cu/spvi/licencia/LicenseTrust.kt` (par vigente de GL del 05/10/2026: clave ECDH `sha256:2a3f:9fce:…:666d` y clave de firma `sha256:58d4:3aac:…:8c4e`; se conserva la firma anterior `sha256:8a91:bcfb:…:6888` para las licencias ya emitidas). `LicenseTrustTest` falla si alguna no se puede leer o no coincide con su huella. Si GL cambia de par de claves (borrado de datos, reinstalación, otro teléfono), hay que publicar un build nuevo con la clave añadida a `SIGN_KEYS` (ver [LICENSE_CLIENT.md](LICENSE_CLIENT.md)).
 2. **Firma de release.** El repositorio no contiene ningún keystore ni contraseña. `app/build.gradle.kts` los lee de `keystore.properties`, que git ignora, o de las variables `SPVI_KEYSTORE`, `SPVI_KEYSTORE_PASSWORD`, `SPVI_KEY_ALIAS` y `SPVI_KEY_PASSWORD`. Los pasos completos están en [RELEASE.md](RELEASE.md). **Firma siempre con la misma clave**, porque `ANDROID_ID` (y con él el `deviceId` de la licencia) depende de la firma del APK.
 3. **Contacto del desarrollador.** Teléfono `+5351815604` en una sola constante (`core/.../contact/DeveloperContact.kt`), que usan Licencia, Migrar y Soporte.
-4. **Esquema Room.** El primer build genera `data/schemas/cu.spvi.data.db.SpviDatabase/3.json` (`room.schemaLocation`). Versiónalo en git: es la base de las migraciones futuras y lo usa `EsquemaTest`.
+4. **Esquema Room.** La versión actual es **v12** (`data/schemas/cu.spvi.data.db.SpviDatabase/12.json`). Cada cambio requiere migración, esquema exportado y `EsquemaTest`.
 5. **Baseline de lint.** Se entrega vacío. La primera vez ejecuta `./gradlew :app:updateLintBaseline` y versiona `app/lint-baseline.xml`; a partir de ahí, cualquier error nuevo de lint rompe `spviCheck`.
 6. **Actualizaciones:** el build apunta por defecto a las Releases públicas de [`rmdvcd/SPVI`](https://github.com/rmdvcd/SPVI/releases) (`spviGithubRepo` en `gradle.properties`). Para compilar un fork, se puede sobrescribir con `-PspviGithubRepo=usuario/repositorio`; vacío desactiva las consultas.
 7. **Nada más que configurar:** no hay claves de API, `google-services.json` ni variables de entorno.
@@ -179,7 +106,7 @@ Versiones principales (`gradle/libs.versions.toml`): Kotlin 2.0.21, AGP 8.7.3, C
 | `:core` | JVM | `AppResult`/`AppError`, `Cup` (centavos) y `Money.format` («1,450.00 CUP»), `Percent`, `Cantidad` (milésimas), `Clock`, validadores, contacto del desarrollador |
 | `:licencia` | JVM | Contrato GL v1, criptografía (ECDH, HKDF, AES-GCM, ECDSA), `LicenseManager`, estados y banner |
 | `:domain` | JVM | Modelos, interfaces de repositorio, servicios puros (stock, planificador de venta, recetas, estadísticas, tablas de exportación) y casos de uso |
-| `:data` | Android | Room + SQLCipher, DAOs, repositorios, DTO de respaldo, `BackupCipher`, exportadores PDF/XLSX, DataStore cifrado, red del escáner (OkHttp), fotos y, en `security/`, `KeystoreAead`, `AndroidDeviceKey` y `DatabasePassphrase` (antes módulo `:security`, fusionado en P17) |
+| `:data` | Android | Room + SQLCipher, DAOs, repositorios, DTO de respaldo, `BackupCipher`, exportadores PDF/XLSX, DataStore cifrado, consulta/descarga de actualizaciones (OkHttp), sincronización LAN, fotos y, en `security/`, `KeystoreAead`, `AndroidDeviceKey` y `DatabasePassphrase` (antes módulo `:security`, fusionado en P17) |
 | `:designsystem` | Android | Tema, tokens, iconos, componentes y gráficos (ver [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)) |
 | `:app` | Android | Una Activity, NavHost y las pantallas como paquetes (MVVM + UDF: `StateFlow` de estado y `Channel` de eventos). Los ViewModels usan casos de uso cuando hay lógica, y la interfaz de repositorio de `:domain` cuando solo se lee o se borra (P17) |
 
@@ -201,7 +128,7 @@ Versiones principales (`gradle/libs.versions.toml`): Kotlin 2.0.21, AGP 8.7.3, C
 - Los tests JVM **no pueden salir a internet** (proxy inexistente salvo el bucle local, que usa `MockWebServer`) y se ejecutan con `user.timezone=UTC`.
 - Los instrumentados usan Room **en memoria** y fakes en los bordes (cámara, selector de archivos, bases públicas). Los fakes de `:app` viven en `app/src/sharedTest` y los comparten los tests JVM y los instrumentados.
 - Informes: `<módulo>/build/reports/tests/` y `<módulo>/build/reports/androidTests/connected/`.
-- **Verificación actual: [docs/VERIFICACION.md](docs/VERIFICACION.md)** (única fuente de verdad; este README ya no lleva historial). Corrida del 2026-10-07, todo en verde: 825 tests JVM, lint 0 errores, R8 sin clases ausentes, permisos del manifiesto dentro de la lista autorizada y API mínima 26 sin llamadas prohibidas. El detalle por capa y los casos borde están en [docs/HISTORIAL_DESARROLLO.md](docs/HISTORIAL_DESARROLLO.md#tests-prompt-15).
+- **Verificación actual: [docs/VERIFICACION.md](docs/VERIFICACION.md)** (única fuente de verdad). El último CI observado, del 2026-10-15, falló en tests JVM al no poder descargar el SDK instrumentado de Robolectric; los demás trabajos pasaron. La corrección de esta rama aún requiere CI. No hay JDK/Android SDK local para ejecutar Gradle.
 
 ## Contrato GL aplicado
 
@@ -209,12 +136,12 @@ SPVI es **cliente** del contrato v1 de GL, sin cambiarlo. Detalle completo en [L
 
 | Punto | Aplicación en SPVI |
 |---|---|
-| Solicitud | Payload v1 completo (`v`, `nombre`, `apellidos`, `ci`, `via`, `telefono`, `deviceId`, `tipo`, `solicitadaEn`, `nonce`, `devicePub`) + `appName: "SPVI"`, cifrado con ECIES-P256-AES256GCM-v1 hacia la clave ECDH de GL y firmado con la clave efímera |
+| Solicitud | `RequestPayload` (`v = 2`): nombre, apellidos, CI, vía, teléfono, `deviceId`, tipo, fecha, nonce y clave pública del teléfono; añade `secundarias` y `renueva` cuando corresponden. Se cifra como `SPVIR1:` hacia la clave ECDH de GL; no lleva `appName` ni firma efímera |
 | `deviceId` | `"SPVI:" + ANDROID_ID` |
 | `devicePub` | Clave P-256 persistente del teléfono. **Nunca se envía `null`** |
 | Envío | Solo texto: WhatsApp (`wa.me/5351815604`) o SMS (`smsto:+5351815604`) con los datos legibles + la solicitud cifrada `SPVIR1:`. Respuesta de GL: licencia corta cifrada `SPVI2:` (216 caracteres) con las características arriba ([docs/LICENCIA_0.23.md](docs/LICENCIA_0.23.md)) |
 | Activación | Se pega el mensaje de GL: firma ECDSA de GL, descifrado con la clave del teléfono, `deviceId`, `devicePub`, `estado` y `venceEn` |
-| Envelope | Estricto: solo las 8 claves de v1 |
+| Envelope legado v1 | Android conserva la verificación criptográfica de una licencia larga ya instalada; no activa una nueva desde 0.23.0. El formato v1 acepta únicamente sus 8 campos |
 | Claves de GL | Firma y ECDH: solo fijadas en el build |
 | Prueba | 7 días |
 | Tipos y precios | Mensual 6,000 · Semestral 30,000 · Anual 50,000 · Perpetua 90,000 CUP |
@@ -223,7 +150,7 @@ SPVI es **cliente** del contrato v1 de GL, sin cambiarlo. Detalle completo en [L
 | Apps secundarias | La principal firma el permiso de cada ranura y dispositivo (sub-token); la secundaria lo comprueba antes de dar la licencia por buena |
 | Migrar | La autorización es la licencia emitida al teléfono nuevo; el viejo cede su licencia y se borra |
 
-## Cambios de la 0.30.1 en curso (sin compilar ni probar en teléfono)
+## Mejoras Android en curso (la versión declarada sigue en 0.30.0)
 
 - **Pago electrónico:** los logos de BPA, BANDEC y BANMET se muestran con esquinas redondeadas y el mismo tamaño (96 × 48 dp). El logo se elige por los 4 primeros dígitos de la tarjeta; es una estimación (ver [docs/LOGOS_BANCOS.md](docs/LOGOS_BANCOS.md): `9225`/`9235` los comparten varios bancos y `9226` tiene fuentes contradictorias).
 - **Inicio:** «Nueva venta» a la izquierda y, a la derecha, el turno con su interruptor de dos estados en un contenedor que mide lo que mide su contenido (con letra muy grande se apilan). En la tarjeta de Pago electrónico, el teléfono y la tarjeta/cuenta van en seminegrita. Los gráficos y listas que siguen al selector de período son acordeones: empiezan cerrados y se vuelven a cerrar al cambiar de ventana.
@@ -244,13 +171,13 @@ SPVI es **cliente** del contrato v1 de GL, sin cambiarlo. Detalle completo en [L
 | **Títulos centrados** | Barra superior, diálogos y hojas con el título centrado arriba y sin logo. En Inicio, «SPVI» con la fuente de marca |
 | **Textos completos** | Los textos pasan a varias líneas en lugar de cortarse (también con letra al 200 % en 360 dp); capturas con letra grande de Inicio, ficha, Licencia y arqueo |
 | **Top 3 con medallas** | Oro, plata y bronce (`SpviMedalla`), con contraste AA en claro y oscuro |
-| **Animaciones** | 150–250 ms y muelle sin rebote (`SpviMotion`); las ventanas emergentes suben desde abajo al centro y bajan al cerrar; `profileinstaller` para fluidez en release |
+| **Animaciones** | 150–250 ms y muelle sin rebote (`SpviMotion`); las ventanas emergentes suben desde abajo al centro y bajan al cerrar. `profileinstaller` se añadió en esa versión y se retiró después al no existir un baseline profile generado (auditoría 2026-10-14) |
 | **Deslizar** | Solo entre las 5 pantallas principales, nunca en subpantallas, con un diálogo abierto, en selección o escribiendo |
 | **Campos** | El texto de ejemplo (placeholder) va centrado |
 | **PDF y Excel** | Con su icono en todas las hojas de exportar |
 | **Textos llanos** | Sin versiones, nombres técnicos ni explicaciones de la licencia o del registro de la prueba |
 | **Principal ≠ secundaria** | Una app principal nunca puede pasar a secundaria; para cambiar el tipo hay que exportar el respaldo y borrar los datos de SPVI |
-| **Respaldo sin contraseña** | «Proteger con contraseña» es opcional y viene apagado; el archivo `.spvi` v4 indica si la lleva. Se siguen abriendo los v3 |
+| **Respaldo sin contraseña (estado de 0.27.0)** | En esa versión, «Proteger con contraseña» era opcional y venía apagado; el archivo `.spvi` v4 indica si la lleva. Desde S-01 (10/2026), viene activado por defecto; ver [SECURITY.md](SECURITY.md). |
 | **Acceso con clave** | Opcional (recorrido inicial y Ajustes): huella o PIN/patrón del teléfono al abrir la app y tras 10 minutos o más en segundo plano. No va en el respaldo |
 | **Soporte** | Datos del desarrollador con icono |
 | **Foto primero** | Nuevo producto y Nuevo servicio empiezan por la foto, con botones Cámara y Galería (selector de fotos del sistema, sin permisos) |
@@ -301,7 +228,7 @@ Con esto desaparecen las desviaciones de la 0.25.0 sobre Modificar, el conteo no
 
 Desviaciones documentadas: instalación con `PackageInstaller` (sin FileProvider ni configuración de red propia; OkHttp solo HTTPS); Modificar no cambia el método de pago ni añade artículos (para eso, anular y vender de nuevo); el diálogo de conteo de un cierre pedido por la principal no se puede descartar; la tarjeta de actualización solo aparece en Inicio y Ajustes y nunca interrumpe una venta; la descarga no sigue en segundo plano; el campo de recuperación solo aparece sin licencia instalada; el arqueo se ve en la pestaña Caja (no hay PDF/Excel del turno) y el Excel de ventas añade la columna Estado; una venta de servicios anulada llega a la secundaria en su siguiente sincronización. Protocolo de sincronización: sigue en v1 con campos opcionales (las secundarias 0.24 siguen funcionando).
 
-Para GL: [docs/GL_PROMPT_0.25.md](docs/GL_PROMPT_0.25.md) (recuperación automática y lista de revocadas; pruebas con `tools/licencia/probar_gl.py revocadas …` y `vector_0.25.txt`).
+Para GL: [docs/GL_PROMPT_0.25.md](docs/GL_PROMPT_0.25.md) (recuperación automática y lista de revocadas; pruebas con `tools/licencia/probar_gl.py revocadas …` y `vector_0.25.txt`; dependencias Python en `tools/requirements.txt`).
 
 ## Apps Principal y Secundaria (0.19.0)
 
@@ -332,8 +259,7 @@ Archivo `spvi.db`, Room **versión 10** (v4: servicios; v5: Principal/Secundaria
 
 - **Versión 3 consolidada (P17):** sin `tasa_cambio` ni `caducidad_codigo`. Como no había clientes, las bases de desarrollo v1 y v2 se recrean vacías (`fallbackToDestructiveMigrationFrom(1, 2)`) y no hay clases de migración. Cualquier versión futura necesita una `Migration(3, 4)`… explícita: una migración que falte rompe en desarrollo en lugar de borrar datos de usuarios.
 - **v5 (0.19.0):** `turno` y `venta` con `uuid` único, `empleadoId` y `sincronizado`; tabla `empleado` (apps secundarias de la principal). `MIGRACION_4_5`.
-- **v10 (0.27.0):** tabla `cliente_fijo` y `transaccion.clienteFijo` (`MIGRACION_9_10`, esquema `10.json`). Solo añade.
-- **v10 (0.27.0):** tabla `cliente_fijo` (carné único) y `transaccion.clienteFijo` (`MIGRACION_9_10`, esquema `10.json`).
+- **v10 (0.27.0):** tabla `cliente_fijo` (carné único) y `transaccion.clienteFijo` (`MIGRACION_9_10`, esquema `10.json`). Solo añade.
 - **v6–v9:** v6/v7 (0.20–0.21) empleados y permisos; **v9 (0.26.0)**: `empleado.fondoAsignadoCent`/`fondoAsignadoEn`/`aperturaSolicitadaEn`/`versionCode` (`MIGRACION_8_9`, esquema `9.json`); **v8 (0.25.0)**: tabla `movimiento_caja`, `turno.fondoCent`/`contadoCent` y totales de caja, `venta.anuladaEn`/`motivoAnulacion`/`anuladaPor`/`corrigeVentaId`. `MIGRACION_7_8`, esquema `8.json`.
 - **Stock nunca negativo:** las actualizaciones usan `WHERE cantidad + :delta >= 0`.
 - **Atomicidad:** venta, producción, cierre de turno e importación de respaldo van cada uno en una sola transacción (`db.tx { }`).
@@ -348,7 +274,7 @@ El manual para el usuario final, sin tecnicismos, está en [MANUAL_USUARIO.md](M
 3. **Configurar el cobro por transferencia:** Pago electrónico (tarjeta de Inicio o Ajustes): tarjeta y teléfono.
 4. **Vender:** en Inicio, abrir el turno (interruptor de la tarjeta de turno) → **Nueva venta** → elegir productos → Efectivo o Transferencia → Confirmar.
 5. **Cerrar el turno** al terminar: queda su resumen en Registros → Turnos.
-6. **Revisar y exportar:** Registros (texto, PDF o Excel) e Inventario (PDF, Excel, imagen, tarjetas, texto).
+6. **Revisar y exportar:** Registros (PDF o Excel) e Inventario (PDF, Excel, imágenes y tarjetas).
 7. **Copia de seguridad:** Ajustes → Respaldo, con contraseña. El respaldo siempre es completo.
 8. **Licencia:** Ajustes → Licencia → elegir tipo → *Enviar por WhatsApp* o *SMS* → pegar la respuesta → *Activar*.
 
@@ -381,16 +307,3 @@ El manual para el usuario final, sin tecnicismos, está en [MANUAL_USUARIO.md](M
 El repositorio no incluye un archivo de licencia del código fuente; los derechos corresponden al desarrollador (ver Ajustes → Soporte). El documento [LICENSE_CLIENT.md](LICENSE_CLIENT.md) describe el sistema de **licencias de uso** de la app, no la licencia del código fuente.
 
 **Recursos de terceros incluidos en el APK:** iconos con trazados de Material Symbols (Apache 2.0) y, desde la 0.15.0, 9 ilustraciones de [unDraw](https://undraw.co) (licencia unDraw: uso libre, también comercial, sin atribución obligatoria) tomadas del paquete npm `undraw-svg` 2.0.0 (MIT) y convertidas a vectores Compose (`designsystem/.../ilustracion/SpviIlustraciones.kt`).
-
-### Revisión de entradas y listas (09/10/2026, pendiente de verificar)
-
-Los datos secundarios de las listas se muestran por renglones. Los campos numéricos rechazan formatos ambiguos en lugar de convertirlos silenciosamente; las cuentas bancarias admiten hasta 20 cifras. El precio de venta debe superar el costo: se valida al guardar productos/insumos y al cotizar, también después de aplicar descuentos. Los precios históricos no se modifican. La compilación y las pruebas quedan para opencode CLI en el PC del usuario: [guía de revisión](docs/REVISION_2026-10-09.md).
-
-### Ampliación de principal web Python
-
-El desarrollo de `desktop/` incorpora servidor principal LAN, empleados, cliente GL, respaldo
-Android compartido y operaciones canónicas del carrito. Es una aplicación independiente,
-exclusivamente principal, no una sustitución del móvil. Esta ampliación **no se ha probado ni
-compilado aquí**: la verificación se realiza en la PC del propietario con OpenCode CLI siguiendo
-[desktop/VERIFICACION_PC.md](desktop/VERIFICACION_PC.md). El alcance implementado y las limitaciones de formatos/fotos están
-explicitados en [desktop/README.md](desktop/README.md).

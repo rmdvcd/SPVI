@@ -1,6 +1,6 @@
 # PLAN 0.26.0 (48) — ocho cambios pedidos tras la 0.25.1
 
-Estado: **propuesta, sin aplicar**. No se toca código hasta tu confirmación (regla de P17).
+Estado: **implementado en la versión 0.26.0**; se conserva como registro de la petición y de sus decisiones originales.
 
 ## Respuestas ya dadas
 

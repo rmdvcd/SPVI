@@ -1,6 +1,8 @@
-# SPVI — Plan de correcciones propuesto
+# SPVI — Plan de correcciones propuesto (archivo histórico)
 
-> Estado: **F0 ejecutada y en verde** (2026-10-07). Corrida del CI:
+> **Instantánea del 2026-10-07:** sus fases y resultados no representan el estado actual. Consulta `Pendiente.md` y `docs/VERIFICACION.md` para el estado vigente.
+>
+> Estado en aquella instantánea: **F0 ejecutada y en verde** (2026-10-07). Corrida del CI:
 > [37656256703](https://github.com/rmdvcd/SPVI/actions/runs/37656256703) — 5/5 trabajos, con el detalle en
 > [docs/VERIFICACION.md](docs/VERIFICACION.md). Fases F1–F3 y F6 pendientes de empezar.
 >

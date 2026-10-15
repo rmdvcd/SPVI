@@ -1,8 +1,8 @@
 # SPVI — reglas para agentes (OpenCode)
 
-App Android de punto de venta e inventario para pequeños negocios en Cuba. **Versión 0.30.0 (`versionCode 51`)**; en curso la 0.30.1 del móvil y el sistema de licencias del contrato GL (clave maestra, sub-tokens y envelope v1, `LICENSE_CLIENT.md` §11–§13). Paquete `cu.spvi.app`. Todo el texto de la interfaz, los comentarios y la documentación están en **español**; responde en español.
+App Android de punto de venta e inventario para pequeños negocios en Cuba. Este repositorio mantiene solo Android; la app Flutter/iOS y la web de escritorio se retiraron el 2026-10-15. **Versión declarada 0.30.0 (`versionCode 51`)**; hay mejoras Android en curso y la versión no se cambiará hasta completar su verificación. El contrato de licencias GL vigente está resumido en `LICENSE_CLIENT.md` §10–§11. Paquete `cu.spvi.app`. Todo el texto de la interfaz, los comentarios y la documentación están en **español**; responde en español.
 
-**Empieza por `Contexto.md`** (resumen completo del proyecto), `Pendiente.md` (lo que falta) y `Pruebas.md` (qué probar y en qué orden); `opencode.json` carga los dos primeros en cada sesión. La referencia visual es `SPVI_0.26.0_capturas_y_exportaciones.pdf` (raíz; no se sube a git). Guía paso a paso para compilar y retocar con OpenCode Desktop: `docs/OPENCODE_DESKTOP.md`. Lee los demás documentos solo cuando la tarea los necesite:
+**Empieza por `Contexto.md`** (resumen del proyecto), `Pendiente.md` (lo que falta) y `Pruebas.md` (qué probar y en qué orden). La referencia visual es `SPVI_0.26.0_capturas_y_exportaciones.pdf` (raíz; no se sube a git). Guía para compilar con OpenCode Desktop (herramienta de desarrollo; no es una app SPVI): `docs/OPENCODE_DESKTOP.md`. Lee los demás documentos solo cuando la tarea los necesite:
 - arquitectura, compilación y novedades: `README.md`;
 - release firmado y pruebas en el teléfono: `RELEASE.md`;
 - archivos que escribe la app (respaldo, PDF, Excel, PNG): `FORMATOS.md`;
@@ -14,7 +14,7 @@ App Android de punto de venta e inventario para pequeños negocios en Cuba. **Ve
 
 ## Pila
 
-Kotlin 2.0.21 · AGP 8.7.3 · Gradle 8.11.1 (wrapper) · JDK 17 · compileSdk/targetSdk 35 · minSdk 26 · Compose BOM 2024.12.01 (Material 3) · Hilt 2.52 (KSP) · Room 2.6.1 + SQLCipher 4.6.1 · OkHttp + kotlinx.serialization · fastexcel · ML Kit (escáner) · Robolectric 4.14.1 + Roborazzi 1.38.0. Versiones en `gradle/libs.versions.toml`.
+Kotlin 2.0.21 · AGP 8.7.3 · Gradle 8.11.1 (wrapper) · JDK 17 · compileSdk/targetSdk 35 · minSdk 26 · Compose BOM 2024.12.01 (Material 3) · Hilt 2.52 (KSP) · Room 2.6.1 + SQLCipher 4.6.1 · OkHttp + kotlinx.serialization · fastexcel · ML Kit (QR de vinculación) · Robolectric 4.14.1 + Roborazzi 1.38.0. Versiones en `gradle/libs.versions.toml`.
 
 ## Módulos (Clean Architecture)
 
@@ -49,7 +49,7 @@ Un solo test: `./gradlew :domain:test --tests "cu.spvi.domain.Version025Test"`. 
 3. **No se vende sin turno abierto.** La cámara solo mientras se usa. SMS solo pegando o compartiendo (nunca leer SMS ni el portapapeles en segundo plano).
 4. **UI:** Material 3 claro/oscuro, contraste WCAG AA (`ContrastTest`), sin estilos sueltos: usa `Spvi*` del `:designsystem`. `SpviSpacing` tiene xs=8, md=16, lg=24, xl=32 (**no existe `sm`**). Botones de solo icono con descripción. Diálogos centrados. Guardar = ✓. Gráficos sin líneas de rejilla. Asistentes de 3–4 pasos.
 5. **Datos sensibles:** nada en logs ni en Recientes (`FLAG_SECURE` en Licencia, Perfil, QR y datos del cliente). El CI sale enmascarado (`••••••••345`) en los textos compartidos.
-6. **Licencia:** no copies el almacenamiento de GL ni expongas detalles internos. El teléfono activa **solo** la licencia corta `SPVI2:` y, **solo en builds de depuración**, la clave maestra `GLMK-PERM-MAXS-9999` (mitigación 1: en release siempre vale `false`). Una licencia **larga** (envelope v1) no se activa desde la 0.23.0: si quedó instalada en un teléfono se sigue re-verificando, y el escritorio y la app iOS sí la aceptan al activar (mismo contrato, cliente nuevo). La cuota de secundarias la firma la principal (sub-token, mitigación 7): la secundaria comprueba el permiso y, sin él (principal anterior), acepta la licencia como antes. Detalle en `LICENSE_CLIENT.md` §11–§13.
+6. **Licencia:** no copies el almacenamiento de GL ni expongas detalles internos. El teléfono activa **solo** la licencia corta `SPVI2:` y, **solo en builds de depuración**, la clave maestra `GLMK-PERM-MAXS-9999` (mitigación 1: en release siempre vale `false`). Una licencia **larga** (envelope v1) no se activa desde la 0.23.0: si quedó instalada en un teléfono se sigue re-verificando. La cuota de secundarias la firma la principal (sub-token, mitigación 7): la secundaria comprueba el permiso y, sin él (principal anterior), acepta la licencia como antes. Detalle en `LICENSE_CLIENT.md` §10–§11.
 7. **Documentación sin funciones inventadas.** Si cambias comportamiento, actualiza README/MANUAL_USUARIO/FORMATOS y añade una entrada en `docs/HISTORIAL_DESARROLLO.md`.
 8. Tests sin red. Todo lo que añadas debe compilar y pasar `spviTests`.
 
@@ -64,12 +64,8 @@ Un solo test: `./gradlew :domain:test --tests "cu.spvi.domain.Version025Test"`. 
 - Firma de los sub-tokens: clave P-256 propia de la principal (`FirmanteLicenciaAndroid`, Keystore `PURPOSE_SIGN`, alias `spvi_licencia_firma_v1`), distinta de la clave ECDH del equipo y que **nunca** se borra al migrar ni al desvincular.
 - La firma de release debe ser **siempre la misma** (el `deviceId` de la licencia depende de ella).
 
-## Qué se ha ejecutado y qué no
+## Estado de verificación
 
-Desde el **2026-10-07** el CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) ejecuta Gradle real en cada push:
-`spviTests` (906 tests JVM sin contar las 146 capturas Roborazzi; conteo estático 2026-10-14, el runner manda), `:app:lintDebug`, `:app:assembleRelease` (R8, con control de clases ausentes),
-`spviPermisos` y `tools/verificacion/api_minima.py`. El estado y los números están en
-[docs/VERIFICACION.md](docs/VERIFICACION.md).
+El estado medido se mantiene en [docs/VERIFICACION.md](docs/VERIFICACION.md). El último CI observado (run `38802995010`, commit `84afc87`) falló en dos tests de Robolectric al no poder descargar el SDK instrumentado. En esta rama, `app/build.gradle.kts` prepara ese SDK con Gradle y configura modo offline para todos los tests JVM de `:app`; la corrección está pendiente de CI. No hay JDK/Android SDK local para verificarla aquí.
 
-El CI **no** ejecuta (y por tanto no verifica en cada push): Roborazzi (capturas), los 136 tests instrumentados, el
-APK en un teléfono ni la prueba con dos teléfonos (principal + secundaria). Sigue `docs/OPENCODE_DESKTOP.md` §3–§6.
+El CI no ejecuta de forma ordinaria las capturas Roborazzi ni los tests instrumentados en un teléfono/emulador. Tampoco prueba la app instalada, la sincronización entre dos teléfonos ni la firma de release. Antes de publicar, sigue `Pruebas.md`, `PRUEBAS_DISPOSITIVO.md` y `RELEASE.md`.
