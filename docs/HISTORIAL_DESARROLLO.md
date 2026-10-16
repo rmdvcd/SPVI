@@ -1,5 +1,11 @@
 # SPVI - Historial de desarrollo
 
+## 2026-10-16 - Móvil: checklist de permisos en la primera apertura y Ayuda a la izquierda
+
+La primera apertura muestra UNA ventana (`root/PermisosIniciales.kt`) con el checklist de permisos (cámara, aviso de turno y fotos, cada uno con su para qué) en vez de lanzar los diálogos del sistema sin explicación y el diálogo aparte de fotos («Guardar tu periodo de prueba», eliminado junto a `PermisoRegistroPrueba`/`TextosPrueba`). «Continuar» pide los permisos del sistema de una vez; «Ahora no» o cerrar no insiste y cada función los vuelve a pedir donde hacen falta. La lógica no cambia: se marca lo pedido en ambos repositorios y se relee el registro de la prueba con el permiso nuevo. En Ayuda, el detalle de cada sección y los pasos de cada tema van alineados a la izquierda (antes centrados por la card).
+
+**Pruebas:** pendiente `./gradlew spviTests` y CI.
+
 ## 2026-10-16 - Móvil: auditoría visual completa (292 capturas Roborazzi + teléfono real)
 
 Compilado `:app:assembleDebug` con JDK 17, instalado en el teléfono 4bc9f8f3 (Android 15) y regeneradas las capturas Roborazzi en claro y oscuro (146 por tema). Correcciones: título de `SpviVentana` en `titleMedium` (era `titleLarge`; el design system exige 15sp para diálogos); aviso de la fila de Inventario en 2 líneas (la fecha de vencimiento se cortaba: «Crítico · Vence 0…»); caso `07d_perfil_errores` ahora con `mostrarErrores = true` (antes no mostraba los errores); limpieza de `Icon`/`Checkbox`/`SpviSize` fully-qualified en PagoElectronicoScreen y ServiciosScreen. Descartados como artefactos del arnés (fondo claro de la ventana de prueba en `Content` sin `Scaffold`): textos de Licencia/Migrar en oscuro. El resto observado (pestañas en 2 líneas a 360dp, franja de exportando, pie fijo sobre formularios largos sin desplazar) es el diseño vigente.

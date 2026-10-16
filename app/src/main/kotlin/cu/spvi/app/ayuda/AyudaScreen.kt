@@ -112,7 +112,10 @@ fun AyudaScreen(onBack: () -> Unit) {
                                     categoria.titulo, style = MaterialTheme.typography.titleMedium,
                                     modifier = Modifier.semantics { heading() },
                                 )
-                                Text(categoria.detalle, style = MaterialTheme.typography.bodySmall)
+                                Text(
+                                    categoria.detalle, style = MaterialTheme.typography.bodySmall,
+                                    textAlign = TextAlign.Start, modifier = Modifier.fillMaxWidth(),
+                                )
                             }
                         }
                     }
@@ -135,7 +138,10 @@ fun AyudaScreen(onBack: () -> Unit) {
                         }
                         if (expandido) {
                             tema.pasos.forEachIndexed { n, paso ->
-                                Text("${n + 1}. $paso", style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    "${n + 1}. $paso", style = MaterialTheme.typography.bodyMedium,
+                                    textAlign = TextAlign.Start, modifier = Modifier.fillMaxWidth(),
+                                )
                             }
                             tema.esquema?.let { Esquema(it, Modifier.padding(top = SpviSpacing.xs)) }
                         }

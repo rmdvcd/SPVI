@@ -40,10 +40,7 @@ fun SpviRoot(viewModel: RootViewModel) {
             is RootState.BloqueoSecundaria -> cu.spvi.app.vinculacion.BloqueoSecundaria()
         }
     }
-    // 0.31.0 (P9): todos los permisos necesarios, UNA vez y sin textos (el diálogo es el del sistema).
+    // Primera apertura: UNA ventana con el checklist de permisos (cámara, aviso, fotos).
+    // Si se niegan, cada función los vuelve a pedir donde hacen falta.
     PermisosIniciales()
-    // 0.26.0 (P74): permiso de fotos para que la prueba no se reinicie al reinstalar (una vez, recién instalada).
-    if (state is RootState.Onboarding || (state is RootState.Main && !(state as RootState.Main).snapshot.estado.let { it is cu.spvi.licencia.LicenseState.Active || it is cu.spvi.licencia.LicenseState.Perpetual })) {
-        cu.spvi.app.licencia.prueba.PermisoRegistroPrueba()
-    }
 }

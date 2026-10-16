@@ -17,8 +17,9 @@
 - **Ayuda:** el manual está organizado por **secciones** (Empezar, Vender y cobrar, Inventario, Registros,
   Tus datos y tu licencia), cada tema con su **icono** y, donde hace falta, un **esquema** dibujado.
 - **Soporte:** las filas están centradas, en el orden **Icono, Descripción, Texto**.
-- **Primera apertura:** la app pide **todos los permisos que necesita de una vez y sin textos** (cámara,
-  notificaciones y fotos): solo sale el cuadro del sistema. Si los negaste, actívalos en Ajustes → Permisos.
+- **Primera apertura:** la app muestra una ventana con el **checklist de permisos** (cámara,
+  aviso de turno y fotos, cada uno con su para qué); *Continuar* abre el cuadro del sistema y
+  *Ahora no* no insiste. Si los negaste, cada función los vuelve a pedir donde hacen falta.
 - **Animaciones:** al tocar la barra de abajo el contenido entra y sale con un **fundido**; al
   **deslizar** el dedo, la pantalla se mueve **hacia los lados** con la dirección del gesto; las ventanas y
   los diálogos **suben desde el centro de abajo**.

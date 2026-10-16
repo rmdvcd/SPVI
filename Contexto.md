@@ -95,7 +95,7 @@ Formato exacto de cada archivo: `FORMATOS.md`.
   - `.sys_<huella>.bin` en Download y en Documents: tras reinstalar solo se leen en Android 8–9.
 - **Qué fecha vale:** gana el inicio más antiguo y la última fecha vista (`lastSeen`) más reciente. Una copia ilegible se ignora (**nunca bloquea**).
 - **Reloj:** `DetectorRelojAndroid` usa `elapsedRealtime` dentro del mismo arranque, además de la comprobación de `lastSeen`.
-- **Permiso de fotos:** `PermisoRegistroPrueba` pide el acceso una sola vez, recién instalada. Si se niega, la app sigue funcionando.
+- **Permisos de la primera apertura:** una ventana con el checklist (cámara, aviso de turno y fotos, cada uno con su para qué); «Continuar» abre el diálogo del sistema y «Ahora no» no insiste. Si se niegan, cada función los vuelve a pedir donde hacen falta. Sin el permiso de fotos, la prueba cuenta desde esta instalación.
 - **Código:**
   - `licencia/.../prueba/RegistroPrueba.kt`;
   - `data/.../licencia/prueba/RegistroPruebaAndroid.kt`;
