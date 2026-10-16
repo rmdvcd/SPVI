@@ -22,7 +22,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
-import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
@@ -59,6 +58,7 @@ import cu.spvi.designsystem.component.SpviTextButton
 import cu.spvi.designsystem.component.SpviTextField
 import cu.spvi.designsystem.component.SpviTopBar
 import cu.spvi.designsystem.icon.SpviIcons
+import cu.spvi.designsystem.token.SpviSize
 import cu.spvi.designsystem.token.SpviSpacing
 import cu.spvi.domain.model.EstadoConexion
 import cu.spvi.domain.model.ModoSincronizacion
@@ -327,7 +327,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.secundaria(s: Vincula
             Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
                 ModoSincronizacion.entries.forEach { m ->
                     Row(
-                        Modifier.fillMaxWidth().heightIn(min = 48.dp).selectable(selected = sec.modo == m, role = Role.RadioButton, onClick = { vm.modo(m) }),
+                        Modifier.fillMaxWidth().heightIn(min = SpviSize.touchTarget).selectable(selected = sec.modo == m, role = Role.RadioButton, onClick = { vm.modo(m) }),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
                     ) {

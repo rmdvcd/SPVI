@@ -18,14 +18,14 @@ Abre la app → pestaña **Claves** → *Copiar ambas claves*. Sale un JSON list
 ```json
 {
   "contractVersion": 1,
-  "encryptionKey": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE+bzI3jdfnqVmHOj3+O0dksDlQTJtdGLA1O0KP+dctJW3urECwUDhLEnS1DDu7cVeaVZZkdZCU8PuxGCcPw/hJA==",
-  "encryptionFingerprint": "sha256:2a3f:9fce:b105:7ee8:563c:04cd:e4d1:00e7:058b:c7b8:0410:024b:e658:efe1:5905:666d",
-  "signingKey": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE1LFKFD7Af1xhbza5CrD7ArwOwq5h4qG70edEp54zozXoUa/r7P7xRQwwV82rXcy0mPznM3TNMk8wGxYCwR7ubg==",
-  "signingFingerprint": "sha256:58d4:3aac:6f1b:099a:e86c:4375:b7c7:ffb5:8631:2399:246c:1f26:f861:e302:9c83:8c4e"
+  "encryptionKey": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAERQubhCNRWzHHGhcIaC9XI+55wTc0NxJObuaYQr7uPbRNUxuZviwS7SSBP6HcstrnwjIlgZ+FVSIr0ResFZq3Lg==",
+  "encryptionFingerprint": "sha256:eb52:2ee8:42bf:64a1:7641:fa0e:c525:a94b:1c92:148e:9664:355b:8f41:feea:cddf:fea1",
+  "signingKey": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEPjc7tw29A0TaynecwlYDphDAtavpfNQ6njeGIX59hIDO+ID9KxTLo4ZaxlPJ/enkCzlBo+5JEMn5AUN8bneC7Q==",
+  "signingFingerprint": "sha256:e693:6c20:2461:57af:0f91:2313:94a4:80a5:0d8c:d150:34a1:091b:08af:b121:2828:0a6e"
 }
 ```
 
-Claves vigentes del dispositivo de referencia desde el 05/10/2026 (se regeneraron al desinstalar y reinstalar la app; las huellas anteriores `sha256:4ea0:…` / `sha256:219e:…` quedaron invalidadas).
+Claves vigentes del dispositivo de referencia desde el 15/10/2026, 2.ª rotación del día (leídas de la pantalla del teléfono 4bc9f8f3 por captura + árbol UI; huellas recalculadas desde el Base64 y coincidentes; la app mostró «Claves copiadas al portapapeles» al pulsar el botón). Los pares anteriores (`sha256:1d7f:515c:…` / `sha256:d9c4:d821:…` de la mañana, `sha256:2a3f:9fce:…` / `sha256:58d4:3aac:…` del 05/10/2026) quedaron invalidados para cifrar, y las firmas anteriores se conservan en el cliente solo para verificar lo ya emitido).
 
 **Guárdalas en el cliente y trátalas como ancla de confianza fija.** Compara `Fingerprint` con la que enseña la pantalla antes de fijarlas: es la comprobación de que no te han colado otras claves.
 

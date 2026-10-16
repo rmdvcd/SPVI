@@ -159,7 +159,7 @@ fun ClientesFijosTab(state: ClientesUiState, acciones: AccionesClientes, zona: Z
                 LazyColumn(
                     Modifier.fillMaxSize().testTag(ClientesTags.LISTA),
                     contentPadding = PaddingValues(horizontal = SpviSpacing.md, vertical = SpviSpacing.xs),
-                    verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs / 2),
+                    verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
                 ) {
                     items(state.clientes, key = { it.ci }) { c ->
                         SpviListItem(

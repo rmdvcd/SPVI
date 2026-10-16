@@ -28,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -38,6 +37,7 @@ import cu.spvi.designsystem.component.SpviCard
 import cu.spvi.designsystem.component.SpviTopBar
 import cu.spvi.designsystem.icon.SpviIcons
 import cu.spvi.designsystem.token.SpviRadius
+import cu.spvi.designsystem.token.SpviSize
 import cu.spvi.designsystem.token.SpviSpacing
 
 object AyudaTags {
@@ -184,7 +184,7 @@ private fun Fila(cajas: List<Pair<String, Boolean>>, modifier: Modifier = Modifi
                         color = if (marcada) cs.primaryContainer else cs.surfaceContainerHighest,
                         shape = RoundedCornerShape(SpviRadius.sm),
                     )
-                    .padding(vertical = SpviSpacing.xs, horizontal = 2.dp),
+                    .padding(vertical = SpviSpacing.xs, horizontal = SpviSize.strokeRegular),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -247,7 +247,7 @@ private fun Telefono(nombre: String, detalle: String, modifier: Modifier = Modif
     val cs = MaterialTheme.colorScheme
     Column(
         modifier.background(cs.surfaceContainerHighest, RoundedCornerShape(SpviRadius.sm))
-            .border(1.dp, cs.outlineVariant, RoundedCornerShape(SpviRadius.sm))
+            .border(SpviSize.strokeHairline, cs.outlineVariant, RoundedCornerShape(SpviRadius.sm))
             .padding(SpviSpacing.xs),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs),

@@ -45,7 +45,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -348,7 +347,7 @@ private fun ElementosFijados(state: InventarioUiState, acciones: AccionesInventa
     if (fijados.isEmpty()) return
     Column(
         Modifier.fillMaxWidth().padding(horizontal = SpviSpacing.md).testTag(InventarioTags.FIJADOS),
-        verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs / 2),
+        verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
     ) {
         Text(
             TextosInventario.seleccionados(fijados.size),
@@ -356,9 +355,9 @@ private fun ElementosFijados(state: InventarioUiState, acciones: AccionesInventa
             modifier = Modifier.semantics { heading() },
         )
         LazyColumn(
-            Modifier.fillMaxWidth().heightIn(max = 240.dp),
-            contentPadding = PaddingValues(vertical = SpviSpacing.xs / 2),
-            verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs / 2),
+            Modifier.fillMaxWidth().heightIn(max = SpviSize.listaCortaMax),
+            contentPadding = PaddingValues(vertical = SpviSpacing.xs),
+            verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
         ) {
             items(fijados, key = { "fijado_${it.producto.id}" }) { i ->
                 Fila(i, marcado = true, acciones = acciones, modoVenta = state.modoVenta != null, modifier = spviAnimateItem())
@@ -373,7 +372,7 @@ private fun Tabla(state: InventarioUiState, acciones: AccionesInventario) {
     LazyColumn(
         Modifier.fillMaxSize().testTag(InventarioTags.LISTA),
         contentPadding = PaddingValues(start = SpviSpacing.md, end = SpviSpacing.md, top = SpviSpacing.xs, bottom = SpviSize.fabClearance),
-        verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs / 2),
+        verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
     ) {
         items(visibles, key = { it.producto.id }) { i ->
             Fila(i, marcado = false, acciones = acciones, modoVenta = state.modoVenta != null, modifier = spviAnimateItem())

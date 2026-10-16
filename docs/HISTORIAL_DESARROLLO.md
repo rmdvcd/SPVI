@@ -4,6 +4,24 @@ Registro **histórico** de lo implementado en cada fase y de las suposiciones vi
 
 > **Prevalece la documentación actual.** Si algo de este historial contradice a [README.md](../README.md), [SECURITY.md](../SECURITY.md), [FORMATOS.md](../FORMATOS.md), [LICENSE_CLIENT.md](../LICENSE_CLIENT.md) o [UI_UX_IX.md](../UI_UX_IX.md), vale lo que dicen esos documentos. Las fases posteriores sustituyen a las anteriores. Las entradas de la web de escritorio y Flutter/iOS describen código retirado el 2026-10-15; no indican que esas apps sigan en mantenimiento.
 
+## 2026-10-15 - Móvil: 2.ª rotación de claves GL del día (captura de pantalla)
+
+La pantalla Claves del teléfono GL (serial 4bc9f8f3) muestra un par nuevo: el de la mañana del mismo día ya no existe (otra reinstalación o borrado de datos). Como `screencap` sale en negro por `FLAG_SECURE`, se leyó el árbol UI (`uiautomator`): ECDH `sha256:eb52:2ee8:…:fea1`, firma `sha256:e693:6c20:…:0a6e`; ambas huellas recalculadas desde el Base64 y coincidentes con las mostradas. `LicenseTrust`: ECDH **sustituida**; firma vigente **añadida** en primer lugar, conservando las 3 anteriores (15/10 1.ª, 05/10, 30/09) para lo ya emitido. Actualizados `LicenseTrustTest` (4 firmas en orden, ECDH distinta de las 3 anteriores), `tools/licencia/probar_gl.py`, README, LICENSE_CLIENT, `docs/GL_CONTEXTO_LICENCIAS.md` y `Contexto.md`. Hay que generar una solicitud nueva con este build: las solicitudes cifradas hacia la ECDH de la mañana GL ya no puede abrirlas.
+
+**Pruebas:** huellas verificadas criptográficamente (SHA-256 del SPKI DER) contra lo mostrado en pantalla; sin JDK/Android SDK local, pendiente `./gradlew spviTests` y CI. Pendiente también re-verificación de extremo a extremo con GL.
+
+## 2026-10-15 - Móvil: rotación de claves GL (solicitud no reconocida)
+
+La solicitud `SPVIR1:` llegaba a GL como «solicitud dañada o no es para GL». Causa: el teléfono GL regeneró su par al reinstalarse tras el 05/10/2026 y SPVI seguía cifrando hacia la ECDH vieja (`sha256:2a3f:9fce:…`). El formato, HKDF, AAD y campos estaban correctos en ambos lados. `LicenseTrust`: ECDH **sustituida** (`sha256:1d7f:515c:…:39b1`); firma vigente **añadida** (`sha256:d9c4:d821:…:998e`) en primer lugar, conservando las del 05/10/2026 y 30/09/2026 para lo ya emitido. Actualizados `LicenseTrustTest`, `tools/licencia/probar_gl.py`, README, LICENSE_CLIENT y `docs/GL_CONTEXTO_LICENCIAS.md`. Hay que generar una solicitud nueva con este build y reinstalar/actualizar SPVI donde se vaya a pedir licencia.
+
+**Pruebas:** `:licencia:test` en verde (incluye la rotación con 3 firmas). Verificado de extremo a extremo en el teléfono 4bc9f8f3 con test instrumentado temporal en GL (borrado tras correr): la ECDH del Keystore coincide con la fijada y una `SPVIR1:` cifrada hacia ella abre con nombre, tipo y secundarias correctos (2/2 PASSED). La prueba manual por UI quedó pendiente solo por la escritura del código largo por adb; el camino criptográfico real está probado. Pendiente CI.
+
+## 2026-10-15 - Móvil: rejilla de espaciado y tokens (optimización UI)
+
+Se eliminan los valores fuera de la rejilla de 8dp (`SpviSpacing.xs / 2` = 4dp en las listas densas de Inventario, Servicios, Precios, Registros y Clientes fijos: ahora `SpviSpacing.xs`) y los literales sueltos (`24.dp` → `SpviSize.icon`, `48.dp` → `SpviSize.touchTarget`, `1.dp` → `SpviSize.strokeHairline`, `2.dp` → `SpviSize.strokeRegular`). La altura máxima de las listas cortas de fijados (`240.dp`, repetida en 3 pantallas) pasa al token nuevo `SpviSize.listaCortaMax`. Sin cambios de comportamiento; solo la separación entre filas densas pasa de 4 a 8dp. Se mantiene la paleta AA verificada y todos los componentes `Spvi*` existentes.
+
+**Pruebas:** sin JDK/Android SDK local; pendiente `./gradlew spviTests` y CI.
+
 ## 2026-10-15 - Limpieza del repositorio: solo Android
 
 Se retiraron las aplicaciones `desktop/` (web de escritorio) y `flutter_app/` (Flutter/iOS), además de sus workflows, configuración de Codemagic, dependencias Python de desarrollo y documentos de usuario específicos. Se eliminó también `tools/escaner/`, un auxiliar obsoleto distinto del escáner Android, y archivos locales/candidatos sin referencias (`.kotlin/`, `icono.jpg` y los planes web). Se conservaron el escáner Android, las herramientas activas `tools/licencia/` y `tools/verificacion/`, las licencias GL para Android y el plan móvil que comparte fecha con el plan web.

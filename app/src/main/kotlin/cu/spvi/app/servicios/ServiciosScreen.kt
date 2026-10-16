@@ -39,7 +39,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -321,7 +320,7 @@ private fun ElementosFijados(state: ServiciosUiState, acciones: AccionesServicio
     if (fijados.isEmpty()) return
     Column(
         Modifier.fillMaxWidth().padding(horizontal = SpviSpacing.md).testTag(ServiciosTags.FIJADOS),
-        verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs / 2),
+        verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
     ) {
         Text(
             TextosServicios.seleccionados(fijados.size),
@@ -329,9 +328,9 @@ private fun ElementosFijados(state: ServiciosUiState, acciones: AccionesServicio
             modifier = Modifier.semantics { heading() },
         )
         LazyColumn(
-            Modifier.fillMaxWidth().heightIn(max = 240.dp),
-            contentPadding = PaddingValues(vertical = SpviSpacing.xs / 2),
-            verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs / 2),
+            Modifier.fillMaxWidth().heightIn(max = SpviSize.listaCortaMax),
+            contentPadding = PaddingValues(vertical = SpviSpacing.xs),
+            verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
         ) {
             items(fijados, key = { "fijado_${it.servicio.id}" }) { s ->
                 Fila(
@@ -349,7 +348,7 @@ private fun Lista(state: ServiciosUiState, acciones: AccionesServicios) {
     LazyColumn(
         Modifier.fillMaxSize().testTag(ServiciosTags.LISTA),
         contentPadding = PaddingValues(start = SpviSpacing.md, end = SpviSpacing.md, top = SpviSpacing.xs, bottom = SpviSize.fabClearance),
-        verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs / 2),
+        verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
     ) {
         items(visibles, key = { it.servicio.id }) { s ->
             Fila(

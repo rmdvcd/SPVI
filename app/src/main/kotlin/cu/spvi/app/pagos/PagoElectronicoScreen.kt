@@ -30,7 +30,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cu.spvi.app.common.SecureWindow
@@ -222,7 +221,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.lista(
 private fun IconoTarjeta(banco: BancoCubano, modifier: Modifier = Modifier) {
     androidx.compose.material3.Icon(
         SpviIcons.PagoElectronico, contentDescription = banco.nombre,
-        modifier = modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier.size(SpviSize.icon), tint = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 

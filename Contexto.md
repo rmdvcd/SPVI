@@ -84,7 +84,7 @@ Formato exacto de cada archivo: `FORMATOS.md`.
   - base 6000 / 30000 / 50000 / 90000 (mensual, semestral, anual, perpetua);
   - más 1000 / 5000 / 9000 / 17000 por cada secundaria, de 0 a 10;
   - la prueba cubre 5 secundarias.
-- **Claves de GL (0.27.0):** par del 05/10/2026 en `LicenseTrust` (se conserva la firma anterior); contexto actual de GL en `docs/GL_CONTEXTO_LICENCIAS.md`.
+- **Claves de GL (0.30.0):** par vigente del 15/10/2026, 2.ª rotación (`sha256:eb52:2ee8:…:fea1` / `sha256:e693:6c20:…:0a6e`), en `LicenseTrust` (se conservan las 3 firmas anteriores para lo ya emitido); contexto actual de GL en `docs/GL_CONTEXTO_LICENCIAS.md`.
 - **Contrato:** `LICENSE_CLIENT.md`, `docs/GL_ESPECIFICACION.md` y `docs/GL_PROMPT_0.25.md`. **No copies el almacenamiento de GL ni expongas detalles internos.**
 
 ### Prueba que no se reinicia al reinstalar (0.26.0, P74)

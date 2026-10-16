@@ -348,7 +348,7 @@ private fun Lista(datos: VistaRegistro, state: RegistrosUiState, acciones: Accio
     LazyColumn(
         Modifier.fillMaxSize().testTag(RegistrosTags.LISTA),
         contentPadding = PaddingValues(horizontal = SpviSpacing.md, vertical = SpviSpacing.xs),
-        verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs / 2),
+        verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
     ) {
         when (datos) {
             is VistaRegistro.Ventas -> ventas(datos.items, state.seleccion, acciones, zona)

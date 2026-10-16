@@ -77,6 +77,8 @@ object SpviSize {
     val progresoCircular = 72.dp
     /** Foto del producto en formularios y en el escáner. */
     val fotoMiniatura = 88.dp
+    /** Altura máxima de la lista corta de fijados/seleccionados (Inventario, Servicios, Precios). */
+    val listaCortaMax = 240.dp
     /** Campo de cantidad (hasta 5 cifras, con letra grande). */
     val campoCantidad = 112.dp
     /** P18 (A22): ancho máximo de lectura de formularios y asistentes en tablet u horizontal. */

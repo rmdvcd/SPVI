@@ -109,10 +109,10 @@ Nunca se indica qué comprobación falló.
 
 | Clave | Política |
 |---|---|
-| Firma (`kid = gl-sign-v1`) | **Solo fijada en el build**, como lista (`LicenseTrust.SIGN_KEYS`) para poder rotarla. Vigente (05/10/2026) `sha256:58d4:3aac:…:8c4e`; se conserva la anterior `sha256:8a91:bcfb:…:6888` solo para que las licencias ya emitidas con ella sigan verificando |
-| ECDH | **Solo fijada en el build** (`LicenseTrust.ECDH_KEY`). Vigente (05/10/2026) `sha256:2a3f:9fce:…:666d`; sustituye a `sha256:7b51:9e55:…:538c`. Desde la 0.13.0 no se puede pegar desde la app: la pantalla *Clave del emisor* se eliminó en P17. Rotarla exige un build nuevo |
+| Firma (`kid = gl-sign-v1`) | **Solo fijada en el build**, como lista (`LicenseTrust.SIGN_KEYS`) para poder rotarla. Vigente (15/10/2026, 2.ª rotación) `sha256:e693:6c20:…:0a6e`; se conservan `sha256:d9c4:d821:…:998e` (15/10/2026, 1.ª rotación), `sha256:58d4:3aac:…:8c4e` (05/10/2026) y `sha256:8a91:bcfb:…:6888` (30/09/2026) solo para que las licencias ya emitidas con ellas sigan verificando |
+| ECDH | **Solo fijada en el build** (`LicenseTrust.ECDH_KEY`). Vigente (15/10/2026, 2.ª rotación) `sha256:eb52:2ee8:…:fea1`; sustituye a `sha256:1d7f:515c:…:39b1` (15/10/2026, 1.ª rotación) y a `sha256:2a3f:9fce:…:666d` (05/10/2026). Desde la 0.13.0 no se puede pegar desde la app: la pantalla *Clave del emisor* se eliminó en P17. Rotarla exige un build nuevo |
 
-Origen: pestaña **Claves** de GL → «Copiar ambas claves» ([docs/GL_CONTEXTO_LICENCIAS.md](docs/GL_CONTEXTO_LICENCIAS.md)). GL regeneró el par al desinstalarse y reinstalarse el 05/10/2026.
+Origen: pestaña **Claves** de GL → «Copiar ambas claves» ([docs/GL_CONTEXTO_LICENCIAS.md](docs/GL_CONTEXTO_LICENCIAS.md)). GL regeneró el par dos veces el 15/10/2026 (antes, el 05/10/2026).
 
 `LicenseTrustTest` comprueba que cada clave fijada se lee como P-256 y coincide con su huella, y que la rotación conserva la firma anterior y sustituye la ECDH. Cambiar la ECDH no afecta a la licencia ya instalada. Pero una solicitud hecha con un SPVI anterior a la 0.27.0 va cifrada hacia la ECDH vieja y **GL ya no puede abrirla**: el cliente tiene que actualizar SPVI y volver a pedirla.
 

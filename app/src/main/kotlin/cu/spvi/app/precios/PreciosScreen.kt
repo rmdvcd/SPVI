@@ -31,7 +31,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -258,8 +257,8 @@ private fun FormularioPreajuste(state: PreciosUiState, f: PreajusteForm, accione
                 modifier = Modifier.fillMaxWidth().semantics { heading() },
             )
             LazyColumn(
-                Modifier.fillMaxWidth().heightIn(max = 240.dp).testTag(PreciosTags.FIJADOS),
-                verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs / 2),
+                Modifier.fillMaxWidth().heightIn(max = SpviSize.listaCortaMax).testTag(PreciosTags.FIJADOS),
+                verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
             ) {
                 items(fijados, key = { "fijado_${it.id}" }) { p -> ProductoPreajuste(p, true, acciones) }
             }
