@@ -53,7 +53,7 @@ Cómo protege SPVI los datos del negocio y la licencia en el teléfono. Describe
 | **Almacenamiento externo** | Guardar y abrir pasa por el selector del sistema (SAF). El `.spvi` además va enraizado en Descargas internas y limitado a proveedores locales (sin nubes ni otras apps). Única excepción (0.26.0): el registro cifrado de la prueba (`Pictures/SPVI/sys_<huella>.png` y `.sys_<huella>.bin` en Download y Documents, ver FORMATOS.md §3.7). El permiso de fotos se pide una sola vez, recién instalada; si se niega, la prueba sigue funcionando (solo no se detecta una instalación anterior). La app no lee ninguna otra imagen |
 | **Visibilidad de paquetes** | Sin `<queries>`: SPVI no consulta ni abre otras apps de pago (Enzona se quitó en la 0.13.0 y el botón «Abrir Transfermóvil» en la 0.17.0) |
 | **Portapapeles** | Solo se lee al tocar «Pegar» / «Pegar SMS», nunca en segundo plano |
-| **Capturas y Recientes** | `FLAG_SECURE` en Perfil, Licencia, Pago electrónico, Respaldo, Migrar, el paso «Tus datos» del asistente, los pasos QR (tarjeta del vendedor, desde la 0.14.0) y de datos del cliente en Venta y Registros mientras se ven transferencias |
+| **Capturas y Recientes** | `FLAG_SECURE` en Perfil, Licencia, Pago electrónico, Respaldo, el paso «Tus datos» del asistente, los pasos QR (tarjeta del vendedor, desde la 0.14.0) y de datos del cliente en Venta y Registros mientras se ven transferencias |
 | **Red local (0.19.0)** | Solo si hay apps secundarias: servidor TCP de la app principal en la red local (puertos 47811–47820) y anuncio NSD `_spvi._tcp`, mientras la app está abierta o (desde 0.19.2) mientras el servicio en primer plano la mantiene, solo con turnos abiertos. Vinculación por QR de un solo uso (10 min) + ECDH P-256 autenticado con HMAC del token; sesiones AES-256-GCM con clave por sentido y nº de secuencia (sin repetición ni reflexión). Nada sale a internet. Detalle: [docs/VINCULACION.md](docs/VINCULACION.md) |
 | **Logs** | La app no registra datos personales (la única llamada es un aviso genérico de la cámara). R8 elimina en release todas las llamadas a `android.util.Log` |
 | **Fotos** | Se re-codifican al guardarlas (lado máx. 1024 px), lo que elimina EXIF y GPS. Coil no tiene módulo de red: solo muestra archivos locales |
@@ -114,7 +114,6 @@ Cómo protege SPVI los datos del negocio y la licencia en el teléfono. Describe
 | **Atrasar el reloj** | Se guarda la última hora vista; si el reloj retrocede más de 2 h → `ClockTampered` (bloqueo hasta corregirlo). Re-evaluación al volver a primer plano y cada ≤ 15 min | Adelantar y luego no tocar el reloj no da ventaja; no hay hora de red de confianza |
 | **Licencia instalada manipulada** | Se guarda el envelope completo y se **re-verifica criptográficamente en cada evaluación**; no existe un indicador «licenciado» | — |
 | **Reutilizar la licencia tras recuperarla en otro teléfono** (0.25.0) | GL revoca la anterior y la publica en la lista firmada; el teléfono antiguo la aplica en su consulta semanal, borra los datos y se bloquea | Si el teléfono antiguo nunca se conecta a internet, sigue funcionando hasta que venza su licencia |
-| **Reutilizar la licencia tras migrar** | Se registra `lic.migrated_at` y se rechaza toda licencia emitida antes | Sin conexión, nadie obliga a ejecutar el borrado en el teléfono viejo |
 | **APK modificado** (parche que salta la comprobación) | R8 sube el coste | **No se puede impedir** con una licencia offline |
 | **Activar con la clave maestra de pruebas** | La comprobación devuelve `false` salvo en builds de depuración; en release una licencia instalada con ella se descarta al evaluar | El APK de depuración (otro paquete, otra firma y otro `deviceId`) sí la acepta: es una herramienta del desarrollador, no un atajo del cliente |
 | **Secundaria que se auto-declara cubierta por la licencia** | La principal firma el permiso de cada ranura con su clave P-256 y la secundaria lo comprueba con la clave pública que viaja con él (firma, `deviceId`, ranura y cuota) | Con la principal 0.30 o anterior, la licencia se acepta sin permiso (convivencia de versiones) |
@@ -134,7 +133,7 @@ Cómo protege SPVI los datos del negocio y la licencia en el teléfono. Describe
 - Si el respaldo sale del teléfono (Drive, WhatsApp), actívale la contraseña: elige una larga y guárdala fuera del teléfono. Sin ella no hay recuperación.
 - Guarda los respaldos en más de un sitio (teléfono y Drive, por ejemplo).
 - Comparte los PDF y Excel de Registros solo con quien corresponda: no llevan contraseña.
-- Pega en Licencia solo mensajes que vengan del desarrollador. Para cambiar de teléfono usa **Ajustes → Migrar**, no borres los datos a mano.
+- Pega en Licencia solo mensajes que vengan del desarrollador. Para cambiar de teléfono, exporta el respaldo, impórtalo en el nuevo y pide la recuperación de la licencia; no borres los datos a mano.
 
 **Para el desarrollador**
 - Firma siempre con el mismo keystore de release y guárdalo fuera del repositorio.

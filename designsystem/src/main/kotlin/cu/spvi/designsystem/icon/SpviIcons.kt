@@ -35,7 +35,6 @@ object SpviIcons {
     val Soporte: ImageVector get() = MaterialSolido.SupportAgent
     val Ayuda: ImageVector get() = MaterialSolido.Help
     val Respaldo: ImageVector get() = MaterialSolido.Backup
-    val Migrar: ImageVector get() = MaterialSolido.PhonelinkSetup
     val Bloqueo: ImageVector get() = MaterialSolido.Lock
 
     // Acciones (sustituyen a botones con texto)

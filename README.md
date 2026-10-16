@@ -32,7 +32,7 @@ Los documentos de trabajo que estaban fuera del proyecto (`DECISIONES_LICENCIA_S
 
 Este repositorio mantiene la aplicación **Android nativa**. La app Flutter/iOS y la aplicación web de escritorio se retiraron; también se eliminaron sus proyectos, pruebas y pipelines propios. La sincronización por red local entre teléfonos Android sigue siendo parte de la app.
 
-La rama contiene mejoras recientes en Inicio, Inventario, Registros, Migrar, Actualizar y Licencia. El detalle para usuarios está en [MANUAL_USUARIO.md](MANUAL_USUARIO.md), los cambios técnicos en [docs/HISTORIAL_DESARROLLO.md](docs/HISTORIAL_DESARROLLO.md) y el estado medido de las pruebas en [docs/VERIFICACION.md](docs/VERIFICACION.md).
+La rama contiene mejoras recientes en Inicio, Inventario, Registros, Actualizar y Licencia. El detalle para usuarios está en [MANUAL_USUARIO.md](MANUAL_USUARIO.md), los cambios técnicos en [docs/HISTORIAL_DESARROLLO.md](docs/HISTORIAL_DESARROLLO.md) y el estado medido de las pruebas en [docs/VERIFICACION.md](docs/VERIFICACION.md).
 
 La versión declarada por el código sigue siendo **0.30.0 (`versionCode 51`)**; los cambios en curso no se consideran un release hasta actualizar esa versión y completar su verificación.
 
@@ -48,7 +48,7 @@ La versión declarada por el código sigue siendo **0.30.0 (`versionCode 51`)**;
 | **QR de vinculación** | CameraX + ML Kit (modelo empaquetado). Solo lee el QR para vincular la principal con la secundaria |
 | **Servicios** | (0.18.0, sustituye a Elaboración.) Nombre, Tipo, Importe y, opcionales, foto y descripción. Pueden gastar insumos. Se venden aparte de los productos, tienen su pestaña en Registros y sus indicadores en Inicio. Los **insumos** son ahora la categoría «Insumos» del Inventario (precio de venta opcional, en unidades enteras). Los Elaborados muestran «Alcanza para N» |
 | **Registros** | Ventas, Transferencias, Movimientos, **Clientes** (clientes fijos, 0.27.0) y Turnos, con buscador y filtros de fecha e importe. Exportar a PDF/Excel (0.26.0: ya no se comparte como texto) |
-| **Ajustes** | Completar configuración, Perfil, Licencia, Pago electrónico, Precios (preajustes), Avisos de inventario, Permisos, Respaldo, Migrar, Actualizar, Ayuda, Soporte |
+| **Ajustes** | Completar configuración, Perfil, Licencia, Pago electrónico, Precios (preajustes), Avisos de inventario, Permisos, Respaldo, Actualizar, Ayuda, Soporte |
 
 ### Qué no hace
 
@@ -71,7 +71,7 @@ Versiones principales (`gradle/libs.versions.toml`): Kotlin 2.0.21, AGP 8.7.3, C
 
 1. **Claves públicas de GL.** Ya están fijadas en `licencia/src/main/kotlin/cu/spvi/licencia/LicenseTrust.kt` (par vigente de GL del 15/10/2026, 2.ª rotación: clave ECDH `sha256:eb52:2ee8:…:fea1` y clave de firma `sha256:e693:6c20:…:0a6e`; se conservan las firmas `sha256:d9c4:d821:…:998e` (15/10/2026, 1.ª rotación), `sha256:58d4:3aac:…:8c4e` (05/10/2026) y `sha256:8a91:bcfb:…:6888` (30/09/2026) para las licencias ya emitidas). `LicenseTrustTest` falla si alguna no se puede leer o no coincide con su huella. Si GL cambia de par de claves (borrado de datos, reinstalación, otro teléfono), hay que publicar un build nuevo con la clave añadida a `SIGN_KEYS` (ver [LICENSE_CLIENT.md](LICENSE_CLIENT.md)).
 2. **Firma de release.** El repositorio no contiene ningún keystore ni contraseña. `app/build.gradle.kts` los lee de `keystore.properties`, que git ignora, o de las variables `SPVI_KEYSTORE`, `SPVI_KEYSTORE_PASSWORD`, `SPVI_KEY_ALIAS` y `SPVI_KEY_PASSWORD`. Los pasos completos están en [RELEASE.md](RELEASE.md). **Firma siempre con la misma clave**, porque `ANDROID_ID` (y con él el `deviceId` de la licencia) depende de la firma del APK.
-3. **Contacto del desarrollador.** Teléfono `+5351815604` en una sola constante (`core/.../contact/DeveloperContact.kt`), que usan Licencia, Migrar y Soporte.
+3. **Contacto del desarrollador.** Teléfono `+5351815604` en una sola constante (`core/.../contact/DeveloperContact.kt`), que usan Licencia y Soporte.
 4. **Esquema Room.** La versión actual es **v12** (`data/schemas/cu.spvi.data.db.SpviDatabase/12.json`). Cada cambio requiere migración, esquema exportado y `EsquemaTest`.
 5. **Baseline de lint.** Se entrega vacío. La primera vez ejecuta `./gradlew :app:updateLintBaseline` y versiona `app/lint-baseline.xml`; a partir de ahí, cualquier error nuevo de lint rompe `spviCheck`.
 6. **Actualizaciones:** el build apunta por defecto a las Releases públicas de [`rmdvcd/SPVI`](https://github.com/rmdvcd/SPVI/releases) (`spviGithubRepo` en `gradle.properties`). Para compilar un fork, se puede sobrescribir con `-PspviGithubRepo=usuario/repositorio`; vacío desactiva las consultas.
@@ -148,7 +148,6 @@ SPVI es **cliente** del contrato v1 de GL, sin cambiarlo. Detalle completo en [L
 | Reloj | Si retrocede más de 2 h respecto a la última hora vista → bloqueo hasta corregirlo |
 | Clave maestra | `GLMK-PERM-MAXS-9999`: perpetuidad y 10 secundarias **solo** en builds de depuración |
 | Apps secundarias | La principal firma el permiso de cada ranura y dispositivo (sub-token); la secundaria lo comprueba antes de dar la licencia por buena |
-| Migrar | La autorización es la licencia emitida al teléfono nuevo; el viejo cede su licencia y se borra |
 
 ## Mejoras Android en curso (la versión declarada sigue en 0.30.0)
 

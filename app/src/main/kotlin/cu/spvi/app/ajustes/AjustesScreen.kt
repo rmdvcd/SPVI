@@ -90,7 +90,6 @@ object AjustesTags {
     const val CONFIGURACION = "ajustes.configuracion"
     const val PAGO = "ajustes.pago"
     const val RESPALDO = "ajustes.respaldo"
-    const val MIGRAR = "ajustes.migrar"
     const val AYUDA = "ajustes.ayuda"
     const val SOPORTE = "ajustes.soporte"
     const val VINCULACION = "ajustes.vinculacion"
@@ -98,7 +97,7 @@ object AjustesTags {
     const val SEED = "ajustes.seed"
 }
 
-/** Ajustes: configuración pendiente, Perfil, Licencia, Pago electrónico, Precios, avisos, consultas, permisos, Respaldo, Migrar, Ayuda y Soporte. */
+/** Ajustes: configuración pendiente, Perfil, Licencia, Pago electrónico, Precios, avisos, consultas, permisos, Respaldo, Ayuda y Soporte. */
 @Composable
 fun AjustesScreen(onNavigate: (Route) -> Unit, viewModel: AjustesViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -190,12 +189,6 @@ fun AjustesContent(
             if (principal) item {
                 Entry("Respaldo", "Copia cifrada de todo e importar", SpviIcons.Respaldo, modifier = Modifier.testTag(AjustesTags.RESPALDO)) {
                     onNavigate(Route.Respaldo)
-                }
-            }
-            if (principal) item {
-                // 0.31.0 (P6): pasa a llamarse solo «Migrar» (ahora pasa los datos por QR entre los dos teléfonos).
-                Entry("Migrar", "Pasar datos y licencia a otro teléfono, con autorización del desarrollador", SpviIcons.Migrar, modifier = Modifier.testTag(AjustesTags.MIGRAR)) {
-                    onNavigate(Route.Migrar)
                 }
             }
             // 0.31.0 (P5): se llama «Actualizar» y abre directamente el cuadro con la barra circular.

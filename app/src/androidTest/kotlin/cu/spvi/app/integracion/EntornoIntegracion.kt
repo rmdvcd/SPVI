@@ -15,7 +15,6 @@ import cu.spvi.app.respaldo.RespaldoViewModel
 import cu.spvi.app.root.RootViewModel
 import cu.spvi.app.venta.VentaViewModel
 import cu.spvi.core.money.Cup
-import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
 import cu.spvi.core.time.Clock
 import cu.spvi.data.db.SpviDatabase
@@ -25,7 +24,6 @@ import cu.spvi.data.repository.ProductoRepositoryImpl
 import cu.spvi.data.repository.TurnoRepositoryImpl
 import cu.spvi.data.repository.VentaRepositoryImpl
 import cu.spvi.data.respaldo.RespaldoRepositoryImpl
-import cu.spvi.domain.model.AutorizacionMigracion
 import cu.spvi.domain.model.Licencia
 import cu.spvi.domain.model.Perfil
 import cu.spvi.domain.model.Preferencias
@@ -166,8 +164,6 @@ class LicMem(estado: LicenseState, private val clock: Clock) : LicenciaRepositor
         fijar(nuevo)
         return ActivationResult.Accepted(nuevo)
     }
-    override suspend fun verificarAutorizacionMigracion(mensaje: String) = AutorizacionMigracion.NO_ENCONTRADA
-    override suspend fun cederLicencia(): AppResult<Unit> = AppResult.Err(AppError.NoEncontrado)
 
     companion object { const val MENSAJE_VALIDO = "Licencia SPVI lic-1" }
 }

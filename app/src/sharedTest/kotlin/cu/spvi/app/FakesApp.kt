@@ -68,10 +68,6 @@ class LicRepo(estado: LicenseState = LicenseState.Trial(5)) : LicenciaRepository
         (respuestaActivar as? ActivationResult.Accepted)?.let { a -> flow.value = flow.value!!.copy(estado = a.state) }
         return respuestaActivar
     }
-    var autorizacion = cu.spvi.domain.model.AutorizacionMigracion.NO_ENCONTRADA
-    var cedida = false
-    override suspend fun verificarAutorizacionMigracion(mensaje: String) = autorizacion
-    override suspend fun cederLicencia(): AppResult<Unit> { cedida = true; flow.value = flow.value!!.copy(estado = LicenseState.TrialExpired); return AppResult.Ok(Unit) }
 }
 
 class ProdRepo : ProductoRepository {

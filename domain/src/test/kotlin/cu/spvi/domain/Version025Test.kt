@@ -347,7 +347,5 @@ class Version025Test {
         override suspend fun aplicarRevocaciones(texto: String) = revocada
         override suspend fun construirSolicitud(input: cu.spvi.licencia.SolicitudInput) = error("no usado")
         override suspend fun activar(mensaje: String) = error("no usado")
-        override suspend fun verificarAutorizacionMigracion(mensaje: String) = error("no usado")
-        override suspend fun cederLicencia(): AppResult<Unit> = error("no usado")
     }
 }

@@ -8,13 +8,13 @@ enum class CategoriaAyuda(val titulo: String, val detalle: String) {
     EMPEZAR("Empezar", "Qué es cada botón y cómo dejar SPVI listo"),
     VENDER("Vender y cobrar", "El turno, la venta y el cobro por transferencia"),
     INVENTARIO("Inventario", "Productos, insumos y elaborados"),
-    DATOS("Tus datos y tu licencia", "Respaldo, licencia y cambio de teléfono"),
+    DATOS("Tus datos y tu licencia", "Respaldo y licencia"),
     EMPLEADOS("Empleados", "Las apps de tus empleados"),
     AYUDA("Ayuda", "A quién escribir cuando algo no sale"),
 }
 
 /** 0.31.0 (P7): esquema que acompaña a un tema (se dibuja con formas: nunca queda desactualizado). */
-enum class EsquemaAyuda { BARRA, TURNO, VENTA, MIGRAR, RESPALDO }
+enum class EsquemaAyuda { BARRA, TURNO, VENTA, RESPALDO }
 
 /** Un tema del manual: título corto y pasos de una línea, en lenguaje llano (usuario sin conocimientos previos). */
 data class TemaAyuda(
@@ -155,17 +155,7 @@ object AyudaContenido {
             CategoriaAyuda.DATOS,
         ),
         TemaAyuda(
-            "Cambiar de teléfono",
-            listOf(
-                "Instala SPVI en el teléfono nuevo y entra en Ajustes → Migrar.",
-                "Elige Emisor en el teléfono que se va y Receptor en el nuevo.",
-                "El emisor muestra un código QR: el receptor lo lee con la cámara y recibe los datos.",
-                "Al terminar, el teléfono viejo se borra solo. Pide antes la autorización del desarrollador.",
-            ),
-            CategoriaAyuda.DATOS, EsquemaAyuda.MIGRAR,
-        ),
-        TemaAyuda(
-            "Apps de tus empleados",
+            "Apps vinculadas",
             listOf(
                 "En tu teléfono: Ajustes → Apps vinculadas → +. Tu licencia dice cuántas secundarias puedes tener.",
                 "En el del empleado: Usar esta app como secundaria, escribe su teléfono y escanea tu código (misma wifi).",

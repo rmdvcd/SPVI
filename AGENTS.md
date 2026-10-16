@@ -61,7 +61,7 @@ Un solo test: `./gradlew :domain:test --tests "cu.spvi.domain.Version025Test"`. 
 - Categoría de elaborados: `Categorias.ELABORADO = "Elaborado"` (singular).
 - Excel: el formato de importe es `#,##0.00 \C\U\P` (con comillas fastexcel genera un `styles.xml` inválido).
 - Base de datos v12 (`MIGRACION_11_12` añade `empleado.device` para el sub-token de las secundarias; esquema `data/schemas/cu.spvi.data.db.SpviDatabase/12.json`); respaldo DTO v4 (importa v3); archivo `.spvi` v4 (lee v3). Un cambio de esquema exige migración + esquema exportado + test. **El `12.json` lo escribe Room al compilar**: si falta, `tools/verificacion/` y el CI lo avisan; no se inventa a mano.
-- Firma de los sub-tokens: clave P-256 propia de la principal (`FirmanteLicenciaAndroid`, Keystore `PURPOSE_SIGN`, alias `spvi_licencia_firma_v1`), distinta de la clave ECDH del equipo y que **nunca** se borra al migrar ni al desvincular.
+- Firma de los sub-tokens: clave P-256 propia de la principal (`FirmanteLicenciaAndroid`, Keystore `PURPOSE_SIGN`, alias `spvi_licencia_firma_v1`), distinta de la clave ECDH del equipo y que **nunca** se borra (tampoco al desvincular).
 - La firma de release debe ser **siempre la misma** (el `deviceId` de la licencia depende de ella).
 
 ## Estado de verificación

@@ -1,7 +1,7 @@
 package cu.spvi.domain.model
 
 /**
- * 0.27.0: ajustes propios de ESTE teléfono. No van en el respaldo ni se migran: cada teléfono decide.
+ * 0.27.0: ajustes propios de ESTE teléfono. No van en el respaldo: cada teléfono decide.
  *
  * - [accesoConClave] (T11): pedir la huella, la cara o el PIN/patrón del teléfono al abrir SPVI.
  * - [eligioSecundaria] (T9): en el recorrido inicial se eligió «App de un empleado». Solo entonces la app (aún sin

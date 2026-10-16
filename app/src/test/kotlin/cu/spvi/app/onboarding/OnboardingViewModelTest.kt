@@ -53,8 +53,6 @@ class OnboardingViewModelTest {
         override suspend fun construirSolicitud(input: SolicitudInput): AppResult<cu.spvi.licencia.SolicitudGenerada> =
             AppResult.Ok(cu.spvi.licencia.SolicitudGenerada("", ""))
         override suspend fun activar(mensaje: String) = ActivationResult.NotFound
-        override suspend fun verificarAutorizacionMigracion(mensaje: String) = cu.spvi.domain.model.AutorizacionMigracion.NO_ENCONTRADA
-        override suspend fun cederLicencia(): AppResult<Unit> = AppResult.Ok(Unit)
     }
 
     private val perfiles = Perfiles(); private val prefs = PrefRepo(); private val conf = ConfRepo(); private val lic = Lic()
@@ -125,13 +123,10 @@ class OnboardingViewModelTest {
         assertEquals(10L, prefs.state.value.niveles.productoBajo)
         assertTrue(PasoConfiguracion.ALERTAS in conf.state.value.confirmados)
 
-        // Prueba → Migrar (solo avisa) → fin.
+        // Prueba → fin.
         assertEquals(PasoWizard.PRUEBA, vm.state.value.paso)
         vm.siguiente()
         assertTrue(PasoConfiguracion.PRUEBA in conf.state.value.confirmados)
-        assertEquals(PasoWizard.MIGRAR, vm.state.value.paso)
-        assertTrue(vm.state.value.pasoOmitible)
-        vm.siguiente()
         assertTrue(prefs.state.value.onboardingCompletado)
     }
 

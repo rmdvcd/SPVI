@@ -18,9 +18,9 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 
 /**
- * Borrado de Migrar. Room en UNA transacción (mismas consultas que la restauración de respaldo), después las
+ * Borrado total de este teléfono. Room en UNA transacción (mismas consultas que la restauración de respaldo), después las
  * preferencias a sus valores por defecto y por último los archivos propios: fotos (`filesDir/fotos`) y
- * temporales de compartir (`cacheDir/compartir`). La licencia la cede antes LicenciaRepository.
+ * temporales de compartir (`cacheDir/compartir`). Quien llama revoca antes la licencia si corresponde.
  * Si algo falla se devuelve Almacenamiento sin detalles.
  */
 @Singleton

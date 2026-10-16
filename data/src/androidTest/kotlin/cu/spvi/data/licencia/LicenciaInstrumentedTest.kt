@@ -12,6 +12,8 @@ import cu.spvi.licencia.LicenseTrust
 import cu.spvi.licencia.SolicitudInput
 import cu.spvi.licencia.contract.TipoLicencia
 import cu.spvi.licencia.contract.Via
+import cu.spvi.licencia.contract.IdLicencia
+import cu.spvi.licencia.contract.ListaRevocaciones
 import cu.spvi.licencia.crypto.EcP256
 import cu.spvi.data.security.AndroidDeviceKey
 import cu.spvi.data.security.KeystoreAead
@@ -87,18 +89,22 @@ class LicenciaInstrumentedTest {
         assertFalse(s.unlocked)
     }
 
-    @Test fun cederLaLicenciaPersisteYElMensajeViejoNoReactiva() = runBlocking<Unit> {
+    @Test fun revocarLaLicenciaPersisteYElMensajeViejoNoReactiva() = runBlocking<Unit> {
         val m = manager()
         val req = emisor.abrir(m.buildRequest(input(TipoLicencia.ANUAL)).texto)
         val mensaje = emisor.emitir(req, ahora)
         assertTrue(m.activate(mensaje) is ActivationResult.Accepted)
         ahora = ahora.plus(Duration.ofHours(1))
-        m.transferOut()
+        val id = IdLicencia.extraer(mensaje)!!
+        val lista = ListaRevocaciones.firmar(
+            ListaRevocaciones.Datos(emitidaEn = ahora.epochSecond, revocadas = listOf(ListaRevocaciones.huella(id))),
+        ) { EcP256.sign(emisor.firma.private, it) }
+        assertTrue(m.aplicarRevocaciones(lista))
         // "Reinicio": la marca y el borrado están en el DataStore cifrado.
         val store = DataStoreLicenseStore(ds)
         assertNull(store.license())
         assertEquals(ahora, store.migratedAt())
-        assertEquals(LicenseState.TrialExpired, manager().state())
+        assertTrue(manager().state() is LicenseState.Revoked)
         assertEquals(ActivationResult.Outdated, manager().activate(mensaje))
     }
 

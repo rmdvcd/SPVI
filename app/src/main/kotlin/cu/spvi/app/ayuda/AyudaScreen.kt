@@ -32,6 +32,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import cu.spvi.designsystem.component.CardTone
 import cu.spvi.designsystem.component.SpviCard
 import cu.spvi.designsystem.component.SpviTopBar
@@ -57,8 +58,7 @@ private fun iconoTema(titulo: String): ImageVector = when (titulo) {
     "Servicios" -> SpviIcons.Servicios
     "Guardar una copia" -> SpviIcons.Respaldo
     "Licencia" -> SpviIcons.Licencia
-    "Cambiar de teléfono" -> SpviIcons.Migrar
-    "Apps de tus empleados" -> SpviIcons.Vinculacion
+    "Apps vinculadas" -> SpviIcons.Vinculacion
     else -> SpviIcons.Soporte
 }
 
@@ -135,7 +135,7 @@ fun AyudaScreen(onBack: () -> Unit) {
                         }
                         if (expandido) {
                             tema.pasos.forEachIndexed { n, paso ->
-                                Text("${n + 1}. $paso", style = MaterialTheme.typography.bodyLarge)
+                                Text("${n + 1}. $paso", style = MaterialTheme.typography.bodyMedium)
                             }
                             tema.esquema?.let { Esquema(it, Modifier.padding(top = SpviSpacing.xs)) }
                         }
@@ -168,7 +168,6 @@ private fun Esquema(tipo: EsquemaAyuda, modifier: Modifier = Modifier) {
             EsquemaAyuda.RESPALDO -> Flujo(
                 listOf("Este teléfono", "Archivo .spvi cifrado", "El teléfono nuevo"),
             )
-            EsquemaAyuda.MIGRAR -> MigrarEsquema()
         }
     }
 }
@@ -190,6 +189,7 @@ private fun Fila(cajas: List<Pair<String, Boolean>>, modifier: Modifier = Modifi
                 Text(
                     texto, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center,
                     color = if (marcada) cs.onPrimaryContainer else cs.onSurfaceVariant, maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -218,48 +218,3 @@ private fun Flujo(pasos: List<String>, modifier: Modifier = Modifier) {
     }
 }
 
-/** Los dos teléfonos de la migración: el emisor enseña el QR y el receptor lo lee. */
-@Composable
-private fun MigrarEsquema(modifier: Modifier = Modifier) {
-    val cs = MaterialTheme.colorScheme
-    Row(
-        modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Telefono("Emisor", "enseña el QR", Modifier.weight(1f))
-        Box(
-            Modifier.width(SpviSpacing.xl).padding(vertical = SpviSpacing.xs),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text("QR", style = MaterialTheme.typography.labelMedium, color = cs.primary, textAlign = TextAlign.Center)
-        }
-        Telefono("Receptor", "lee el QR", Modifier.weight(1f))
-    }
-    Text(
-        "Misma wifi (o la zona wifi del emisor). Los datos viajan cifrados.",
-        style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
-    )
-}
-
-/** Un teléfono dibujado con dos rectángulos: marco y pantalla. */
-@Composable
-private fun Telefono(nombre: String, detalle: String, modifier: Modifier = Modifier) {
-    val cs = MaterialTheme.colorScheme
-    Column(
-        modifier.background(cs.surfaceContainerHighest, RoundedCornerShape(SpviRadius.sm))
-            .border(SpviSize.strokeHairline, cs.outlineVariant, RoundedCornerShape(SpviRadius.sm))
-            .padding(SpviSpacing.xs),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
-    ) {
-        Box(
-            Modifier.size(width = SpviSpacing.xl, height = SpviSpacing.xl)
-                .background(Color.White, RoundedCornerShape(SpviRadius.sm)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text("QR", style = MaterialTheme.typography.labelSmall, color = Color.Black)
-        }
-        Text(nombre, style = MaterialTheme.typography.labelLarge)
-        Text(detalle, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
-    }
-}

@@ -15,13 +15,6 @@ import cu.spvi.app.licencia.LicenciaAcciones
 import cu.spvi.app.licencia.LicenciaContent
 import cu.spvi.app.licencia.LicenciaForm
 import cu.spvi.app.licencia.LicenciaUiState
-import cu.spvi.app.migrar.AccionesMigrar
-import cu.spvi.app.migrar.EtapaMigracion
-import cu.spvi.app.migrar.MigrarContent
-import cu.spvi.app.migrar.MigrarQrUiState
-import cu.spvi.app.migrar.RolMigracion
-import cu.spvi.app.migrar.MigrarForm
-import cu.spvi.app.migrar.MigrarUiState
 import cu.spvi.app.onboarding.ModoWizard
 import cu.spvi.app.onboarding.NivelesForm
 import cu.spvi.app.onboarding.OnboardingAcciones
@@ -45,7 +38,6 @@ import cu.spvi.app.respaldo.ResultadoRespaldo
 import cu.spvi.app.respaldo.TextosRespaldo
 import cu.spvi.app.soporte.SoporteContent
 import cu.spvi.designsystem.component.SpviStepperTextos
-import cu.spvi.domain.model.AutorizacionMigracion
 import cu.spvi.domain.model.DatosIniciales
 import cu.spvi.domain.model.Licencia
 import cu.spvi.domain.model.PasoConfiguracion
@@ -64,7 +56,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** Ajustes, Perfil, Licencia (y bloqueo), Respaldo, Migrar, Ayuda, Soporte y el asistente de configuración. */
+/** Ajustes, Perfil, Licencia (y bloqueo), Respaldo, Ayuda, Soporte y el asistente de configuración. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], qualifiers = Captura.TELEFONO, application = Application::class)
@@ -196,42 +188,6 @@ class AjustesCapturas {
         "09k_respaldo_incompleto",
         RespaldoUiState(resultado = ResultadoRespaldo(false, "El archivo está incompleto", "Se cortó al descargarlo o enviarlo (por ejemplo, un envío por Bluetooth interrumpido). Pide que te lo envíen de nuevo o vuelve a copiarlo. Tus datos no se han tocado.")),
     )
-
-    // ---------- Migrar ----------
-    private val accionesMigrar = AccionesMigrar(
-        onRol = {}, onCambiarRol = {}, onEmpezarEmisor = {}, onQrLeido = {}, onCancelarIntercambio = {},
-        onDestino = {}, onPegarDestino = {}, onEnviar = {}, onRespaldo = {}, onAutorizacion = {}, onPegarAutorizacion = {},
-        onComprobar = {}, onPedirBorrado = {}, onConfirmacion = {}, onConfirmarBorrado = {}, onCancelarBorrado = {},
-    )
-    private fun migrar(id: String, f: MigrarForm) = rule.capturar(id) { MigrarContent(MigrarUiState("SPVI:7F3A-92C1-D04E-11B8", f), {}, accionesMigrar) }
-    // 0.31.0 (P6): las dos opciones de la migración por QR.
-    private fun migrarQr(id: String, s: MigrarUiState) = rule.capturar(id) { MigrarContent(s, {}, accionesMigrar) }
-    @Test @Config(qualifiers = Captura.LARGA) fun migrarElegirRol() = migrarQr(
-        "09t_migrar_emisor_receptor", MigrarUiState("SPVI:7F3A-92C1-D04E-11B8", MigrarForm(), MigrarQrUiState(), claveDefinida = true),
-    )
-    @Test @Config(qualifiers = Captura.LARGA) fun migrarEmisor() = migrarQr(
-        "09u_migrar_emisor_qr",
-        MigrarUiState(
-            "SPVI:7F3A-92C1-D04E-11B8", MigrarForm(),
-            MigrarQrUiState(RolMigracion.EMISOR, codigo = "SPVIM1|EMISOR|192.168.1.20|45123|a1b2c3d4e5f60718|SPVI:7F3A", etapa = EtapaMigracion.Esperando),
-            claveDefinida = true,
-        ),
-    )
-    @Test fun migrarSinClave() = migrarQr(
-        "09v_migrar_sin_clave",
-        MigrarUiState("SPVI:7F3A-92C1-D04E-11B8", MigrarForm(), MigrarQrUiState(RolMigracion.EMISOR), claveDefinida = false),
-    )
-    private val licNueva = "SPVI-LIC1:eyJ2IjoxLCJsaWQiOiJMLTIwMjYtMDA0MiJ9.MEUCIQDx"
-    @Test @Config(qualifiers = Captura.LARGA) fun migrarPaso1() = migrar("09n_migrar_paso1", MigrarForm())
-    @Test fun migrarIdError() = migrar("09o_migrar_id_error", MigrarForm(destino = "7F3A-92C1", errorDestino = "Debe empezar por SPVI: (lo ves en Ajustes → Licencia del teléfono nuevo)"))
-    @Test @Config(qualifiers = Captura.LARGA) fun migrarRechazada() = migrar(
-        "09p_migrar_rechazada", MigrarForm(destino = "SPVI:B820-44D1-9AC0-73E5", autorizacion = licNueva, resultado = AutorizacionMigracion.DE_ESTE_TELEFONO),
-    )
-    @Test @Config(qualifiers = Captura.LARGA) fun migrarAutorizada() = migrar(
-        "09q_migrar_autorizada", MigrarForm(destino = "SPVI:B820-44D1-9AC0-73E5", autorizacion = licNueva, resultado = AutorizacionMigracion.AUTORIZADA),
-    )
-    @Test fun migrarDialogo() = migrar("09r_migrar_dialogo_borrar", MigrarForm(resultado = AutorizacionMigracion.AUTORIZADA, confirmando = true, confirmacion = "BOR"))
-    @Test fun migrarDialogoOk() = migrar("09s_migrar_dialogo_borrar_ok", MigrarForm(resultado = AutorizacionMigracion.AUTORIZADA, confirmando = true, confirmacion = "BORRAR"))
 
     // ---------- Ayuda y Soporte ----------
     @Test fun ayuda() = rule.capturar("07g_ayuda") { AyudaScreen(onBack = {}) }

@@ -37,7 +37,7 @@ class AyudaSoporteTest {
         }
         // Cubre lo imprescindible para un usuario sin conocimientos previos.
         val todo = temas.joinToString(" ") { it.titulo + " " + it.pasos.joinToString(" ") }
-        listOf("Abrir turno", "Nueva venta", "Inventario", "Respaldo", "Licencia", "Migrar", "Soporte").forEach {
+        listOf("Abrir turno", "Nueva venta", "Inventario", "Respaldo", "Licencia", "Soporte").forEach {
             assertTrue("Falta $it", todo.contains(it))
         }
     }

@@ -72,9 +72,9 @@ interface LicenseStore {
     suspend fun setTrialStart(instant: Instant)
     suspend fun lastSeen(): Instant?
     suspend fun setLastSeen(instant: Instant)
-    /** Instante en que este dispositivo cedió su licencia a otro (Ajustes → Migrar). null = nunca. */
+    /** Instante en que la licencia de este teléfono se transfirió a otro (recuperación). null = nunca. */
     suspend fun migratedAt(): Instant?
-    /** Borra la licencia guardada y registra la migración. Lo emitido antes de [at] ya no se acepta aquí. */
+    /** Borra la licencia guardada y registra la transferencia. Lo emitido antes de [at] ya no se acepta aquí. */
     suspend fun markMigrated(at: Instant)
     /**
      * 0.25.0: instante en que la licencia de este teléfono apareció en la lista pública de revocadas (se recuperó en
@@ -113,22 +113,6 @@ sealed interface ActivationResult {
     data object Rejected : ActivationResult
     /** Auténtica pero más antigua que la instalada: se ignora. */
     data object Outdated : ActivationResult
-}
-
-/**
- * Autorización de Migrar: la licencia que el desarrollador emite al teléfono NUEVO. El contrato v1 no tiene
- * un mensaje de "migración", así que la autorización es esa licencia: firmada por GL (se verifica sin
- * descifrar) y NO descifrable con la clave de este dispositivo (es de otro).
- */
-enum class TransferAuthorization {
-    /** Licencia auténtica de GL para otro dispositivo. */
-    AUTHORIZED,
-    /** Es la licencia de ESTE teléfono (no autoriza nada). */
-    SAME_DEVICE,
-    /** No hay una licencia corta (`SPVI2:`) en el texto. */
-    NOT_FOUND,
-    /** Licencia mal formada o sin firma válida del emisor. */
-    REJECTED,
 }
 
 class LicenseManager(
@@ -201,7 +185,7 @@ class LicenseManager(
 
         verified?.let { return Evaluation(it.first, it.second) }
 
-        // Tras migrar, este teléfono ya no tiene periodo de prueba: solo una licencia emitida después.
+        // Tras una transferencia, este teléfono ya no tiene periodo de prueba: solo una licencia emitida después.
         if (migrated != null) return Evaluation(if (store.revokedAt() != null) LicenseState.Revoked else LicenseState.TrialExpired, null)
         val start = store.trialStart() ?: now.also { store.setTrialStart(it) }
         val left = trialDays - Duration.between(start, now).toDays()
@@ -323,7 +307,7 @@ class LicenseManager(
         return if (ev.state.unlocked) ev.state.secundariasPermitidas else 0
     }
 
-    /** No se instala una licencia más antigua que la actual ni anterior a la migración. */
+    /** No se instala una licencia más antigua que la actual ni anterior a la transferencia. */
     private suspend fun instalar(payload: LicensePayload, state: LicenseState, envelopeJson: String, licenseId: String): ActivationResult {
         val current = store.license()
         // Una licencia auténtica de GL siempre manda sobre la clave maestra de desarrollo (que es solo una ayuda de
@@ -331,7 +315,7 @@ class LicenseManager(
         if (current != null && !current.maestra && Instant.parse(payload.emitidaEn).isBefore(Instant.parse(current.emitidaEn))) {
             return ActivationResult.Outdated
         }
-        // Una licencia anterior a la migración (p. ej. el mensaje viejo aún en WhatsApp) ya no vale aquí.
+        // Una licencia anterior a la transferencia (p. ej. el mensaje viejo aún en WhatsApp) ya no vale aquí.
         val migrated = store.migratedAt()
         if (migrated != null && !Instant.parse(payload.emitidaEn).isAfter(migrated)) {
             return ActivationResult.Outdated
@@ -373,18 +357,6 @@ class LicenseManager(
         signKeys.any { EcP256.verify(it, codigo.mensajeFirmado, der) }
     }.getOrDefault(false)
 
-    /** Comprueba la autorización de Migrar pegada por el usuario. No guarda nada. */
-    suspend fun checkTransferAuthorization(message: String): TransferAuthorization {
-        // 0.23.0: la autorización es la licencia corta cifrada que GL emitió al teléfono NUEVO. La firma se comprueba sin
-        // descifrar; si además se descifra con la clave de este teléfono y lleva su huella, es la propia.
-        val codigo = LicenciaCorta.extraer(message) ?: return TransferAuthorization.NOT_FOUND
-        if (!firmaCortaValida(codigo)) return TransferAuthorization.REJECTED
-        val propia = runCatching {
-            LicenciaCorta.leer(LicenciaCorta.descifrar(codigo, deviceKey))?.let { MessageDigest.isEqual(it.huella, huellaPropia()) }
-        }.getOrNull() == true
-        return if (propia) TransferAuthorization.SAME_DEVICE else TransferAuthorization.AUTHORIZED
-    }
-
     /**
      * 0.25.0: aplica la lista pública de revocadas (texto de `revocadas.json`). Si su firma es de GL y contiene la
      * licencia guardada en este teléfono, la invalida ([LicenseStore.markRevoked]) y devuelve true. Cualquier otro caso
@@ -401,11 +373,6 @@ class LicenseManager(
     /** 0.25.0: true = la licencia de este teléfono se revocó (se recuperó en otro). */
     suspend fun revocada(): Boolean = store.revokedAt() != null && store.migratedAt() != null &&
         evaluate().state == LicenseState.Revoked
-
-    /** Cede la licencia: la borra y bloquea este dispositivo hasta que se active una licencia emitida después. */
-    suspend fun transferOut() {
-        store.markMigrated(clock.now())
-    }
 
     private fun openPayload(env: Envelope, licenseId: String): LicensePayload {
         val plain = opener.open(env, licenseId)

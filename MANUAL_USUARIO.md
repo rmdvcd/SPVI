@@ -12,11 +12,6 @@
   pueden **marcar con la casilla redonda**, igual que en Inventario. Con algo marcado aparece la barra de
   selección: cuántos elementos son, seleccionar todo y quitar la selección. Exportar usa solo lo marcado.
 - **Licencia:** se quitó el botón de llave del final; el asistente avanza con *Paso siguiente*.
-- **Migrar** (antes «Migrar a otro teléfono»): pasa los datos de un teléfono a otro. Elige el rol de cada
-  uno: **Emisor** (entrega la copia y su teléfono se borra al terminar) o **Receptor** (la recibe). El emisor
-  muestra un **código QR**; el receptor lo lee con la cámara. Todo el camino está protegido por el
-  **acceso con clave** de Ajustes: si no lo has definido, la app te lo dice antes de empezar. También se
-  explica en el **recorrido del primer arranque**.
 - **Actualizar** (antes «Actualizaciones»): al tocarlo sale un cuadro con una **barra de progreso
   circular** y al terminar dice *Actualizado*, *Estas al día* o *Sin conexión*.
 - **Ayuda:** el manual está organizado por **secciones** (Empezar, Vender y cobrar, Inventario, Registros,

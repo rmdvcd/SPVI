@@ -1,6 +1,5 @@
 package cu.spvi.data
 
-import cu.spvi.core.result.AppResult
 import cu.spvi.domain.model.EstadoApp
 import cu.spvi.domain.model.Licencia
 import cu.spvi.domain.repository.EstadoAppRepository
@@ -24,6 +23,4 @@ class LicenciaFija(inicial: Licencia? = null) : LicenciaRepository {
     override suspend fun refrescar(): Licencia = snapshot.value ?: error("sin licencia")
     override suspend fun construirSolicitud(input: cu.spvi.licencia.SolicitudInput) = error("no usado")
     override suspend fun activar(mensaje: String) = error("no usado")
-    override suspend fun verificarAutorizacionMigracion(mensaje: String) = error("no usado")
-    override suspend fun cederLicencia(): AppResult<Unit> = error("no usado")
 }

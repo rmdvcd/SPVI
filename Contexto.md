@@ -34,7 +34,7 @@ SPVI (Sistema de Punto de Venta e Inventario) es una app Android nativa para peq
 | **Inventario** | Productos, Elaborados e Insumos. Precio opcional en los insumos, en unidades enteras. Buscador, filtros y exportación a PDF, Excel, imágenes y tarjetas |
 | **Servicios** | Tipo libre, importe, foto y descripción. Pueden gastar insumos y tienen su pestaña en Registros |
 | **Registros** | Ventas, Servicios, Transferencias, Movimientos, **Clientes** (0.27.0) y Turnos, ordenados por fecha, con filtros. **Anular o modificar** una venta: solo la principal y solo con el turno abierto |
-| **Ajustes** | Perfil (nombre, apellidos y carné), Licencia, **Acceso con clave** (0.27.0, opcional: huella o PIN del teléfono al abrir y tras ≥ 10 min fuera), Pago electrónico (teléfonos y tarjetas), Precios, Avisos, Permisos, Respaldo, Migrar (paso de datos por QR: Emisor/Receptor), Actualizar, Ayuda y Soporte |
+| **Ajustes** | Perfil (nombre, apellidos y carné), Licencia, **Acceso con clave** (0.27.0, opcional: huella o PIN del teléfono al abrir y tras ≥ 10 min fuera), Pago electrónico (teléfonos y tarjetas), Precios, Avisos, Permisos, Respaldo, Actualizar, Ayuda y Soporte |
 | **Apps vinculadas** | Una app **principal** (dueño) y hasta 10 **secundarias** (empleados) en la misma wifi, sin internet ni servidor. Cada empleado tiene sus permisos. La secundaria no crea secundarias y **una principal nunca pasa a secundaria** (0.27.0): el tipo se elige en el recorrido inicial; para cambiarlo hay que exportar el respaldo y borrar los datos de SPVI. Una secundaria activa el acceso con clave solo desde Ajustes |
 
 ### Exportaciones (desde la 0.26.0, sin texto)
@@ -123,10 +123,10 @@ Formato exacto de cada archivo: `FORMATOS.md`.
   - Solo bloquea si de verdad existe una actualización.
 - **Código:** `app/.../actualizacion/GestorActualizacion.kt`, `InstaladorApk.kt`, `domain/.../model/EstadoApp.kt`.
 
-### Respaldo y migración
+### Respaldo y cambio de teléfono
 
 - **Respaldo:** solo el archivo `.spvi`, siempre cifrado; la contraseña es opcional pero viene activada por defecto desde la corrección S-01 (10/2026). Sin ella, cualquiera que obtenga el archivo puede abrirlo con SPVI. Lleva los clientes fijos (sin PDF). Un recordatorio mensual, solo en la principal.
-- **Migrar:** asistente de 4 pasos + paso de datos por QR entre los dos teléfonos (Emisor/Receptor).
+- **Cambiar de teléfono:** exporta el respaldo en el viejo, impórtalo en el nuevo y pide la **recuperación** de la licencia (Ajustes → Licencia, con el «ID de la licencia anterior»). El teléfono viejo queda en la lista de revocadas y se desinstala solo.
 
 ---
 
@@ -160,7 +160,7 @@ La fuente de verdad es [docs/VERIFICACION.md](docs/VERIFICACION.md). El último 
 
 En esta rama se ha corregido la configuración para que todos los tests de `:app` usen el SDK de Robolectric resuelto por Gradle en modo offline. La corrección aún requiere una corrida de CI. En este entorno no hay JDK/Android SDK, por lo que no se puede ejecutar Gradle localmente.
 
-Siguen pendientes la comprobación en un teléfono real, la migración entre dos teléfonos, las capturas Roborazzi y la firma de release; consulta `Pendiente.md`.
+Siguen pendientes la comprobación en un teléfono real, las capturas Roborazzi y la firma de release; consulta `Pendiente.md`.
 
 ---
 

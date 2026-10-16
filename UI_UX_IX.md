@@ -62,7 +62,7 @@ Módulo `:designsystem`. **Regla única: ninguna pantalla define colores, tamañ
 | **Validación con una sola regla (A16):** el error de un campo aparece cuando lo has **editado y sales de él**, o al pulsar Guardar/Siguiente; desde ese momento se actualiza en tiempo real y desaparece en cuanto el valor es válido. Mientras escribes no hay rojo; un campo vacío solo se marca al guardar. Los botones − / + cuentan como edición terminada. Implementada en `SpviTextField` (`validarAlSalir`, `forzarError`) | Producto, Insumo, Perfil, Pago electrónico, Precios, Venta→Cliente, Onboarding, Licencia, Respaldo, Escáner |
 | **Teclado que avanza:** «Siguiente» pasa al campo siguiente y «Listo» en el último guarda (o confirma) | Producto, Insumo, Perfil, datos de Licencia, contraseñas del Respaldo |
 | **Vibración breve** al leer un código, al terminar una venta y con cada snackbar; respeta el ajuste del sistema | Escáner, Venta, todos los mensajes |
-| **Asistentes en la misma pantalla** con `SpviStepper` («Paso N de M: título» + barra): Licencia 3 pasos; Respaldo Exportar 3 (Contraseña → Destino → Respaldo listo) e Importar 4 (Elegir → Comprobar → Contraseña → Confirmar); Onboarding; Migrar 4 (la cabecera indica el paso en curso; las 4 tarjetas siguen visibles) | Licencia, Respaldo, Onboarding, Migrar |
+| **Asistentes en la misma pantalla** con `SpviStepper` («Paso N de M: título» + barra): Licencia 3 pasos; Respaldo Exportar 3 (Contraseña → Destino → Respaldo listo) e Importar 4 (Elegir → Comprobar → Contraseña → Confirmar); Onboarding | Licencia, Respaldo, Onboarding |
 | **Progreso de la operación por etapas** («Etapa 1 de 3 · Reuniendo los datos…»), con las demás acciones deshabilitadas. «Etapa», no «Paso», para no confundirlo con el asistente | Respaldo |
 | **Pegar solo al tocar «Pegar»**; compartir a SPVI desde otras apps (SMS, licencia) | Venta, Licencia |
 | **Eventos de un solo uso** (snackbar, abrir otra app) separados del estado | Todos los ViewModels |
@@ -104,9 +104,9 @@ Módulo `:designsystem`. **Regla única: ninguna pantalla define colores, tamañ
 | Licencia | Todo en una pantalla larga | Asistente de 3 pasos con atajo a Activar | Prompt 18 |
 | Respaldo | Contraseña y botones a la vez | Exportar en 3 pasos (con «Respaldo listo») e importar en 4, en la misma pantalla | Prompt 18 (cierre) |
 | Validación | Unos formularios al escribir, otros solo al guardar, Pago con heurística de longitud | Una regla para todos: al salir del campo editado o al guardar | Prompt 18 (cierre, A16) |
-| Onboarding y Migrar | Texto «Paso N de M» propio / tarjetas numeradas sin cabecera | `SpviStepper` como Licencia y Respaldo | Prompt 18 (cierre, L9) |
+| Onboarding | Texto «Paso N de M» propio / tarjetas numeradas sin cabecera | `SpviStepper` como Licencia y Respaldo | Prompt 18 (cierre, L9) |
 | Animación de filas | Sin animación en el carrito ni en las listas de Pago electrónico | `spviAnimateItem()` también ahí | Prompt 18 (cierre, A18) |
-| Ancho máximo | Solo Producto, Insumo, Licencia y Respaldo | También Onboarding, Perfil, Pago electrónico, Escáner, Venta, Migrar y Soporte | Prompt 18 (cierre, A22) |
+| Ancho máximo | Solo Producto, Insumo, Licencia y Respaldo | También Onboarding, Perfil, Pago electrónico, Escáner, Venta y Soporte | Prompt 18 (cierre, A22) |
 | Banner de licencia | Mismo aspecto con 6 meses o 1 día | Tonos Info / Aviso / Crítico con icono y qué hacer | Prompt 18 |
 | Salir sin guardar | Solo en Perfil | Formularios de Producto e Insumo y hojas de Precios y Pago | Prompt 18 |
 | Letra grande | Botones de 48dp máx. que cortaban el texto | Botones y filas que crecen; probado con escala 2.0 | Prompt 18 |
@@ -129,7 +129,7 @@ Los textos que no coincidían con la interfaz (Ayuda y aviso de turno cerrado) s
 |---|---|---|
 | 1. Orden con el Prompt 17 | **A:** primero las fases A–B del Prompt 17 | Ya aplicado así (0.13.0 → 0.14.0); A05 resuelto |
 | 2. Tipografía (A24) | **Opción 2:** `bodyMedium` 14sp y `bodySmall` 13sp | Aplicado; comprobado por `P18ComponentesTest.tipografiaDeLecturaSubida1sp` |
-| 3. Asistentes de Licencia y Respaldo | **Opción 1:** 3 o 4 pasos en la misma pantalla, sin rutas nuevas | Licencia 3; Respaldo Exportar 3 e Importar 4; también Onboarding y Migrar con `SpviStepper` |
+| 3. Asistentes de Licencia y Respaldo | **Opción 1:** 3 o 4 pasos en la misma pantalla, sin rutas nuevas | Licencia 3; Respaldo Exportar 3 e Importar 4; también Onboarding con `SpviStepper` |
 | 4. Deshacer | **Opción 2:** solo confirmación | Sin «Deshacer»; 0 cambios en la base de datos |
 
 Hallazgos A01–A24: todos cerrados. A21 queda resuelto por decisión (pregunta 4) y A05 por el orden de fases (pregunta 1).

@@ -56,9 +56,8 @@ sealed interface Route {
     /** Asistente desde Ajustes. [paso] = nombre de PasoConfiguracion para abrir solo ese paso (null = pendientes). */
     @Serializable data class ConfiguracionInicial(val paso: String? = null) : Route
     @Serializable data object Perfil : Route
-    /** Respaldo siempre completo (P17): base de datos + configuración. También lo abre Migrar. */
+    /** Respaldo siempre completo (P17): base de datos + configuración. */
     @Serializable data object Respaldo : Route
-    @Serializable data object Migrar : Route
     @Serializable data object Ayuda : Route
     @Serializable data object Soporte : Route
     @Serializable data object Catalogo : Route

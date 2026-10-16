@@ -17,7 +17,6 @@ La versión del código es **0.30.0 (`versionCode 51`)**. Los cambios Android en
 
 - Correr los tests instrumentados de Room en teléfono o emulador API 26+.
 - Comprobar en dos teléfonos Android la vinculación principal/secundaria, permisos, sincronización y desconexión/reconexión por la red local.
-- Hacer una migración real con QR entre teléfonos y confirmar datos, licencia y vuelta a la app.
 - Probar activación y revalidación con GL real, incluida una licencia envelope v1 heredada si está disponible.
 - Crear e importar un respaldo `.spvi` con y sin contraseña; probar también lectura de un respaldo compatible anterior.
 - Firmar el APK/AAB con el keystore de release, verificar firma y ejecutar la prueba de humo descrita en [RELEASE.md](RELEASE.md).

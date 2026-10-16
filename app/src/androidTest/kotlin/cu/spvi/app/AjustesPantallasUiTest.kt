@@ -16,11 +16,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import cu.spvi.app.ayuda.AyudaContenido
 import cu.spvi.app.ayuda.AyudaScreen
 import cu.spvi.app.ayuda.AyudaTags
-import cu.spvi.app.migrar.AccionesMigrar
-import cu.spvi.app.migrar.MigrarContent
-import cu.spvi.app.migrar.MigrarForm
-import cu.spvi.app.migrar.MigrarTags
-import cu.spvi.app.migrar.MigrarUiState
+import cu.spvi.app.licencia.EstadoLicencia
 import cu.spvi.app.pagos.AccionesListaPago
 import cu.spvi.app.pagos.PagoElectronicoContent
 import cu.spvi.app.pagos.PagoTags
@@ -45,7 +41,6 @@ import cu.spvi.app.soporte.SoporteContent
 import cu.spvi.app.soporte.SoporteTags
 import cu.spvi.designsystem.component.SpviStepperTextos
 import cu.spvi.designsystem.theme.SpviTheme
-import cu.spvi.domain.model.AutorizacionMigracion
 import cu.spvi.domain.model.Perfil
 import cu.spvi.domain.model.TarjetaBancaria
 import cu.spvi.domain.model.Telefono
@@ -208,36 +203,7 @@ class AjustesPantallasUiTest {
         rule.onAllNodesWithText("Documento PDF").assertCountEquals(0)
     }
 
-    // ---------- Migrar
-
-    private fun accionesMigrar(onPedir: () -> Unit = {}) = AccionesMigrar(
-        onRol = {}, onCambiarRol = {}, onEmpezarEmisor = {}, onQrLeido = {}, onCancelarIntercambio = {},
-        onDestino = {}, onPegarDestino = {}, onEnviar = {}, onRespaldo = {}, onAutorizacion = {}, onPegarAutorizacion = {},
-        onComprobar = {}, onPedirBorrado = onPedir, onConfirmacion = {}, onConfirmarBorrado = {}, onCancelarBorrado = {},
-    )
-
-    @Test fun migrarBorrarDeshabilitadoSinAutorizacion() {
-        rule.setContent {
-            SpviTheme(darkTheme = false) {
-                MigrarContent(MigrarUiState("SPVI:0a1b2c3d4e5f6071", MigrarForm(resultado = AutorizacionMigracion.DE_ESTE_TELEFONO)), {}, accionesMigrar())
-            }
-        }
-        rule.onNodeWithTag(MigrarTags.RESULTADO).performScrollTo().assertIsDisplayed()
-        rule.onNodeWithTag(MigrarTags.BORRAR).performScrollTo().assertIsNotEnabled()
-    }
-
-    @Test fun migrarConAutorizacionPideConfirmacion() {
-        var pedir = 0
-        rule.setContent {
-            SpviTheme(darkTheme = false) {
-                MigrarContent(MigrarUiState(null, MigrarForm(resultado = AutorizacionMigracion.AUTORIZADA)), {}, accionesMigrar { pedir++ })
-            }
-        }
-        rule.onNodeWithTag(MigrarTags.BORRAR).performScrollTo().assertIsEnabled().performClick()
-        assertEquals(1, pedir)
-    }
-
-    // ---------- Ayuda y Soporte
+    // ---------- Ayuda y Soporte ----------
 
     @Test fun ayudaDespliegaUnTema() {
         rule.setContent { SpviTheme(darkTheme = false) { AyudaScreen(onBack = {}) } }

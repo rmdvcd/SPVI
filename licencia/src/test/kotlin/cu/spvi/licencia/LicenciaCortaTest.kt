@@ -180,19 +180,6 @@ class LicenciaCortaTest {
         assertEquals(ActivationResult.Rejected, manager().activate("$cortaAjena\n$larga"))
     }
 
-    @Test fun migrarAceptaLaLicenciaDelTelefonoNuevo() = runBlocking {
-        val m = manager()
-        val propia = gl.issue(pedir(m), t0).message
-        assertEquals(TransferAuthorization.SAME_DEVICE, m.checkTransferAuthorization(propia))
-        m.activate(propia)
-        assertEquals(TransferAuthorization.SAME_DEVICE, m.checkTransferAuthorization(propia))
-        val nuevo = InMemoryDeviceKey()
-        val reqNuevo = gl.openRequest(manager(d = nuevo, id = "SPVI:aaaaaaaaaaaaaaaa", s = InMemoryStore()).buildRequest(input()).texto)
-        assertEquals(TransferAuthorization.AUTHORIZED, m.checkTransferAuthorization(gl.issue(reqNuevo, t0).message))
-        assertEquals(TransferAuthorization.REJECTED, m.checkTransferAuthorization(gl.issue(reqNuevo, t0, signWith = EcP256.generate()).message))
-        assertEquals(TransferAuthorization.NOT_FOUND, m.checkTransferAuthorization(gl.issueLarga(reqNuevo, t0).message))
-    }
-
     // ---------- Renovación (L-e) ----------
 
     @Test fun laSolicitudDiceQueLicenciaSeRenuevaSoloSiHayUnaConVencimiento() = runBlocking {

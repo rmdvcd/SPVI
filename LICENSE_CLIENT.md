@@ -15,10 +15,10 @@ Cómo cumple la app Android SPVI el contrato v1 del emisor offline **GL** (`CONT
 | Criptografía | `crypto/Crypto.kt`, `crypto/GlCodec.kt`, `contract/SolicitudCifrada.kt`, `contract/LicenciaCorta.kt` | P-256 (punto comprimido), ECDH, HKDF-SHA256, AES-256-GCM, ECDSA; solicitud `SPVIR1`, licencia `SPVI2`, `GlLicenseOpener` (solo para la larga ya instalada) |
 | Claves de GL | `LicenseTrust.kt` | Claves públicas (firma y ECDH) fijadas en el build con su huella |
 | Reglas | `LicenseValidator.kt`, `LicenseState.kt` | Validación semántica, estados y texto del banner |
-| Orquestación | `LicenseManager.kt` | Evaluar, construir la solicitud, activar, autorizar y ceder (Migrar) |
+| Orquestación | `LicenseManager.kt` | Evaluar, construir la solicitud y activar |
 | Clave del dispositivo | `:data` `security/AndroidDeviceKey.kt` | Par P-256 persistente |
 | Persistencia | `:data` `licencia/DataStoreLicenseStore.kt`, `DeviceIdProvider.kt` | DataStore cifrado propio de SPVI |
-| UI | `:app` `licencia/`, `bloqueo/BloqueoGate.kt`, `root/RootViewModel.kt`, `migrar/` | Panel, bloqueo, re-evaluación, migración |
+| UI | `:app` `licencia/`, `bloqueo/BloqueoGate.kt`, `root/RootViewModel.kt` | Panel, bloqueo y re-evaluación |
 | Clave maestra y sub-tokens | `licencia/.../ModoDesarrollo.kt`, `contract/CodigoLicencia.kt`, `contract/EnvelopeV1.kt`, `secondary/SubToken.kt` | Modo depuración de la clave maestra, código de 16 caracteres, envelope v1 (AAD canónica y heredada) y permiso firmado de las secundarias |
 | Sub-tokens en la app | `:data` `licencia/FirmanteLicenciaAndroid.kt`, `licencia/VerificadorPermisoSecundaria.kt`, `sync/{Protocolo,ClienteSync,ServidorSync}.kt` | Clave de firma de la principal, anotación del `deviceId` de cada secundaria y comprobación del permiso recibido |
 
@@ -69,7 +69,7 @@ El usuario pega el mensaje de GL (o solo el código) en *Activar licencia* (desd
 3. **Descifrado:** ECDH(clave del dispositivo en el Keystore, `epk`) → HKDF (`SPVI-L2`) → AES-256-GCM.
 4. **Huella** = SHA-256(`"SPVI-L2|" + deviceId + "|"` ‖ devicePub comprimida)[0..16], igual a la de este teléfono.
 5. **Validación** (`LicenseValidator`): `PERPETUA` sin `venceEn`; el resto con `venceEn` posterior a `emitidaEn`; `secundarias` 0–10.
-6. **Antigüedad:** una licencia emitida antes que la instalada, o antes de una migración, → `Outdated`.
+6. **Antigüedad:** una licencia emitida antes que la instalada, o anterior a la marca de transferencia (`lic.migrated_at`), → `Outdated`.
 7. **Guardado:** el código + `id`, `emitidaEn`, `tipo`, `venceEn`, `deviceId`. En cada arranque se repiten los pasos 2–5.
 
 | Resultado | Mensaje al usuario |
@@ -82,14 +82,13 @@ El usuario pega el mensaje de GL (o solo el código) en *Activar licencia* (desd
 Nunca se indica qué comprobación falló.
 
 - **Licencia larga instalada** (envelope v1, antes de la 0.23.0): se sigue re-verificando (firma, descifrado con el AAD de su `licenseId`, `LicenseValidator`) hasta que venza. Ya no se puede activar una nueva.
-- **Migrar:** la licencia `SPVI2:` de GL para otro teléfono (firma válida, no se descifra aquí) es una autorización; la propia → «mismo teléfono».
 
 ## 4. Estados, banner y bloqueo
 
 | Estado | ¿Desbloquea? | Origen |
 |---|---|---|
 | `Trial(díasRestantes)` | Sí | Sin licencia, dentro de los **7 días** desde el primer arranque |
-| `TrialExpired` | No | Prueba agotada, o teléfono que cedió su licencia al migrar |
+| `TrialExpired` | No | Prueba agotada, o teléfono cuya licencia se recuperó en otro teléfono |
 | `Active(tipo, venceEn)` | Sí | `estado = ACTIVA` y `venceEn` en el futuro |
 | `Perpetual` | Sí | `PERPETUA` |
 | `Expired(tipo)` | No | `VENCIDA`, o `venceEn` ya pasado |
@@ -125,22 +124,19 @@ DataStore cifrado propio (`SecureDataStore`: cada valor con AES-256-GCM del Keys
 | `lic.envelope` | Desde 0.23.0, la licencia `SPVI2:…` (reconocida por el prefijo); antes, el envelope completo de la larga + `id`, `emitidaEn`, `tipo`, `venceEn`, `deviceId` (los metadatos se contrastan con lo verificado en cada evaluación) |
 | `lic.trial_start` | Inicio del periodo de prueba |
 | `lic.last_seen` | Última hora vista (antirretroceso del reloj) |
-| `lic.migrated_at` | Instante en que el teléfono cedió su licencia |
+| `lic.migrated_at` | Instante en que la licencia de este teléfono se transfirió a otro (recuperación) |
 
 Un valor ilegible (Keystore borrado) cuenta como ausente: el teléfono queda en prueba o bloqueado, nunca desbloqueado. **La licencia no entra en los respaldos.**
 
-## 7. Migrar a otro teléfono (O5)
+## 7. Cambio de teléfono (antes «Migrar a otro teléfono», O5; retirado)
 
-El contrato v1 no tiene mensaje de migración. SPVI lo resuelve **sin cambiar el contrato**:
+El asistente de 4 pasos con paso de datos por QR entre los dos teléfonos se retiró: para cambiar de teléfono,
+exporta el respaldo `.spvi` en el viejo, impórtalo en el nuevo y pide la **recuperación** de la licencia con el
+«ID de la licencia anterior» (el respaldo v4 ya lo trae escrito). GL revoca la anterior y la publica en
+`revocadas.json`; el teléfono viejo la aplica, borra sus datos y se bloquea en «Licencia transferida».
 
-1. **Solicitud** al desarrollador (WhatsApp/SMS, texto plano): IDs de los dos teléfonos, ID de la licencia y nombre, **sin CI**.
-2. **Respaldo completo** del teléfono viejo.
-3. **Autorización** = la licencia que GL emite al teléfono **nuevo**. El viejo verifica la **firma de GL sin descifrarla** (la firma cubre el cifrado) y comprueba que **no** es suya.
-4. **Borrar este teléfono:** solo con una autorización válida y escribiendo `BORRAR`. Orden fijo, sin cancelación a medias: ceder la licencia (`lic.migrated_at` + borrar la licencia) → borrar base de datos, preferencias, fotos y temporales → re-evaluar.
-
-Después, el teléfono viejo queda bloqueado sin periodo de prueba, rechaza cualquier licencia emitida antes de la migración (también el mensaje viejo que siga en WhatsApp) y acepta una emitida después.
-
-**Límite:** sin conexión, nada obliga a ejecutar el paso 4 en el teléfono viejo. Lo controla el desarrollador decidiendo cuándo emite.
+La marca `lic.migrated_at` se conserva: la pone la revocación y sigue rechazando (`Outdated`) cualquier licencia
+emitida antes de la transferencia, incluido el mensaje viejo que siga en WhatsApp.
 
 ## 8. Cambios históricos del contrato
 
@@ -166,8 +162,8 @@ La tabla registra decisiones de versiones anteriores; **no** describe el payload
 |---|---|
 | `LicenseTrustTest` | Claves fijadas: P-256, huellas, firma ≠ cifrado |
 | `GoldenVectorTest` | `printRequest` genera una solicitud real para GL; `verifyRealLicense`: la larga real de GL ya no se activa, pero instalada sigue valiendo |
-| `LicenciaCortaTest` | Licencia `SPVI2`: formato, extracción, punto comprimido, rechazos, clon, Migrar, renovación, vector de Python |
-| `LicenseFlowTest`, `RuntimeVerificationTest`, `BannerTest`, `CasosBordeLicenciaTest` | Flujo completo con un GL simulado (`FakeGl`), formato de la solicitud, estados, reloj, bytes alterados, perpetua, migración |
+| `LicenciaCortaTest` | Licencia `SPVI2`: formato, extracción, punto comprimido, rechazos, clon, renovación, vector de Python |
+| `LicenseFlowTest`, `RuntimeVerificationTest`, `BannerTest`, `CasosBordeLicenciaTest` | Flujo completo con un GL simulado (`FakeGl`), formato de la solicitud, estados, reloj, bytes alterados, perpetua, marca de transferencia |
 | `MasterKeyTest` | Clave maestra `GLMK-PERM-MAXS-9999`: perpetua con 10 secundarias en depuración; **nunca** en release; una licencia auténtica manda sobre ella |
 | `CodigoLicenciaTest` | Código de 16 caracteres `[0-9A-Z]` en 4 grupos: normalización, formato y rechazo de lo que no es del contrato |
 | `EnvelopeV1Test`, `CanonicalAadTest` | Envelope v1 (ECIES P-256 + HKDF `gl-req-v1`/`gl-lic-v1` + AES-256-GCM): AAD **canónica** con longitud prefijada al sellar, heredada `1\|alg\|…` solo al reabrir lo ya emitido, firma DER y transcript `epk‖iv‖ct‖tag` |

@@ -24,7 +24,6 @@ import cu.spvi.domain.usecase.ImportarRespaldo
 import cu.spvi.licencia.ActivationResult
 import cu.spvi.licencia.SolicitudGenerada
 import cu.spvi.licencia.SolicitudInput
-import cu.spvi.domain.model.AutorizacionMigracion
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
@@ -128,8 +127,6 @@ class ProcesoActualizarTest {
         override suspend fun refrescar(): Licencia = error("sin licencia")
         override suspend fun construirSolicitud(input: SolicitudInput): AppResult<SolicitudGenerada> = error("sin licencia")
         override suspend fun activar(mensaje: String): ActivationResult = error("sin licencia")
-        override suspend fun verificarAutorizacionMigracion(mensaje: String): AutorizacionMigracion = error("sin licencia")
-        override suspend fun cederLicencia(): AppResult<Unit> = error("sin licencia")
     }
 
     private class MantenimientoNulo : MantenimientoRepository {

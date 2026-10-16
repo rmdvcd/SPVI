@@ -126,8 +126,6 @@ class OnboardingViewModel @Inject constructor(
             PasoWizard.ACCESO_CLAVE -> avanzar()
             PasoWizard.OBJETIVO -> if (s.modulos.isNotEmpty()) ocupado { preferenciasRepo.guardarModulos(s.modulos); avanzar() }
             PasoWizard.EMPLEADOS -> ocupado { preferenciasRepo.guardarEmpleadosPrevistos(s.empleados); avanzar() }
-            // 0.31.0 (P6): Migrar solo informa de que existe Ajustes → Migrar.
-            PasoWizard.MIGRAR -> avanzar()
             PasoWizard.DATOS -> pasoDatos(s)
             PasoWizard.ALERTAS -> pasoAlertas(s)
             PasoWizard.PRUEBA -> ocupado { configuracionRepo.confirmar(PasoConfiguracion.PRUEBA); avanzar() }

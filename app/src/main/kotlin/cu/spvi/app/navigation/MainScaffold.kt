@@ -47,7 +47,6 @@ import cu.spvi.app.inventario.InventarioViewModel
 import cu.spvi.app.inventario.SeleccionVenta
 import cu.spvi.app.licencia.LicenciaScreen
 import cu.spvi.app.vinculacion.VinculacionScreen
-import cu.spvi.app.migrar.MigrarScreen
 import cu.spvi.app.onboarding.ModoWizard
 import cu.spvi.app.onboarding.OnboardingScreen
 import cu.spvi.app.pagos.PagoElectronicoScreen
@@ -308,12 +307,6 @@ fun MainScaffold(snapshot: Licencia) {
             }
             composable<Route.Perfil> { PerfilScreen(onBack = { nav.popBackStack() }) }
             composable<Route.Respaldo> { RespaldoScreen(onBack = { nav.popBackStack() }) }
-            composable<Route.Migrar> {
-                MigrarScreen(
-                    onBack = { nav.popBackStack() },
-                    onRespaldoCompleto = { nav.navigate(Route.Respaldo) },
-                )
-            }
             composable<Route.Ayuda> { AyudaScreen(onBack = { nav.popBackStack() }) }
             composable<Route.Soporte> { SoporteScreen(onBack = { nav.popBackStack() }) }
             composable<Route.Catalogo> { CatalogoScreen(onBack = { nav.popBackStack() }) }

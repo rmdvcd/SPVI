@@ -262,18 +262,6 @@ class FakeLicencia(
     override suspend fun refrescar() = actual().also { refrescos++; flow.value = it }
     override suspend fun construirSolicitud(input: cu.spvi.licencia.SolicitudInput) = solicitud
     override suspend fun activar(mensaje: String) = activacion
-
-    // ---- Migrar
-    var autorizacion = cu.spvi.domain.model.AutorizacionMigracion.AUTORIZADA
-    var cesion: AppResult<Unit> = AppResult.Ok(Unit)
-    /** Orden de las operaciones de Migrar (compartido con FakeMantenimiento para comprobar la secuencia). */
-    var diario: MutableList<String> = mutableListOf()
-    var instaladaId: String? = null
-    override suspend fun verificarAutorizacionMigracion(mensaje: String) = autorizacion.also { diario += "verificar" }
-    override suspend fun cederLicencia(): AppResult<Unit> = cesion.also {
-        diario += "ceder"
-        if (it is AppResult.Ok) estado = cu.spvi.licencia.LicenseState.TrialExpired
-    }
 }
 
 class FakeMantenimiento(private val diario: MutableList<String>, var resultado: AppResult<Unit> = AppResult.Ok(Unit)) :

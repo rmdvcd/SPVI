@@ -6,7 +6,6 @@ import cu.spvi.core.result.AppResult
 import cu.spvi.core.result.appCatching
 import cu.spvi.core.time.Clock
 import cu.spvi.domain.di.IoDispatcher
-import cu.spvi.domain.model.AutorizacionMigracion
 import cu.spvi.domain.model.Licencia
 import cu.spvi.domain.model.SubTokenEmitido
 import cu.spvi.domain.repository.LicenciaRepository
@@ -16,7 +15,6 @@ import cu.spvi.licencia.LicenseStore
 import cu.spvi.licencia.LicenseTrust
 import cu.spvi.licencia.ModoDesarrollo
 import cu.spvi.licencia.SolicitudInput
-import cu.spvi.licencia.TransferAuthorization
 import cu.spvi.licencia.crypto.B64
 import cu.spvi.licencia.crypto.DeviceKey
 import cu.spvi.licencia.crypto.EcP256
@@ -128,21 +126,5 @@ class LicenciaRepositoryImpl @Inject constructor(
     /** 0.25.0 (§3): lista pública de revocadas (firmada por GL). true = la licencia de este teléfono quedó revocada. */
     override suspend fun aplicarRevocaciones(texto: String): Boolean = withContext(io) {
         mutex.withLock { runCatchingCancelable { managerLocked().aplicarRevocaciones(texto) }.getOrDefault(false) }
-    } // sin refrescar: quien llama borra los datos y después llama a refrescar (como al ceder la licencia)
-
-    override suspend fun verificarAutorizacionMigracion(mensaje: String): AutorizacionMigracion = withContext(io) {
-        mutex.withLock {
-            val r = runCatchingCancelable { managerLocked().checkTransferAuthorization(mensaje) }.getOrDefault(TransferAuthorization.REJECTED)
-            when (r) {
-                TransferAuthorization.AUTHORIZED -> AutorizacionMigracion.AUTORIZADA
-                TransferAuthorization.SAME_DEVICE -> AutorizacionMigracion.DE_ESTE_TELEFONO
-                TransferAuthorization.NOT_FOUND -> AutorizacionMigracion.NO_ENCONTRADA
-                TransferAuthorization.REJECTED -> AutorizacionMigracion.RECHAZADA
-            }
-        }
-    }
-
-    override suspend fun cederLicencia(): AppResult<Unit> = withContext(io) {
-        mutex.withLock { appCatching(onError = { AppError.Almacenamiento }) { managerLocked().transferOut() } }
-    }
+    } // sin refrescar: quien llama borra los datos y después llama a refrescar (como al revocar la licencia)
 }

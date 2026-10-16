@@ -30,12 +30,12 @@ object SpviStepperTextos {
 }
 
 /**
- * P18 (A08, A09): cabecera de asistente (Licencia, Respaldo, Onboarding, Migrar).
+ * P18 (A08, A09): cabecera de asistente (Licencia, Respaldo, Onboarding).
  *
  * - Muestra «Paso 2 de 3», el título del paso y una barra de progreso.
  * - Al cambiar de paso, TalkBack lo anuncia («Paso 2 de 3: Enviar solicitud») gracias a una región viva.
  * - Atrás y Siguiente son botones de icono de 48dp. Si no se pasan, no se muestran; si falta solo uno, su hueco
- *   se reserva para que el título no salte. Sin ninguno (Onboarding, Migrar, Importar), el título usa todo el ancho.
+ *   se reserva para que el título no salte. Sin ninguno (Onboarding, Importar), el título usa todo el ancho.
  * - [siguienteHabilitado] = false hasta que el paso tenga datos válidos.
  */
 @Composable

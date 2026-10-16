@@ -1,7 +1,6 @@
 package cu.spvi.domain.repository
 
 import cu.spvi.core.result.AppResult
-import cu.spvi.domain.model.AutorizacionMigracion
 import cu.spvi.domain.model.Licencia
 import cu.spvi.domain.model.NivelesMinimos
 import cu.spvi.domain.model.Perfil
@@ -32,14 +31,6 @@ interface LicenciaRepository {
      * de la cuota de la licencia).
      */
     suspend fun emitirSubToken(dispositivo: String, ranura: Int): cu.spvi.domain.model.SubTokenEmitido? = null
-
-    /** Migrar: comprueba la licencia emitida al teléfono nuevo (sin guardarla ni descifrarla). */
-    suspend fun verificarAutorizacionMigracion(mensaje: String): AutorizacionMigracion
-    /**
-     * Migrar: cede la licencia de este dispositivo (irreversible). NO re-evalúa [snapshot]: quien llama termina
-     * de borrar los datos y después llama a [refrescar] (si no, el bloqueo cerraría la pantalla a mitad).
-     */
-    suspend fun cederLicencia(): AppResult<Unit>
 }
 
 interface PerfilRepository {
@@ -86,7 +77,6 @@ interface ConfiguracionInicialRepository {
 /** Qué trajo o llevó un respaldo. Siempre es completo: base de datos + configuración (P17: un solo tipo). */
 data class ResumenRespaldo(val productos: Int, val insumos: Int, val ventas: Int, val movimientos: Int)
 
-/** Migrar: borrado de TODOS los datos del negocio de este dispositivo (BD, preferencias, fotos, temporales). */
 /** 0.25.0: estado propio de la app (recordatorio de respaldo, versiones, licencia recuperable). No va en el respaldo. */
 interface EstadoAppRepository {
     val estado: Flow<cu.spvi.domain.model.EstadoApp>

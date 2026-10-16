@@ -15,7 +15,7 @@ class GlLicenseOpener(
 ) {
     /**
      * Firma del emisor sobre `epk||iv||ct||tag`. Se comprueba SIN descifrar: sirve para reconocer una
-     * licencia auténtica de GL emitida para OTRO dispositivo (autorización de Migrar).
+     * licencia auténtica de GL emitida para OTRO dispositivo.
      */
     fun signedByIssuer(env: Envelope): Boolean = runCatching {
         if (env.v != GlContract.VERSION || env.alg != GlContract.ALG) return@runCatching false
