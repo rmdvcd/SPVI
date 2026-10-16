@@ -1,5 +1,11 @@
 # SPVI - Historial de desarrollo
 
+## 2026-10-16 - Móvil: auditoría visual completa (292 capturas Roborazzi + teléfono real)
+
+Compilado `:app:assembleDebug` con JDK 17, instalado en el teléfono 4bc9f8f3 (Android 15) y regeneradas las capturas Roborazzi en claro y oscuro (146 por tema). Correcciones: título de `SpviVentana` en `titleMedium` (era `titleLarge`; el design system exige 15sp para diálogos); aviso de la fila de Inventario en 2 líneas (la fecha de vencimiento se cortaba: «Crítico · Vence 0…»); caso `07d_perfil_errores` ahora con `mostrarErrores = true` (antes no mostraba los errores); limpieza de `Icon`/`Checkbox`/`SpviSize` fully-qualified en PagoElectronicoScreen y ServiciosScreen. Descartados como artefactos del arnés (fondo claro de la ventana de prueba en `Content` sin `Scaffold`): textos de Licencia/Migrar en oscuro. El resto observado (pestañas en 2 líneas a 360dp, franja de exportando, pie fijo sobre formularios largos sin desplazar) es el diseño vigente.
+
+**Pruebas:** `spviTests` en verde local (incluye la corrección Robolectric offline de `app/build.gradle.kts`, pendiente de CI).
+
 Registro **histórico** de lo implementado en cada fase y de las suposiciones vigentes en ese momento. Se conserva para trazabilidad; no es una lista de productos o tareas actuales.
 
 > **Prevalece la documentación actual.** Si algo de este historial contradice a [README.md](../README.md), [SECURITY.md](../SECURITY.md), [FORMATOS.md](../FORMATOS.md), [LICENSE_CLIENT.md](../LICENSE_CLIENT.md) o [UI_UX_IX.md](../UI_UX_IX.md), vale lo que dicen esos documentos. Las fases posteriores sustituyen a las anteriores. Las entradas de la web de escritorio y Flutter/iOS describen código retirado el 2026-10-15; no indican que esas apps sigan en mantenimiento.

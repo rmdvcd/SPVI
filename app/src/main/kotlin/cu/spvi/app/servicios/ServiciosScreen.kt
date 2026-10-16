@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Scaffold
@@ -462,7 +463,7 @@ private fun HojaExportar(state: ServiciosUiState, acciones: AccionesServicios) {
         FORMATOS_EXPORTAR_SERVICIOS.forEach { f ->
             SpviListItem(
                 title = f.etiqueta, indicatorColor = null,
-                leading = cu.spvi.app.common.iconoFormato(f)?.let { ic -> { androidx.compose.material3.Icon(ic, contentDescription = null, modifier = Modifier.size(cu.spvi.designsystem.token.SpviSize.icon)) } },
+                leading = cu.spvi.app.common.iconoFormato(f)?.let { ic -> { Icon(ic, contentDescription = null, modifier = Modifier.size(SpviSize.icon)) } },
                 modifier = Modifier.testTag(ServiciosTags.formato(f)),
                 trailing = {
                     Row {

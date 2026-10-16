@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
@@ -193,12 +195,12 @@ private fun androidx.compose.foundation.lazy.LazyListScope.lista(
             indicatorColor = null, // La casilla indica el elemento elegido.
             leading = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    androidx.compose.material3.Checkbox(
+                    Checkbox(
                         checked = enUso,
                         modifier = Modifier.semantics { contentDescription = "Usar ${item.texto}" },
                         onCheckedChange = { acciones.onElegir(tipo, item.id) },
                     )
-                    androidx.compose.material3.Icon(
+                    Icon(
                         if (tipo == TipoCuentaPago.TELEFONO) SpviIcons.Telefono else SpviIcons.PagoElectronico,
                         contentDescription = null,
                     )
@@ -219,7 +221,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.lista(
 /** Icono monocromático común para todas las tarjetas. */
 @Composable
 private fun IconoTarjeta(banco: BancoCubano, modifier: Modifier = Modifier) {
-    androidx.compose.material3.Icon(
+    Icon(
         SpviIcons.PagoElectronico, contentDescription = banco.nombre,
         modifier = modifier.size(SpviSize.icon), tint = MaterialTheme.colorScheme.onSurfaceVariant,
     )

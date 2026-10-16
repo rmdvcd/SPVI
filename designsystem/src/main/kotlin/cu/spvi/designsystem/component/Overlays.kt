@@ -260,7 +260,7 @@ private fun SpviVentana(
                     Column(Modifier.padding(top = SpviSpacing.lg), horizontalAlignment = Alignment.CenterHorizontally) {
                         title?.let {
                             Text(
-                                it, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center,
+                                it, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center,
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = SpviSpacing.lg).padding(bottom = SpviSpacing.xs).semantics { heading() },
                             )
                         }

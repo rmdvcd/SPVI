@@ -424,9 +424,11 @@ private fun Fila(i: ItemInventario, marcado: Boolean, acciones: AccionesInventar
             Text(i.producto.nombreCompleto, style = MaterialTheme.typography.bodyLarge) // 0.24.0: «Nombre · Descripción»
             // 0.28.0: la fecha de caducidad («Vence 03/10/2026») va en seminegrita.
             subtituloFila(i)?.let { subt ->
+                // El aviso (caducidad, stock, nombre repetido) siempre en 2 líneas: la fecha de
+                // vencimiento no debe cortarse con "…" (02a: «Crítico · Vence 0…» ilegible).
                 SpviSecondaryText(
                     SpviTextos.resaltar(subt, cu.spvi.app.common.FechasUi.texto(i.producto.fechaCaducidad)),
-                    maxLines = if (i.nombreRepetido) 2 else 1,
+                    maxLines = 2,
                 )
             }
             SpviSecondaryText(valorFila(i)) // cantidad con su unidad (u, L, g, Kg, cajas…)

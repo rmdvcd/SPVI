@@ -94,7 +94,7 @@ class AjustesCapturas {
     }
     @Test @Config(qualifiers = Captura.LARGA) fun perfil() = perfilCap("07c_perfil", DatosPerfilForm.desde(perfil))
     @Test fun perfilCambios() = perfilCap("07d2_perfil_con_cambios", DatosPerfilForm.desde(perfil).copy(nombre = "María José"))
-    @Test fun perfilErrores() = perfilCap("07d_perfil_errores", DatosPerfilForm.desde(perfil).copy(nombre = "M", ci = "123"))
+    @Test fun perfilErrores() = perfilCap("07d_perfil_errores", DatosPerfilForm.desde(perfil).copy(nombre = "M", ci = "123", mostrarErrores = true))
 
     @Test fun perfilDialogoSalir() = rule.capturar("07e_perfil_dialogo_salir", antes = { onNodeWithContentDescription("Atrás").performClick() }) {
         PerfilContent(PerfilUiState(true, perfil, DatosPerfilForm.desde(perfil).copy(nombre = "María José")), {}, AccionesPerfil({}, {}, {}))
