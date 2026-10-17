@@ -1,5 +1,8 @@
 package cu.spvi.data.mapper
 
+import cu.spvi.data.dto.aJson
+import cu.spvi.data.dto.conteoDeJson
+
 import cu.spvi.domain.model.ClaseArticulo
 import cu.spvi.domain.model.Servicio
 import cu.spvi.data.db.entity.ServicioInsumoEntity
@@ -116,6 +119,7 @@ fun TurnoEntity.toDomain(): Turno {
     return Turno(
         id, abiertoEn.instant(), cerradoEn?.instant(), resumen, abiertoPor.orEmpty(), cerradoPor, empleadoId,
         fondo = fondoCent?.let(::Cup), contado = contadoCent?.let(::Cup),
+        conteoCierre = conteoCierreJson?.conteoDeJson(),
     )
 }
 
@@ -129,6 +133,7 @@ fun Turno.toEntity() = TurnoEntity(
     movimientosProducto = resumen?.movimientosProducto, movimientosInsumo = resumen?.movimientosInsumo,
     empleadoId = empleadoId,
     fondoCent = fondo?.centavos, contadoCent = contado?.centavos,
+    conteoCierreJson = conteoCierre?.aJson(),
     entradasCent = resumen?.entradasCaja?.centavos, salidasCent = resumen?.salidasCaja?.centavos, numAnuladas = resumen?.numAnuladas,
 )
 

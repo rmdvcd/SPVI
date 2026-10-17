@@ -70,7 +70,15 @@ abstract class SpviDatabase : RoomDatabase() {
          * v3 (P17): esquema consolidado, sin `tasa_cambio` ni `caducidad_codigo`. Es la base de las migraciones
          * futuras: cada versión nueva añade una `Migration(3, 4)`… explícita (regla: nunca borrar datos de usuarios).
          */
-        const val VERSION = 12
+        const val VERSION = 13
+        val MIGRACION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                SQL_12_13.forEach(db::execSQL)
+            }
+        }
+        internal val SQL_12_13 = listOf(
+            "ALTER TABLE `turno` ADD COLUMN `conteoCierreJson` TEXT",
+        )
         const val NOMBRE = "spvi.db"
 
         /**
@@ -276,7 +284,7 @@ abstract class SpviDatabase : RoomDatabase() {
             System.loadLibrary("sqlcipher")
             return Room.databaseBuilder(context, SpviDatabase::class.java, NOMBRE)
                 .openHelperFactory(SupportOpenHelperFactory(passphrase))
-                .addMigrations(MIGRACION_3_4, MIGRACION_4_5, MIGRACION_5_6, MIGRACION_6_7, MIGRACION_7_8, MIGRACION_8_9, MIGRACION_9_10, MIGRACION_10_11, MIGRACION_11_12)
+                .addMigrations(MIGRACION_3_4, MIGRACION_4_5, MIGRACION_5_6, MIGRACION_6_7, MIGRACION_7_8, MIGRACION_8_9, MIGRACION_9_10, MIGRACION_10_11, MIGRACION_11_12, MIGRACION_12_13)
                 .fallbackToDestructiveMigrationFrom(*DESARROLLO)
                 .build()
         }

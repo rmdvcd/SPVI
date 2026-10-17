@@ -82,6 +82,7 @@ fun Turno.toDto() = TurnoDto(
     },
     abiertoPor.ifEmpty { null }, cerradoPor, empleadoId,
     fondoCent = fondo?.centavos, contadoCent = contado?.centavos,
+    conteoCierre = conteoCierre?.toDto(),
 )
 fun TurnoDto.toDomain() = Turno(
     id, abiertoEn.instant(), cerradoEn?.let { it.instant() },
@@ -94,6 +95,7 @@ fun TurnoDto.toDomain() = Turno(
     },
     abiertoPor.orEmpty(), cerradoPor, empleadoId,
     fondo = fondoCent?.let(::Cup), contado = contadoCent?.let(::Cup),
+    conteoCierre = conteoCierre?.toDomain(),
 )
 
 fun Venta.toDto() = VentaDto(

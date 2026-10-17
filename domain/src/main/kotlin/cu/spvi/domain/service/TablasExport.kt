@@ -1,6 +1,7 @@
 package cu.spvi.domain.service
 
 import cu.spvi.domain.model.nombreCompleto
+import cu.spvi.core.money.Cup
 import cu.spvi.core.money.Money
 import cu.spvi.core.money.Percent
 import cu.spvi.core.quantity.Cantidad
@@ -184,6 +185,19 @@ object TablasExport {
      * El turno completo, en el orden de la pantalla: resumen, arqueo, entradas/salidas de efectivo, ventas (con Estado)
      * e inventario. Las tablas sin filas se omiten (el resumen y el arqueo siempre van).
      */
+    fun filasConteo(c: cu.spvi.domain.model.ConteoCierre): List<List<String>> = c.inventario.map { l ->
+        fun formato(n: Long): String = if (l.entidad == TipoEntidad.INSUMO) Cantidad.format(Cantidad(n)) else n.toString()
+        listOf(l.nombre, l.unidad, formato(l.esperado), formato(l.contado), formato(l.diferencia))
+    }
+
+    fun tablasConteo(c: cu.spvi.domain.model.ConteoCierre): List<TablaExport> = listOf(
+        TablaExport("Conteo de efectivo", listOf("Denominación", "Billetes", "Subtotal"),
+            c.billetes.toSortedMap().map { (d, n) -> listOf("$d CUP", n.toString(), Money.format(Cup(d.toLong() * 100 * n))) } +
+                listOf(listOf("Otro efectivo", "", Money.format(c.otroEfectivo)), listOf("Total", "", Money.format(c.efectivo)))),
+        TablaExport("Conciliación de inventario", listOf("Nombre", "Unidad", "Esperado", "Contado", "Diferencia"), filasConteo(c),
+            pie = listOfNotNull(c.motivo.takeIf { it.isNotBlank() }, c.aprobadoPor?.let { "Aprobado por $it" } ?: "Pendiente de aprobación")),
+    )
+
     fun turno(d: cu.spvi.domain.model.DetalleTurno, zone: ZoneId = ZoneId.systemDefault()): List<TablaExport> {
         val t = d.turno
         val r = d.resumen
@@ -205,7 +219,7 @@ object TablasExport {
         )
         val arqueo = TablaExport("Arqueo de caja", listOf("Dato", "Valor"), camposArqueo(d.arqueo).map { listOf(it.first, it.second) })
         val simbolos = d.insumos.associate { it.insumoId to it.simbolo }
-        return listOf(resumen, arqueo, caja(d.caja, zone), ventas(d.ventas, zone), movimientos(d.movimientos, zone, simbolos))
+        return (listOf(resumen, arqueo) + t.conteoCierre?.let(::tablasConteo).orEmpty() + listOf(caja(d.caja, zone), ventas(d.ventas, zone), movimientos(d.movimientos, zone, simbolos)))
             .filterIndexed { i, tabla -> i < 2 || tabla.filas.isNotEmpty() }
     }
 

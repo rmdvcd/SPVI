@@ -43,6 +43,17 @@ principal, los gráficos y resúmenes de ventas, inventario,
 métodos de pago y ganancia. Los gráficos y resúmenes se pliegan; empiezan cerrados y puedes abrir solo los que quieras consultar.
 Inicio se abre siempre por arriba: no recuerda por dónde ibas la última vez.
 
+## Cerrar turno: efectivo e inventario
+
+1. En Inicio toca cerrar el turno. Puedes escribir el total como antes o elegir **Contar billetes por denominación**: 1, 3, 5, 10, 20, 50, 100, 200, 500, 1000, **5000 y 20000 CUP**. Escribe cuántos tienes de cada uno; un campo vacío equivale a cero. Añade las monedas u otro efectivo aparte. SPVI suma el contado y muestra si sobra o falta respecto al esperado.
+2. Continúa al **conteo de inventario**. Cuenta todos los productos físicos y los insumos; escribe **0** cuando no quede nada. Los productos usan unidades enteras y los insumos admiten hasta tres decimales (punto o coma). Los elaborados no se cuentan como stock: se cuentan sus insumos.
+3. Revisa esperado, contado y diferencia. Si hay diferencias, explica el **motivo** (3–160 caracteres) y confirma. En la principal, se registran los ajustes y se cierra el turno juntos; si falla una comprobación, no se aplican ajustes parciales.
+4. En una **app de empleado**, confirmar **solo envía el conteo**. El encargado lo revisa en **Apps vinculadas → empleado** y aprueba o rechaza. Solo la principal modifica el inventario del negocio. Incluso si el encargado pidió el cierre, un conteo nuevo de inventario requiere su aprobación.
+
+Si el inventario cambió mientras contabas o antes de aprobar (por otra venta o ajuste), no se sobrescribe: vuelve a cargar y contar. El encargado puede rechazar la solicitud para pedir un nuevo conteo. Registros → Turnos → Caja muestra el desglose y la conciliación; también van en el PDF/Excel del turno y en el respaldo.
+
+**Compatibilidad:** para usar este flujo, actualiza la principal y las apps de empleados. Una principal antigua no puede aprobar el nuevo conteo; no se debe combinar con secundarias que ya lo requieran. Estos cambios están en desarrollo, pendientes de verificación en dispositivos.
+
 ## Buscar y consultar transferencias
 
 Los buscadores de Registros conservan su texto de ejemplo. Las transferencias muestran el vendedor en la lista/tabla;

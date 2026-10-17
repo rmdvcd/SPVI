@@ -1,5 +1,8 @@
 package cu.spvi.data.repository
 
+import cu.spvi.data.dto.aJson
+import cu.spvi.data.dto.conteoDeJson
+import cu.spvi.domain.model.ConteoCierre
 import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
 import cu.spvi.data.db.SpviDatabase
@@ -34,6 +37,19 @@ class TurnoRepositoryImpl @Inject constructor(private val db: SpviDatabase) : Tu
     private val movimientos = db.movimientoDao()
     private val caja = db.cajaDao()
 
+    override suspend fun prepararConteo() = db.tx {
+        val t = turnos.activo() ?: abortar(AppError.TurnoCerrado)
+        t.id to db.instantaneaConteo()
+    }
+
+    override suspend fun guardarConteo(turnoId: Long, conteo: ConteoCierre): AppResult<Unit> = db.tx {
+        val t = turnos.activo()?.takeIf { it.id == turnoId } ?: abortar(AppError.TurnoCerrado)
+        db.comprobarConteo(conteo)
+        // El dispositivo que declara no puede autorizar su propia conciliación remota.
+        val limpio = conteo.copy(aprobadoPor = null, aprobadoEn = null)
+        db.syncDao().actualizarTurno(t.copy(conteoCierreJson = limpio.aJson(), contadoCent = limpio.efectivo.centavos, sincronizado = false))
+    }
+
     override fun observarActivo(): Flow<Turno?> = turnos.observarActivo().map { it?.toDomain() }
     override suspend fun activo() = turnos.activo()?.toDomain()
     override suspend fun ultimoCerrado() = turnos.ultimoCerrado()?.toDomain()
@@ -55,9 +71,19 @@ class TurnoRepositoryImpl @Inject constructor(private val db: SpviDatabase) : Tu
      * el cálculo y el cierre; después, `VentaRepositoryImpl` rechaza vender en un turno cerrado y los
      * movimientos nuevos ya no se asocian a este turno (solo al activo).
      */
-    override suspend fun cerrar(ahora: Instant, usuario: String, contado: Cup?): AppResult<Turno> = db.tx {
+    override suspend fun cerrar(ahora: Instant, usuario: String, contado: Cup?): AppResult<Turno> = cerrarInterno(ahora, usuario, contado, true)
+
+    suspend fun cerrarSinAjustar(ahora: Instant, usuario: String, contado: Cup?): AppResult<Turno> = cerrarInterno(ahora, usuario, contado, false)
+
+    private suspend fun cerrarInterno(ahora: Instant, usuario: String, contado: Cup?, aplicar: Boolean): AppResult<Turno> = db.tx {
         val t = turnos.activo() ?: abortar(AppError.TurnoCerrado)
         if (contado != null && contado.isNegative) abortar(AppError.Validacion("contado", AppError.Regla.RANGO))
+        val declarado = t.conteoCierreJson?.conteoDeJson()
+        if (!aplicar && declarado != null && declarado.aprobadoEn == null)
+            abortar(AppError.Validacion("conteoSinAprobar"))
+        if (declarado != null && contado != null && declarado.efectivo != contado)
+            abortar(AppError.Validacion("conteo", AppError.Regla.RANGO))
+        if (aplicar) db.aplicarConteo(t.id, usuario, ahora.toEpochMilli())
         val r = turnos.resumen(t.id)
         val m = movimientos.contarDeTurnoPorEntidad(t.id)
         val n = turnos.cerrar(

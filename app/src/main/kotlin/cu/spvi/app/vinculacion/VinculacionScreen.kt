@@ -480,9 +480,9 @@ private fun FormDialog(
                         indicatorColor = null,
                         leading = { Icon(SpviIcons.Turno, contentDescription = null) },
                         trailing = when {
-                            e.cierrePedido -> null
+                            e.cierrePedido && (e.conteoCierre == null || e.conteoCierre?.aprobadoEn != null) -> null
                             // 0.21.0 (C6): el empleado lo pidió: Aprobar (rellena, la acción esperada) o Rechazar.
-                            e.solicitaCierre -> ({
+                            (e.solicitaCierre || (e.cierrePedido && e.conteoCierre != null && e.conteoCierre?.aprobadoEn == null)) -> ({
                                 Row(horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
                                     SpviIconAction(
                                         SpviIcons.Cancelar, VinculacionLogic.RECHAZAR_CIERRE, onClick = onRechazarCierre, enabled = !trabajando,
@@ -504,6 +504,7 @@ private fun FormDialog(
                         subtitleMaxLines = 2,
                     )
                 } }
+                empleado?.conteoCierre?.let { cu.spvi.app.caja.ResumenConteo(it) }
                 // 0.26.0 (P73 §4): fondo del próximo turno (sin él, su app no abre turno).
                 empleado?.let { e -> VinculacionLogic.fondoEmpleado(e)?.let { texto ->
                     SpviListItem(

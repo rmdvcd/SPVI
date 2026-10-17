@@ -26,6 +26,7 @@ data class Turno(
      * cierre (viaja a la principal para que el dueño vea la diferencia antes de aprobar).
      */
     val contado: Cup? = null,
+    val conteoCierre: ConteoCierre? = null,
 ) {
     val abierto: Boolean get() = cerradoEn == null
     val deSecundaria: Boolean get() = empleadoId != null

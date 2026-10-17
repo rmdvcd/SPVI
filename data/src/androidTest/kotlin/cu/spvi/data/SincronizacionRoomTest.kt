@@ -8,6 +8,9 @@ import cu.spvi.core.quantity.Cantidad
 import cu.spvi.core.result.AppResult
 import cu.spvi.core.time.Clock
 import cu.spvi.data.db.SpviDatabase
+import cu.spvi.data.db.tx
+import cu.spvi.data.repository.aplicarConteo
+import cu.spvi.data.dto.conteoDeJson
 import cu.spvi.data.db.entity.EmpleadoEntity
 import cu.spvi.data.dto.toDto
 import cu.spvi.data.repository.InsumoRepositoryImpl
@@ -100,6 +103,39 @@ class SincronizacionRoomTest {
             cantidad = n, precioBase = Cup.ofPesos(100), precioUnitario = Cup.ofPesos(100), costoUnitario = Cup.ofPesos(60)))))
 
     private suspend fun instantanea(e: EmpleadoEntity): Instantanea = ok(almP.instantanea(e, "Bodega La Esquina", licencia))
+
+    @Test fun conteoDelEmpleadoViajaSinAjustarYLaAprobacionNoSeDuplicaAlReenviar() = runBlocking {
+        val p = refresco(10)
+        val e = empleado("Luis")
+        ok(almS.aplicarEnSecundaria(Recibidos(), instantanea(e)))
+        val t = ok(turnosS.abrir(ahora, "Luis", Cup.ZERO))
+        ok(venderEnS(t.id, p, 2))
+        val snapshot = ok(turnosS.prepararConteo())
+        val conteo = cu.spvi.domain.model.ConteoCierre(mapOf(20000 to 1L), inventario = snapshot.second.map { it.copy(contado = 7) }, motivo = "Una unidad rota")
+        ok(turnosS.guardarConteo(t.id, conteo))
+        val lote = almS.lotePendiente()
+        ok(almP.aplicarLote(e.id, lote))
+        val remoto = dbP.turnoDao().activoDeEmpleado(e.id)!!
+        assertEquals(8L, productosP.obtener(p)!!.cantidad) // solo se descontó la venta
+        assertEquals(conteo, remoto.conteoCierreJson!!.conteoDeJson())
+        assertTrue(!cu.spvi.data.sync.CierreRemoto.conteoListo(turnosS.activo()))
+        ok(dbP.tx { dbP.aplicarConteo(remoto.id, "Dueño", ahora.toEpochMilli()) })
+        val aprobado = dbP.turnoDao().obtener(remoto.id)!!.conteoCierreJson!!.conteoDeJson()
+        assertEquals(7L, productosP.obtener(p)!!.cantidad)
+        ok(almP.aplicarLote(e.id, lote)) // respuesta perdida: no borra la aprobación
+        ok(dbP.tx { dbP.aplicarConteo(remoto.id, "Dueño", ahora.toEpochMilli()) })
+        assertEquals(7L, productosP.obtener(p)!!.cantidad)
+        assertEquals(1, turnosP.movimientosDe(remoto.id).count { it.tipo == TipoMovimiento.AJUSTE })
+        val uuid = dbS.turnoDao().activo()!!.uuid
+        ok(almS.marcarConteoAprobado("otro-turno", aprobado))
+        assertTrue(!cu.spvi.data.sync.CierreRemoto.conteoListo(turnosS.activo()))
+        ok(almS.marcarConteoAprobado(uuid, aprobado))
+        assertTrue(cu.spvi.data.sync.CierreRemoto.conteoListo(turnosS.activo()))
+        ok(turnosS.cerrarSinAjustar(ahora, "Dueño", conteo.efectivo))
+        ok(almP.aplicarLote(e.id, almS.lotePendiente()))
+        assertEquals(7L, productosP.obtener(p)!!.cantidad)
+        assertEquals("Dueño", turnosP.obtener(remoto.id)!!.conteoCierre!!.aprobadoPor)
+    }
 
     // ------------------------------------------------------------------------------------------------ ida y vuelta
 

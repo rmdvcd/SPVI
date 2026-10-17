@@ -59,6 +59,22 @@ class EsquemaTest {
     }
 
     @Test
+    fun migracion12a13ConservaCajaYAnadeConteoNulo() {
+        helper.createDatabase(BD, 12).apply {
+            execSQL("INSERT INTO turno (abiertoEn, abiertoPor, fondoCent, contadoCent) VALUES (1000, 'Ana', 10000, 12000)")
+            close()
+        }
+        helper.runMigrationsAndValidate(BD, 13, true, SpviDatabase.MIGRACION_12_13).use { db ->
+            db.query("SELECT fondoCent, contadoCent, conteoCierreJson FROM turno").use { c ->
+                assertTrue(c.moveToFirst())
+                assertEquals(10000L, c.getLong(0))
+                assertEquals(12000L, c.getLong(1))
+                assertTrue(c.isNull(2))
+            }
+        }
+    }
+
+    @Test
     fun soloLasVersionesDeDesarrolloSeRecreanVacias() {
         assertArrayEquals(intArrayOf(1, 2), SpviDatabase.DESARROLLO)
         assertFalse(SpviDatabase.VERSION in SpviDatabase.DESARROLLO)
@@ -68,7 +84,7 @@ class EsquemaTest {
     fun migracion4a5ConservaLosDatosYDejaElEsquemaEsperado() {
         val esquema = JSONObject(
             InstrumentationRegistry.getInstrumentation().context.assets
-                .open("cu.spvi.data.db.SpviDatabase/${SpviDatabase.VERSION}.json").bufferedReader().use { it.readText() },
+                .open("cu.spvi.data.db.SpviDatabase/12.json").bufferedReader().use { it.readText() },
         ).getJSONObject("database")
         val f = contexto.getDatabasePath(BD).apply { parentFile?.mkdirs() }
         SQLiteDatabase.openOrCreateDatabase(f, null).use { db ->
@@ -77,7 +93,7 @@ class EsquemaTest {
             db.version = 4
         }
         val room = Room.databaseBuilder(contexto, SpviDatabase::class.java, BD)
-            .addMigrations(SpviDatabase.MIGRACION_3_4, SpviDatabase.MIGRACION_4_5, SpviDatabase.MIGRACION_5_6, SpviDatabase.MIGRACION_6_7, SpviDatabase.MIGRACION_7_8, SpviDatabase.MIGRACION_8_9, SpviDatabase.MIGRACION_9_10, SpviDatabase.MIGRACION_10_11, SpviDatabase.MIGRACION_11_12)
+            .addMigrations(SpviDatabase.MIGRACION_3_4, SpviDatabase.MIGRACION_4_5, SpviDatabase.MIGRACION_5_6, SpviDatabase.MIGRACION_6_7, SpviDatabase.MIGRACION_7_8, SpviDatabase.MIGRACION_8_9, SpviDatabase.MIGRACION_9_10, SpviDatabase.MIGRACION_10_11, SpviDatabase.MIGRACION_11_12, SpviDatabase.MIGRACION_12_13)
             .allowMainThreadQueries().build()
         try {
             // Abrir dispara la migración y la validación de Room (lanza si alguna tabla no coincide con las entidades).
@@ -95,7 +111,7 @@ class EsquemaTest {
     fun migracion5a6AnadeElCobroYElCierreDelEmpleado() {
         val esquema = JSONObject(
             InstrumentationRegistry.getInstrumentation().context.assets
-                .open("cu.spvi.data.db.SpviDatabase/${SpviDatabase.VERSION}.json").bufferedReader().use { it.readText() },
+                .open("cu.spvi.data.db.SpviDatabase/12.json").bufferedReader().use { it.readText() },
         ).getJSONObject("database")
         val f = contexto.getDatabasePath(BD).apply { parentFile?.mkdirs() }
         SQLiteDatabase.openOrCreateDatabase(f, null).use { db ->
@@ -104,7 +120,7 @@ class EsquemaTest {
             db.version = 5
         }
         val room = Room.databaseBuilder(contexto, SpviDatabase::class.java, BD)
-            .addMigrations(SpviDatabase.MIGRACION_3_4, SpviDatabase.MIGRACION_4_5, SpviDatabase.MIGRACION_5_6, SpviDatabase.MIGRACION_6_7, SpviDatabase.MIGRACION_7_8, SpviDatabase.MIGRACION_8_9, SpviDatabase.MIGRACION_9_10, SpviDatabase.MIGRACION_10_11, SpviDatabase.MIGRACION_11_12)
+            .addMigrations(SpviDatabase.MIGRACION_3_4, SpviDatabase.MIGRACION_4_5, SpviDatabase.MIGRACION_5_6, SpviDatabase.MIGRACION_6_7, SpviDatabase.MIGRACION_7_8, SpviDatabase.MIGRACION_8_9, SpviDatabase.MIGRACION_9_10, SpviDatabase.MIGRACION_10_11, SpviDatabase.MIGRACION_11_12, SpviDatabase.MIGRACION_12_13)
             .allowMainThreadQueries().build()
         try {
             room.openHelper.readableDatabase.query("SELECT nombre, tarjetaId, telefonoId, cierreSolicitadoEn FROM empleado").use {
@@ -187,7 +203,7 @@ class EsquemaTest {
     fun migracion6a7AnadeTelefonoSolicitudDeCierreYHechoPor() {
         val esquema = JSONObject(
             InstrumentationRegistry.getInstrumentation().context.assets
-                .open("cu.spvi.data.db.SpviDatabase/${SpviDatabase.VERSION}.json").bufferedReader().use { it.readText() },
+                .open("cu.spvi.data.db.SpviDatabase/12.json").bufferedReader().use { it.readText() },
         ).getJSONObject("database")
         val f = contexto.getDatabasePath(BD).apply { parentFile?.mkdirs() }
         SQLiteDatabase.openOrCreateDatabase(f, null).use { db ->
@@ -197,7 +213,7 @@ class EsquemaTest {
             db.version = 6
         }
         val room = Room.databaseBuilder(contexto, SpviDatabase::class.java, BD)
-            .addMigrations(SpviDatabase.MIGRACION_5_6, SpviDatabase.MIGRACION_6_7, SpviDatabase.MIGRACION_7_8, SpviDatabase.MIGRACION_8_9, SpviDatabase.MIGRACION_9_10, SpviDatabase.MIGRACION_10_11, SpviDatabase.MIGRACION_11_12)
+            .addMigrations(SpviDatabase.MIGRACION_5_6, SpviDatabase.MIGRACION_6_7, SpviDatabase.MIGRACION_7_8, SpviDatabase.MIGRACION_8_9, SpviDatabase.MIGRACION_9_10, SpviDatabase.MIGRACION_10_11, SpviDatabase.MIGRACION_11_12, SpviDatabase.MIGRACION_12_13)
             .allowMainThreadQueries().build()
         try {
             room.openHelper.readableDatabase.query("SELECT telefono, cierrePedidoPorEmpleadoEn FROM empleado").use {
@@ -212,7 +228,7 @@ class EsquemaTest {
     fun migracion11a12AnadeElDeviceDeLaSecundaria() {
         val esquema = JSONObject(
             InstrumentationRegistry.getInstrumentation().context.assets
-                .open("cu.spvi.data.db.SpviDatabase/${SpviDatabase.VERSION}.json").bufferedReader().use { it.readText() },
+                .open("cu.spvi.data.db.SpviDatabase/12.json").bufferedReader().use { it.readText() },
         ).getJSONObject("database")
         val f = contexto.getDatabasePath(BD).apply { parentFile?.mkdirs() }
         SQLiteDatabase.openOrCreateDatabase(f, null).use { db ->
@@ -221,7 +237,7 @@ class EsquemaTest {
             db.version = 11
         }
         val room = Room.databaseBuilder(contexto, SpviDatabase::class.java, BD)
-            .addMigrations(SpviDatabase.MIGRACION_11_12)
+            .addMigrations(SpviDatabase.MIGRACION_11_12, SpviDatabase.MIGRACION_12_13)
             .allowMainThreadQueries().build()
         try {
             room.openHelper.readableDatabase.query("SELECT nombre, device FROM empleado").use {

@@ -8,6 +8,8 @@ La versión del código es **0.30.0 (`versionCode 51`)**. Los cambios Android en
 
 ## Verificación pendiente
 
+- Cierre con billetes/conciliación (rama `arena/5c955caa-spvi`): generar con Room/KSP y versionar `13.json` para la migración 12→13, compilar y ejecutar los tests nuevos (dominio, DTO, migración, cierre y sincronización). Probar dos teléfonos actualizados, aprobación/rechazo, conteo desfasado, desconexión y reenvío. El cambio no se ha compilado por falta de JDK/SDK local.
+
 - El último CI observado antes de esta limpieza, run [38802995010](https://github.com/rmdvcd/SPVI/actions/runs/38802995010) sobre `main` (`84afc87`), falló en dos pruebas de `ProcesoActualizarTest` al no poder descargar el SDK de Robolectric desde el proceso de tests. Lint, permisos y API mínima sí pasaron. Consulta el detalle y el estado de la corrección en [docs/VERIFICACION.md](docs/VERIFICACION.md).
 - En esta rama se amplió la preparación del SDK Robolectric y el modo offline a todos los tests de `:app`. La corrección aún necesita una corrida de CI: no hay JDK/Android SDK local en este entorno para ejecutar Gradle.
 - Ejecutar `./gradlew spviCheck` en un entorno con JDK 17 y Android SDK 35, y confirmar que las pruebas JVM, lint, compilación y permisos terminan correctamente.

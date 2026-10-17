@@ -359,6 +359,7 @@ class RespaldoRepositoryImpl @Inject constructor(
         check(productos.size == c.productos.size && insumos.size == c.insumos.size && turnos.size == c.turnos.size, "ids repetidos")
         check(c.recetas.all { r -> r.productoId in productos && r.lineas.all { it.insumoId in insumos } }, "recetas")
         check(c.ventas.all { it.turnoId in turnos }, "ventas")
+        check(c.turnos.all { t -> t.conteoCierre?.let { it.valido() && t.contado == it.efectivo } ?: true }, "conteos de cierre")
         check(c.caja.all { it.turnoId in turnos && it.importeCent > 0 }, "caja")
         check(c.caja.map { it.id }.distinct().size == c.caja.size, "caja repetida")
         check(c.caja.mapNotNull { it.uuid }.let { it.distinct().size == it.size }, "ids globales de caja repetidos")

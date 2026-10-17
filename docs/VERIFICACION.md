@@ -2,6 +2,16 @@
 
 > **Fuente única de verdad** del estado de verificación: solo se considera medido lo anotado aquí. Última actualización: **2026-10-17**. El repositorio mantiene la app Android nativa; Flutter/iOS y la web de escritorio se retiraron.
 
+## Cambio en curso: cierre con conteo (2026-10-17, `arena/5c955caa-spvi`)
+
+- `git diff --check`: pasó.
+- Análisis sintáctico Tree-sitter de los 42 archivos Kotlin modificados/nuevos: sin errores de sintaxis; **no comprueba tipos, Room ni Hilt y no sustituye compilación**.
+- Prueba Python/SQLite de `SQL_12_13` sobre `12.json`: pasó; conserva caja y añade `conteoCierreJson` nullable.
+- `./gradlew spviTests`: **no pudo iniciar**, no hay Java ni JAVA_HOME.
+- `python3 tools/verificacion/api_minima.py`: **no pudo ejecutarse**, falta ANDROID_HOME.
+- Nuevos tests JVM/instrumentados y de sincronización: añadidos, **no ejecutados**.
+- **Bloqueante antes de publicar:** generar y versionar `data/schemas/cu.spvi.data.db.SpviDatabase/13.json` con Room/KSP (no se inventa a mano), ejecutar `spviCheck`, migraciones instrumentadas, capturas y cierre/aprobación en dos teléfonos actualizados. No se ha compilado ni instalado este cambio. Los resultados históricos de abajo no validan este cambio.
+
 ## 1. CI actual
 
 GitHub Actions ejecuta el workflow [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) en pushes a `main` y ramas `arena/**`, pull requests y ejecuciones manuales.

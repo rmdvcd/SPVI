@@ -1,5 +1,7 @@
 package cu.spvi.data.sync
 
+import cu.spvi.data.dto.conteoDeJson
+import cu.spvi.data.dto.aJson
 import cu.spvi.data.db.dao.registrar
 import cu.spvi.core.result.AppResult
 import cu.spvi.core.time.Clock
@@ -45,6 +47,17 @@ class AlmacenSync @Inject constructor(
 ) {
     private val sync get() = db.syncDao()
 
+    suspend fun marcarConteoAprobado(uuid: String?, aprobado: cu.spvi.domain.model.ConteoCierre): AppResult<Unit> = db.tx {
+        val t = db.turnoDao().activo()
+        if (t != null && uuid != null && t.uuid == uuid) {
+            val c = t.conteoCierreJson?.conteoDeJson()
+            if (c != null && aprobado.aprobadoEn != null &&
+                c.copy(aprobadoPor = null, aprobadoEn = null) == aprobado.copy(aprobadoPor = null, aprobadoEn = null)) {
+                sync.actualizarTurno(t.copy(conteoCierreJson = aprobado.aJson()))
+            }
+        }
+    }
+
     // ================================================================== principal
 
     suspend fun instantanea(empleado: EmpleadoEntity, nombreNegocio: String, licencia: LicenciaDto): AppResult<Instantanea> = db.tx {
@@ -76,8 +89,16 @@ class AlmacenSync @Inject constructor(
         val turnos = mutableListOf<TurnoRecibido>()
         val cerradosAhora = mutableListOf<Long>()
         for (ts in lote.turnos) {
-            val nuevo = ts.turno.toDomain().toEntity().copy(id = 0, uuid = ts.uuid, empleadoId = empleadoId, sincronizado = true)
+            val recibido = ts.turno.toDomain()
+            val conteo = recibido.conteoCierre?.copy(aprobadoPor = null, aprobadoEn = null)
+            if (conteo != null && (!conteo.valido() || recibido.contado != conteo.efectivo)) continue
+            val nuevo = recibido.copy(conteoCierre = conteo).toEntity().copy(id = 0, uuid = ts.uuid, empleadoId = empleadoId, sincronizado = true)
             val existente = sync.turnoPorUuid(ts.uuid)
+            val autorizado = existente?.conteoCierreJson?.conteoDeJson()?.takeIf { it.aprobadoEn != null }
+            if (autorizado != null && (conteo != autorizado.copy(aprobadoPor = null, aprobadoEn = null) || recibido.contado != autorizado.efectivo))
+                cu.spvi.data.db.abortar(cu.spvi.core.result.AppError.Validacion("conteoCambió"))
+            if (conteo != null && nuevo.cerradoEn != null && existente?.conteoCierreJson?.conteoDeJson()?.aprobadoEn == null)
+                cu.spvi.data.db.abortar(cu.spvi.core.result.AppError.Validacion("conteoSinAprobar"))
             when {
                 existente == null -> {
                     val id = sync.insertarTurno(nuevo)
@@ -85,12 +106,16 @@ class AlmacenSync @Inject constructor(
                 }
                 existente.empleadoId != empleadoId -> continue // uuid de otra app: no se toca
                 existente.cerradoEn == null && nuevo.cerradoEn != null -> {
-                    sync.actualizarTurno(nuevo.copy(id = existente.id))
+                    sync.actualizarTurno(nuevo.copy(id = existente.id, conteoCierreJson = existente.conteoCierreJson ?: nuevo.conteoCierreJson))
                     cerradosAhora += existente.id
                 }
                 // 0.25.0: turno aún abierto con el conteo declarado al pedir el cierre (o el fondo, si cambió).
-                existente.cerradoEn == null && (existente.contadoCent != nuevo.contadoCent || existente.fondoCent != nuevo.fondoCent) ->
-                    sync.actualizarTurno(existente.copy(contadoCent = nuevo.contadoCent, fondoCent = nuevo.fondoCent ?: existente.fondoCent))
+                existente.cerradoEn == null && (existente.contadoCent != nuevo.contadoCent || existente.fondoCent != nuevo.fondoCent || existente.conteoCierreJson != nuevo.conteoCierreJson) ->
+                    sync.actualizarTurno(existente.copy(
+                        contadoCent = if (autorizado != null) existente.contadoCent else nuevo.contadoCent,
+                        fondoCent = nuevo.fondoCent ?: existente.fondoCent,
+                        conteoCierreJson = if (autorizado != null) existente.conteoCierreJson else nuevo.conteoCierreJson,
+                    ))
                 else -> Unit // ya estaba igual (reenvío)
             }
             turnos += TurnoRecibido(ts.uuid, nuevo.cerradoEn != null)

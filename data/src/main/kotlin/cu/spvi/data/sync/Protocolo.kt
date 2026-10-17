@@ -156,6 +156,8 @@ data class SincronizarOk(
      */
     val asignaFondos: Boolean = false,
     val fondo: FondoAsignado? = null,
+    val conteoAprobado: cu.spvi.data.dto.ConteoCierreDto? = null,
+    val conteoTurnoUuid: String? = null,
 ) : Mensaje
 
 /**

@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.mutableStateOf
+import cu.spvi.domain.model.BilletesCUP
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -204,14 +206,23 @@ fun DialogoContado(
     onConfirmar: (Cup) -> Unit,
     onDismiss: () -> Unit,
     dismissDescription: String = "Cancelar",
+    onDesglose: ((Cup, Map<Int, Long>, Cup) -> Unit)? = null,
 ) {
     var valorTexto by rememberSaveable { androidx.compose.runtime.mutableStateOf("") }
-    val contado = CajaForm.importe(valorTexto)
+    var porBilletes by rememberSaveable { mutableStateOf(false) }
+    var cantidades by rememberSaveable { mutableStateOf(List(BilletesCUP.denominaciones.size) { "" }) }
+    var otroTexto by rememberSaveable { mutableStateOf("0") }
+    val otro = CajaForm.importe(otroTexto)
+    val desglose = BilletesCUP.denominaciones.mapIndexed { i, d -> d to (cantidades[i].toLongOrNull() ?: 0L) }.toMap()
+    val contado = if (porBilletes) otro?.let { runCatching { BilletesCUP.total(desglose, it) }.getOrNull() } else CajaForm.importe(valorTexto)
     SpviDialog(
         title = titulo,
         text = texto,
         onDismiss = onDismiss,
-        onConfirm = { contado?.let(onConfirmar) },
+        onConfirm = { contado?.let { c ->
+            if (onDesglose != null) onDesglose(c, if (porBilletes) desglose else emptyMap(), if (porBilletes) otro!! else c)
+            else onConfirmar(c)
+        } },
         confirmDescription = confirmar,
         confirmEnabled = contado != null && !trabajando,
         confirmLoading = trabajando,
@@ -233,7 +244,25 @@ fun DialogoContado(
                     maxLines = 3,
                 )
             }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
+            SpviTextButton(
+                if (porBilletes) "Introducir total de efectivo" else "Contar billetes por denominación",
+                onClick = { porBilletes = !porBilletes }, icon = SpviIcons.Efectivo,
+            )
+            if (porBilletes) {
+                BilletesCUP.denominaciones.forEachIndexed { i, denominacion ->
+                    SpviTextField(
+                        value = cantidades[i],
+                        onValueChange = { nuevo -> if (nuevo.length <= 6 && nuevo.all { it in '0'..'9' }) cantidades = cantidades.toMutableList().also { it[i] = nuevo } },
+                        label = "Billetes de $denominacion CUP",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth().testTag("billetes_$denominacion"),
+                    )
+                }
+                SpviTextField(value = otroTexto, onValueChange = { otroTexto = it.take(16) }, label = "Monedas / otro efectivo (CUP)",
+                    filtro = FiltroEntrada.DINERO, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth())
+                Text("Total contado: ${contado?.let(Money::format) ?: "Importe inválido"}", style = SpviTextos.datoEn(MaterialTheme.typography.bodyMedium))
+            } else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
                 SpviTextField(
                     value = valorTexto, onValueChange = { valorTexto = it.take(16) }, label = "${TextosCaja.CONTADO} *",
                     isError = valorTexto.isNotBlank() && contado == null, errorText = TextosCaja.IMPORTE_INVALIDO,

@@ -82,13 +82,28 @@ Desde la 0.27.0 se escribe la **v4**, que añade un byte indicador (con o sin co
 | `productos[]` | todos los campos de `producto`, incluidos `fotoUri` y `eliminado` |
 | `recetas[]` | `productoId` + `lineas[]` (`insumoId`, `cantidadMil`) |
 | `insumos[]` | todos los campos de `insumo` |
-| `turnos[]` | apertura, cierre, usuarios y `resumen` (nulo si está abierto). Desde 0.19.x: `empleadoId`, `uuid`, `sincronizado` (opcionales). v4: `fondoCent` y `contadoCent` (null = sin arqueo / sin contar); el `resumen` añade `entradasCent`, `salidasCent` y `numAnuladas` |
+| `turnos[]` | apertura, cierre, usuarios y `resumen` (nulo si está abierto). Desde 0.19.x: `empleadoId`, `uuid`, `sincronizado` (opcionales). v4: `fondoCent` y `contadoCent` (null = sin arqueo / sin contar); campo opcional `conteoCierre` (ver abajo); el `resumen` añade `entradasCent`, `salidasCent` y `numAnuladas` |
 | `ventas[]` | venta + `detalles[]` + `transaccion` (si fue por transferencia). Desde 0.19.1: `uuid`, `empleadoId`, `sincronizado` (opcionales). v4: `anuladaEn`, `motivoAnulacion`, `anuladaPor` (null = válida) y `corrigeVentaId` (venta original que corrige una modificación) |
 | `movimientos[]` | todos los campos de `movimiento`. Desde 0.21.0: `hechoPor` (quién lo hizo; vacío en respaldos anteriores) |
 | `empleados[]` | desde 0.20.0 (opcional): `id`, `nombre`, `permisos[]`, `creadoEn`, `tarjetaId`, `telefonoId`. **Sin** clave, token del QR, fechas de vínculo ni el teléfono del empleado (0.21.0): al restaurar quedan «Sin vincular» y el empleado lo vuelve a escribir al vincularse |
 | `caja[]` | v4: entradas y salidas de efectivo: `id`, `turnoId`, `fecha`, `tipo` (`ENTRADA`/`SALIDA`), `importeCent`, `motivo`, `hechoPor`, `uuid`, `sincronizado` |
 | `clientesFijos[]` | 0.27.0 (opcional; `[]` en respaldos anteriores, sin subir la versión): `nombreApellidos`, `ci` (único), `telefono`, `creadoEn`, `actualizadoEn`. Las transferencias llevan además `clienteFijo` (booleano, `false` por defecto) |
 | `licencia` | v4 (opcional): datos **públicos** de la licencia instalada: `id`, `tipo`, `secundarias`, `venceEn` (epoch ms; null = perpetua), `ci` del titular. **No** es la licencia (está atada a la clave del teléfono): solo rellena el campo «ID de la licencia anterior» para pedir la recuperación en otro teléfono |
+
+### Conteo de cierre (en desarrollo, 2026-10-17)
+
+`turnos[].conteoCierre` es opcional, `null` en datos antiguos, sin cambiar las versiones del contenedor ni del DTO:
+
+- `billetes`: mapa denominación CUP → número de billetes (0–999999); admite 1, 3, 5, 10, 20, 50, 100, 200, 500, 1000, 5000 y 20000.
+- `otroCent`: monedas/otro efectivo en centavos. Si se introduce únicamente un total, el mapa está vacío y el total va aquí.
+- `inventario[]`: `entidad` (PRODUCTO/INSUMO), `id`, `nombre`, `unidad`, `esperado`, `contado`, `actualizadoEn`. Cantidades nativas: unidades para productos, milésimas para insumos. El nombre, la unidad y las cantidades son la instantánea del conteo, no se recalculan al exportar.
+- `motivo`: obligatorio con diferencias; `aprobadoPor` y `aprobadoEn` son nulos hasta que la principal aplica la conciliación. El efectivo calculado debe coincidir con `contadoCent`.
+
+Room v13 añade únicamente `turno.conteoCierreJson TEXT NULL` (migración 12→13). **`13.json` debe generarse con Room/KSP y verificarse antes de publicar; no se ha generado en este entorno sin JDK/SDK.**
+
+En el protocolo LAN v1, el conteo viaja con el DTO del turno. La respuesta añade los campos opcionales `conteoAprobado` y `conteoTurnoUuid`: la secundaria solo acepta la aprobación si coincide el turno y la declaración completa. La principal ignora cualquier autorización que declare la propia secundaria y conserva la que ya otorgó ante reenvíos. Las dos apps deben estar actualizadas para el nuevo flujo.
+
+El PDF/Excel del turno añade **Conteo de efectivo** (Denominación, Billetes, Subtotal; otro efectivo y total) y **Conciliación de inventario** (Nombre, Unidad, Esperado, Contado, Diferencia; motivo y quién aprobó). Las cantidades fraccionarias se presentan en la unidad del insumo. Los ajustes son movimientos AJUSTE asociados al turno, con motivo y autor, y ya viajan en el respaldo ordinario.
 
 **No van en el respaldo:**
 - **la licencia** (cada teléfono necesita la suya; desde la v4 sí van su ID, tipo, secundarias, vencimiento y CI, para recuperarla);

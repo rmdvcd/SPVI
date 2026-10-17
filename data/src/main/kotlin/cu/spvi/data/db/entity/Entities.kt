@@ -105,6 +105,7 @@ data class TurnoEntity(
     val entradasCent: Long? = null,
     val salidasCent: Long? = null,
     val numAnuladas: Int? = null,
+    val conteoCierreJson: String? = null,
 )
 
 /** Totales desnormalizados (suma de sus detalles) para filtros por importe y agregados rápidos. */

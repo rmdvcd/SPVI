@@ -3,6 +3,10 @@ package cu.spvi.data.sync
 import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
 import cu.spvi.core.time.Clock
+import cu.spvi.data.db.tx
+import cu.spvi.data.db.abortar
+import cu.spvi.data.dto.conteoDeJson
+import cu.spvi.data.repository.aplicarConteo
 import cu.spvi.data.db.SpviDatabase
 import cu.spvi.data.db.entity.EmpleadoEntity
 import cu.spvi.domain.di.IoDispatcher
@@ -107,6 +111,7 @@ class PrincipalRepositoryImpl @Inject constructor(
                 val tu = porEmpleado[e.id]
                 e.toDomain().copy(
                     turnoAbiertoDesde = tu?.let { Instant.ofEpochMilli(it.abiertoEn) },
+                    conteoCierre = tu?.conteoCierreJson?.conteoDeJson(),
                     arqueoTurno = tu?.fondoCent?.let { f ->
                         cu.spvi.domain.model.Arqueo(
                             cu.spvi.core.money.Cup(f), cu.spvi.core.money.Cup(tu.efectivoCent), cu.spvi.core.money.Cup(tu.entradasCent),
@@ -187,14 +192,21 @@ class PrincipalRepositoryImpl @Inject constructor(
     }
 
     override suspend fun aprobarCierre(empleadoId: Long): AppResult<Unit> {
-        val r = pedirCierre(empleadoId)
-        if (r is AppResult.Ok) sync.marcarSolicitudCierre(empleadoId, null) // la petición del dueño toma el relevo
+        val usuario = UsuarioActual.nombreDe(perfil.perfil.first())
+        val r = db.tx {
+            val t = db.turnoDao().activoDeEmpleado(empleadoId) ?: abortar(AppError.TurnoCerrado)
+            db.aplicarConteo(t.id, usuario, clock.now().toEpochMilli())
+            if (sync.pedirCierre(empleadoId, clock.now().toEpochMilli()) == 0) abortar(AppError.NoEncontrado)
+            sync.marcarSolicitudCierre(empleadoId, null)
+        }
+        if (r is AppResult.Ok) servidor.avisar()
         return r
     }
 
     override suspend fun rechazarCierre(empleadoId: Long): AppResult<Unit> {
         val e = sync.empleado(empleadoId)?.takeIf { it.activo } ?: return AppResult.Err(AppError.NoEncontrado)
-        if (e.cierrePedidoPorEmpleadoEn == null) return AppResult.Ok(Unit)
+        if (e.cierrePedidoPorEmpleadoEn == null && e.cierreSolicitadoEn == null) return AppResult.Ok(Unit)
+        sync.olvidarCierre(empleadoId)
         sync.marcarSolicitudCierre(empleadoId, RECHAZO_PENDIENTE)
         servidor.avisar()
         return AppResult.Ok(Unit)

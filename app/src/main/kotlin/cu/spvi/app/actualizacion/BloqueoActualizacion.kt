@@ -107,6 +107,7 @@ fun BloqueoActualizacionRuta(
     onExportarRespaldo: () -> Unit,
 ) {
     val inicio: cu.spvi.app.inicio.InicioViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+    val conteoVm: cu.spvi.app.caja.CierreConteoViewModel = androidx.hilt.navigation.compose.hiltViewModel()
     val s by inicio.state.collectAsStateWithLifecycle()
     BloqueoActualizacion(
         estado = estado,
@@ -117,7 +118,8 @@ fun BloqueoActualizacionRuta(
         onCerrarTurno = { inicio.cambiarTurno(false) },
     )
     when (s.dialogo) {
-        cu.spvi.app.inicio.DialogoInicio.CerrarTurno -> cu.spvi.app.caja.DialogoContado(
+        cu.spvi.app.inicio.DialogoInicio.CerrarTurno -> cu.spvi.app.caja.DialogoCierreCompleto(
+            viewModel = conteoVm,
             titulo = cu.spvi.app.inicio.TextosInicio.CERRAR_TURNO_TITULO,
             texto = cu.spvi.app.inicio.TextosInicio.CERRAR_TURNO_TEXTO,
             confirmar = TextosActualizacion.CERRAR_TURNO,
@@ -126,7 +128,8 @@ fun BloqueoActualizacionRuta(
             onConfirmar = inicio::confirmarCierreTurno,
             onDismiss = inicio::cerrarDialogo,
         )
-        cu.spvi.app.inicio.DialogoInicio.SolicitarCierre -> cu.spvi.app.caja.DialogoContado(
+        cu.spvi.app.inicio.DialogoInicio.SolicitarCierre -> cu.spvi.app.caja.DialogoCierreCompleto(
+            viewModel = conteoVm,
             titulo = cu.spvi.app.inicio.TextosInicio.SOLICITAR_CIERRE_TITULO,
             texto = cu.spvi.app.inicio.TextosInicio.SOLICITAR_CIERRE_TEXTO,
             confirmar = "Solicitar cierre",
