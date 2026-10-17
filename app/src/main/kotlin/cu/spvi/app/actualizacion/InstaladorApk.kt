@@ -13,6 +13,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.core.content.ContextCompat
 import cu.spvi.app.BuildConfig
+import cu.spvi.core.util.aHex
 import cu.spvi.domain.model.InfoApp
 import dagger.Module
 import dagger.Provides
@@ -144,5 +145,5 @@ class InstaladorApk @Inject constructor(@ApplicationContext private val context:
         }
     }
 
-    private fun sha256(b: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(b).joinToString("") { "%02x".format(it) }
+    private fun sha256(b: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(b).aHex()
 }

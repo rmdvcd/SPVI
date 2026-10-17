@@ -112,7 +112,7 @@ private fun rememberEntrada(key: Any): Animatable<Float, *> {
  * Barras redondeadas (Ventas).
  * P24: la **intensidad** del color de cada barra depende de su valor respecto al máximo de la escala Y
  * ([ChartMath.intensidad]): las barras más altas, más intensas. La altura sigue diciendo el valor, así que el color
- * nunca es el único portador de la información. [highlightIndex] pinta una barra con intensidad completa.
+ * nunca es el único portador de la información.
  */
 @Composable
 fun SpviBarChart(
@@ -121,7 +121,6 @@ fun SpviBarChart(
     description: String,
     modifier: Modifier = Modifier,
     color: Color = SpviTheme.colors.chart.first(),
-    highlightIndex: Int? = null,
 ) {
     val alturas = remember(values) { ChartMath.normalizar(values) }
     val progreso = rememberEntrada(values)
@@ -136,7 +135,7 @@ fun SpviBarChart(
                 val alto = h * size.height * progreso.value
                 if (alto <= 0f) return@forEachIndexed
                 drawRoundRect(
-                    color = color.copy(alpha = if (highlightIndex == i) 1f else ChartMath.intensidad(h)),
+                    color = color.copy(alpha = ChartMath.intensidad(h)),
                     topLeft = Offset(i * paso + (paso - ancho) / 2, size.height - alto),
                     size = Size(ancho, alto),
                     cornerRadius = radio,

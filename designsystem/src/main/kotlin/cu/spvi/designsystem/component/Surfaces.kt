@@ -279,18 +279,8 @@ val LocalSpviCentrado = compositionLocalOf { false }
 
 /** Texto secundario: bodySmall con 65 % de opacidad (verificado ≥4.5:1 en ambos temas). */
 @Composable
-fun SpviSecondaryText(text: String, modifier: Modifier = Modifier, maxLines: Int = Int.MAX_VALUE, textAlign: TextAlign? = null) {
-    val alineacion = textAlign ?: if (LocalSpviCentrado.current) TextAlign.Center else null
-    Text(
-        text = text,
-        modifier = modifier,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = SpviOpacity.secondary),
-        maxLines = maxLines,
-        overflow = TextOverflow.Ellipsis,
-        textAlign = alineacion,
-    )
-}
+fun SpviSecondaryText(text: String, modifier: Modifier = Modifier, maxLines: Int = Int.MAX_VALUE, textAlign: TextAlign? = null) =
+    SpviSecondaryText(AnnotatedString(text), modifier, maxLines, textAlign)
 
 /** 0.28.0: igual que el anterior pero con partes en seminegrita (ver [SpviTextos.resaltar]). */
 @Composable

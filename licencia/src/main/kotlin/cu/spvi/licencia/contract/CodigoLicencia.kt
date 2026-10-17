@@ -6,8 +6,8 @@ package cu.spvi.licencia.contract
  * - Alfabeto `[0-9A-Z]`; se procesa **sin distinguir mayúsculas** e **ignorando guiones y espacios**.
  * - Es el valor de `licenciaObtenida` / `codigoCorto` de la licencia larga (flujo v1) y el formato de la clave
  *   maestra de desarrollo.
- * - SPVI no lo usa para activar: la licencia corta (`SPVI2:`) ya va cifrada y firmada. Sí lo usa para reconocer y
- *   formatear el código que GL escribe en el mensaje, y para comparar la clave maestra.
+ * - SPVI no lo usa para activar: la licencia corta (`SPVI2:`) ya va cifrada y firmada. Sí lo usa para reconocer
+ *   el código que GL escribe en el mensaje, y para comparar la clave maestra.
  *
  * Referencia: `SISTEMA_LICENCIAS_CLIENTES.md` §2.1 y §2.2 del repositorio GL.
  */
@@ -28,9 +28,6 @@ object CodigoLicencia {
         texto.trim().uppercase().replace(SEPARADORES, "").takeIf { ALFABETO.matches(it) }
 
     fun valido(texto: String): Boolean = normalizar(texto) != null
-
-    /** `XXXX-XXXX-XXXX-XXXX`; `null` si el texto no es un código del contrato. */
-    fun formatear(texto: String): String? = normalizar(texto)?.chunked(4)?.joinToString("-")
 
     /**
      * ¿Es la clave maestra de desarrollo? **Solo cuando la app es un build `DEBUG`** ([esDebug]): en release,

@@ -19,11 +19,6 @@ class CodigoLicenciaTest {
         assertEquals("4K7N9X2MB8PQ3T5V", CodigoLicencia.normalizar("4K7N9X2MB8PQ3T5V"))
     }
 
-    @Test fun seFormateaEnCuatroGrupos() {
-        assertEquals("4K7N-9X2M-B8PQ-3T5V", CodigoLicencia.formatear("4k7n9x2mb8pq3t5v"))
-        assertEquals("GLMK-PERM-MAXS-9999", CodigoLicencia.formatear(CodigoLicencia.MAESTRA))
-    }
-
     @Test fun seRechazaLoQueNoEsUnCodigoDelContrato() {
         assertNull(CodigoLicencia.normalizar("4K7N-9X2M-B8PQ-3T5")) // 15
         assertNull(CodigoLicencia.normalizar("4K7N-9X2M-B8PQ-3T5VV")) // 17

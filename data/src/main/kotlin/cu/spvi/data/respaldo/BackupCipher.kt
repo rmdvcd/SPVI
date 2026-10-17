@@ -1,5 +1,6 @@
 package cu.spvi.data.respaldo
 
+import cu.spvi.data.io.leerAcotado
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.security.MessageDigest
@@ -173,19 +174,7 @@ class BackupCipher(
         ByteArrayOutputStream().also { out -> GZIPOutputStream(out).use { it.write(b) } }.toByteArray()
 
     private fun gunzip(b: ByteArray): ByteArray = try {
-        GZIPInputStream(b.inputStream()).use { input ->
-            val out = ByteArrayOutputStream()
-            val chunk = ByteArray(16 * 1024)
-            var total = 0L
-            while (true) {
-                val n = input.read(chunk)
-                if (n < 0) break
-                total += n
-                if (total > MAX_PLANO) throw FormatoException("respaldo demasiado grande")
-                out.write(chunk, 0, n)
-            }
-            out.toByteArray()
-        }
+        GZIPInputStream(b.inputStream()).use { it.leerAcotado(MAX_PLANO) { FormatoException("respaldo demasiado grande") } }
     } catch (e: java.io.IOException) {
         throw FormatoException("contenido corrupto")
     }

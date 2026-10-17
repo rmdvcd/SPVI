@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
+import cu.spvi.domain.seed.OrquestadorSeed
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -16,7 +17,7 @@ import javax.inject.Inject
 /** Genera la BD de prueba (seed «Bodega cubana»): publica el progreso día a día y termina en Ok o Error. */
 @HiltViewModel
 class SeedViewModel @Inject constructor(
-    private val ejecutar: EjecutorSeed,
+    private val orquestador: OrquestadorSeed,
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
     sealed interface Estado {
@@ -34,7 +35,7 @@ class SeedViewModel @Inject constructor(
         if (_estado.value is Estado.Ejecutando) return
         viewModelScope.launch(io) {
             _estado.value = Estado.Ejecutando(0, 0)
-            when (val r = ejecutar { dia, total -> _estado.value = Estado.Ejecutando(dia, total) }) {
+            when (val r = orquestador.ejecutar(onProgreso = { dia, total -> _estado.value = Estado.Ejecutando(dia, total) })) {
                 is AppResult.Ok -> _estado.value = Estado.Ok
                 is AppResult.Err -> _estado.value = Estado.Error(mensaje(r.error))
             }

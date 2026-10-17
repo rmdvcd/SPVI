@@ -4,7 +4,8 @@ import cu.spvi.designsystem.theme.SpviTextos
 import cu.spvi.designsystem.component.BannerTone
 import cu.spvi.app.notificacion.rememberPedirPermisoAviso
 import androidx.compose.foundation.layout.Spacer
-import cu.spvi.designsystem.component.SpviMedalla
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,8 +20,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -34,15 +37,19 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -59,7 +66,6 @@ import cu.spvi.core.time.Dates
 import cu.spvi.designsystem.component.CardTone
 import cu.spvi.designsystem.component.ChartSeries
 import cu.spvi.designsystem.component.SpviAccordionCard
-import cu.spvi.designsystem.component.SpviAlertCounter
 import cu.spvi.designsystem.component.SpviAreaChart
 import cu.spvi.designsystem.component.SpviBarChart
 import cu.spvi.designsystem.component.SpviCard
@@ -78,7 +84,11 @@ import cu.spvi.designsystem.component.SpviTextoAjustable
 import cu.spvi.designsystem.component.SpviTopBar
 import cu.spvi.designsystem.component.spviAnimateItem
 import cu.spvi.designsystem.icon.SpviIcons
+import cu.spvi.designsystem.theme.AlertTone
 import cu.spvi.designsystem.theme.SpviTheme
+import cu.spvi.designsystem.theme.of
+import cu.spvi.designsystem.token.ColorTokens
+import cu.spvi.designsystem.token.SpviMotion
 import cu.spvi.designsystem.token.SpviSize
 import cu.spvi.designsystem.token.SpviSpacing
 import cu.spvi.domain.model.GraficosPeriodo
@@ -272,11 +282,24 @@ fun InicioContent(
         // el Scaffold la medía más ancha que la pantalla y los botones quedaban medio fuera.
         Box(Modifier.fillMaxSize().padding(padding)) {
             Column(Modifier.fillMaxSize()) {
-                // 0.31.0 (P1): el primer contenedor (turno + selector de período) NO se desplaza: se queda fijo
-                // arriba mientras el resto de Inicio hace scroll.
-                FilaTurnoPeriodo(state, acciones, permisos, zona)
+                // 0.31.0 (P1): el turno, el selector de período y el banner de licencia NO se desplazan: se quedan
+                // fijos arriba, uno debajo de otro, mientras el resto de Inicio hace scroll.
+                BloqueFijo(state, acciones, permisos, zona)
+                val estadoLista = remember { LazyListState() }
+                // 0.31.0 (P1): Inicio se abre siempre por arriba: la lista no guarda su posición (Android la
+                // restauraba y aparecía a media lista) y, como los datos llegan después del primer dibujo, al
+                // insertarse las alertas por encima de lo que ya se veía Compose ancla el primer elemento visible
+                // y la desplazaba sola. En la primera carga vuelve al principio; después manda el usuario.
+                var primeraCarga by remember { mutableStateOf(true) }
+                LaunchedEffect(state.alertas, state.resumen) {
+                    if (primeraCarga && (state.alertas.isNotEmpty() || state.resumen !is EstadoCarga.Idle)) {
+                        primeraCarga = false
+                        estadoLista.scrollToItem(0)
+                    }
+                }
                 LazyColumn(
                     Modifier.fillMaxSize().testTag(InicioTags.LISTA),
+                    state = estadoLista,
                     contentPadding = PaddingValues(
                         start = SpviSpacing.md, end = SpviSpacing.md,
                         // 0.31.0 (P1): menos hueco entre «SPVI» y lo primero que se ve.
@@ -286,17 +309,6 @@ fun InicioContent(
                     ),
                     verticalArrangement = Arrangement.spacedBy(SpviSpacing.md),
                 ) {
-            state.banner?.let { texto ->
-                item(key = "banner") {
-                    SpviStatusBanner(
-                        text = texto,
-                        tone = state.bannerTono,
-                        detail = detalleBanner(state.bannerTono),
-                        onClick = { acciones.onNavigate(Route.Licencia) },
-                        modifier = Modifier.testTag(InicioTags.BANNER).then(spviAnimateItem()),
-                    )
-                }
-            }
             // 0.20.0 (H5): el encargado cerró (o pidió cerrar) el turno desde la app principal.
             if (state.cierrePedido || state.avisoCierre) {
                 item(key = "cierre") {
@@ -515,47 +527,48 @@ private fun TarjetaActualizacion(a: cu.spvi.app.actualizacion.EstadoActualizacio
 
 
 /**
- * 0.31.0 (P1): primer contenedor de Inicio y el único que no se desplaza. «Turno cerrado» (o «Turno abierto») a la
- * izquierda y, a su lado, el selector de período: los dos con el mismo ancho y la misma altura dentro del contenedor
- * (reparto equitativo). En una secundaria no hay selector: el turno ocupa todo el ancho.
+ * 0.31.0 (P1): primer contenedor de Inicio y el único que no se desplaza: el turno, debajo el selector de período y,
+ * debajo, el banner de licencia (cuando lo hay), los tres a todo el ancho. En una secundaria no hay selector.
  */
 @Composable
-private fun FilaTurnoPeriodo(state: InicioUiState, acciones: AccionesInicio, permisos: cu.spvi.domain.model.PermisosApp, zona: ZoneId) {
-    Row(
-        Modifier.fillMaxWidth().height(IntrinsicSize.Min)
-            .padding(horizontal = SpviSpacing.md, vertical = SpviSpacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(SpviSpacing.md),
-        verticalAlignment = Alignment.CenterVertically,
+private fun BloqueFijo(state: InicioUiState, acciones: AccionesInicio, permisos: cu.spvi.domain.model.PermisosApp, zona: ZoneId) {
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = SpviSpacing.md, vertical = SpviSpacing.xs),
+        verticalArrangement = Arrangement.spacedBy(SpviSpacing.md),
     ) {
-        TurnoContenedor(state, acciones, zona, ajustar = false, modifier = Modifier.weight(1f).fillMaxHeight())
-        if (!permisos.esSecundaria) {
-            SelectorPeriodo(state.opcion, acciones.onPeriodo, modifier = Modifier.weight(1f).fillMaxHeight())
+        TurnoContenedor(state, acciones, zona)
+        if (!permisos.esSecundaria) SelectorPeriodo(state.opcion, acciones.onPeriodo)
+        state.banner?.let { texto ->
+            SpviStatusBanner(
+                text = texto,
+                tone = state.bannerTono,
+                detail = detalleBanner(state.bannerTono),
+                onClick = { acciones.onNavigate(Route.Licencia) },
+                modifier = Modifier.testTag(InicioTags.BANNER),
+            )
         }
     }
 }
 
 /**
  * Solo el turno: «Nueva venta» y «Movimiento de caja» son botones flotantes (solo con turno abierto).
- * El contenedor se ajusta a su contenido, centrado y con un ligero relleno.
  */
 @Composable
 private fun TurnoContenedor(
     state: InicioUiState,
     acciones: AccionesInicio,
     zona: ZoneId,
-    ajustar: Boolean,
-    modifier: Modifier = Modifier,
 ) {
     val abierto = state.turnoAbierto
-    SpviCard(ajustarAlContenido = ajustar, modifier = Modifier.testTag(InicioTags.TURNO)) {
+    SpviCard(modifier = Modifier.testTag(InicioTags.TURNO)) {
         Row(
-            (if (ajustar) Modifier else Modifier.fillMaxWidth())
+            Modifier.fillMaxWidth()
                 .toggleable(value = abierto, enabled = !state.cambiandoTurno, role = Role.Switch, onValueChange = acciones.onTurno),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
         ) {
             Icon(SpviIcons.Turno, contentDescription = null, tint = if (abierto) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-            Column(Modifier.weight(1f, fill = !ajustar).semantics { liveRegion = LiveRegionMode.Polite }) {
+            Column(Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite }) {
                 Text(if (abierto) TextosInicio.TURNO_ABIERTO else TextosInicio.TURNO_CERRADO, style = MaterialTheme.typography.titleMedium)
                 SpviSecondaryText(
                     state.turno?.takeIf { abierto }?.let { t ->
@@ -624,8 +637,8 @@ private fun LazyListScope.alertas(alertas: List<AlertaUi>, acciones: AccionesIni
                 val hueco = (porFila - cuantas) / 2f
                 if (hueco > 0f) Spacer(Modifier.weight(hueco))
                 grupo.forEach { a ->
-                    SpviAlertCounter(
-                        label = a.etiqueta, count = a.cantidad, tone = a.tono,
+                    ContadorAlerta(
+                        etiqueta = a.etiqueta, cantidad = a.cantidad, tono = a.tono,
                         onClick = { acciones.onNavigate(destinoAlerta(a.tipo)) },
                         modifier = Modifier.weight(1f).fillMaxHeight().testTag(InicioTags.alerta(a.tipo)),
                     )
@@ -633,6 +646,69 @@ private fun LazyListScope.alertas(alertas: List<AlertaUi>, acciones: AccionesIni
                 if (hueco > 0f) Spacer(Modifier.weight(hueco))
             }
         }
+    }
+}
+
+/**
+ * Contador de alerta: número en el color semántico de la alerta (AA en ambos temas). Contador 0 → oculto
+ * (con animación). Pulsar → navega a Inventario filtrado.
+ * 0.21.1 (H4): SinExistencia va relleno (fondo error, número y texto onError) para no confundirse con
+ * «Stock crítico», que usa el mismo rojo sobre la superficie.
+ */
+@Composable
+private fun ContadorAlerta(
+    etiqueta: String,
+    cantidad: Int,
+    tono: AlertTone,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    AnimatedVisibility(visible = cantidad > 0, modifier = modifier, enter = SpviMotion.enterVertical, exit = SpviMotion.exitVertical) {
+        val relleno = tono == AlertTone.SinExistencia
+        SpviCard(
+            onClick = onClick,
+            tone = if (relleno) CardTone.Error else CardTone.Default,
+            modifier = Modifier.fillMaxHeight().semantics(mergeDescendants = true) { contentDescription = "$etiqueta: $cantidad" },
+        ) {
+            // 0.27.0 (T14): contenido centrado; la tarjeta mide lo que su contenido y el texto puede ocupar 2 líneas.
+            Column(Modifier.fillMaxWidth().clearAndSetSemantics { }, horizontalAlignment = Alignment.CenterHorizontally) {
+                if (relleno) {
+                    val sobreError = MaterialTheme.colorScheme.onError
+                    Text(cantidad.toString(), style = MaterialTheme.typography.headlineSmall, color = sobreError, textAlign = TextAlign.Center)
+                    Text(etiqueta, style = MaterialTheme.typography.bodySmall, color = sobreError, textAlign = TextAlign.Center)
+                } else {
+                    Text(
+                        cantidad.toString(), style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center,
+                        color = if (tono == AlertTone.Revisar) MaterialTheme.colorScheme.primary else SpviTheme.colors.of(tono),
+                    )
+                    SpviSecondaryText(etiqueta, textAlign = TextAlign.Center)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 0.27.0 (T3): medalla del Top 3. El número del puesto (1, 2, 3) dentro de un círculo oro, plata o bronce; el número
+ * usa el peso de dato y un color con contraste AA sobre cada medalla. TalkBack lee «Primer puesto»… Sin decoración extra.
+ */
+@Composable
+private fun MedallaPuesto(numero: Int, modifier: Modifier = Modifier) {
+    val (fondo, texto) = when (numero) {
+        1 -> Color(ColorTokens.MEDALLA_ORO) to Color(ColorTokens.ON_MEDALLA_ORO)
+        2 -> Color(ColorTokens.MEDALLA_PLATA) to Color(ColorTokens.ON_MEDALLA_PLATA)
+        else -> Color(ColorTokens.MEDALLA_BRONCE) to Color(ColorTokens.ON_MEDALLA_BRONCE)
+    }
+    val descripcion = when (numero) {
+        1 -> "Primer puesto"
+        2 -> "Segundo puesto"
+        else -> "Tercer puesto"
+    }
+    Box(
+        modifier.size(SpviSize.medalla).background(fondo, CircleShape).clearAndSetSemantics { contentDescription = descripcion },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text("$numero", style = MaterialTheme.typography.titleSmall, fontWeight = SpviTextos.PESO_DATO, color = texto)
     }
 }
 
@@ -649,7 +725,7 @@ private fun Acceso(titulo: String, detalle: androidx.compose.ui.text.AnnotatedSt
 // ---------------- Período ----------------
 
 @Composable
-private fun SelectorPeriodo(opcion: OpcionPeriodo, onPeriodo: (OpcionPeriodo) -> Unit, modifier: Modifier = Modifier) {
+private fun SelectorPeriodo(opcion: OpcionPeriodo, onPeriodo: (OpcionPeriodo) -> Unit) {
     // P24: combobox (una fila, se ve la opción elegida; el resto al abrir).
     SpviComboBox(
         label = "Período",
@@ -659,7 +735,7 @@ private fun SelectorPeriodo(opcion: OpcionPeriodo, onPeriodo: (OpcionPeriodo) ->
         onSeleccion = onPeriodo,
         leadingIcon = SpviIcons.Fecha,
         tagOpcion = { InicioTags.periodo(it) },
-        modifier = modifier.fillMaxWidth().testTag(InicioTags.PERIODO),
+        modifier = Modifier.testTag(InicioTags.PERIODO),
     )
 }
 
@@ -801,7 +877,7 @@ private fun LazyListScope.top(tipo: TipoTop, items: List<TopItem>, dias: Int, ac
                     value = valorTop(tipo, it),
                     indicatorColor = null,
                     // 0.27.0 (T3): medalla oro, plata o bronce con el número del puesto.
-                    leading = { puestoTop(i)?.let { p -> SpviMedalla(p) } },
+                    leading = { puestoTop(i)?.let { n -> MedallaPuesto(n) } },
                 )
             }
         }
@@ -824,7 +900,7 @@ private fun LazyListScope.topPersonas(tipo: TipoTop, items: List<TopPersona>, di
                     subtitle = if (it.operaciones == 1) "1 $singular" else "${it.operaciones} $plural",
                     value = Money.format(it.importe),
                     indicatorColor = null,
-                    leading = { puestoTop(i)?.let { p -> SpviMedalla(p) } },
+                    leading = { puestoTop(i)?.let { n -> MedallaPuesto(n) } },
                 )
             }
         }

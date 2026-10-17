@@ -2,6 +2,7 @@ package cu.spvi.data.sync
 
 import android.content.Context
 import android.os.Build
+import cu.spvi.core.util.aHex
 import cu.spvi.domain.model.InfoApp
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
@@ -91,11 +92,8 @@ class ApkLocal @Inject constructor(
 
         fun sha256(f: File): String {
             val md = MessageDigest.getInstance("SHA-256")
-            f.inputStream().use { input ->
-                val buf = ByteArray(64 * 1024)
-                while (true) { val n = input.read(buf); if (n < 0) break; md.update(buf, 0, n) }
-            }
-            return md.digest().joinToString("") { "%02x".format(it) }
+            java.security.DigestInputStream(f.inputStream(), md).use { it.readBytes() }
+            return md.digest().aHex()
         }
     }
 }

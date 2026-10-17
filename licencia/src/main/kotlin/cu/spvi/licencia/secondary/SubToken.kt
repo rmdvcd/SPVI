@@ -97,15 +97,6 @@ object SubToken {
         Datos(campos[0], campos[1], ranura, permitidas, vence).takeIf { it.vigente(ahora) }
     }.getOrNull()
 
-    /** Texto firmable de un sub-token (lo usan GL y las pruebas para construir vectores). */
-    fun texto(licenciaId: String, dispositivo: String, ranura: Int, permitidas: Int, venceEn: Instant?): String =
-        listaDe(licenciaId, dispositivo, ranura, permitidas, venceEn)
-
-    /** ¿Es el `licenciaId` de una clave maestra de desarrollo? (nunca cuenta como licencia real). */
-    fun esMaestra(licenciaId: String): Boolean = licenciaId == ID_MAESTRA
-
-    const val ID_MAESTRA: String = cu.spvi.licencia.ID_MAESTRA_LICENCIA
-
     /** `true` si el texto trae caracteres que rompen el formato (los separadores). */
     private fun tieneSeparadores(texto: String): Boolean = texto.contains(SEPARADOR_CAMPOS) || texto.contains(SEPARADOR_FIRMA)
 

@@ -2,9 +2,9 @@
 
 ## Mejoras Android en curso (versión aún no actualizada en el código)
 
-- **Inicio:** «Turno cerrado» (o «Turno en curso») y el selector de período están en la misma fila, con
-  el mismo tamaño. Ese primer contenedor es el único que **no se desplaza**: queda fijo arriba mientras
-  miras los gráficos y las alertas.
+- **Inicio:** «Turno cerrado» (o «Turno abierto») y, debajo, el selector de período. Con el aviso de
+  licencia forman el bloque de arriba y son **lo único que no se desplaza**: quedan fijos mientras miras
+  los gráficos y las alertas.
 - **Inventario:** cada fila muestra, debajo del nombre, **cuánto puedes hacer** con lo que tienes y su
   unidad (u, L, g, kg, cajas), y debajo la **categoría**. A la derecha están el precio de **costo** y el
   de **venta**, con colores distintos para no confundirlos. Los insumos sin precio de venta no lo muestran.
@@ -33,10 +33,11 @@ Antes de cobrar por transferencia, comprueba que tienes ambos seleccionados.
 
 ## Inicio
 
-El interruptor del turno (tocarlo abre o cierra el turno) y la lista de período forman el primer
-contenedor de Inicio y **no se desplazan**: queda fijo arriba. Al desplazarte aparecen el banner de licencia y,
-si corresponde, las alertas. En la principal también se muestran gráficos y resúmenes de ventas, inventario,
+El interruptor del turno (tocarlo abre o cierra el turno), la lista de período y el aviso de licencia forman
+el bloque de arriba de Inicio y **no se desplazan**: quedan fijos. Al desplazarte aparecen las alertas y, en la
+principal, los gráficos y resúmenes de ventas, inventario,
 métodos de pago y ganancia. Los gráficos y resúmenes se pliegan; empiezan cerrados y puedes abrir solo los que quieras consultar.
+Inicio se abre siempre por arriba: no recuerda por dónde ibas la última vez.
 
 ## Buscar y consultar transferencias
 

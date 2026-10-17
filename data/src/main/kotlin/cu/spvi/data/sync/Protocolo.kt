@@ -11,6 +11,7 @@ import cu.spvi.data.dto.RecetaDto
 import cu.spvi.data.dto.ServicioDto
 import cu.spvi.data.dto.TurnoDto
 import cu.spvi.data.dto.VentaDto
+import cu.spvi.data.local.SpviJson
 import cu.spvi.domain.model.CodigoVinculacion
 import java.time.Instant
 import java.util.Base64
@@ -35,11 +36,8 @@ import kotlinx.serialization.json.Json
 
 const val VERSION_PROTOCOLO = 1
 
-/** JSON propio del protocolo: discriminador corto y tolerante a campos nuevos (versiones mezcladas). */
-val SyncJson: Json = Json {
-    ignoreUnknownKeys = true
-    encodeDefaults = true
-    explicitNulls = false
+/** JSON propio del protocolo: como el tolerante, más discriminador corto (versiones mezcladas). */
+val SyncJson: Json = Json(SpviJson) {
     classDiscriminator = "t"
 }
 

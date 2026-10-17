@@ -1,7 +1,6 @@
 package cu.spvi.app.inventario
 
 import cu.spvi.domain.model.nombreCompleto
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -18,7 +17,6 @@ import cu.spvi.app.common.ArchivosApp
 import cu.spvi.core.money.Money
 import cu.spvi.domain.di.IoDispatcher
 import cu.spvi.domain.model.Producto
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
@@ -28,10 +26,6 @@ import kotlinx.coroutines.withContext
  * Compartir como Imagen / exportar "cards" (SPVI.txt: promoción por mensajería y redes). Solo datos para
  * clientes: foto, nombre, categoría y precio. Nunca costo ni existencias.
  */
-interface RenderizadorTarjetas {
-    suspend fun renderizar(productos: List<Producto>): List<File>
-    suspend fun renderizar(productos: List<Producto>, comentario: String): List<File> = renderizar(productos)
-}
 
 /** Distribución (pura): 1 producto = tarjeta grande 4:5; varios = rejilla 2 columnas, hasta 6 por imagen. */
 object DisenoTarjetas {
@@ -49,11 +43,10 @@ object DisenoTarjetas {
     const val ALTO_CELDA = 600
 }
 
-class TarjetasAndroid @Inject constructor(
-    @ApplicationContext private val context: Context,
+open class TarjetasAndroid @Inject constructor(
     private val archivos: ArchivosApp,
     @IoDispatcher private val io: CoroutineDispatcher,
-) : RenderizadorTarjetas {
+) {
 
     private val fondo = Color.parseColor("#F8F9FA")
     private val marca = Color.parseColor("#1F5F70")   // teal oscuro de la marca: contraste AA sobre blanco
@@ -61,9 +54,9 @@ class TarjetasAndroid @Inject constructor(
     private val texto = Color.parseColor("#1B1B1B")
     private val secundario = Color.parseColor("#5F6368")
 
-    override suspend fun renderizar(productos: List<Producto>): List<File> = renderizar(productos, "")
+    open suspend fun renderizar(productos: List<Producto>): List<File> = renderizar(productos, "")
 
-    override suspend fun renderizar(productos: List<Producto>, comentario: String): List<File> = withContext(io) {
+    open suspend fun renderizar(productos: List<Producto>, comentario: String): List<File> = withContext(io) {
         DisenoTarjetas.grupos(productos).mapIndexed { i, grupo ->
             val alto = DisenoTarjetas.alto(grupo.size)
             val encabezado = comentario.trim().take(160)

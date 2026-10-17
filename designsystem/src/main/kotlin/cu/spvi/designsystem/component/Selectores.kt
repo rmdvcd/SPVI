@@ -85,12 +85,14 @@ fun <T> SpviComboBox(
     val dark = cs.background.luminance() < 0.5f
     val giro by animateFloatAsState(if (abierto) 180f else 0f, SpviMotion.muelle(), label = "flecha")
     val forma = RoundedCornerShape(SpviRadius.lg)
-    ExposedDropdownMenuBox(expanded = abierto, onExpandedChange = { abierto = it }, modifier = Modifier.fillMaxWidth()) {
+    // El modificador del llamador va en el hijo directo del contenedor que lo coloque (así funciona `weight` en una
+    // fila); aplicado al Surface de dentro, el reparto de ancho se perdía y el combo quedaba con ancho 0.
+    ExposedDropdownMenuBox(expanded = abierto, onExpandedChange = { abierto = it }, modifier = modifier.fillMaxWidth()) {
         Surface(
             shape = forma,
             color = if (dark) cs.surfaceContainerHigh else cs.surfaceContainer,
             border = if (abierto) BorderStroke(SpviSize.strokeRegular, cs.primary) else null,
-            modifier = modifier
+            modifier = Modifier
                 .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                 .fillMaxWidth()
                 .heightIn(min = SpviSize.textField)

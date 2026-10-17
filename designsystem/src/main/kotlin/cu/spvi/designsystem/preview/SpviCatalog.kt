@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,7 +21,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import cu.spvi.designsystem.component.BannerTone
 import cu.spvi.designsystem.component.CardTone
 import cu.spvi.designsystem.component.IconActionStyle
-import cu.spvi.designsystem.component.SpviAlertCounter
 import cu.spvi.designsystem.component.SpviBadge
 import cu.spvi.designsystem.component.SpviButtonRow
 import cu.spvi.designsystem.component.SpviCard
@@ -41,7 +41,6 @@ import cu.spvi.designsystem.component.SpviTabs
 import cu.spvi.designsystem.component.SpviTextField
 import cu.spvi.designsystem.component.SpviTopBar
 import cu.spvi.designsystem.icon.SpviIcons
-import cu.spvi.designsystem.theme.AlertTone
 import cu.spvi.designsystem.theme.SpviTheme
 import cu.spvi.designsystem.token.SpviSpacing
 
@@ -89,7 +88,10 @@ fun SpviCatalog() {
             SpviStatusBanner("Tu licencia vence en 5 días", BannerTone.Aviso, actionIcon = SpviIcons.Abrir, actionDescription = "Renovar", onAction = {})
             SpviStatusBanner("Tu licencia vence hoy", BannerTone.Critico, detail = "Renuévala para seguir vendiendo")
             SpviEmptyState("Sin productos", "Agrega tu primer producto con el botón +", ayuda = {})
-            SpviAlertCounter("Stock inventario bajo", 4, AlertTone.StockBajo, onClick = {})
+            SpviCard(onClick = {}, tone = CardTone.Error) {
+                Text("4", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onError)
+                SpviSecondaryText("Stock inventario bajo")
+            }
             var acordeonAbierto by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(true) }
             cu.spvi.designsystem.component.SpviAccordionCard(
                 title = "Ventas por hora", expanded = acordeonAbierto, onToggle = { acordeonAbierto = !acordeonAbierto },

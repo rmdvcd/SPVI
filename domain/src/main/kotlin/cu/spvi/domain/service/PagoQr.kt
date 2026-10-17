@@ -1,5 +1,6 @@
 package cu.spvi.domain.service
 
+import cu.spvi.core.validation.Phone
 import cu.spvi.domain.model.Perfil
 
 /**
@@ -25,17 +26,9 @@ object PagoQr {
     fun transfermovil(perfil: Perfil): Resultado {
         val tarjeta = perfil.tarjetaPago?.numero?.filter(Char::isDigit)?.takeIf { it.length in 12..20 }
             ?: return Resultado.SinTarjeta
-        val movil = perfil.telefonoPago?.numero?.let(::movilLocal)
+        // Móvil cubano de 8 dígitos sin +53 (números de otro país no caben en el campo: queda vacío).
+        val movil = perfil.telefonoPago?.numero?.let(Phone::normalize)?.removePrefix("+53")
+            ?.takeIf { it.length == 8 && it.all(Char::isDigit) }
         return Resultado.Ok("$PREFIJO,$tarjeta,${movil.orEmpty()},", tarjeta, movil)
-    }
-
-    /** "+5351815604" → "51815604". Números no cubanos no caben en el campo: null (queda vacío). */
-    fun movilLocal(e164: String): String? {
-        val d = e164.filter(Char::isDigit)
-        return when {
-            d.length == 8 -> d
-            d.length == 10 && d.startsWith("53") -> d.drop(2)
-            else -> null
-        }
     }
 }

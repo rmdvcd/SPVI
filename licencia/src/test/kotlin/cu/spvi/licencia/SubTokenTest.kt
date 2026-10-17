@@ -68,7 +68,7 @@ class SubTokenTest {
         assertTrue(runCatching { emitir(ranura = 0, permitidas = 3) }.isFailure)
         assertTrue(runCatching { emitir(ranura = 4, permitidas = 3) }.isFailure)
         // Y el verificador tampoco acepta una ranura fuera de rango aunque venga firmada.
-        val fuera = firmar(SubToken.texto(licenciaId, secundaria, 7, 3, t0.plus(Duration.ofDays(30))))
+        val fuera = firmar("$licenciaId|$secundaria|7|3|${t0.plus(Duration.ofDays(30))}")
         assertNull(SubToken.verificar(fuera, firmante.publicSpki(), secundaria, t0, cuotaMaxima = 10))
     }
 
@@ -77,7 +77,7 @@ class SubTokenTest {
         assertNotNull(SubToken.verificar(diez, firmante.publicSpki(), secundaria, t0, cuotaMaxima = 10))
         // La licencia de la principal solo cubre 5: el sub-token de 10 no autoriza.
         assertNull(SubToken.verificar(diez, firmante.publicSpki(), secundaria, t0, cuotaMaxima = 5))
-        val fuera = firmar(SubToken.texto(licenciaId, secundaria, 1, 11, t0.plus(Duration.ofDays(30))))
+        val fuera = firmar("$licenciaId|$secundaria|1|11|${t0.plus(Duration.ofDays(30))}")
         assertNull(SubToken.verificar(fuera, firmante.publicSpki(), secundaria, t0, cuotaMaxima = 10))
     }
 
@@ -107,10 +107,5 @@ class SubTokenTest {
         for (texto in listOf("", ".", "a.b", "|||||.AAA", "x".repeat(5000), "a|b|c|d|e.firma")) {
             assertNull(SubToken.verificar(texto, firmante.publicSpki(), secundaria, t0, cuotaMaxima = 10))
         }
-    }
-
-    @Test fun elTokenDeLaClaveMaestraSeIdentifica() {
-        assertTrue(SubToken.esMaestra(SubToken.ID_MAESTRA))
-        assertEquals(LicenseManager.ID_MAESTRA, SubToken.ID_MAESTRA)
     }
 }

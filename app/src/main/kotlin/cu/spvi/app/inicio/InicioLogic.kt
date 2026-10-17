@@ -301,8 +301,8 @@ fun alertasPorFila(anchoDisponibleDp: Float, escalaLetra: Float): Int {
     return ((anchoDisponibleDp + 16f) / porTarjeta).toInt().coerceIn(1, MAX_ALERTAS_POR_FILA)
 }
 
-/** 0.27.0 (T3): medalla de cada puesto del Top 3 (índice 0 = primero). */
-fun puestoTop(indice: Int): cu.spvi.designsystem.component.Puesto? = cu.spvi.designsystem.component.Puesto.entries.getOrNull(indice)
+/** 0.27.0 (T3): número de la medalla de cada puesto del Top 3 (índice 0 = primero). */
+fun puestoTop(indice: Int): Int? = (indice + 1).takeIf { it in 1..3 }
 
 // ---------------- Top 3 ----------------
 

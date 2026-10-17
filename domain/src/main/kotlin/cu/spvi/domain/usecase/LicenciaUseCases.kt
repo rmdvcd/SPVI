@@ -71,7 +71,4 @@ object ProgramaLicencia {
         is LicenseState.Active -> Duration.between(ahora, estado.venceEn).plusSeconds(1).coerceIn(MINIMO, MAXIMO)
         else -> MAXIMO
     }
-
-    private fun Duration.coerceIn(min: Duration, max: Duration): Duration =
-        if (this < min) min else if (this > max) max else this
 }

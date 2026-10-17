@@ -16,7 +16,7 @@ import androidx.lifecycle.viewModelScope
 import cu.spvi.app.common.ArchivosApp
 import cu.spvi.app.common.ExportadorArchivos
 import cu.spvi.app.common.lanzarExportacion
-import cu.spvi.app.common.RenderizadorTabla
+import cu.spvi.app.common.ImagenTablaAndroid
 import cu.spvi.app.inicio.EstadoCarga
 import cu.spvi.app.inicio.TipoVenta
 import cu.spvi.app.navigation.Route
@@ -124,8 +124,8 @@ class InventarioViewModel @Inject constructor(
     private val eliminarInsumos: EliminarInsumos,
     private val exportarInventario: ExportarInventario,
     private val exportarFicha: ExportarFicha,
-    private val tarjetas: RenderizadorTarjetas,
-    private val imagenTabla: RenderizadorTabla,
+    private val tarjetas: TarjetasAndroid,
+    private val imagenTabla: ImagenTablaAndroid,
     private val archivos: ArchivosApp,
     private val clock: Clock,
     limpiarFotos: LimpiarFotos,

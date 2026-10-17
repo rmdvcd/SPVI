@@ -24,6 +24,7 @@ import cu.spvi.domain.model.PermisoEmpleado
 import cu.spvi.domain.model.Vinculacion
 import cu.spvi.data.dto.toDomain
 import cu.spvi.data.dto.toDto
+import cu.spvi.data.io.leerAcotado
 import cu.spvi.data.local.SpviJson
 import cu.spvi.data.mapper.perfilDe
 import cu.spvi.data.mapper.productosEntities
@@ -45,7 +46,6 @@ import cu.spvi.domain.repository.InfoRespaldo
 import cu.spvi.domain.repository.PreferenciasRepository
 import cu.spvi.domain.repository.ResumenRespaldo
 import cu.spvi.domain.repository.RespaldoRepository
-import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import java.time.Instant
@@ -389,19 +389,8 @@ class RespaldoRepositoryImpl @Inject constructor(
     private fun resumen(c: Contenido) =
         ResumenRespaldo(c.productos.count { !it.eliminado }, c.insumos.size, c.ventas.size, c.movimientos.size)
 
-    private fun leerAcotado(input: InputStream): ByteArray {
-        val out = ByteArrayOutputStream()
-        val buf = ByteArray(64 * 1024)
-        var total = 0L
-        while (true) {
-            val n = input.read(buf)
-            if (n < 0) break
-            total += n
-            if (total > BackupCipher.MAX_PLANO) throw BackupCipher.FormatoException("archivo demasiado grande")
-            out.write(buf, 0, n)
-        }
-        return out.toByteArray()
-    }
+    private fun leerAcotado(input: InputStream): ByteArray =
+        input.leerAcotado(BackupCipher.MAX_PLANO) { BackupCipher.FormatoException("archivo demasiado grande") }
 
     private inline fun <T> guard(block: () -> T): AppResult<T> = try {
         AppResult.Ok(block())

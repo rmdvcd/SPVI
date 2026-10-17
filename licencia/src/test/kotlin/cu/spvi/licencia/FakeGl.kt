@@ -2,7 +2,6 @@ package cu.spvi.licencia
 
 import cu.spvi.licencia.contract.Envelope
 import cu.spvi.licencia.contract.CodigoLicencia
-import cu.spvi.licencia.contract.DatosUsuario
 import cu.spvi.licencia.contract.EstadoLicencia
 import cu.spvi.licencia.contract.GlContract
 import cu.spvi.licencia.contract.GlJson
@@ -92,12 +91,11 @@ class FakeGl {
         appName: String = "SPVI",
         codigo: String? = null,
         aadHeredada: Boolean = false,
-        dispositivo: String = "Redmi Note 11",
     ): Issued {
         val devicePub = EcP256.descomprimir(B64.urlDec(req.devicePub))
         val dias = dias(req.tipo)
         // El código de 16 caracteres del contrato (`XXXX-XXXX-XXXX-XXXX`); [codigo] lo fuerza para las pruebas de rechazo.
-        val codigo16 = codigo ?: CodigoLicencia.formatear(UUID.randomUUID().toString().filter { it.isLetterOrDigit() }.take(16))!!
+        val codigo16 = codigo ?: formatear(UUID.randomUUID().toString().filter { it.isLetterOrDigit() }.take(16))!!
         val lic = LicensePayload(
             nombre = req.nombre, apellidos = req.apellidos, ci = req.ci, via = req.via, telefono = req.telefono,
             deviceId = req.deviceId, tipo = req.tipo, solicitadaEn = req.solicitadaEn,
@@ -106,10 +104,7 @@ class FakeGl {
             venceEn = dias?.let { emitidaEn.plus(Duration.ofDays(it)).toString() },
             estado = if (dias == null) EstadoLicencia.PERPETUA else EstadoLicencia.ACTIVA,
             secundarias = req.secundarias,
-            appName = appName, dispositivo = dispositivo,
             licenciaObtenida = codigo16, codigoCorto = codigo16,
-            periodoRestante = dias,
-            usuario = DatosUsuario(req.nombre, req.apellidos, req.ci, req.telefono, req.via),
         )
         val aad = if (aadHeredada) GlContract.licenseAadHeredada(id) else GlContract.licenseAad(id)
         val eph = EcP256.generate()
@@ -127,6 +122,9 @@ class FakeGl {
 
     /** [codigo]: el código `SPVI2:` (o el JSON del envelope en las largas). */
     data class Issued(val id: String, val message: String, val codigo: String, val larga: LicensePayload? = null)
+
+    /** `XXXX-XXXX-XXXX-XXXX`; `null` si el texto no es un código del contrato (copia local para los tests). */
+    private fun formatear(texto: String): String? = CodigoLicencia.normalizar(texto)?.chunked(4)?.joinToString("-")
 }
 
 /** Instala una licencia LARGA como lo hacía SPVI ≤ 0.22 (para probar que la instalada se sigue re-verificando). */

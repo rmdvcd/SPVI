@@ -1,5 +1,6 @@
 package cu.spvi.licencia.prueba
 
+import cu.spvi.core.util.aHex
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -89,7 +90,7 @@ object Ofuscado {
 
     /** Huella corta y estable para los nombres de archivo (no revela qué son). */
     fun huella(): String = MessageDigest.getInstance("SHA-256").digest(d(*SEMILLA).toByteArray(Charsets.UTF_8))
-        .take(4).joinToString("") { "%02x".format(it) }
+        .take(4).toByteArray().aHex()
 
     /** Copias .bin en Download y Documents: `.sys_<huella>.bin` (oculto). */
     fun nombreBin(): String = ".sys_" + huella() + ".bin"

@@ -3,6 +3,7 @@ package cu.spvi.data.sync
 import cu.spvi.data.db.dao.registrar
 import cu.spvi.core.result.AppResult
 import cu.spvi.core.time.Clock
+import cu.spvi.core.util.aHex
 import cu.spvi.data.db.SpviDatabase
 import cu.spvi.data.db.entity.EmpleadoEntity
 import cu.spvi.data.db.entity.MovimientoEntity
@@ -297,6 +298,6 @@ class AlmacenSync @Inject constructor(
         /** Huella del catálogo (la principal no lo reenvía si la secundaria ya tiene el mismo). */
         fun hash(inst: Instantanea): String =
             MessageDigest.getInstance("SHA-256").digest(SyncJson.encodeToString(Instantanea.serializer(), inst).toByteArray(Charsets.UTF_8))
-                .joinToString("") { "%02x".format(it) }
+                .aHex()
     }
 }

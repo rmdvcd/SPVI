@@ -1,5 +1,6 @@
 package cu.spvi.licencia.contract
 
+import cu.spvi.core.util.aHex
 import cu.spvi.licencia.crypto.EcP256
 import java.security.MessageDigest
 import java.security.PublicKey
@@ -37,7 +38,7 @@ object ListaRevocaciones {
 
     fun huella(licenseId: String): String =
         MessageDigest.getInstance("SHA-256").digest((DOMINIO_HUELLA + licenseId.trim().lowercase()).toByteArray(Charsets.UTF_8))
-            .copyOf(16).joinToString("") { "%02x".format(it) }
+            .copyOf(16).aHex()
 
     /** Datos auténticos de la lista, o null si no verifica con ninguna de [claves]. */
     fun verificar(texto: String, claves: List<PublicKey>): Datos? = runCatching {

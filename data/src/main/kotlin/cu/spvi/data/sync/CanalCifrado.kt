@@ -1,5 +1,6 @@
 package cu.spvi.data.sync
 
+import cu.spvi.data.io.leerAcotado
 import cu.spvi.licencia.crypto.AesGcm
 import cu.spvi.licencia.crypto.EcP256
 import cu.spvi.licencia.crypto.Hkdf
@@ -94,19 +95,8 @@ object Tramas {
 
     fun gzip(b: ByteArray): ByteArray = ByteArrayOutputStream().also { bos -> GZIPOutputStream(bos).use { it.write(b) } }.toByteArray()
 
-    fun gunzip(b: ByteArray): ByteArray {
-        val out = ByteArrayOutputStream()
-        GZIPInputStream(ByteArrayInputStream(b)).use { g ->
-            val buf = ByteArray(16 * 1024)
-            while (true) {
-                val n = g.read(buf)
-                if (n < 0) break
-                out.write(buf, 0, n)
-                if (out.size() > 4 * MAX_TRAMA) throw ProtocoloException("contenido demasiado grande")
-            }
-        }
-        return out.toByteArray()
-    }
+    fun gunzip(b: ByteArray): ByteArray =
+        GZIPInputStream(ByteArrayInputStream(b)).use { it.leerAcotado(4L * MAX_TRAMA) { ProtocoloException("contenido demasiado grande") } }
 }
 
 /**

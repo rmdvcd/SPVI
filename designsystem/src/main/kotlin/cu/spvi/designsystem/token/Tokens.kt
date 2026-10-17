@@ -45,8 +45,6 @@ object SpviElevation {
 
 object SpviOpacity {
     const val secondary = ColorTokens.SECONDARY_ALPHA
-    const val placeholder = 0.6f
-    const val disabled = 0.38f
 }
 
 object SpviSize {
@@ -59,7 +57,6 @@ object SpviSize {
     val icon = 24.dp
     val iconSmall = 18.dp
     val logoSmall = 32.dp
-    val logoDialog = 40.dp
     val logoLarge = 72.dp
     val indicatorWidth = 4.dp
     val indicatorHeight = 32.dp
@@ -75,8 +72,6 @@ object SpviSize {
     val qr = 240.dp
     /** 0.31.0 (P5): diámetro de la barra de progreso circular («Actualizar»). */
     val progresoCircular = 72.dp
-    /** Foto del producto en formularios y en el escáner. */
-    val fotoMiniatura = 88.dp
     /** Altura máxima de la lista corta de fijados/seleccionados (Inventario, Servicios, Precios). */
     val listaCortaMax = 240.dp
     /** Campo de cantidad (hasta 5 cifras, con letra grande). */

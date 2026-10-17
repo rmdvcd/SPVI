@@ -99,8 +99,8 @@ class ServiciosViewModel @Inject constructor(
     private val exportarTablas: ExportarTablas,
     private val archivos: ArchivosApp,
     private val clock: Clock,
-    private val imagenTabla: cu.spvi.app.common.RenderizadorTabla,
-    private val tarjetas: cu.spvi.app.inventario.RenderizadorTarjetas,
+    private val imagenTabla: cu.spvi.app.common.ImagenTablaAndroid,
+    private val tarjetas: cu.spvi.app.inventario.TarjetasAndroid,
 ) : ViewModel() {
 
     private val modoVenta: Boolean = saved.get<Boolean>(KEY_VENTA) == true

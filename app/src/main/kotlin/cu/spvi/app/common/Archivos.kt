@@ -70,8 +70,6 @@ class ArchivosAppImpl @Inject constructor(@ApplicationContext private val contex
 @InstallIn(SingletonComponent::class)
 abstract class ArchivosModule {
     @Binds abstract fun archivos(impl: ArchivosAppImpl): ArchivosApp
-    @Binds abstract fun tarjetas(impl: cu.spvi.app.inventario.TarjetasAndroid): cu.spvi.app.inventario.RenderizadorTarjetas
-    @Binds abstract fun tabla(impl: ImagenTablaAndroid): RenderizadorTabla
 }
 
 object NombresArchivo {

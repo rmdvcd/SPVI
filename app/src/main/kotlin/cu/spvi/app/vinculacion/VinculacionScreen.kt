@@ -43,6 +43,8 @@ import cu.spvi.app.venta.QrCodigo
 import cu.spvi.core.time.Dates
 import cu.spvi.app.common.AjustesRed
 import cu.spvi.core.money.Money
+import cu.spvi.core.money.Cup
+import cu.spvi.domain.model.Empleado
 import cu.spvi.designsystem.component.BannerTone
 import cu.spvi.designsystem.component.SpviButtonRow
 import cu.spvi.designsystem.component.SpviCard
@@ -115,19 +117,68 @@ fun VinculacionScreen(
     LaunchedEffect(qrLeido) {
         if (qrLeido != null) { onQrConsumido(); viewModel.qrLeido(qrLeido) }
     }
-    VinculacionContent(state, viewModel, onBack, snackbar)
+    VinculacionContent(
+        s = state, onBack = onBack, snackbar = snackbar,
+        onAgregar = viewModel::agregar, onEditar = viewModel::editar, onCerrarForm = viewModel::cerrarForm,
+        onNombre = viewModel::nombre, onPermiso = viewModel::permiso, onTarjeta = viewModel::tarjeta,
+        onGuardarForm = viewModel::guardarForm, onNuevoCodigo = viewModel::nuevoCodigo,
+        onCerrarQr = viewModel::cerrarQr, onPedirQuitar = viewModel::pedirQuitar,
+        onCancelarQuitar = viewModel::cancelarQuitar, onConfirmarQuitar = viewModel::confirmarQuitar,
+        onPedirCierre = viewModel::pedirCierre, onCancelarCierre = viewModel::cancelarCierre,
+        onConfirmarCierre = viewModel::confirmarCierre, onAprobarCierre = viewModel::aprobarCierre,
+        onRechazarCierre = viewModel::rechazarCierre, onTelefonoSecundaria = viewModel::telefonoSecundaria,
+        onPedirSecundaria = viewModel::pedirSecundaria, onCancelarSecundaria = viewModel::cancelarSecundaria,
+        onConfirmarSecundaria = viewModel::confirmarSecundaria, onSincronizar = viewModel::sincronizar,
+        onModo = viewModel::modo, onPedirDesvincular = viewModel::pedirDesvincular,
+        onCancelarDesvincular = viewModel::cancelarDesvincular, onConfirmarDesvincular = viewModel::confirmarDesvincular,
+        onAsignarFondo = viewModel::asignarFondo, onCancelarFondo = viewModel::cancelarFondo,
+        onConfirmarFondo = viewModel::confirmarFondo,
+    )
 }
 
-/** Sin estado propio: lo usan la pantalla real y las capturas Roborazzi (con [AccionesVinculacion] vacío). */
+/** Sin estado propio: lo usan la pantalla real y las capturas Roborazzi (las acciones por defecto no hacen nada). */
 @Composable
-fun VinculacionContent(s: VinculacionUi, vm: AccionesVinculacion, onBack: () -> Unit = {}, snackbar: SnackbarHostState = remember { SnackbarHostState() }) {
+fun VinculacionContent(
+    s: VinculacionUi,
+    onBack: () -> Unit = {},
+    snackbar: SnackbarHostState = remember { SnackbarHostState() },
+    onAgregar: () -> Unit = {},
+    onEditar: (Empleado) -> Unit = {},
+    onCerrarForm: () -> Unit = {},
+    onNombre: (String) -> Unit = {},
+    onPermiso: (PermisoEmpleado, Boolean) -> Unit = { _, _ -> },
+    onTarjeta: (Long?) -> Unit = {},
+    onGuardarForm: () -> Unit = {},
+    onNuevoCodigo: () -> Unit = {},
+    onCerrarQr: () -> Unit = {},
+    onPedirQuitar: () -> Unit = {},
+    onCancelarQuitar: () -> Unit = {},
+    onConfirmarQuitar: () -> Unit = {},
+    onPedirCierre: () -> Unit = {},
+    onCancelarCierre: () -> Unit = {},
+    onConfirmarCierre: () -> Unit = {},
+    onAprobarCierre: () -> Unit = {},
+    onRechazarCierre: () -> Unit = {},
+    onTelefonoSecundaria: (String) -> Unit = {},
+    onPedirSecundaria: () -> Unit = {},
+    onCancelarSecundaria: () -> Unit = {},
+    onConfirmarSecundaria: () -> Unit = {},
+    onSincronizar: () -> Unit = {},
+    onModo: (ModoSincronizacion) -> Unit = {},
+    onPedirDesvincular: () -> Unit = {},
+    onCancelarDesvincular: () -> Unit = {},
+    onConfirmarDesvincular: () -> Unit = {},
+    onAsignarFondo: () -> Unit = {},
+    onCancelarFondo: () -> Unit = {},
+    onConfirmarFondo: (Cup) -> Unit = {},
+) {
     val esPrincipal = s.tipo == TipoApp.PRINCIPAL
     Scaffold(
         topBar = { SpviTopBar(title = VinculacionLogic.TITULO, onBack = onBack) },
         snackbarHost = { SpviSnackbarHost(snackbar) },
         floatingActionButton = {
             if (s.puedeAgregar) { // 0.21.0 (C4/C5): solo la principal y hasta el límite de la licencia
-                SpviFab(SpviIcons.AgregarEmpleado, "Agregar app de un empleado", vm::agregar, Modifier.testTag(VinculacionTags.AGREGAR))
+                SpviFab(SpviIcons.AgregarEmpleado, "Agregar app de un empleado", onAgregar, Modifier.testTag(VinculacionTags.AGREGAR))
             }
         },
     ) { padding ->
@@ -135,15 +186,20 @@ fun VinculacionContent(s: VinculacionUi, vm: AccionesVinculacion, onBack: () -> 
             Modifier.fillMaxSize().padding(padding),
             verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
         ) {
-            if (esPrincipal) principal(s, vm) else secundaria(s, vm)
+            if (esPrincipal) principal(s, onEditar, onPedirSecundaria) else secundaria(s, onSincronizar, onModo, onPedirDesvincular)
         }
     }
 
-    s.form?.let { f -> FormDialog(f, s, vm) }
+    s.form?.let { f ->
+        FormDialog(
+            f, s, onCerrarForm, onGuardarForm, onNombre, onPermiso, onTarjeta, onNuevoCodigo, onPedirQuitar,
+            onPedirCierre, onRechazarCierre, onAprobarCierre, onAsignarFondo,
+        )
+    }
     s.qr?.let { q ->
         SpviDialog(
             title = "Código para ${q.nombreEmpleado}",
-            onDismiss = vm::cerrarQr,
+            onDismiss = onCerrarQr,
             onConfirm = null,
             dismissDescription = "Cerrar",
             content = {
@@ -165,20 +221,20 @@ fun VinculacionContent(s: VinculacionUi, vm: AccionesVinculacion, onBack: () -> 
         SpviDialog(
             title = "¿Quitar la app de ${e.nombre}?",
             text = VinculacionLogic.CONFIRMAR_QUITAR,
-            onDismiss = vm::cancelarQuitar,
-            onConfirm = vm::confirmarQuitar,
+            onDismiss = onCancelarQuitar,
+            onConfirm = onConfirmarQuitar,
             confirmDescription = VinculacionLogic.QUITAR,
             confirmIcon = SpviIcons.Desvincular,
             destructive = true,
         )
     }
-    s.asignarFondo?.let { a -> DialogoAsignarFondo(a, s.trabajando, vm) }
+    s.asignarFondo?.let { a -> DialogoAsignarFondo(a, s.trabajando, onCancelarFondo, onConfirmarFondo) }
     s.cerrarTurno?.let { e ->
         SpviDialog(
             title = "¿Pedir el cierre del turno de ${e.nombre}?",
             text = VinculacionLogic.CONFIRMAR_CIERRE,
-            onDismiss = vm::cancelarCierre,
-            onConfirm = vm::confirmarCierre,
+            onDismiss = onCancelarCierre,
+            onConfirm = onConfirmarCierre,
             confirmDescription = VinculacionLogic.PEDIR_CIERRE,
             confirmIcon = SpviIcons.Salir,
         )
@@ -186,8 +242,8 @@ fun VinculacionContent(s: VinculacionUi, vm: AccionesVinculacion, onBack: () -> 
     if (s.confirmarSecundaria) {
         SpviDialog(
             title = VinculacionLogic.USAR_COMO_SECUNDARIA,
-            onDismiss = vm::cancelarSecundaria,
-            onConfirm = vm::confirmarSecundaria,
+            onDismiss = onCancelarSecundaria,
+            onConfirm = onConfirmarSecundaria,
             confirmDescription = "Escanear código",
             confirmIcon = SpviIcons.Escanear,
             content = {
@@ -196,7 +252,7 @@ fun VinculacionContent(s: VinculacionUi, vm: AccionesVinculacion, onBack: () -> 
                     // 0.21.0 (C2): el teléfono del empleado va en su QR de cobro.
                     SpviTextField(
                         filtro = FiltroEntrada.TELEFONO,
-                        value = s.telefonoSecundaria, onValueChange = vm::telefonoSecundaria,
+                        value = s.telefonoSecundaria, onValueChange = onTelefonoSecundaria,
                         label = VinculacionLogic.TELEFONO_SECUNDARIA, leadingIcon = SpviIcons.Telefono,
                         supportingText = VinculacionLogic.TELEFONO_SECUNDARIA_AYUDA,
                         isError = s.errorTelefono != null, errorText = s.errorTelefono,
@@ -213,8 +269,8 @@ fun VinculacionContent(s: VinculacionUi, vm: AccionesVinculacion, onBack: () -> 
             title = "¿Desvincular esta app?",
             text = VinculacionLogic.CONFIRMAR_DESVINCULAR +
                 if (p > 0) " Atención: ${VinculacionLogic.pendientes(p)}; se perderán. Sincroniza antes." else "",
-            onDismiss = vm::cancelarDesvincular,
-            onConfirm = vm::confirmarDesvincular,
+            onDismiss = onCancelarDesvincular,
+            onConfirm = onConfirmarDesvincular,
             confirmDescription = VinculacionLogic.DESVINCULAR,
             confirmIcon = SpviIcons.Desvincular,
             destructive = true,
@@ -222,7 +278,11 @@ fun VinculacionContent(s: VinculacionUi, vm: AccionesVinculacion, onBack: () -> 
     }
 }
 
-private fun androidx.compose.foundation.lazy.LazyListScope.principal(s: VinculacionUi, vm: AccionesVinculacion) {
+private fun androidx.compose.foundation.lazy.LazyListScope.principal(
+    s: VinculacionUi,
+    onEditar: (Empleado) -> Unit,
+    onPedirSecundaria: () -> Unit,
+) {
     item {
         Text(
             VinculacionLogic.PRINCIPAL_DETALLE, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center,
@@ -268,7 +328,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.principal(s: Vinculac
                 indicatorColor = null,
                 leading = { Icon(SpviIcons.Vinculacion, contentDescription = null) },
                 trailing = { Icon(SpviIcons.Abrir, contentDescription = null) },
-                onClick = { vm.editar(e) },
+                onClick = { onEditar(e) },
                 modifier = Modifier.testTag(VinculacionTags.empleado(e.id)),
             )
         }
@@ -278,14 +338,19 @@ private fun androidx.compose.foundation.lazy.LazyListScope.principal(s: Vinculac
     if (s.puedeSerSecundaria) item {
         SpviButtonRow(Modifier.padding(vertical = SpviSpacing.md)) {
             SpviTextButton(
-                text = VinculacionLogic.USAR_COMO_SECUNDARIA, icon = SpviIcons.Escanear, onClick = vm::pedirSecundaria,
+                text = VinculacionLogic.USAR_COMO_SECUNDARIA, icon = SpviIcons.Escanear, onClick = onPedirSecundaria,
                 enabled = !s.trabajando, modifier = Modifier.testTag(VinculacionTags.SECUNDARIA),
             )
         }
     }
 }
 
-private fun androidx.compose.foundation.lazy.LazyListScope.secundaria(s: VinculacionUi, vm: AccionesVinculacion) {
+private fun androidx.compose.foundation.lazy.LazyListScope.secundaria(
+    s: VinculacionUi,
+    onSincronizar: () -> Unit,
+    onModo: (ModoSincronizacion) -> Unit,
+    onPedirDesvincular: () -> Unit,
+) {
     val sec = s.secundaria
     item {
         SpviCard(Modifier.padding(horizontal = SpviSpacing.md), title = "Secundaria de ${sec.nombreNegocio.ifBlank { "la app principal" }}") {
@@ -316,7 +381,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.secundaria(s: Vincula
     item {
         SpviButtonRow(Modifier.padding(vertical = SpviSpacing.xs)) {
             SpviPrimaryButton(
-                text = VinculacionLogic.SINCRONIZAR, icon = SpviIcons.Sincronizar, onClick = vm::sincronizar,
+                text = VinculacionLogic.SINCRONIZAR, icon = SpviIcons.Sincronizar, onClick = onSincronizar,
                 loading = s.trabajando, enabled = !s.trabajando, modifier = Modifier.testTag(VinculacionTags.SINCRONIZAR),
             )
         }
@@ -327,7 +392,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.secundaria(s: Vincula
             Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
                 ModoSincronizacion.entries.forEach { m ->
                     Row(
-                        Modifier.fillMaxWidth().heightIn(min = SpviSize.touchTarget).selectable(selected = sec.modo == m, role = Role.RadioButton, onClick = { vm.modo(m) }),
+                        Modifier.fillMaxWidth().heightIn(min = SpviSize.touchTarget).selectable(selected = sec.modo == m, role = Role.RadioButton, onClick = { onModo(m) }),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
                     ) {
@@ -353,7 +418,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.secundaria(s: Vincula
     item {
         SpviButtonRow(Modifier.padding(vertical = SpviSpacing.md)) {
             SpviTextButton(
-                text = VinculacionLogic.DESVINCULAR, icon = SpviIcons.Desvincular, onClick = vm::pedirDesvincular,
+                text = VinculacionLogic.DESVINCULAR, icon = SpviIcons.Desvincular, onClick = onPedirDesvincular,
                 enabled = !s.trabajando, modifier = Modifier.testTag(VinculacionTags.DESVINCULAR),
             )
         }
@@ -361,14 +426,28 @@ private fun androidx.compose.foundation.lazy.LazyListScope.secundaria(s: Vincula
 }
 
 @Composable
-private fun FormDialog(f: FormEmpleado, s: VinculacionUi, vm: AccionesVinculacion) {
+private fun FormDialog(
+    f: FormEmpleado,
+    s: VinculacionUi,
+    onCerrarForm: () -> Unit,
+    onGuardarForm: () -> Unit,
+    onNombre: (String) -> Unit,
+    onPermiso: (PermisoEmpleado, Boolean) -> Unit,
+    onTarjeta: (Long?) -> Unit,
+    onNuevoCodigo: () -> Unit,
+    onPedirQuitar: () -> Unit,
+    onPedirCierre: () -> Unit,
+    onRechazarCierre: () -> Unit,
+    onAprobarCierre: () -> Unit,
+    onAsignarFondo: () -> Unit,
+) {
     val nueva = f.id == 0L
     val trabajando = s.trabajando
     val empleado = s.empleadoForm
     SpviDialog(
         title = if (nueva) "Agregar app de un empleado" else f.nombre,
-        onDismiss = vm::cerrarForm,
-        onConfirm = vm::guardarForm,
+        onDismiss = onCerrarForm,
+        onConfirm = onGuardarForm,
         confirmDescription = if (nueva) "Crear código" else "Guardar",
         confirmEnabled = !trabajando && (!nueva || f.nombre.isNotBlank()),
         confirmLoading = trabajando,
@@ -377,7 +456,7 @@ private fun FormDialog(f: FormEmpleado, s: VinculacionUi, vm: AccionesVinculacio
                 if (nueva) {
                     SpviTextField(
                         filtro = FiltroEntrada.NOMBRE,
-                        value = f.nombre, onValueChange = vm::nombre, label = "Nombre del empleado",
+                        value = f.nombre, onValueChange = onNombre, label = "Nombre del empleado",
                         isError = f.errorNombre != null, errorText = f.errorNombre, modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -406,18 +485,18 @@ private fun FormDialog(f: FormEmpleado, s: VinculacionUi, vm: AccionesVinculacio
                             e.solicitaCierre -> ({
                                 Row(horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
                                     SpviIconAction(
-                                        SpviIcons.Cancelar, VinculacionLogic.RECHAZAR_CIERRE, onClick = vm::rechazarCierre, enabled = !trabajando,
+                                        SpviIcons.Cancelar, VinculacionLogic.RECHAZAR_CIERRE, onClick = onRechazarCierre, enabled = !trabajando,
                                         modifier = Modifier.testTag(VinculacionTags.RECHAZAR_CIERRE),
                                     )
                                     SpviIconAction(
-                                        SpviIcons.Guardar, VinculacionLogic.APROBAR_CIERRE, onClick = vm::aprobarCierre, enabled = !trabajando,
+                                        SpviIcons.Guardar, VinculacionLogic.APROBAR_CIERRE, onClick = onAprobarCierre, enabled = !trabajando,
                                         style = IconActionStyle.Filled, modifier = Modifier.testTag(VinculacionTags.APROBAR_CIERRE),
                                     )
                                 }
                             })
                             else -> ({
                                 SpviIconAction(
-                                    SpviIcons.Salir, VinculacionLogic.PEDIR_CIERRE, onClick = vm::pedirCierre, enabled = !trabajando,
+                                    SpviIcons.Salir, VinculacionLogic.PEDIR_CIERRE, onClick = onPedirCierre, enabled = !trabajando,
                                     style = IconActionStyle.Tonal, modifier = Modifier.testTag(VinculacionTags.PEDIR_CIERRE),
                                 )
                             })
@@ -438,7 +517,7 @@ private fun FormDialog(f: FormEmpleado, s: VinculacionUi, vm: AccionesVinculacio
                         leading = { Icon(SpviIcons.Efectivo, contentDescription = null) },
                         trailing = if (e.appDesactualizada) null else ({
                             SpviIconAction(
-                                SpviIcons.Editar, VinculacionLogic.ASIGNAR_FONDO, onClick = vm::asignarFondo, enabled = !trabajando,
+                                SpviIcons.Editar, VinculacionLogic.ASIGNAR_FONDO, onClick = onAsignarFondo, enabled = !trabajando,
                                 style = if (e.pideApertura) IconActionStyle.Filled else IconActionStyle.Tonal,
                                 modifier = Modifier.testTag(VinculacionTags.ASIGNAR_FONDO),
                             )
@@ -450,7 +529,7 @@ private fun FormDialog(f: FormEmpleado, s: VinculacionUi, vm: AccionesVinculacio
                 PermisoEmpleado.entries.forEach { p ->
                     val activo = p in f.permisos
                     Row(
-                        Modifier.fillMaxWidth().toggleable(value = activo, role = Role.Checkbox, onValueChange = { vm.permiso(p, it) }),
+                        Modifier.fillMaxWidth().toggleable(value = activo, role = Role.Checkbox, onValueChange = { onPermiso(p, it) }),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
                     ) {
@@ -474,7 +553,7 @@ private fun FormDialog(f: FormEmpleado, s: VinculacionUi, vm: AccionesVinculacio
                                 if (id == null) VinculacionLogic.predeterminada(s.tarjetaPredeterminada?.enmascarado)
                                 else s.tarjetas.first { it.id == id }.let { t -> VinculacionLogic.etiquetaTarjeta(t.alias, t.enmascarado) }
                             },
-                            onSeleccion = vm::tarjeta,
+                            onSeleccion = onTarjeta,
                             leadingIcon = SpviIcons.PagoElectronico,
                             modifier = Modifier.fillMaxWidth().testTag(VinculacionTags.COBRO_TARJETA),
                         )
@@ -492,8 +571,8 @@ private fun FormDialog(f: FormEmpleado, s: VinculacionUi, vm: AccionesVinculacio
                 }
                 if (!nueva) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(SpviSpacing.lg, Alignment.CenterHorizontally)) {
-                        SpviTextButton(text = VinculacionLogic.NUEVO_CODIGO, icon = SpviIcons.Vinculacion, onClick = vm::nuevoCodigo, enabled = !trabajando)
-                        SpviTextButton(text = VinculacionLogic.QUITAR, icon = SpviIcons.Desvincular, onClick = vm::pedirQuitar, enabled = !trabajando)
+                        SpviTextButton(text = VinculacionLogic.NUEVO_CODIGO, icon = SpviIcons.Vinculacion, onClick = onNuevoCodigo, enabled = !trabajando)
+                        SpviTextButton(text = VinculacionLogic.QUITAR, icon = SpviIcons.Desvincular, onClick = onPedirQuitar, enabled = !trabajando)
                     }
                 }
             }
@@ -503,14 +582,19 @@ private fun FormDialog(f: FormEmpleado, s: VinculacionUi, vm: AccionesVinculacio
 
 /** 0.26.0 (P73 §4): «Asignar fondo» del próximo turno de una secundaria (puede ser 0; propone lo último contado). */
 @Composable
-private fun DialogoAsignarFondo(a: AsignacionFondo, trabajando: Boolean, vm: AccionesVinculacion) {
+private fun DialogoAsignarFondo(
+    a: AsignacionFondo,
+    trabajando: Boolean,
+    onCancelarFondo: () -> Unit = {},
+    onConfirmarFondo: (Cup) -> Unit = {},
+) {
     var texto by rememberSaveable(a.empleado.id) { mutableStateOf(cu.spvi.app.caja.CajaForm.textoInicial(a.sugerido)) }
     val valor = cu.spvi.app.caja.CajaForm.importe(texto)
     SpviDialog(
         title = "${VinculacionLogic.ASIGNAR_FONDO}: ${a.empleado.nombre}",
         text = VinculacionLogic.ASIGNAR_FONDO_TEXTO,
-        onDismiss = vm::cancelarFondo,
-        onConfirm = { valor?.let(vm::confirmarFondo) },
+        onDismiss = onCancelarFondo,
+        onConfirm = { valor?.let(onConfirmarFondo) },
         confirmDescription = VinculacionLogic.ASIGNAR_FONDO,
         confirmEnabled = valor != null && !trabajando,
         confirmLoading = trabajando,

@@ -203,8 +203,8 @@ class InicioLogicTest {
 
     /** 0.27.0 (T3): medallas solo para los 3 primeros. */
     @Test fun medallasDelTop3() {
-        assertEquals(cu.spvi.designsystem.component.Puesto.PRIMERO, puestoTop(0))
-        assertEquals(cu.spvi.designsystem.component.Puesto.TERCERO, puestoTop(2))
+        assertEquals(1, puestoTop(0))
+        assertEquals(3, puestoTop(2))
         assertEquals(null, puestoTop(3))
     }
 }

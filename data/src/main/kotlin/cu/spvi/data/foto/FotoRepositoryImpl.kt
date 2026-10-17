@@ -9,6 +9,7 @@ import androidx.exifinterface.media.ExifInterface
 import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
 import cu.spvi.core.time.Clock
+import cu.spvi.data.io.leerAcotado
 import cu.spvi.domain.di.IoDispatcher
 import cu.spvi.domain.repository.FotoRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -72,19 +73,13 @@ object Imagenes {
     }
 
     /** Lee como máximo [max] bytes; null si el origen es mayor (no se trunca una imagen en silencio). */
-    fun leerLimitado(input: InputStream, max: Long): ByteArray? {
-        val out = java.io.ByteArrayOutputStream()
-        val buf = ByteArray(16 * 1024)
-        var total = 0L
-        while (true) {
-            val n = input.read(buf)
-            if (n < 0) break
-            total += n
-            if (total > max) return null
-            out.write(buf, 0, n)
-        }
-        return out.toByteArray()
+    fun leerLimitado(input: InputStream, max: Long): ByteArray? = try {
+        input.leerAcotado(max) { DemasiadoGrande }
+    } catch (e: DemasiadoGrande) {
+        null
     }
+
+    private object DemasiadoGrande : Exception()
 }
 
 /**

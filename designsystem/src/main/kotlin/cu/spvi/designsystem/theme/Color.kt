@@ -102,5 +102,5 @@ fun SpviExtendedColors.of(tone: AlertTone): Color = when (tone) {
     AlertTone.InsumoBajo -> alertInsumoBajo
     AlertTone.InsumoCritico -> alertInsumoCritico
     AlertTone.Caducidad -> alertCaducidad
-    AlertTone.Revisar -> alertInsumoBajo // no se usa: SpviAlertCounter pinta Revisar con colorScheme.primary
+    AlertTone.Revisar -> alertInsumoBajo // no se usa: el contador de Inicio pinta Revisar con colorScheme.primary
 }

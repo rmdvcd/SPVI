@@ -52,7 +52,7 @@ designsystem/src/main/kotlin/cu/spvi/designsystem/
 - `primary` = acción principal, chip elegido e indicador de la barra inferior. `error` = destructivo y «Sin existencia».
 
 **Colores extendidos** (`SpviTheme.colors`):
-- `alert*`: un color para cada `AlertTone` (StockBajo, StockCritico, InsumoBajo, InsumoCritico, Caducidad). `SinExistencia` (0.21.1) usa el rojo de StockCritico, pero `SpviAlertCounter` lo pinta **relleno** (`CardTone.Error`: fondo `error`, texto `onError`). `Revisar` (0.24.0, «Nombre repetido: añade descripción») no es de existencias: `SpviAlertCounter` pinta el número en `colorScheme.primary` (AA ya verificado en `ContrastTest`); no añade colores a la paleta.
+- `alert*`: un color para cada `AlertTone` (StockBajo, StockCritico, InsumoBajo, InsumoCritico, Caducidad). `SinExistencia` (0.21.1) usa el rojo de StockCritico, pero el contador de alertas de Inicio lo pinta **relleno** (`CardTone.Error`: fondo `error`, texto `onError`). `Revisar` (0.24.0, «Nombre repetido: añade descripción») no es de existencias: el contador pinta el número en `colorScheme.primary` (AA ya verificado en `ContrastTest`); no añade colores a la paleta.
 - Insumo bajo: claro `#2F6F80`, oscuro `#7FC4D4` (= tertiary; 0.21.2, antes verde `#3D7A1F` / `#AED581`, que se confundía con `success`).
 - Insumo crítico claro: `#9A3412` (0.21.1; antes `#B45309`, indistinguible del naranja de marca `#B4541A`).
 - `chart`: claro `#2B4FA3 #B4541A #8B5E34 #A23B72 #6B6B00 #80868D`, oscuro `#66D1EF #F6A15C #D4A373 #F48FB1 #C5C56A #9E9E9E` (0.21.2: caramelo en vez de petróleo). 0.21.1: sin los tonos de las alertas (morado, verde, amarillo), comprobado en `ContrastTest.alertasDistintasDeMarcaYGraficos`.
@@ -143,9 +143,9 @@ No hay valores intermedios (4, 12, 20…).
   - Iconos: 24dp, o 18dp en la versión pequeña.
   - Logo: 72dp en bloqueo y onboarding. **0.27.0:** ya no aparece en la TopBar ni en diálogos u hojas.
   - `fotoFormulario` = 112dp (0.27.0): foto centrada al principio de Nuevo producto/servicio (`SelectorFoto`).
-  - Medalla del Top 3: 28–32dp (`SpviMedalla`).
+  - Medalla del Top 3: 28–32dp (círculo local de Inicio).
   - Trazos internos (P19): `strokeHairline` = 1dp (línea base de gráficos), `strokeRegular` = 2dp (área y spinner), `chartBarMax` = 28dp.
-  - `fabClearance` = 88dp (hueco al final de las listas con FAB), `qr` = 240dp, `fotoMiniatura` = 88dp, `campoCantidad` = 112dp, `contentMaxWidth` = 600dp (ancho máximo de formularios, con `Modifier.spviContentWidth()`).
+  - `fabClearance` = 88dp (hueco al final de las listas con FAB), `qr` = 240dp, `campoCantidad` = 112dp, `contentMaxWidth` = 600dp (ancho máximo de formularios, con `Modifier.spviContentWidth()`).
 - **Motion** (`SpviMotion`). **0.27.0 (T4/N4):** todo sale de aquí; nada de bucles con `delay(16)`, la animación sigue el refresco real de la pantalla (60/90/120 Hz) y respeta «Quitar animaciones» del sistema.
   - Duraciones: `FAST` 150, `SHORT` 200, `MEDIUM` 250 y `LONG` 250 ms (antes 300).
   - `muelle()`: `spring(DampingRatioNoBouncy, StiffnessMediumLow)` para lo que cambia de tamaño o posición (botones con `loading`, barra inferior).
@@ -171,8 +171,8 @@ No hay valores intermedios (4, 12, 20…).
 | `SpviAccordionCard` | (0.30.1) Card plegable: cabecera de ≥ 48 dp con título centrado y flecha que gira, contenido con `AnimatedVisibility`. El estado (`expanded`/`onToggle`) lo lleva quien la usa, para recordarlo fuera de listas que reciclan filas. Semántica: encabezado + «Expandido»/«Contraído». Lo usa Inicio. |
 | `SpviCard(ajustarAlContenido = true)` | (0.30.1) La card mide lo que mide su contenido en vez de ocupar todo el ancho (turno de Inicio). |
 | `SpviListItem` | **Indicador de color a la izquierda** (4×32dp), nombre (hasta 3 líneas desde la 0.27.0) y subtítulo, **valor alineado a la derecha** (máx. 45 % del ancho; debajo del nombre con letra grande; **P24:** si no cabe, la letra se reduce con `SpviTextoAjustable` en vez de cortarse). Admite leading, trailing y `selected`. **Regla P24 de filas:** nombre + dato principal; el subtítulo solo aparece como aviso (crítico, bajo, vence…) o, en los registros, con la fecha. El resto vive en la ficha. |
-| `SpviBadge` / `SpviAlertCounter` | Contador numérico, y contador de alerta con su tono. **0.27.0 (T14):** en Inicio las alertas van centradas (icono, contador y texto) y repartidas por filas con una regla pura: 1, 2, 3 → una fila; 4 → 2 + 2; 5 → 3 + 2; 6 → 3 + 3; mismo ancho y alto dentro de la fila, fila incompleta centrada. |
-| `SpviMedalla` | **0.27.0 (T3):** número del puesto (1, 2, 3) dentro de un círculo oro, plata o bronce (`MEDALLA_ORO/PLATA/BRONCE`, iguales en claro y oscuro) con el número en el tono oscuro de su familia (≥ 4.5:1, `ContrastTest`). Peso de dato. TalkBack: «Primer/Segundo/Tercer puesto». |
+| `SpviBadge` / contador de alertas | Contador numérico, y contador de alerta de Inicio con su tono (local a la pantalla: `SpviCard`+`Text`). **0.27.0 (T14):** en Inicio las alertas van centradas (icono, contador y texto) y repartidas por filas con una regla pura: 1, 2, 3 → una fila; 4 → 2 + 2; 5 → 3 + 2; 6 → 3 + 3; mismo ancho y alto dentro de la fila, fila incompleta centrada. |
+| Medalla del Top 3 | **0.27.0 (T3):** número del puesto (1, 2, 3) dentro de un círculo oro, plata o bronce (`MEDALLA_ORO/PLATA/BRONCE`, iguales en claro y oscuro) con el número en el tono oscuro de su familia (≥ 4.5:1, `ContrastTest`). Peso de dato. TalkBack: «Primer/Segundo/Tercer puesto». Vive en Inicio (un solo uso). |
 | `SpviChip` | FilterChip con `supportingLabel` (por ejemplo, el precio). |
 | `SpviSnackbarHost` | Snackbar sobre `inverseSurface`, con vibración breve al aparecer. |
 | `SpviDialog` | **Centrado**; **0.27.0 (T1):** sin logo, título centrado arriba del todo; Cancelar y Confirmar (iconos) **centrados con 16dp entre ellos**; la confirmación va rellena (Von Restorff). Con `destructive` se pinta en el color de error. **P24:** `confirmEnabled`, `confirmLoading` (spinner), `confirmTag` y `confirmIcon` evitan meter botones extra dentro del diálogo. |
@@ -180,7 +180,7 @@ No hay valores intermedios (4, 12, 20…).
 | `SpviComboBox` | **P24:** lista desplegable de solo lectura para elegir UNA opción (Período en Inicio). **P25:** aspecto de tarjeta tonal (radio 16dp, icono en círculo `primaryContainer`, etiqueta + valor en negrita, flecha que gira); menú con radio 16dp y la opción elegida resaltada con ✓. |
 | `SpviTextoAjustable` | **P24:** texto que no se parte ni se corta: si no cabe, reduce la letra hasta 11sp; solo por debajo aparece «…». Importes de filas y celdas de Inicio. |
 | `SpviIlustracionImagen` + `SpviIlustracion` | **P24:** 9 ilustraciones vectoriales (Error, SinResultados, Inventario, Elaboracion, Carrito, Registros, Precios, SinTurno, NoExiste) de **unDraw** (paquete npm `undraw-svg` 2.0.0, MIT), dentro del APK. El acento toma el `primary` del tema; en oscuro los grises se invierten. Decorativas (TalkBack no las lee). |
-| `SpviExpandableFab` + `SpviFabAction` | FAB que rota 45° y despliega acciones con su etiqueta. **0.26.0 (P73):** va abajo a la derecha (`FabPosition.End`), como pide Material; revierte el centrado de la 0.18.1 (P24). Cada mini botón queda justo sobre el principal, con la etiqueta a su izquierda. **0.18.2:** cada fila (`FilaAccionFab`) se mide sola con un ancho simétrico respecto al mini botón, sin `fillMaxWidth` ni pesos (con ellos la etiqueta podía quedar sin ancho). La pantalla pone un velo (`scrim` al 32 %) bajo el menú abierto; tocar fuera o Atrás lo cierra. |
+| Botones del «+» de pago electrónico | Dos `SmallFloatingActionButton` M3 (`tertiaryContainer`) con su etiqueta (`surfaceContainerHigh`, `labelLarge`), que se despliegan sobre un `SpviFab` «+». **0.26.0 (P73):** abajo a la derecha (`FabPosition.End`), como pide Material. Viven en la propia pantalla (un solo uso). |
 | `SpviFab` | FAB de una sola acción (p. ej. «Agregar servicio»), mismos colores y elevación que el expandible. **0.26.0:** abajo a la derecha en Inventario, Servicios y Precios (antes, centrado). |
 | `SpviLoading` / `SpviLinearProgress` | Progreso circular (con descripción accesible) y lineal, determinado o indeterminado. |
 | `SpviNavigationBar` + `SpviNavItem` | Barra inferior de 5 ítems, **solo iconos rellenos** y **resaltado invertido**: el ítem seleccionado tiene fondo primary e icono onPrimary. El nombre sale como tooltip y en TalkBack. |
@@ -287,5 +287,5 @@ Para ver el catálogo completo hay dos opciones:
 
 ## Ajustes 0.27.0
 
-- **T1** títulos centrados sin logo (TopBar, diálogos, hojas). **T2** textos que crecen en lugar de cortarse; capturas con letra al 200 % (`LetraGrande` en las pruebas de capturas). **T3** `SpviMedalla`. **T4/N4** motion (arriba). **T6** placeholder centrado. **T7** iconos PDF/Excel. **T14** reparto de alertas. **N3** logo transparente.
+- **T1** títulos centrados sin logo (TopBar, diálogos, hojas). **T2** textos que crecen en lugar de cortarse; capturas con letra al 200 % (`LetraGrande` en las pruebas de capturas). **T3** medalla del Top 3 (local a Inicio). **T4/N4** motion (arriba). **T6** placeholder centrado. **T7** iconos PDF/Excel. **T14** reparto de alertas. **N3** logo transparente.
 - **Clientes fijos (N2):** casilla «Cliente fijo» como `SpviListItem` con `Checkbox` a la izquierda; sugerencias (hasta 3) como filas con icono de persona justo debajo del nombre; pestaña «Clientes» en Registros con ficha en `SpviBottomSheet` y «Quitar» con `SpviDialog` destructivo.

@@ -80,9 +80,8 @@ data class RequestPayload(
 /**
  * Payload de la licencia: campos de la solicitud + id, emitidaEn, venceEn, estado y un nonce nuevo.
  *
- * Campos del flujo **v1** (licencia larga, `SISTEMA_LICENCIAS_CLIENTES.md` §5.2): `appName`, `dispositivo`, `usuario`,
- * `licenciaObtenida`, `periodoRestante`, `codigoCorto`. La licencia corta de SPVI no los trae (el `appName` es el
- * prefijo del `deviceId` y el código de 16 caracteres solo existe en el flujo v1).
+ * Campos del flujo **v1** (licencia larga, `SISTEMA_LICENCIAS_CLIENTES.md` §5.2): `licenciaObtenida`,
+ * `codigoCorto`. La licencia corta de SPVI no los trae (el código de 16 caracteres solo existe en el flujo v1).
  */
 @Serializable
 data class LicensePayload(
@@ -103,16 +102,8 @@ data class LicensePayload(
     val estado: EstadoLicencia,
     /** 0.21.0 (C4): opcional; ausente (licencias de GL anteriores) = [GlContract.SECUNDARIAS_DEFECTO]. */
     val secundarias: Int? = null,
-    /** Nombre de la app emisora (flujo v1; obligatorio allí). En el flujo compacto de SPVI no viaja. */
-    val appName: String? = null,
-    /** Modelo del hardware solicitante (flujo v1). */
-    val dispositivo: String? = null,
-    /** Copia anidada de los datos del solicitante (flujo v1). */
-    val usuario: DatosUsuario? = null,
     /** Código de 16 caracteres emitido (`XXXX-XXXX-XXXX-XXXX`), flujo v1. */
     val licenciaObtenida: String? = null,
-    /** Días acumulados por rollover al emitir (flujo v1). */
-    val periodoRestante: Long? = null,
     /** Igual a [licenciaObtenida] (flujo v1). */
     val codigoCorto: String? = null,
 )

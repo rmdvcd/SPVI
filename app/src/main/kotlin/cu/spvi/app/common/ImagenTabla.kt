@@ -16,12 +16,8 @@ import kotlinx.coroutines.withContext
 
 /**
  * Prompt 14 · Inventario → Imagen: una tabla en PNG (una imagen por cada [DisenoTabla.POR_IMAGEN] filas) para
- * enviar por WhatsApp/Telegram, donde un PDF se abre peor. Interfaz para probar los ViewModels en JVM.
+ * enviar por WhatsApp/Telegram, donde un PDF se abre peor.
  */
-interface RenderizadorTabla {
-    /** [nombreBase] sin extensión: "SPVI_precios" → SPVI_precios_1.png, SPVI_precios_2.png… */
-    suspend fun renderizar(tabla: TablaExport, nombreBase: String): List<File>
-}
 
 /** Distribución (pura, probada en JVM): páginas, anchos de columna y alto de cada imagen. */
 object DisenoTabla {
@@ -59,10 +55,10 @@ object DisenoTabla {
         filas.isNotEmpty() && filas.all { f -> f.getOrElse(col) { "" }.let { v -> v.isEmpty() || v.endsWith(" CUP") || v.all { it.isDigit() || it in ",.-" } } }
 }
 
-class ImagenTablaAndroid @Inject constructor(
+open class ImagenTablaAndroid @Inject constructor(
     private val archivos: ArchivosApp,
     @IoDispatcher private val io: CoroutineDispatcher,
-) : RenderizadorTabla {
+) {
 
     private val fondo = Color.WHITE
     private val marca = Color.parseColor("#1F5F70")     // teal oscuro de la marca: AA sobre blanco
@@ -71,7 +67,8 @@ class ImagenTablaAndroid @Inject constructor(
     private val texto = Color.parseColor("#1B1B1B")
     private val secundario = Color.parseColor("#5F6368")
 
-    override suspend fun renderizar(tabla: TablaExport, nombreBase: String): List<File> = withContext(io) {
+    /** [nombreBase] sin extensión: "SPVI_precios" → SPVI_precios_1.png, SPVI_precios_2.png… */
+    open suspend fun renderizar(tabla: TablaExport, nombreBase: String): List<File> = withContext(io) {
         val paginas = DisenoTabla.paginas(tabla.filas)
         val anchos = DisenoTabla.anchos(tabla.columnas, tabla.filas)
         val derecha = tabla.columnas.indices.map { DisenoTabla.alDerecha(tabla.filas, it) }

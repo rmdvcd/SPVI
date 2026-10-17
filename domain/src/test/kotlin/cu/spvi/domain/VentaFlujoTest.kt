@@ -212,7 +212,15 @@ class VentaFlujoTest {
         assertEquals(PagoQr.Resultado.SinTarjeta, PagoQr.transfermovil(Perfil()))
         val soloTarjeta = Perfil(tarjetas = listOf(TarjetaBancaria(1, "9248129970876454")), pagoTarjetaId = 1)
         assertEquals("TRANSFERMOVIL_ETECSA,TRANSFERENCIA,9248129970876454,,", (PagoQr.transfermovil(soloTarjeta) as PagoQr.Resultado.Ok).contenido)
-        assertEquals("51815604", PagoQr.movilLocal("+5351815604"))
-        assertNull(PagoQr.movilLocal("+34600111222"))
+        val conMovil = Perfil(
+            tarjetas = listOf(TarjetaBancaria(1, "9248129970876454")), telefonos = listOf(Telefono(2, "+5351815604")),
+            pagoTarjetaId = 1, pagoTelefonoId = 2,
+        )
+        assertEquals("51815604", (PagoQr.transfermovil(conMovil) as PagoQr.Resultado.Ok).telefono)
+        val extranjero = Perfil(
+            tarjetas = listOf(TarjetaBancaria(1, "9248129970876454")), telefonos = listOf(Telefono(2, "+34600111222")),
+            pagoTarjetaId = 1, pagoTelefonoId = 2,
+        )
+        assertNull((PagoQr.transfermovil(extranjero) as PagoQr.Resultado.Ok).telefono)
     }
 }

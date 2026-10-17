@@ -2,7 +2,6 @@ package cu.spvi.app.capturas
 
 import android.app.Application
 import androidx.compose.ui.test.junit4.createComposeRule
-import cu.spvi.app.vinculacion.AccionesVinculacion
 import cu.spvi.app.vinculacion.FormEmpleado
 import cu.spvi.app.vinculacion.VinculacionContent
 import cu.spvi.app.vinculacion.VinculacionUi
@@ -28,7 +27,6 @@ import org.robolectric.annotation.GraphicsMode
 class VinculacionCapturas {
     @get:Rule val rule = createComposeRule()
 
-    private val acciones = object : AccionesVinculacion {}
     private val hace = Captura.AHORA.minusSeconds(3 * 3600)
     private val ana = Empleado(1, "Ana", PermisoEmpleado.PREDETERMINADOS, hace, vinculadoEn = hace, ultimaSincronizacion = Captura.AHORA)
     private val luis = Empleado(
@@ -44,7 +42,7 @@ class VinculacionCapturas {
         telefonoPredeterminado = Telefono(1, "+5352345678"),
     )
 
-    private fun cap(id: String, s: VinculacionUi) = rule.capturar(id) { VinculacionContent(s, acciones) }
+    private fun cap(id: String, s: VinculacionUi) = rule.capturar(id) { VinculacionContent(s) }
 
     @Test fun principalConEmpleados() = cap("07p_vinculacion_principal_turnos", principal)
     @Test @Config(qualifiers = Captura.LARGA) fun fichaConCobroYCierre() = cap(

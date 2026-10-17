@@ -43,46 +43,6 @@ data class FormEmpleado(
     val telefonoId: Long? = null,
 )
 
-/**
- * 0.20.0: lo que la pantalla puede pedir. Lo implementa [VinculacionViewModel]; las capturas Roborazzi pasan
- * un objeto vacío para pintar [VinculacionContent] sin Hilt.
- */
-interface AccionesVinculacion {
-    fun agregar() {}
-    fun editar(e: Empleado) {}
-    fun cerrarForm() {}
-    fun nombre(v: String) {}
-    fun permiso(p: PermisoEmpleado, activo: Boolean) {}
-    fun tarjeta(id: Long?) {}
-    fun telefono(id: Long?) {}
-    fun guardarForm() {}
-    fun nuevoCodigo() {}
-    fun cerrarQr() {}
-    fun pedirQuitar() {}
-    fun cancelarQuitar() {}
-    fun confirmarQuitar() {}
-    fun pedirCierre() {}
-    fun cancelarCierre() {}
-    fun confirmarCierre() {}
-    /** 0.21.0 (C6): solicitud de cierre del empleado. */
-    fun aprobarCierre() {}
-    fun rechazarCierre() {}
-    /** 0.21.0 (C2): teléfono del empleado antes de escanear el QR. */
-    fun telefonoSecundaria(v: String) {}
-    fun pedirSecundaria() {}
-    fun cancelarSecundaria() {}
-    fun confirmarSecundaria() {}
-    fun sincronizar() {}
-    fun modo(m: ModoSincronizacion) {}
-    fun pedirDesvincular() {}
-    fun cancelarDesvincular() {}
-    fun confirmarDesvincular() {}
-    /** 0.26.0 (P73 §4): fondo del próximo turno de la secundaria abierta en la ficha. */
-    fun asignarFondo() {}
-    fun cancelarFondo() {}
-    fun confirmarFondo(fondo: cu.spvi.core.money.Cup) {}
-}
-
 /** 0.26.0 (P73 §4): diálogo «Asignar fondo». [sugerido] = lo contado al cerrar su último turno. */
 data class AsignacionFondo(val empleado: Empleado, val sugerido: cu.spvi.core.money.Cup?)
 
@@ -145,7 +105,7 @@ class VinculacionViewModel @Inject constructor(
     perfilRepo: PerfilRepository,
     private val licencia: cu.spvi.domain.repository.LicenciaRepository,
     ajustesDispositivo: cu.spvi.domain.repository.AjustesDispositivoRepository,
-) : ViewModel(), AccionesVinculacion {
+) : ViewModel() {
     private val local = MutableStateFlow(Local())
     private val mensajesCh = Channel<String>(Channel.BUFFERED)
     val mensajes: Flow<String> = mensajesCh.receiveAsFlow()
@@ -185,17 +145,17 @@ class VinculacionViewModel @Inject constructor(
 
     // ---------------------------------------------------------------- principal
 
-    override fun agregar() = local.update { it.copy(form = FormEmpleado()) }
-    override fun editar(e: Empleado) = local.update { it.copy(form = FormEmpleado(e.id, e.nombre, e.permisos, tarjetaId = e.tarjetaId, telefonoId = e.telefonoId)) }
-    override fun cerrarForm() = local.update { it.copy(form = null) }
-    override fun nombre(v: String) = local.update { l -> l.copy(form = l.form?.copy(nombre = v.take(60), errorNombre = null)) }
-    override fun permiso(p: PermisoEmpleado, activo: Boolean) = local.update { l ->
+    fun agregar() = local.update { it.copy(form = FormEmpleado()) }
+    fun editar(e: Empleado) = local.update { it.copy(form = FormEmpleado(e.id, e.nombre, e.permisos, tarjetaId = e.tarjetaId, telefonoId = e.telefonoId)) }
+    fun cerrarForm() = local.update { it.copy(form = null) }
+    fun nombre(v: String) = local.update { l -> l.copy(form = l.form?.copy(nombre = v.take(60), errorNombre = null)) }
+    fun permiso(p: PermisoEmpleado, activo: Boolean) = local.update { l ->
         l.copy(form = l.form?.let { f -> f.copy(permisos = if (activo) f.permisos + p else f.permisos - p) })
     }
-    override fun tarjeta(id: Long?) = local.update { l -> l.copy(form = l.form?.copy(tarjetaId = id)) }
-    override fun telefono(id: Long?) = local.update { l -> l.copy(form = l.form?.copy(telefonoId = id)) }
+    fun tarjeta(id: Long?) = local.update { l -> l.copy(form = l.form?.copy(tarjetaId = id)) }
+    fun telefono(id: Long?) = local.update { l -> l.copy(form = l.form?.copy(telefonoId = id)) }
 
-    override fun guardarForm() {
+    fun guardarForm() {
         val f = local.value.form ?: return
         trabajar {
             if (f.id == 0L) {
@@ -222,7 +182,7 @@ class VinculacionViewModel @Inject constructor(
         }
     }
 
-    override fun nuevoCodigo() {
+    fun nuevoCodigo() {
         val f = local.value.form ?: return
         trabajar {
             when (val r = principal.nuevoCodigo(f.id)) {
@@ -232,11 +192,11 @@ class VinculacionViewModel @Inject constructor(
         }
     }
 
-    override fun cerrarQr() = local.update { it.copy(qr = null) }
+    fun cerrarQr() = local.update { it.copy(qr = null) }
 
-    override fun pedirQuitar() = local.update { l -> l.copy(quitar = state.value.empleados.firstOrNull { it.id == l.form?.id }, form = null) }
-    override fun cancelarQuitar() = local.update { it.copy(quitar = null) }
-    override fun confirmarQuitar() {
+    fun pedirQuitar() = local.update { l -> l.copy(quitar = state.value.empleados.firstOrNull { it.id == l.form?.id }, form = null) }
+    fun cancelarQuitar() = local.update { it.copy(quitar = null) }
+    fun confirmarQuitar() {
         val e = local.value.quitar ?: return
         local.update { it.copy(quitar = null) }
         trabajar {
@@ -249,9 +209,9 @@ class VinculacionViewModel @Inject constructor(
 
     // ---------------------------------------------------------------- 0.20.0 (H5): pedir el cierre del turno
 
-    override fun pedirCierre() = local.update { l -> l.copy(cerrarTurno = state.value.empleadoForm, form = null) }
-    override fun cancelarCierre() = local.update { it.copy(cerrarTurno = null) }
-    override fun confirmarCierre() {
+    fun pedirCierre() = local.update { l -> l.copy(cerrarTurno = state.value.empleadoForm, form = null) }
+    fun cancelarCierre() = local.update { it.copy(cerrarTurno = null) }
+    fun confirmarCierre() {
         val e = local.value.cerrarTurno ?: return
         local.update { it.copy(cerrarTurno = null) }
         trabajar {
@@ -266,8 +226,8 @@ class VinculacionViewModel @Inject constructor(
 
     // ---------------------------------------------------------------- 0.21.0 (C6): solicitud del empleado
 
-    override fun aprobarCierre() = resolverSolicitud(aprobar = true)
-    override fun rechazarCierre() = resolverSolicitud(aprobar = false)
+    fun aprobarCierre() = resolverSolicitud(aprobar = true)
+    fun rechazarCierre() = resolverSolicitud(aprobar = false)
 
     private fun resolverSolicitud(aprobar: Boolean) {
         val e = state.value.empleadoForm ?: return
@@ -288,7 +248,7 @@ class VinculacionViewModel @Inject constructor(
 
     // ---------------------------------------------------------------- 0.26.0 (P73 §4): fondo de caja
 
-    override fun asignarFondo() {
+    fun asignarFondo() {
         val e = state.value.empleadoForm ?: return
         viewModelScope.launch {
             val s = runCatching { principal.fondoSugerido(e.id) }.getOrNull()
@@ -296,9 +256,9 @@ class VinculacionViewModel @Inject constructor(
         }
     }
 
-    override fun cancelarFondo() = local.update { it.copy(asignarFondo = null) }
+    fun cancelarFondo() = local.update { it.copy(asignarFondo = null) }
 
-    override fun confirmarFondo(fondo: cu.spvi.core.money.Cup) {
+    fun confirmarFondo(fondo: cu.spvi.core.money.Cup) {
         val a = local.value.asignarFondo ?: return
         local.update { it.copy(asignarFondo = null) }
         trabajar {
@@ -311,7 +271,7 @@ class VinculacionViewModel @Inject constructor(
 
     // ---------------------------------------------------------------- pasar a secundaria
 
-    override fun pedirSecundaria() {
+    fun pedirSecundaria() {
         // Se espera a los valores reales (ver puedeSerSecundaria): al abrirse sola tras el recorrido,
         // la comprobación inmediata leería el inicial y bloquearía a quien eligió «Secundaria».
         viewModelScope.launch {
@@ -319,11 +279,11 @@ class VinculacionViewModel @Inject constructor(
             local.update { it.copy(confirmarSecundaria = true, errorTelefono = null) }
         }
     }
-    override fun cancelarSecundaria() = local.update { it.copy(confirmarSecundaria = false) }
-    override fun telefonoSecundaria(v: String) = local.update {
+    fun cancelarSecundaria() = local.update { it.copy(confirmarSecundaria = false) }
+    fun telefonoSecundaria(v: String) = local.update {
         it.copy(telefonoSecundaria = cu.spvi.designsystem.component.FiltroEntrada.TELEFONO.aplicar(v), errorTelefono = null)
     }
-    override fun confirmarSecundaria() {
+    fun confirmarSecundaria() {
         // 0.21.0 (C2): el teléfono del empleado es obligatorio (su QR de cobro lo usa).
         if (!cu.spvi.domain.model.Vinculacion.telefonoValido(local.value.telefonoSecundaria)) {
             local.update { it.copy(errorTelefono = VinculacionLogic.ERROR_TELEFONO) }
@@ -344,18 +304,18 @@ class VinculacionViewModel @Inject constructor(
 
     // ---------------------------------------------------------------- secundaria
 
-    override fun sincronizar() = trabajar {
+    fun sincronizar() = trabajar {
         when (val r = secundaria.sincronizarAhora()) {
             is AppResult.Ok -> mensajesCh.trySend(VinculacionLogic.SINCRONIZADA)
             is AppResult.Err -> mensajesCh.trySend(VinculacionLogic.error(r.error))
         }
     }
 
-    override fun modo(m: ModoSincronizacion) { viewModelScope.launch { secundaria.cambiarModo(m) } }
+    fun modo(m: ModoSincronizacion) { viewModelScope.launch { secundaria.cambiarModo(m) } }
 
-    override fun pedirDesvincular() = local.update { it.copy(confirmarDesvincular = true) }
-    override fun cancelarDesvincular() = local.update { it.copy(confirmarDesvincular = false) }
-    override fun confirmarDesvincular() {
+    fun pedirDesvincular() = local.update { it.copy(confirmarDesvincular = true) }
+    fun cancelarDesvincular() = local.update { it.copy(confirmarDesvincular = false) }
+    fun confirmarDesvincular() {
         local.update { it.copy(confirmarDesvincular = false) }
         trabajar {
             if (secundaria.desvincular() is AppResult.Err) mensajesCh.trySend(VinculacionLogic.error(cu.spvi.core.result.AppError.Almacenamiento))

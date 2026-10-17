@@ -1,5 +1,6 @@
 package cu.spvi.data.sync
 
+import cu.spvi.core.util.aHex
 import cu.spvi.data.local.SecureDataStore
 import cu.spvi.domain.model.LicenciaPrincipal
 import cu.spvi.domain.model.ModoSincronizacion
@@ -89,7 +90,7 @@ class ConfigSync @Inject constructor(private val ds: SecureDataStore) {
 
     /** Id público del negocio (lo crea la principal la primera vez). No identifica al dispositivo ni a la persona. */
     suspend fun negocioId(): String = mutex.withLock {
-        ds.get(K_NEGOCIO) ?: CriptoSync.aleatorio(12).joinToString("") { "%02x".format(it) }.also { ds.put(K_NEGOCIO, it) }
+        ds.get(K_NEGOCIO) ?: CriptoSync.aleatorio(12).aHex().also { ds.put(K_NEGOCIO, it) }
     }
 
     /** Pasa a SECUNDARIA con los datos de la vinculación recién hecha. */

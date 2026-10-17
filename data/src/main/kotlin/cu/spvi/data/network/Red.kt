@@ -17,7 +17,7 @@ object Red {
      * Cliente único. Límites generosos como tope duro. Sin caché, sin cookies, sin reintentos silenciosos,
      * y solo https (además de `usesCleartextTraffic=false` en el manifiesto).
      */
-    fun cliente(soloHttps: Boolean = true): OkHttpClient = OkHttpClient.Builder()
+    fun cliente(): OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .callTimeout(30, TimeUnit.SECONDS)
@@ -26,10 +26,10 @@ object Red {
         .addInterceptor(Interceptor { ch ->
             ch.proceed(ch.request().newBuilder().header("User-Agent", USER_AGENT).header("Accept", "application/json").build())
         })
-        .apply { if (soloHttps) { addInterceptor(SoloHttps); addNetworkInterceptor(SoloHttps) } } // app: antes de conectar; red: cada salto de una redirección
+        .apply { addInterceptor(SoloHttps); addNetworkInterceptor(SoloHttps) } // app: antes de conectar; red: cada salto de una redirección
         .build()
 
-    /** Defensa en profundidad: rechaza cualquier petición que no sea https (cada salto, también tras redirecciones). Desactivable solo en pruebas con MockWebServer. */
+    /** Defensa en profundidad: rechaza cualquier petición que no sea https (cada salto, también tras redirecciones). */
     object SoloHttps : Interceptor {
         override fun intercept(chain: Interceptor.Chain) =
             if (chain.request().url.isHttps) chain.proceed(chain.request()) else throw IOException("solo https")

@@ -1,7 +1,7 @@
 package cu.spvi.app
 
 import cu.spvi.app.common.ArchivosApp
-import cu.spvi.app.inventario.RenderizadorTarjetas
+import cu.spvi.app.inventario.TarjetasAndroid
 import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
 import cu.spvi.domain.model.ConfiguracionInicial
@@ -40,7 +40,7 @@ class FakeArchivos : ArchivosApp {
     fun bytes(uri: String): ByteArray = (origenes[uri] ?: destinos.getValue(uri).toByteArray())
 }
 
-class FakeRenderer(private val archivos: FakeArchivos) : RenderizadorTarjetas {
+class FakeRenderer(private val archivos: FakeArchivos) : TarjetasAndroid(archivos, kotlinx.coroutines.Dispatchers.Unconfined) {
     val renderizados = mutableListOf<List<Producto>>()
     val comentarios = mutableListOf<String>()
     override suspend fun renderizar(productos: List<Producto>, comentario: String): List<File> {
@@ -54,7 +54,7 @@ class FakeRenderer(private val archivos: FakeArchivos) : RenderizadorTarjetas {
 }
 
 /** Prompt 14: tabla → PNG. Registra la tabla y crea una "imagen" por cada 25 filas. */
-class FakeTabla(private val archivos: FakeArchivos) : cu.spvi.app.common.RenderizadorTabla {
+class FakeTabla(private val archivos: FakeArchivos) : cu.spvi.app.common.ImagenTablaAndroid(archivos, kotlinx.coroutines.Dispatchers.Unconfined) {
     val renderizadas = mutableListOf<TablaExport>()
     override suspend fun renderizar(tabla: TablaExport, nombreBase: String): List<File> {
         renderizadas += tabla

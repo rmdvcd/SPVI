@@ -1,6 +1,7 @@
 package cu.spvi.app.pagos
 
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,12 +12,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,7 +31,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -39,8 +45,7 @@ import cu.spvi.app.inicio.formatoTelefono
 import cu.spvi.designsystem.component.FiltroEntrada
 import cu.spvi.designsystem.component.SpviBottomSheet
 import cu.spvi.designsystem.component.SpviDialog
-import cu.spvi.designsystem.component.SpviExpandableFab
-import cu.spvi.designsystem.component.SpviFabAction
+import cu.spvi.designsystem.component.SpviFab
 import cu.spvi.designsystem.component.SpviIconAction
 import cu.spvi.designsystem.component.SpviListItem
 import cu.spvi.designsystem.component.SpviPrimaryButton
@@ -52,6 +57,9 @@ import cu.spvi.designsystem.component.SpviTopBar
 import cu.spvi.designsystem.component.spviAnimateItem
 import cu.spvi.designsystem.component.spviContentWidth
 import cu.spvi.designsystem.icon.SpviIcons
+import cu.spvi.designsystem.token.SpviElevation
+import cu.spvi.designsystem.token.SpviMotion
+import cu.spvi.designsystem.token.SpviRadius
 import cu.spvi.designsystem.token.SpviSize
 import cu.spvi.designsystem.token.SpviSpacing
 
@@ -111,16 +119,19 @@ fun PagoElectronicoContent(
     Scaffold(
         topBar = { SpviTopBar(title = TextosPago.TITULO, onBack = onBack) },
         floatingActionButton = {
-            SpviExpandableFab(
-                actions = listOf(
-                    SpviFabAction(SpviIcons.Telefono, "Teléfono") { acciones.onNuevo(TipoCuentaPago.TELEFONO) },
-                    SpviFabAction(SpviIcons.PagoElectronico, "Tarjeta o cuenta") { acciones.onNuevo(TipoCuentaPago.TARJETA) },
-                ),
-                expanded = expandido,
-                onExpandedChange = { expandido = it },
-                icon = SpviIcons.Agregar,
-                contentDescription = "Agregar",
-            )
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(SpviSpacing.md)) {
+                AnimatedVisibility(visible = expandido, enter = SpviMotion.enterVertical, exit = SpviMotion.exitVertical) {
+                    Column(verticalArrangement = Arrangement.spacedBy(SpviSpacing.md)) {
+                        FilaPago("Teléfono", SpviIcons.Telefono) { expandido = false; acciones.onNuevo(TipoCuentaPago.TELEFONO) }
+                        FilaPago("Tarjeta o cuenta", SpviIcons.PagoElectronico) { expandido = false; acciones.onNuevo(TipoCuentaPago.TARJETA) }
+                    }
+                }
+                SpviFab(
+                    SpviIcons.Agregar,
+                    if (expandido) "Cerrar acciones" else "Agregar",
+                    onClick = { expandido = !expandido },
+                )
+            }
         },
         snackbarHost = { SpviSnackbarHost(snackbar) },
     ) { padding ->
@@ -277,5 +288,32 @@ private fun EdicionSheet(e: EdicionPago, guardando: Boolean, acciones: AccionesL
             label = "Nombre para reconocerlo (opcional)",
             placeholder = if (telefono) "Mi móvil" else "Tarjeta del banco",
         )
+    }
+}
+
+/** Acción del «+» de pago electrónico: etiqueta visible a la izquierda y mini botón M3 a la derecha. */
+@Composable
+private fun FilaPago(label: String, icon: ImageVector, onClick: () -> Unit) {
+    val cs = MaterialTheme.colorScheme
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
+        Surface(
+            shape = RoundedCornerShape(SpviRadius.sm),
+            color = cs.surfaceContainerHigh,
+            contentColor = cs.onSurface,
+            shadowElevation = SpviElevation.low,
+            modifier = Modifier.clearAndSetSemantics { }, // TalkBack ya lee la descripción del botón
+        ) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 2,
+                modifier = Modifier.padding(horizontal = SpviSpacing.xs, vertical = SpviSpacing.xs),
+            )
+        }
+        SmallFloatingActionButton(
+            onClick = onClick,
+            containerColor = cs.tertiaryContainer, // como el botón tonal; el naranja es solo para avisos
+            contentColor = cs.onTertiaryContainer,
+        ) { Icon(icon, contentDescription = label) }
     }
 }

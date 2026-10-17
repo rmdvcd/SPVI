@@ -1,6 +1,7 @@
 package cu.spvi.licencia.crypto
 
 import cu.spvi.licencia.contract.GlContract
+import cu.spvi.core.util.aHex
 import java.math.BigInteger
 import java.security.AlgorithmParameters
 import java.security.KeyFactory
@@ -149,7 +150,7 @@ object EcP256 {
 
     /** SHA-256 hex (minúsculas) del SPKI DER. */
     fun fingerprint(spkiDer: ByteArray): String =
-        MessageDigest.getInstance("SHA-256").digest(spkiDer).joinToString("") { "%02x".format(it) }
+        MessageDigest.getInstance("SHA-256").digest(spkiDer).aHex()
 }
 
 /** HKDF-SHA256 (RFC 5869). */
