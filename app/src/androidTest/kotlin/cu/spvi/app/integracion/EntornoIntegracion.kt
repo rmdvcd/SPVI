@@ -114,7 +114,7 @@ class EntornoIntegracion(licencia: LicenseState = LicenseState.Trial(5)) {
         entrada = entrada,
         sesion = sesionVenta,
         secundaria = secundaria,
-        clientesFijos = cu.spvi.data.repository.ClienteFijoRepositoryImpl(db),
+        clientesFijos = cu.spvi.data.repository.ClienteFijoRepositoryImpl(db, clock),
     )
 
     /** 0.20.0 (H5): venta en curso y estado de app secundaria (aquí siempre principal: sin cierre pedido). */

@@ -10,6 +10,8 @@ import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
 import cu.spvi.core.time.Clock
 import cu.spvi.data.db.SpviDatabase
+import cu.spvi.data.db.dao.registrar
+import cu.spvi.data.repository.ClienteFijoRepositoryImpl
 import cu.spvi.data.repository.InsumoRepositoryImpl
 import cu.spvi.data.repository.PreciosRepositoryImpl
 import cu.spvi.data.repository.ProductoRepositoryImpl
@@ -36,6 +38,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -59,6 +62,7 @@ class RepositoriosRoomTest {
     private val ventas = VentaRepositoryImpl(db)
     private val registros = RegistroRepositoryImpl(db)
     private val precios = PreciosRepositoryImpl(db)
+    private val clientes = ClienteFijoRepositoryImpl(db, clock)
 
     @After fun cerrarBd() = db.close()
 
@@ -205,5 +209,48 @@ class RepositoriosRoomTest {
         assertEquals(AppError.NoEncontrado, err(productos.actualizarPrecios(mapOf(p to Cup.ofPesos(1), 999L to Cup.ofPesos(1)))))
         assertNotNull(productos.obtener(p))
         assertEquals(Cup.ofPesos(120), productos.obtener(p)!!.precioVenta) // atómico
+    }
+
+    // ---------------- Clientes fijos (0.31.0) ----------------
+
+    /**
+     * 0.31.0: corregir desde la ficha el nombre, el teléfono y el carné de un cliente fijo (se guarda como en la
+     * venta: teléfono en E.164), sin aceptar el carné de otro cliente y dejando sus compras anteriores con los datos
+     * nuevos.
+     */
+    @Test fun clienteFijoSeCorrigeYNoAceptaUnCarneDeOtroCliente() = runBlocking {
+        val dao = db.clienteFijoDao()
+        dao.registrar("Maria Perez", "85010112345", "51234567", ahora.toEpochMilli())
+        dao.registrar("Jose Gomez", "90020212345", "+5359876543", ahora.toEpochMilli())
+        // Una compra suya (venta por transferencia) para comprobar que sigue al carné corregido.
+        val p = productos.obtener(ok(productos.crear(producto("Refresco", 10), null)))!!
+        val t = ok(turnos.abrir(ahora, "Ana"))
+        val tr = Transaccion(fecha = ahora, importe = Cup.ofPesos(100), numero = "BR601ADLM8998",
+            cliente = DatosCliente("Maria Perez", "85010112345", "51234567"))
+        ok(ventas.registrar(Venta(turnoId = t.id, fecha = ahora, metodoPago = MetodoPago.TRANSFERENCIA, detalles = listOf(detalle(p, 1)), transaccion = tr)))
+        assertEquals(1, clientes.observar().first().first { it.ci == "85010112345" }.compras)
+
+        assertTrue(clientes.actualizar("85010112345", "María Pérez López", "85010112345", "51234568"))
+        val m = clientes.observar().first().first { it.ci == "85010112345" }
+        assertEquals("María Pérez López", m.nombreApellidos)
+        assertEquals("+5351234568", m.telefono)
+        // La compra anterior queda también con los datos corregidos.
+        assertEquals("María Pérez López", db.ventaDao().todasTransacciones().single().clienteNombre)
+        assertEquals("+5351234568", db.ventaDao().todasTransacciones().single().clienteTelefono)
+
+        // El carné de otro cliente no se acepta: no cambia nada.
+        assertFalse(clientes.actualizar("85010112345", "María Pérez", "90020212345", "+5351234567"))
+        assertEquals("María Pérez López", clientes.observar().first().first { it.ci == "85010112345" }.nombreApellidos)
+
+        // Un carné libre sí: el cliente pasa a tenerlo, conserva sus datos y sus compras anteriores lo siguen.
+        assertTrue(clientes.actualizar("85010112345", "María Pérez López", "85010199999", "+5351234568"))
+        val nuevo = clientes.observar().first().first { it.ci == "85010199999" }
+        assertEquals("María Pérez López", nuevo.nombreApellidos)
+        assertEquals(1, nuevo.compras)
+        val trFinal = db.ventaDao().todasTransacciones().single()
+        assertEquals("85010199999", trFinal.clienteCi)
+        assertEquals("María Pérez López", trFinal.clienteNombre)
+        assertEquals("+5351234568", trFinal.clienteTelefono)
+        assertEquals(2, clientes.observar().first().size)
     }
 }

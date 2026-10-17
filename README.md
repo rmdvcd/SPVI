@@ -47,7 +47,7 @@ La versión declarada por el código sigue siendo **0.30.0 (`versionCode 51`)**;
 | **Inventario** | Lista con buscador, filtros, selección múltiple, ficha, alta manual, exportación (PDF, Excel, Imagen, Tarjetas) |
 | **QR de vinculación** | CameraX + ML Kit (modelo empaquetado). Solo lee el QR para vincular la principal con la secundaria |
 | **Servicios** | (0.18.0, sustituye a Elaboración.) Nombre, Tipo, Importe y, opcionales, foto y descripción. Pueden gastar insumos. Se venden aparte de los productos, tienen su pestaña en Registros y sus indicadores en Inicio. Los **insumos** son ahora la categoría «Insumos» del Inventario (precio de venta opcional, en unidades enteras). Los Elaborados muestran «Alcanza para N» |
-| **Registros** | Ventas, Transferencias, Movimientos, **Clientes** (clientes fijos, 0.27.0) y Turnos, con buscador y filtros de fecha e importe. Exportar a PDF/Excel (0.26.0: ya no se comparte como texto) |
+| **Registros** | Ventas, Transferencias, Movimientos, **Clientes** (clientes fijos, 0.27.0; corregir sus datos desde la ficha, 0.31.0) y Turnos, con buscador y filtros de fecha e importe. Exportar a PDF/Excel (0.26.0: ya no se comparte como texto) |
 | **Ajustes** | Completar configuración, Perfil, Licencia, Pago electrónico, Precios (preajustes), Avisos de inventario, Permisos, Respaldo, Actualizar, Ayuda, Soporte |
 
 ### Qué no hace
@@ -156,6 +156,7 @@ SPVI es **cliente** del contrato v1 de GL, sin cambiarlo. Detalle completo en [L
 - **Licencia:** una tarjeta «Precios de la licencia» lista el precio de cada tipo y lo que suma cada app secundaria.
 - **Textos y tamaños:** las pestañas de Registros (de Ventas a Turnos) van en una sola fila horizontal desplazable, por decisión del dueño. Los títulos de las tarjetas y el valor de los selectores ya no se cortan con «…»: pasan a otra línea. Textos sin detalles técnicos: «protegidos» en lugar de «cifrados» en Bienvenida, Perfil y Respaldo, y «no es una actualización válida de SPVI» en lugar de «no es un APK válido».
 - **Actualizaciones:** antes de abrir el instalador SPVI guarda un respaldo completo (sin contraseña, en la carpeta privada de la app; no se exporta ni cuenta para el recordatorio mensual). Si no se puede guardar, no se actualiza. Al abrir la versión nueva se restaura y se borra; si la instalación se cancela, se borra sin restaurar. Las ventas hechas entre el respaldo y la instalación no entran en él. El texto de la actualización ya no menciona el repositorio ni su alojamiento.
+- **Registros → Clientes:** «Editar» y «Quitar de clientes fijos» quedan centrados en el pie de la ficha, siempre a la vista. «Editar» abre una ventana para corregir nombre, carné y teléfono, con las mismas comprobaciones de la venta; no se admite un carné que ya sea de otro cliente y sus compras anteriores quedan con los datos corregidos (carné incluido).
 
 ## Novedades de la 0.27.1 (correcciones, [historial](docs/HISTORIAL_DESARROLLO.md))
 

@@ -344,4 +344,13 @@ class ClientesFijosRepo(inicial: List<cu.spvi.domain.model.ClienteFijo> = emptyL
     val estado = kotlinx.coroutines.flow.MutableStateFlow(inicial)
     override fun observar(): kotlinx.coroutines.flow.Flow<List<cu.spvi.domain.model.ClienteFijo>> = estado
     override suspend fun quitar(ci: String) { estado.value = estado.value.filterNot { it.ci == ci } }
+
+    /** 0.31.0: como en la base, el carné es único y `false` = ya es de otro cliente. */
+    override suspend fun actualizar(ci: String, nombreApellidos: String, nuevoCi: String, telefono: String): Boolean {
+        if (nuevoCi != ci && estado.value.any { it.ci == nuevoCi }) return false
+        estado.value = estado.value.map {
+            if (it.ci == ci) it.copy(nombreApellidos = nombreApellidos, ci = nuevoCi, telefono = telefono) else it
+        }
+        return true
+    }
 }

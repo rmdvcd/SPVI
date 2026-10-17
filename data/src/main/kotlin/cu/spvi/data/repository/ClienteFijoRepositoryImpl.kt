@@ -1,6 +1,9 @@
 package cu.spvi.data.repository
 
+import androidx.room.withTransaction
 import cu.spvi.core.money.Cup
+import cu.spvi.core.time.Clock
+import cu.spvi.core.validation.Phone
 import cu.spvi.data.db.SpviDatabase
 import cu.spvi.domain.model.ClienteFijo
 import cu.spvi.domain.repository.ClienteFijoRepository
@@ -12,7 +15,7 @@ import kotlinx.coroutines.flow.combine
 
 /** 0.27.0 (N2): clientes fijos con sus compras (transferencias de ventas no anuladas con su carné). */
 @Singleton
-class ClienteFijoRepositoryImpl @Inject constructor(private val db: SpviDatabase) : ClienteFijoRepository {
+class ClienteFijoRepositoryImpl @Inject constructor(private val db: SpviDatabase, private val clock: Clock) : ClienteFijoRepository {
     private val dao = db.clienteFijoDao()
 
     override fun observar(): Flow<List<ClienteFijo>> = combine(dao.observar(), dao.observarCompras()) { clientes, compras ->
@@ -28,4 +31,19 @@ class ClienteFijoRepositoryImpl @Inject constructor(private val db: SpviDatabase
     }
 
     override suspend fun quitar(ci: String) { dao.quitar(ci) }
+
+    override suspend fun actualizar(ci: String, nombreApellidos: String, nuevoCi: String, telefono: String): Boolean {
+        val carne = nuevoCi.trim()
+        val actual = dao.porCi(ci) ?: return true
+        if (carne != ci && dao.porCi(carne) != null) return false
+        // Se guarda como en la venta: nombre sin espacios de más y teléfono en E.164.
+        val nombre = nombreApellidos.trim().replace(Regex("\\s+"), " ")
+        val tel = Phone.normalize(telefono) ?: telefono.trim()
+        db.withTransaction {
+            dao.actualizar(actual.copy(nombreApellidos = nombre, ci = carne, telefono = tel, actualizadoEn = clock.now().toEpochMilli()))
+            // 0.31.0: sus compras anteriores quedan con los datos corregidos (y con el carné nuevo, si cambió).
+            dao.corregirCompras(ci, carne, nombre, tel)
+        }
+        return true
+    }
 }

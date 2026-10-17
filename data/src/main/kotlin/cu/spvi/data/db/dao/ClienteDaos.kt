@@ -23,6 +23,13 @@ interface ClienteFijoDao {
     )
     fun observarCompras(): Flow<List<ComprasClienteFila>>
 
+    /**
+     * 0.31.0: al corregir un cliente, sus transferencias ya registradas se corrigen igual (el carné, si cambió, y el
+     * nombre y el teléfono), para que Registros → Transferencias y su ficha muestren siempre los datos actuales.
+     */
+    @Query("UPDATE transaccion SET clienteCi = :nuevoCi, clienteNombre = :nombre, clienteTelefono = :telefono WHERE clienteCi = :ci")
+    suspend fun corregirCompras(ci: String, nuevoCi: String, nombre: String, telefono: String)
+
     @Query("SELECT * FROM cliente_fijo ORDER BY id") suspend fun todos(): List<ClienteFijoEntity>
     @Query("SELECT * FROM cliente_fijo WHERE ci = :ci") suspend fun porCi(ci: String): ClienteFijoEntity?
     @Insert suspend fun insertar(c: ClienteFijoEntity): Long

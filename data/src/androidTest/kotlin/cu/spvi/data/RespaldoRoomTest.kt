@@ -114,7 +114,7 @@ class RespaldoRoomTest {
      * sus compras salen de las transferencias no anuladas, viaja en el respaldo y se puede quitar.
      */
     @Test fun clienteFijoSeGuardaAlVenderYViajaEnElRespaldo() = runBlocking {
-        val clientes = cu.spvi.data.repository.ClienteFijoRepositoryImpl(db)
+        val clientes = cu.spvi.data.repository.ClienteFijoRepositoryImpl(db, clock)
         val id = ok(productos.crear(producto("Refresco", 10), null))
         val p = productos.obtener(id)!!
         val t = ok(turnos.abrir(ahora, "Ana"))

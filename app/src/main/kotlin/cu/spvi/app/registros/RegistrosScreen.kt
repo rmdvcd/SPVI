@@ -157,6 +157,8 @@ fun RegistrosScreen(
         accionesClientes = AccionesClientes(
             onAbrir = clientesViewModel::abrir, onCerrar = clientesViewModel::cerrar, onPedirQuitar = clientesViewModel::pedirQuitar,
             onCancelarQuitar = clientesViewModel::cancelarQuitar, onQuitar = clientesViewModel::quitar,
+            onEditar = clientesViewModel::editar, onCampoEdicion = clientesViewModel::campoEdicion,
+            onCancelarEdicion = clientesViewModel::cancelarEdicion, onGuardarEdicion = clientesViewModel::guardarEdicion,
         ),
         acciones = AccionesRegistros(
             onAyuda = { onNavigate(Route.Ayuda) },

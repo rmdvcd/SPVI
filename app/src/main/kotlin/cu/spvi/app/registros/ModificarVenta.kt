@@ -1,7 +1,7 @@
 package cu.spvi.app.registros
 
+import cu.spvi.app.common.SecureDialogWindow
 import cu.spvi.designsystem.theme.SpviTextos
-import android.view.WindowManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,12 +15,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
@@ -28,7 +26,6 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.DialogWindowProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -329,7 +326,7 @@ fun ModificarVentaPantalla(v: Venta, onCerrar: () -> Unit, onHecho: (String) -> 
     LaunchedEffect(vm) { vm.hecho.collect(onHecho) }
     val s by vm.state.collectAsStateWithLifecycle()
     Dialog(onDismissRequest = onCerrar, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
-        VentanaSegura()
+        SecureDialogWindow()
         Surface(Modifier.fillMaxSize()) {
             ModificarVentaContent(
                 s,
@@ -340,16 +337,6 @@ fun ModificarVentaPantalla(v: Venta, onCerrar: () -> Unit, onHecho: (String) -> 
                 ),
             )
         }
-    }
-}
-
-/** Datos del cliente y CI: sin capturas ni miniatura en Recientes (la ventana del diálogo no hereda FLAG_SECURE). */
-@Composable
-private fun VentanaSegura() {
-    val window = (LocalView.current.parent as? DialogWindowProvider)?.window ?: return
-    DisposableEffect(window) {
-        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
-        onDispose { }
     }
 }
 

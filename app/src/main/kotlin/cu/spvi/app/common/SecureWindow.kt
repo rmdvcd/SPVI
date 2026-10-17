@@ -7,6 +7,8 @@ import android.view.WindowManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.window.DialogWindowProvider
 
 /**
  * Marca la ventana con FLAG_SECURE mientras la pantalla está en composición (Licencia, Perfil):
@@ -18,6 +20,19 @@ fun SecureWindow() {
     DisposableEffect(activity) {
         SecureCounter.acquire(activity)
         onDispose { SecureCounter.release(activity) }
+    }
+}
+
+/**
+ * Marca con FLAG_SECURE la ventana de un diálogo: no hereda la de la Activity (datos del cliente en «Modificar
+ * venta» y en la corrección de un cliente fijo).
+ */
+@Composable
+fun SecureDialogWindow() {
+    val window = (LocalView.current.parent as? DialogWindowProvider)?.window ?: return
+    DisposableEffect(window) {
+        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        onDispose { }
     }
 }
 

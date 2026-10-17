@@ -1,6 +1,6 @@
 # SPVI — Verificación real
 
-> **Fuente única de verdad** del estado de verificación: solo se considera medido lo anotado aquí. Última actualización: **2026-10-15**. El repositorio mantiene la app Android nativa; Flutter/iOS y la web de escritorio se retiraron.
+> **Fuente única de verdad** del estado de verificación: solo se considera medido lo anotado aquí. Última actualización: **2026-10-17**. El repositorio mantiene la app Android nativa; Flutter/iOS y la web de escritorio se retiraron.
 
 ## 1. CI actual
 
@@ -33,21 +33,21 @@ Detalle de esa corrida, anterior a la corrección en esta rama:
 | Release/debug | Compilaron; R8 no reportó clases ausentes y se publicaron los APKs sin firma como artefactos de CI |
 | Instrumentados en emulador | Omitidos en esa corrida |
 
-En esta rama, `app/build.gradle.kts` prepara el SDK instrumentado de Robolectric mediante Gradle y lo pasa en modo offline a **todos los tests JVM de `:app`**, no solo a las capturas Roborazzi. Esta corrección está **pendiente de CI**: no hay JDK ni Android SDK instalados en este entorno y no se ha ejecutado localmente.
+En esta rama, `app/build.gradle.kts` prepara el SDK instrumentado de Robolectric mediante Gradle y lo pasa en modo offline a **todos los tests JVM de `:app`**, no solo a las capturas Roborazzi. Esta corrección está **pendiente de CI**; localmente `spviTests` pasa en verde (2026-10-17) con ese SDK preparado por Gradle.
 
 ## 3. Verificaciones pendientes
 
 | Pendiente | Estado |
 |---|---|
-| Confirmar la corrección de Robolectric | Esperar una corrida de CI de esta rama; no declarar resuelto hasta que `spviTests` pase |
+| Confirmar la corrección de Robolectric | Esperar una corrida de CI de esta rama; localmente `spviTests` ya pasa (2026-10-17) con el SDK preparado por Gradle |
 | Capturas Roborazzi | No ejecutadas en esta revisión; regenerar y revisar claro/oscuro si cambia UI |
-| Tests instrumentados de Room/UI | No ejecutados en dispositivo/emulador durante esta revisión |
+| Tests instrumentados de Room/UI | `:data:RepositoriosRoomTest` ejecutado el 2026-10-17 en el teléfono 4bc9f8f3 (Android 15, API 35): 9/9 en verde. Los instrumentados de UI de `:app` siguen sin ejecutarse en esta revisión |
 | Prueba de extremo a extremo en teléfono | Pendiente |
 | Sincronización principal/secundaria con dos teléfonos Android | Pendiente |
 | Release firmado/AAB | No generado ni probado aquí; requiere el keystore fuera del repositorio |
 | `tools/verificacion/verificar.sh` | No ejecutado en esta revisión; es una herramienta de verificación independiente que puede descargar compiladores/dependencias |
 
-No se ejecutaron tests ni Gradle localmente: `java`/`JAVA_HOME` no están disponibles. No se debe describir la verificación de esta rama como verde hasta que pase CI.
+En esta rama (2026-10-17) sí hay JDK y Android SDK locales: `./gradlew spviTests` (869 tests JVM) y `./gradlew spviCheck` (tests + lint + `assembleDebug` + permisos) terminan en verde, y `:data:RepositoriosRoomTest` corre en el teléfono 4bc9f8f3. Lo pendiente para declarar la rama verificada sigue siendo la corrida de CI (job de tests JVM) y la prueba de la interfaz en el teléfono.
 
 ## 4. Reproducir
 

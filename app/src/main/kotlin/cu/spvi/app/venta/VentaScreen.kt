@@ -465,31 +465,40 @@ internal fun LazyListScope.camposCliente(
     /** 0.27.0 (N2): sugerencias de clientes fijos, justo debajo del nombre (solo en Nueva venta). */
     debajoDelNombre: (LazyListScope.() -> Unit)? = null,
 ) {
-    val errores = f.visibles()
     CampoCliente.entries.forEach { c ->
         item(key = c.name) {
-            SpviTextField(
-                filtro = when (c) { CampoCliente.CI -> FiltroEntrada.CARNE; CampoCliente.NUMERO -> FiltroEntrada.TRANSACCION; else -> FiltroEntrada.LIBRE },
-                value = when (c) {
-                    CampoCliente.NOMBRE -> f.nombre
-                    CampoCliente.CI -> f.ci
-                    CampoCliente.TELEFONO -> f.telefono
-                    CampoCliente.NUMERO -> f.numero
-                },
-                onValueChange = { onCampo(c, it) },
-                label = c.etiqueta,
-                isError = c in errores, errorText = errores[c], validarAlSalir = true, forzarError = f.intento,
-                keyboardOptions = when (c) {
-                    CampoCliente.NOMBRE -> KeyboardOptions(capitalization = KeyboardCapitalization.Words)
-                    CampoCliente.CI -> KeyboardOptions(keyboardType = KeyboardType.Number)
-                    CampoCliente.TELEFONO -> KeyboardOptions(keyboardType = KeyboardType.Phone)
-                    CampoCliente.NUMERO -> KeyboardOptions(capitalization = KeyboardCapitalization.Characters)
-                },
-                modifier = Modifier.fillMaxWidth().testTag(VentaTags.campo(c)),
-            )
+            CampoClienteField(f, c, onCampo, Modifier.fillMaxWidth().testTag(VentaTags.campo(c)))
         }
         if (c == CampoCliente.NOMBRE) debajoDelNombre?.invoke(this)
     }
+}
+
+/**
+ * Un campo del cliente: filtro, teclado, etiqueta y error. 0.31.0: lo usan también la ficha y la corrección de datos
+ * de un cliente fijo (Registros → Clientes).
+ */
+@Composable
+internal fun CampoClienteField(f: FormCliente, c: CampoCliente, onCampo: (CampoCliente, String) -> Unit, modifier: Modifier = Modifier) {
+    val error = f.visibles()[c]
+    SpviTextField(
+        filtro = when (c) { CampoCliente.CI -> FiltroEntrada.CARNE; CampoCliente.NUMERO -> FiltroEntrada.TRANSACCION; else -> FiltroEntrada.LIBRE },
+        value = when (c) {
+            CampoCliente.NOMBRE -> f.nombre
+            CampoCliente.CI -> f.ci
+            CampoCliente.TELEFONO -> f.telefono
+            CampoCliente.NUMERO -> f.numero
+        },
+        onValueChange = { onCampo(c, it) },
+        label = c.etiqueta,
+        isError = error != null, errorText = error, validarAlSalir = true, forzarError = f.intento,
+        keyboardOptions = when (c) {
+            CampoCliente.NOMBRE -> KeyboardOptions(capitalization = KeyboardCapitalization.Words)
+            CampoCliente.CI -> KeyboardOptions(keyboardType = KeyboardType.Number)
+            CampoCliente.TELEFONO -> KeyboardOptions(keyboardType = KeyboardType.Phone)
+            CampoCliente.NUMERO -> KeyboardOptions(capitalization = KeyboardCapitalization.Characters)
+        },
+        modifier = modifier,
+    )
 }
 
 @Composable

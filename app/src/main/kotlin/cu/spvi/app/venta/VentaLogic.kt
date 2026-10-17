@@ -137,9 +137,12 @@ data class FormCliente(
     )
 
     /** Errores por campo (mensajes sin jerga). Vacío = se puede confirmar. */
-    fun errores(): Map<CampoCliente, String> = buildMap {
+    fun errores(): Map<CampoCliente, String> = erroresCliente() +
+        listOfNotNull(Validadores.numeroTransaccion(numero)?.let { CampoCliente.NUMERO to TextosVenta.error(CampoCliente.NUMERO, it.regla) })
+
+    /** 0.31.0: solo los datos del cliente (nombre, carné y teléfono), sin el nº de transacción: también en su ficha. */
+    fun erroresCliente(): Map<CampoCliente, String> = buildMap {
         Validadores.cliente(datos()).forEach { v -> CampoCliente.deCampo(v.campo)?.let { put(it, TextosVenta.error(it, v.regla)) } }
-        Validadores.numeroTransaccion(numero)?.let { put(CampoCliente.NUMERO, TextosVenta.error(CampoCliente.NUMERO, it.regla)) }
     }
 
     fun visibles(): Map<CampoCliente, String> = errores().filterKeys { intento || it in tocados }

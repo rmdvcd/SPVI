@@ -16,7 +16,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import cu.spvi.app.ayuda.AyudaContenido
 import cu.spvi.app.ayuda.AyudaScreen
 import cu.spvi.app.ayuda.AyudaTags
-import cu.spvi.app.licencia.EstadoLicencia
 import cu.spvi.app.pagos.AccionesListaPago
 import cu.spvi.app.pagos.PagoElectronicoContent
 import cu.spvi.app.pagos.PagoTags

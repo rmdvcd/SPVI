@@ -11,6 +11,10 @@
 - **Registros:** todas las listas (ventas, transferencias, movimientos, turnos y clientes fijos) se
   pueden **marcar con la casilla redonda**, igual que en Inventario. Con algo marcado aparece la barra de
   selección: cuántos elementos son, seleccionar todo y quitar la selección. Exportar usa solo lo marcado.
+- **Clientes fijos:** al abrir la ficha de un cliente, **Editar** y **Quitar de clientes fijos** están
+  centrados en el pie de la ventana. **Editar** abre una ventana para corregir el **nombre**, el **carné**
+  y el **teléfono**; si el carné ya es de otro cliente no se guarda y te lo avisa, y sus compras anteriores
+  quedan con los datos corregidos.
 - **Licencia:** se quitó el botón de llave del final; el asistente avanza con *Paso siguiente*.
 - **Actualizar** (antes «Actualizaciones»): al tocarlo sale un cuadro con una **barra de progreso
   circular** y al terminar dice *Actualizado*, *Estas al día* o *Sin conexión*.
