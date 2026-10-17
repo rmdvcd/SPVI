@@ -91,6 +91,7 @@ data class Empleado(
     val cierrePedidoPorEmpleadoEn: Instant? = null,
     /** 0.25.0: arqueo del turno abierto según lo recibido (con el contado si el empleado ya lo declaró). No se guarda. */
     val arqueoTurno: Arqueo? = null,
+    val conteoCierre: ConteoCierre? = null,
     /** 0.26.0 (P73 §4): fondo de caja asignado por el dueño para el próximo turno de esta app (null = sin asignar). */
     val fondoAsignado: Cup? = null,
     /** 0.26.0: el empleado pidió el fondo para abrir turno. */

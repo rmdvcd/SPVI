@@ -272,7 +272,7 @@ class InicioViewModel @Inject constructor(
     /** 0.25.0 (§5.3): conteo pedido por el cierre del encargado; con él, el cierre pendiente se aplica. */
     fun declararContado(contado: Cup) {
         viewModelScope.launch {
-            val r = try { turnosRepo.declararContado(contado) } catch (e: CancellationException) { throw e } catch (e: Exception) { AppResult.Err(AppError.Desconocido()) }
+            val r = try { secundaria.solicitarCierre(contado) } catch (e: CancellationException) { throw e } catch (e: Exception) { AppResult.Err(AppError.Desconocido()) }
             if (r is AppResult.Err) emitir(EventoInicio.Mensaje(mensaje(r.error)))
         }
     }

@@ -311,6 +311,11 @@ private fun LazyListScope.caja(d: DetalleTurno, zona: ZoneId) {
             cu.spvi.app.caja.TablaArqueo(d.arqueo)
         }
     }
+    d.turno.conteoCierre?.let { conteo ->
+        item(key = "conteo_cierre") {
+            SpviCard { cu.spvi.app.caja.ResumenConteo(conteo) }
+        }
+    }
     seccion("mov_caja", "Entradas y salidas de efectivo", TurnoDetalleTags.MOV_CAJA, d.caja.isNotEmpty()) {
         d.caja.forEach { m ->
             SpviListItem(

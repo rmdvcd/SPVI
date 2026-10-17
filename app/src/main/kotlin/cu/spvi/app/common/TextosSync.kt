@@ -17,6 +17,9 @@ object TextosSync {
 }
 
 fun mensajeSync(e: AppError): String? = when (e) {
+    is AppError.Validacion -> if (e.campo == "inventarioCambió")
+        "El inventario cambió desde el conteo. Rechaza la solicitud y pide un nuevo conteo antes de ajustar."
+        else null
     AppError.SinPermiso -> TextosSync.SIN_PERMISO
     is AppError.SinPrincipal -> TextosSync.sinPrincipal(e.pendientes)
     is AppError.VinculacionRechazada -> e.motivo

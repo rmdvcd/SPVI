@@ -121,6 +121,7 @@ data class TurnoDto(
     /** 0.25.0: arqueo (null = turno sin arqueo, y en respaldos anteriores). */
     val fondoCent: Long? = null,
     val contadoCent: Long? = null,
+    val conteoCierre: ConteoCierreDto? = null,
 )
 
 @Serializable

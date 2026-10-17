@@ -205,6 +205,7 @@ fun InicioScreen(
     val aperturas by solicitudesVm.aperturas.collectAsStateWithLifecycle()
     val desactualizadas by solicitudesVm.desactualizadas.collectAsStateWithLifecycle()
     // 0.25.0 (§4, §5): caja y recordatorio de respaldo en un ViewModel aparte.
+    val conteoVm: cu.spvi.app.caja.CierreConteoViewModel = hiltViewModel()
     val cajaVm: cu.spvi.app.caja.CajaViewModel = hiltViewModel()
     val caja by cajaVm.state.collectAsStateWithLifecycle()
     LaunchedEffect(cajaVm) { cajaVm.eventos.collect { snackbar.showSnackbar(it) } }
@@ -246,6 +247,7 @@ fun InicioScreen(
         desactualizadas = desactualizadas,
         caja = caja,
         snackbar = snackbar,
+        conteoVm = conteoVm,
     )
 }
 
@@ -264,6 +266,7 @@ fun InicioContent(
     desactualizadas: List<String> = emptyList(),
     /** Solo para capturas: abre todos los acordeones (en la app empiezan siempre cerrados). */
     acordeonesAbiertos: Boolean = false,
+    conteoVm: cu.spvi.app.caja.CierreConteoViewModel? = null,
 ) {
     val permisos = cu.spvi.app.common.LocalPermisosApp.current
     val acordeones = remember { AcordeonesInicio(acordeonesAbiertos) }
@@ -458,7 +461,8 @@ fun InicioContent(
             onConfirmar = acciones.onAbrirTurno, onDismiss = acciones.onCerrarDialogo,
             fondo = caja.fondo, onPedirFondo = acciones.onPedirFondo,
         )
-        DialogoInicio.CerrarTurno -> cu.spvi.app.caja.DialogoContado(
+        DialogoInicio.CerrarTurno -> cu.spvi.app.caja.DialogoCierreCompleto(
+            viewModel = conteoVm,
             titulo = TextosInicio.CERRAR_TURNO_TITULO,
             texto = TextosInicio.CERRAR_TURNO_TEXTO,
             confirmar = "Cerrar turno",
@@ -467,7 +471,8 @@ fun InicioContent(
             onConfirmar = acciones.onConfirmarCierre,
             onDismiss = acciones.onCerrarDialogo,
         )
-        DialogoInicio.SolicitarCierre -> cu.spvi.app.caja.DialogoContado(
+        DialogoInicio.SolicitarCierre -> cu.spvi.app.caja.DialogoCierreCompleto(
+            viewModel = conteoVm,
             titulo = TextosInicio.SOLICITAR_CIERRE_TITULO,
             texto = TextosInicio.SOLICITAR_CIERRE_TEXTO,
             confirmar = "Solicitar cierre",
@@ -476,7 +481,8 @@ fun InicioContent(
             onConfirmar = acciones.onConfirmarSolicitudCierre,
             onDismiss = acciones.onCerrarDialogo,
         )
-        null -> if (state.debeContar) cu.spvi.app.caja.DialogoContado(
+        null -> if (state.debeContar) cu.spvi.app.caja.DialogoCierreCompleto(
+            viewModel = conteoVm,
             titulo = TextosInicio.CONTAR_TITULO,
             texto = TextosInicio.CONTAR_TEXTO,
             confirmar = "Enviar conteo",

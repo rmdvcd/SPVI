@@ -14,7 +14,7 @@ class Migracion1011Test {
 
     @Test fun migracion10_11RecreaProductoSinCodigoConservandoDatos() {
         // Versión actual del esquema (0.31.0: la v12 añade `device` a `empleado`) y cadena de migraciones sin huecos.
-        assertEquals(12, SpviDatabase.VERSION)
+        assertEquals(13, SpviDatabase.VERSION)
         assertEquals(10, SpviDatabase.MIGRACION_10_11.startVersion)
         assertEquals(11, SpviDatabase.MIGRACION_10_11.endVersion)
         assertEquals(11, SpviDatabase.MIGRACION_11_12.startVersion)

@@ -40,7 +40,7 @@ class MigracionesJvmTest {
 
     private fun <T> abrirConRoom(bloque: (SupportSQLiteDatabase) -> T): T {
         val room = Room.databaseBuilder(ApplicationProvider.getApplicationContext(), SpviDatabase::class.java, archivo.absolutePath)
-            .addMigrations(SpviDatabase.MIGRACION_3_4, SpviDatabase.MIGRACION_4_5, SpviDatabase.MIGRACION_5_6, SpviDatabase.MIGRACION_6_7, SpviDatabase.MIGRACION_7_8, SpviDatabase.MIGRACION_8_9, SpviDatabase.MIGRACION_9_10, SpviDatabase.MIGRACION_10_11, SpviDatabase.MIGRACION_11_12)
+            .addMigrations(SpviDatabase.MIGRACION_3_4, SpviDatabase.MIGRACION_4_5, SpviDatabase.MIGRACION_5_6, SpviDatabase.MIGRACION_6_7, SpviDatabase.MIGRACION_7_8, SpviDatabase.MIGRACION_8_9, SpviDatabase.MIGRACION_9_10, SpviDatabase.MIGRACION_10_11, SpviDatabase.MIGRACION_11_12, SpviDatabase.MIGRACION_12_13)
             .allowMainThreadQueries().build()
         try {
             return bloque(room.openHelper.writableDatabase) // abrir = migrar + validar
@@ -58,10 +58,23 @@ class MigracionesJvmTest {
             .map { it.getString("createSql").replace("\${TABLE_NAME}", e.getString("tableName")) }
     }
 
+    private fun crearV12(e: JSONObject): String = if (e.getString("tableName") == "turno")
+        sinColumnas(crear(e), listOf("conteoCierreJson")) else crear(e)
+
+    @Test fun migracion12a13ConservaEfectivoYDejaConteoNulo() {
+        crearAntigua(12, entidades().flatMap { listOf(crearV12(it)) + indices(it) },
+            "INSERT INTO turno (abiertoEn, fondoCent, contadoCent) VALUES (1000, 10000, 12000)")
+        abrirConRoom { db ->
+            db.query("SELECT fondoCent, contadoCent, conteoCierreJson FROM turno").use { c ->
+                assertTrue(c.moveToFirst()); assertEquals(10000L, c.getLong(0)); assertEquals(12000L, c.getLong(1)); assertTrue(c.isNull(2))
+            }
+        }
+    }
+
     /** v9 = v10 sin la tabla `cliente_fijo` (0.27.0) ni la columna `clienteFijo` de `transaccion` (y sin la `device` de la v12). */
     private fun entidadesV9(): List<JSONObject> = entidades().filter { it.getString("tableName") != "cliente_fijo" }
     private fun crearV9(e: JSONObject): String {
-        var sql = crear(e)
+        var sql = crearV12(e)
         when (e.getString("tableName")) {
             "transaccion" -> sql = sinColumnas(sql, V10_TRANSACCION)
             "empleado" -> sql = sinColumnas(sql, V12_EMPLEADO) // v12 (0.31.0): solo la añade la última migración
@@ -71,7 +84,7 @@ class MigracionesJvmTest {
 
     /** v11 = el esquema actual sin la columna `device` que añade la v12 (0.31.0) en `empleado`. */
     private fun crearV11(e: JSONObject): String =
-        if (e.getString("tableName") == "empleado") sinColumnas(crear(e), V12_EMPLEADO) else crear(e)
+        if (e.getString("tableName") == "empleado") sinColumnas(crearV12(e), V12_EMPLEADO) else crearV12(e)
 
     private fun sqlV11(): List<String> = entidades().flatMap { e -> listOf(crearV11(e)) + indices(e) }
     private fun sqlV9(): List<String> = entidadesV9().flatMap { e -> listOf(crearV9(e)) + indices(e) }
@@ -79,7 +92,7 @@ class MigracionesJvmTest {
     /** v7 = v8 sin la tabla `movimiento_caja` ni las columnas de la v8 en `turno` y `venta`. */
     private fun entidadesV7(): List<JSONObject> = entidadesV9().filter { it.getString("tableName") != "movimiento_caja" }
     private fun crearV7(e: JSONObject): String = when (e.getString("tableName")) {
-        "turno" -> sinColumnas(crear(e), V8_TURNO)
+        "turno" -> sinColumnas(crearV12(e), V8_TURNO)
         "venta" -> sinColumnas(crear(e), V8_VENTA)
         else -> crearV8(e)
     }

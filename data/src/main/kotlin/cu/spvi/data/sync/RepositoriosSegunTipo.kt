@@ -170,7 +170,8 @@ class TurnoRepositorySegunTipo @Inject constructor(
         local.abrir(ahora, usuario, fondo).also { if (it is AppResult.Ok) g.cliente.disparar() }
 
     override suspend fun cerrar(ahora: Instant, usuario: String, contado: cu.spvi.core.money.Cup?): AppResult<Turno> =
-        local.cerrar(ahora, usuario, contado).also { if (it is AppResult.Ok) g.cliente.disparar() }
+        (if (g.secundaria() != null) local.cerrarSinAjustar(ahora, usuario, contado) else local.cerrar(ahora, usuario, contado))
+            .also { if (it is AppResult.Ok) g.cliente.disparar() }
 
     override suspend fun registrarCaja(
         tipo: cu.spvi.domain.model.TipoMovimientoCaja, importe: cu.spvi.core.money.Cup, motivo: String, hechoPor: String, ahora: Instant,

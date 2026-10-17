@@ -8,6 +8,7 @@ import cu.spvi.core.quantity.Cantidad
 import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
 import cu.spvi.core.time.Clock
+import cu.spvi.data.dto.aJson
 import cu.spvi.data.db.SpviDatabase
 import cu.spvi.data.db.entity.EmpleadoEntity
 import cu.spvi.data.db.entity.TurnoEntity
@@ -58,6 +59,59 @@ class TurnoRepositoryInstrumentedTest {
         detalles = listOf(DetalleVenta(productoId = productoId, nombre = "Refresco", categoria = "Bebidas", cantidad = cantidad,
             precioBase = Cup.ofPesos(100), precioUnitario = Cup.ofPesos(100), costoUnitario = Cup.ofPesos(60))),
     )
+
+    @Test fun conciliarAlCerrarAjustaProductosEInsumosYRegistraQuienLoConfirma() = runBlocking {
+        val p = ok(productos.crear(Producto(categoria = "Bebidas", nombre = "Refresco", precioCosto = Cup(60), precioVenta = Cup(100), cantidad = 10, creadoEn = ahora), null))
+        val i = ok(insumos.crear(Insumo(nombre = "Harina", precio = Cup(10), cantidad = Cantidad(2500), creadoEn = ahora)))
+        val t = ok(turnos.abrir(ahora, "Ana", Cup.ZERO))
+        val snapshot = ok(turnos.prepararConteo())
+        val conteo = cu.spvi.domain.model.ConteoCierre(mapOf(5000 to 1L, 20000 to 1L), inventario = snapshot.second.map {
+            it.copy(contado = if (it.entidad == TipoEntidad.PRODUCTO) 8L else 2250L)
+        }, motivo = "Conteo físico confirmado")
+        ok(turnos.guardarConteo(t.id, conteo))
+        assertEquals(10L, productos.obtener(p)!!.cantidad) // declarar NO ajusta
+        assertEquals(2500L, insumos.obtener(i)!!.cantidad.milesimas)
+        val cerrado = ok(turnos.cerrar(ahora.plusSeconds(60), "Dueño", conteo.efectivo))
+        assertEquals(8L, productos.obtener(p)!!.cantidad)
+        assertEquals(2250L, insumos.obtener(i)!!.cantidad.milesimas)
+        assertEquals("Dueño", cerrado.conteoCierre!!.aprobadoPor)
+        assertEquals(2, turnos.movimientosDe(t.id).size)
+        assertTrue(turnos.movimientosDe(t.id).all { it.hechoPor == "Dueño" && it.nota!!.contains("Conteo físico confirmado") })
+        assertTrue(turnos.cerrar(ahora, "Dueño", conteo.efectivo) is AppResult.Err)
+        assertEquals(8L, productos.obtener(p)!!.cantidad) // no se repite
+    }
+
+    @Test fun stockCambiadoDespuesDeContarImpideCerrarYNoHaceAjustesParciales() = runBlocking {
+        val p = ok(productos.crear(Producto(categoria = "Bebidas", nombre = "Refresco", precioCosto = Cup(60), precioVenta = Cup(100), cantidad = 10, creadoEn = ahora), null))
+        val i = ok(insumos.crear(Insumo(nombre = "Harina", precio = Cup(10), cantidad = Cantidad(2500), creadoEn = ahora)))
+        val t = ok(turnos.abrir(ahora, "Ana", Cup.ZERO))
+        val snapshot = ok(turnos.prepararConteo())
+        val conteo = cu.spvi.domain.model.ConteoCierre(inventario = snapshot.second.map { it.copy(contado = 0) }, motivo = "Merma")
+        ok(turnos.guardarConteo(t.id, conteo))
+        ahora = ahora.plusSeconds(1)
+        ok(insumos.ajustarStock(i, Cantidad(-500), "Consumo posterior"))
+        assertTrue(turnos.cerrar(ahora, "Ana", Cup.ZERO) is AppResult.Err)
+        assertEquals(10L, productos.obtener(p)!!.cantidad)
+        assertEquals(2000L, insumos.obtener(i)!!.cantidad.milesimas)
+        assertNull(turnos.activo()!!.cerradoEn)
+        assertNull(turnos.activo()!!.conteoCierre!!.aprobadoEn)
+        assertEquals(t.id, turnos.activo()!!.id)
+    }
+
+    @Test fun elCierreLocalDeUnaSecundariaNoAplicaLosAjustesDelConteo() = runBlocking {
+        val p = ok(productos.crear(Producto(categoria = "Bebidas", nombre = "Refresco", precioCosto = Cup(60), precioVenta = Cup(100), cantidad = 10, creadoEn = ahora), null))
+        val t = ok(turnos.abrir(ahora, "Empleado", Cup.ZERO))
+        val snapshot = ok(turnos.prepararConteo())
+        val conteo = cu.spvi.domain.model.ConteoCierre(inventario = snapshot.second.map { it.copy(contado = 8) }, motivo = "Merma")
+        ok(turnos.guardarConteo(t.id, conteo))
+        assertTrue(turnos.cerrarSinAjustar(ahora, "Encargado", Cup.ZERO) is AppResult.Err)
+        // Simula la autorización autenticada que ya aplicó la principal; no debe volver a ajustar aquí.
+        val declarado = db.turnoDao().activo()!!
+        db.syncDao().actualizarTurno(declarado.copy(conteoCierreJson = conteo.copy(aprobadoPor = "Encargado", aprobadoEn = ahora.toEpochMilli()).aJson()))
+        ok(turnos.cerrarSinAjustar(ahora, "Encargado", Cup.ZERO))
+        assertEquals(10L, productos.obtener(p)!!.cantidad)
+        assertTrue(turnos.movimientosDe(t.id).isEmpty())
+    }
 
     @Test fun cierreCongelaElRegistroCompleto() = runBlocking {
         val p = ok(productos.crear(Producto(categoria = "Bebidas", nombre = "Refresco", precioCosto = Cup.ofPesos(60), precioVenta = Cup.ofPesos(100), cantidad = 20, creadoEn = ahora), null))

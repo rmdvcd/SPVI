@@ -115,8 +115,8 @@ class CierreRemoto @Inject constructor(
             while (!intentar()) esperar(esperaReintento(intento++))
         }
 
-        /** 0.25.0: un turno con fondo necesita el conteo declarado; uno sin fondo (anterior a 0.25.0) o sin turno, no. */
-        fun conteoListo(t: cu.spvi.domain.model.Turno?): Boolean = t == null || t.fondo == null || t.contado != null
+        /** El efectivo declarado no basta si hay inventario contado: debe llegar la aprobación de la principal. */
+        fun conteoListo(t: cu.spvi.domain.model.Turno?): Boolean = t == null || ((t.fondo == null || t.contado != null) && (t.conteoCierre == null || t.conteoCierre?.aprobadoEn != null))
 
         /** Lo que sale en «Cierre» del detalle del turno (en lugar del nombre de quien lo cerró). */
         const val CERRADO_POR = "Pedido desde la app principal"

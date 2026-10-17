@@ -1,5 +1,8 @@
 package cu.spvi.data.sync
 
+import cu.spvi.data.dto.conteoDeJson
+import cu.spvi.data.dto.toDto
+
 import cu.spvi.core.result.runCatchingCancelable
 import androidx.room.InvalidationTracker
 import cu.spvi.core.result.AppResult
@@ -300,6 +303,8 @@ class ServidorSync @Inject constructor(
         val hash = AlmacenSync.hash(inst)
         return SincronizarOk(
             m.id, recibidos, hash, inst.takeIf { hash != m.hash }, cerrarTurno = cierrePendiente(e), cierreRechazado = rechazado,
+            conteoAprobado = db.turnoDao().activoDeEmpleado(e.id)?.conteoCierreJson?.conteoDeJson()?.takeIf { it.aprobadoEn != null }?.toDto(),
+            conteoTurnoUuid = db.turnoDao().activoDeEmpleado(e.id)?.uuid,
             cambiosVentas = cambios, apk = runCatching { apk.ofrecerA(m.versionCode) }.getOrNull(),
             asignaFondos = true, fondo = fondo,
         )

@@ -25,6 +25,7 @@ data class TurnoDeEmpleado(
     val efectivoCent: Long = 0,
     val entradasCent: Long = 0,
     val salidasCent: Long = 0,
+    val conteoCierreJson: String? = null,
 )
 
 @Dao
@@ -93,7 +94,7 @@ interface SyncDao {
     /** 0.20.0 (H5): turnos abiertos de las secundarias, para «Turno abierto desde las HH:MM» en su ficha. */
     @Query(
         """
-        SELECT t.empleadoId AS empleadoId, t.abiertoEn AS abiertoEn, t.fondoCent AS fondoCent, t.contadoCent AS contadoCent,
+        SELECT t.conteoCierreJson AS conteoCierreJson, t.empleadoId AS empleadoId, t.abiertoEn AS abiertoEn, t.fondoCent AS fondoCent, t.contadoCent AS contadoCent,
                COALESCE((SELECT SUM(v.totalCent) FROM venta v WHERE v.turnoId = t.id AND v.anuladaEn IS NULL AND v.metodoPago = 'EFECTIVO'), 0) AS efectivoCent,
                COALESCE((SELECT SUM(c.importeCent) FROM movimiento_caja c WHERE c.turnoId = t.id AND c.tipo = 'ENTRADA'), 0) AS entradasCent,
                COALESCE((SELECT SUM(c.importeCent) FROM movimiento_caja c WHERE c.turnoId = t.id AND c.tipo = 'SALIDA'), 0) AS salidasCent

@@ -7,7 +7,7 @@ App Android nativa para pequeños negocios: vender en turnos, controlar inventar
 | Versión | **0.30.0** (`versionCode 51`) |
 | Paquete | `cu.spvi.app` (debug: `cu.spvi.app.debug`) |
 | minSdk / targetSdk / compileSdk | 26 / 35 / 35 |
-| Base de datos | Room **v12** cifrada con SQLCipher (respaldo `RespaldoDto` v4; archivo `.spvi` v4) |
+| Base de datos | Room **v13** en desarrollo (migración 12→13; exportación del esquema pendiente de compilación), cifrada con SQLCipher (respaldo `RespaldoDto` v4; archivo `.spvi` v4) |
 | Contrato de licencias | GL v1 (`ECIES-P256-AES256GCM-v1`) |
 | Permisos | Solo `CAMERA`, `INTERNET` y `POST_NOTIFICATIONS` (aviso «Turno abierto», Android 13+), más `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE` y `CHANGE_NETWORK_STATE` (servicio de la app principal con secundarias, 0.19.2), `REQUEST_INSTALL_PACKAGES` / `REQUEST_DELETE_PACKAGES` (actualizaciones y licencia transferida, 0.25.0) y `READ_MEDIA_IMAGES` / `READ_EXTERNAL_STORAGE` (hasta Android 12) / `WRITE_EXTERNAL_STORAGE` (hasta Android 9) para el registro de la prueba (0.26.0), y `USE_BIOMETRIC` / `USE_FINGERPRINT` (acceso con clave opcional, 0.27.0; permisos normales que añade `androidx.biometric`). La captura SMS opcional requiere habilitar manualmente el Acceso especial a notificaciones; no solicita `READ_SMS`. |
 
@@ -150,6 +150,8 @@ SPVI es **cliente** del contrato v1 de GL, sin cambiarlo. Detalle completo en [L
 | Apps secundarias | La principal firma el permiso de cada ranura y dispositivo (sub-token); la secundaria lo comprueba antes de dar la licencia por buena |
 
 ## Mejoras Android en curso (la versión declarada sigue en 0.30.0)
+
+- **Cierre de turno:** conteo opcional por denominaciones CUP (1, 3, 5, 10, 20, 50, 100, 200, 500, 1000, **5000 y 20000**), monedas/otro efectivo y comparación con el esperado. Después se cuentan productos físicos e insumos (hasta tres decimales), se revisan diferencias y se exige motivo si hay ajustes. Los elaborados se controlan mediante sus insumos. El conteo queda en el turno, el respaldo y sus PDF/Excel. Cada secundaria envía su declaración; solo la principal autoriza y ajusta. Si las existencias cambiaron, se debe repetir el conteo, no sobrescribir stock nuevo. Para este flujo deben actualizarse tanto la principal como las secundarias. **Pendiente de compilación y prueba en dos dispositivos**; ver `docs/VERIFICACION.md`.
 
 - **Pago electrónico:** los logos de BPA, BANDEC y BANMET se muestran con esquinas redondeadas y el mismo tamaño (96 × 48 dp). El logo se elige por los 4 primeros dígitos de la tarjeta; es una estimación (ver [docs/LOGOS_BANCOS.md](docs/LOGOS_BANCOS.md): `9225`/`9235` los comparten varios bancos y `9226` tiene fuentes contradictorias).
 - **Inicio:** el turno con su interruptor de dos estados, debajo el selector de período y, debajo, el banner de licencia: los tres a todo el ancho y **fijos** (el resto de la pantalla se desplaza por debajo). Inicio se abre siempre por arriba: no guarda por dónde ibas. En la tarjeta de Pago electrónico, el teléfono y la tarjeta/cuenta van en seminegrita. Los gráficos y listas que siguen al selector de período son acordeones: empiezan cerrados y se vuelven a cerrar al cambiar de ventana.

@@ -48,6 +48,13 @@ interface VentaRepository {
 }
 
 interface TurnoRepository {
+    /** Instantánea del inventario local para el conteo físico del turno activo. */
+    suspend fun prepararConteo(): AppResult<Pair<Long, List<cu.spvi.domain.model.LineaConteo>>> =
+        AppResult.Err(cu.spvi.core.result.AppError.SinPermiso)
+    /** Guarda la declaración, sin ajustar stock. La principal aplica al cerrar o aprobar. */
+    suspend fun guardarConteo(turnoId: Long, conteo: cu.spvi.domain.model.ConteoCierre): AppResult<Unit> =
+        AppResult.Err(cu.spvi.core.result.AppError.SinPermiso)
+
     fun observarActivo(): Flow<Turno?>
     suspend fun activo(): Turno?
     suspend fun ultimoCerrado(): Turno?

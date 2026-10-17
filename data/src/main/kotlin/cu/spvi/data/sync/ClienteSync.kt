@@ -1,5 +1,7 @@
 package cu.spvi.data.sync
 
+import cu.spvi.data.dto.toDomain
+
 import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
 import cu.spvi.core.time.Clock
@@ -147,6 +149,12 @@ class ClienteSync @Inject constructor(
             else (almacen.aplicarCambios(r.cambiosVentas) as? AppResult.Ok)?.value.orEmpty()
             cambiosAplicados = hechos
             _apkPrincipal.value = r.apk?.takeIf { apkLocal.masNuevo(it) }
+            r.conteoAprobado?.let { c ->
+                when (val aprobado = almacen.marcarConteoAprobado(r.conteoTurnoUuid, c.toDomain())) {
+                    is AppResult.Err -> return@withLock aprobado
+                    is AppResult.Ok -> Unit
+                }
+            }
             config.editarSecundaria { x ->
                 val inst = r.instantanea
                 val base = x.copy(
