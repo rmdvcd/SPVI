@@ -47,7 +47,7 @@ La versión declarada por el código sigue siendo **0.30.0 (`versionCode 51`)**;
 | **Inventario** | Lista con buscador, filtros, selección múltiple, ficha, alta manual, exportación (PDF, Excel, Imagen, Tarjetas) |
 | **QR de vinculación** | CameraX + ML Kit (modelo empaquetado). Solo lee el QR para vincular la principal con la secundaria |
 | **Servicios** | (0.18.0, sustituye a Elaboración.) Nombre, Tipo, Importe y, opcionales, foto y descripción. Pueden gastar insumos. Se venden aparte de los productos, tienen su pestaña en Registros y sus indicadores en Inicio. Los **insumos** son ahora la categoría «Insumos» del Inventario (precio de venta opcional, en unidades enteras). Los Elaborados muestran «Alcanza para N» |
-| **Registros** | Ventas, Transferencias, Movimientos, **Clientes** (clientes fijos, 0.27.0; corregir sus datos desde la ficha, 0.31.0) y Turnos, con buscador y filtros de fecha e importe. Exportar a PDF/Excel (0.26.0: ya no se comparte como texto) |
+| **Registros** | Ventas, Transferencias, Movimientos, **Clientes** (clientes fijos, 0.27.0; corregir sus datos desde la ficha, 0.31.0) y Turnos, con buscador y filtros de fecha e importe. Exportar a PDF/Excel (0.26.0: ya no se comparte como texto). Desde la 0.31.0 se corrige lo registrado de un turno **abierto**: cantidades, método de pago y nº de transacción en ventas y servicios; la venta de una transferencia desde su ficha; y la cantidad de un ajuste desde la ficha del movimiento |
 | **Ajustes** | Completar configuración, Perfil, Licencia, Pago electrónico, Precios (preajustes), Avisos de inventario, Permisos, Respaldo, Actualizar, Ayuda, Soporte |
 
 ### Qué no hace

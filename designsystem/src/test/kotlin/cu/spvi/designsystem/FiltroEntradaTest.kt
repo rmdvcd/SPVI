@@ -22,6 +22,17 @@ class FiltroEntradaTest {
         assertEquals("", FiltroEntrada.DINERO.aplicar("abc"))
     }
 
+    /** 0.31.0: el ajuste de existencias se corrige con una cantidad con signo («-1.25»). */
+    @Test fun cantidadConSignoDeUnAjuste() {
+        assertEquals("-1.25", FiltroEntrada.CANTIDAD.aplicar("-1,25")) // la coma del teclado pasa a punto
+        assertEquals("+3", FiltroEntrada.CANTIDAD.aplicar(" +3 "))
+        assertEquals("1.250", FiltroEntrada.CANTIDAD.aplicar("1.2509"))
+        assertEquals("-", FiltroEntrada.CANTIDAD.aceptar("5", "-"))   // estado parcial mientras se escribe
+        assertEquals("-0.5", FiltroEntrada.CANTIDAD.aceptar("", "-0.5"))
+        assertEquals("5", FiltroEntrada.CANTIDAD.aceptar("5", "5.1.2"))
+        assertEquals("12", FiltroEntrada.CANTIDAD.aceptar("12", "-1.2e3"))
+    }
+
     @Test fun rechazaNumerosAmbiguosSinCambiarElValorAnterior() {
         listOf("-12", "1,234.56", "1e3", "12abc", "2.999").forEach {
             assertEquals("10", FiltroEntrada.DINERO.aceptar("10", it))

@@ -1,6 +1,7 @@
 package cu.spvi.domain.repository
 
 import cu.spvi.core.money.Cup
+import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
 import cu.spvi.domain.model.Anulacion
 import cu.spvi.domain.model.Arqueo
@@ -69,6 +70,15 @@ interface TurnoRepository {
     suspend fun cerrar(ahora: Instant, usuario: String, contado: Cup? = null): AppResult<Turno>
     /** Movimientos de inventario e insumos asociados al turno, en orden cronológico. */
     suspend fun movimientosDe(turnoId: Long): List<MovimientoInventario>
+
+    /**
+     * 0.31.0: corrige la cantidad de un ajuste de existencias del turno abierto (Registros → Movimientos). Aplica la
+     * diferencia al stock ahora, deja el movimiento con la cantidad nueva (y el motivo en la nota) y ajusta la
+     * existencia de los movimientos posteriores de esa entidad. [delta] va en la unidad nativa (unidades o milésimas).
+     * Errores: [AppError.TurnoCerrado], [AppError.StockInsuficiente] o [AppError.Validacion].
+     */
+    suspend fun corregirMovimiento(movimientoId: Long, delta: Long, motivo: String, ahora: Long): AppResult<Unit> =
+        AppResult.Err(AppError.SinPermiso)
 
     /** 0.25.0: entrada/salida de efectivo en el turno ACTIVO de esta app. Error TurnoCerrado si no hay. */
     suspend fun registrarCaja(tipo: TipoMovimientoCaja, importe: Cup, motivo: String, hechoPor: String, ahora: Instant): AppResult<Long>

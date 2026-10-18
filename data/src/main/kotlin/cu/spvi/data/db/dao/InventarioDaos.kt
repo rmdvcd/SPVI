@@ -135,6 +135,18 @@ interface MovimientoDao {
     @Query("SELECT * FROM movimiento WHERE turnoId = :turnoId ORDER BY fecha, id")
     suspend fun deTurno(turnoId: Long): List<MovimientoEntity>
 
+    @Query("SELECT * FROM movimiento WHERE id = :id")
+    suspend fun obtener(id: Long): MovimientoEntity?
+
+    @Update suspend fun actualizar(m: MovimientoEntity)
+
+    /**
+     * 0.31.0: al corregir la cantidad de un ajuste, la existencia resultante de los movimientos posteriores de esa
+     * entidad se desplaza lo mismo, para que el libro siga cuadrando.
+     */
+    @Query("UPDATE movimiento SET existencia = existencia + :delta WHERE entidad = :entidad AND entidadId = :entidadId AND id > :id")
+    suspend fun desplazarExistencia(entidad: String, entidadId: Long, id: Long, delta: Long)
+
     @Query("SELECT * FROM movimiento ORDER BY id")
     suspend fun todos(): List<MovimientoEntity>
 }

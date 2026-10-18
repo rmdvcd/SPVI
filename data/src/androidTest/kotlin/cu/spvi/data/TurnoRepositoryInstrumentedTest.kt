@@ -25,6 +25,7 @@ import cu.spvi.domain.model.Insumo
 import cu.spvi.domain.model.MetodoPago
 import cu.spvi.domain.model.Producto
 import cu.spvi.domain.model.TipoEntidad
+import cu.spvi.domain.model.TipoMovimiento
 import cu.spvi.domain.model.Venta
 import java.time.Instant
 import kotlinx.coroutines.runBlocking
@@ -194,5 +195,70 @@ class TurnoRepositoryInstrumentedTest {
         assertEquals(2, c.resumen!!.numMovimientos) // la salida por la venta y la compra; no la rotura de Luis
         assertEquals(22L, productos.obtener(p)!!.cantidad) // 20 − 2 + 5 − 1
         assertNull(db.turnoDao().obtener(turnoLuis)!!.cerradoEn) // cerrar el suyo no toca el de Luis
+    }
+
+    /**
+     * 0.31.0: corregir un ajuste del turno abierto (Registros → Movimientos) cuadra el stock y la existencia de los
+     * movimientos posteriores de esa entidad.
+     */
+    @Test fun corregirUnAjusteCuadraElStockYLaExistenciaDeLosSiguientes() = runBlocking {
+        val p = ok(productos.crear(Producto(categoria = "Bebidas", nombre = "Refresco", precioCosto = Cup.ofPesos(60), precioVenta = Cup.ofPesos(100), cantidad = 10, creadoEn = ahora), null))
+        val t = ok(turnos.abrir(ahora, "Ana"))
+        ok(productos.ajustarStock(p, 5, "Llegó el pedido")) // se escribió 5 y eran 50
+        ok(productos.ajustarStock(p, -3, "Merma"))
+        assertEquals(12L, productos.obtener(p)!!.cantidad)
+        val ajuste = turnos.movimientosDe(t.id).first { it.nota == "Llegó el pedido" }
+        val merma = turnos.movimientosDe(t.id).first { it.nota == "Merma" }
+        assertEquals(15L, ajuste.existenciaResultante)
+        assertEquals(12L, merma.existenciaResultante)
+
+        ok(turnos.corregirMovimiento(ajuste.id, 50, "eran 50 unidades", ahora.toEpochMilli()))
+
+        assertEquals(57L, productos.obtener(p)!!.cantidad) // 10 + 50 − 3
+        val corregido = turnos.movimientosDe(t.id).first { it.id == ajuste.id }
+        assertEquals(50L, corregido.delta)
+        assertEquals(60L, corregido.existenciaResultante) // 10 + 50
+        assertEquals("Llegó el pedido · Corregido: eran 50 unidades", corregido.nota)
+        assertEquals("la merma sigue cuadrando", 57L, turnos.movimientosDe(t.id).first { it.id == merma.id }.existenciaResultante)
+    }
+
+    /** Solo los ajustes del turno abierto; el insumo se corrige en su unidad y nunca queda stock negativo. */
+    @Test fun soloSeCorrigenAjustesDelTurnoAbiertoYSinDejarStockNegativo() = runBlocking {
+        val p = ok(productos.crear(Producto(categoria = "Bebidas", nombre = "Refresco", precioCosto = Cup.ofPesos(60), precioVenta = Cup.ofPesos(100), cantidad = 10, creadoEn = ahora), null))
+        val i = ok(insumos.crear(Insumo(nombre = "Harina", precio = Cup.ofPesos(10), cantidad = Cantidad.enteras(5), creadoEn = ahora)))
+        val t = ok(turnos.abrir(ahora, "Ana"))
+        ok(insumos.ajustarStock(i, Cantidad(500), "compra")) // 5.5 kg
+        ok(ventas.registrar(venta(t.id, p, 1, MetodoPago.EFECTIVO)))
+        val compra = turnos.movimientosDe(t.id).first { it.tipo == TipoMovimiento.AJUSTE }
+        val salida = turnos.movimientosDe(t.id).first { it.tipo == TipoMovimiento.VENTA }
+
+        ok(turnos.corregirMovimiento(compra.id, 1250, "eran 1.25 kg", ahora.toEpochMilli())) // 0.5 → 1.25 kg
+        assertEquals(6250L, insumos.obtener(i)!!.cantidad.milesimas)
+
+        val stockAntes = productos.obtener(p)!!.cantidad
+        assertEquals(
+            AppError.Validacion("movimiento", AppError.Regla.NO_PERMITIDO),
+            (turnos.corregirMovimiento(salida.id, 9, "no es un ajuste", ahora.toEpochMilli()) as AppResult.Err).error,
+        )
+        assertEquals("una salida por venta se corrige desde su venta", stockAntes, productos.obtener(p)!!.cantidad)
+
+        assertEquals(
+            AppError.StockInsuficiente(listOf("Harina")),
+            (turnos.corregirMovimiento(compra.id, -9000, "merma imposible", ahora.toEpochMilli()) as AppResult.Err).error,
+        )
+        assertEquals(6250L, insumos.obtener(i)!!.cantidad.milesimas) // nada a medias
+        assertEquals(1250L, turnos.movimientosDe(t.id).first { it.id == compra.id }.delta)
+
+        ok(turnos.cerrar(ahora.plusSeconds(60), "Ana"))
+        assertEquals(AppError.TurnoCerrado, (turnos.corregirMovimiento(compra.id, 500, "y merma", ahora.toEpochMilli()) as AppResult.Err).error)
+        assertEquals(6250L, insumos.obtener(i)!!.cantidad.milesimas)
+
+        // Con un turno nuevo abierto, el ajuste del turno ya cerrado sigue siendo intocable.
+        ok(turnos.abrir(ahora.plusSeconds(120), "Ana"))
+        assertEquals(
+            AppError.Validacion("movimiento", AppError.Regla.NO_PERMITIDO),
+            (turnos.corregirMovimiento(compra.id, 500, "y merma", ahora.toEpochMilli()) as AppResult.Err).error,
+        )
+        assertEquals(6250L, insumos.obtener(i)!!.cantidad.milesimas)
     }
 }

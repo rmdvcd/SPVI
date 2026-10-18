@@ -115,6 +115,8 @@ class AccionesRegistros(
     val onAyuda: (() -> Unit)? = null,
     /** 0.25.0 (§6bis): anular / modificar en la ficha de una venta (solo principal y turno abierto). */
     val accionesVenta: (@Composable (Venta) -> Unit)? = null,
+    /** 0.31.0: corregir la cantidad de un ajuste en la ficha de un movimiento (solo principal, turno abierto). */
+    val accionesMovimiento: (@Composable (ItemMovimiento) -> Unit)? = null,
 )
 
 /** Registros (barra inferior): Ventas, Transferencias recibidas, Movimientos, Clientes (0.27.0) y Turnos en una sola pantalla. */
@@ -177,6 +179,15 @@ fun RegistrosScreen(
                 val scope = androidx.compose.runtime.rememberCoroutineScope()
                 AccionesFichaVenta(
                     v, accionesVm,
+                    onMensaje = { m -> scope.launch { snackbar.showSnackbar(m) } },
+                    onHecho = { viewModel.cerrarFicha(); viewModel.reintentar() },
+                )
+            },
+            accionesMovimiento = { i ->
+                val accionesVm: MovimientoAccionesViewModel = hiltViewModel()
+                val scope = androidx.compose.runtime.rememberCoroutineScope()
+                AccionesFichaMovimiento(
+                    i, accionesVm,
                     onMensaje = { m -> scope.launch { snackbar.showSnackbar(m) } },
                     onHecho = { viewModel.cerrarFicha(); viewModel.reintentar() },
                 )
@@ -535,11 +546,14 @@ private fun Ficha(f: FichaRegistro, acciones: AccionesRegistros, zona: ZoneId) {
             }
             if (f is FichaRegistro.DeVenta) acciones.accionesVenta?.invoke(f.venta)
             if (f is FichaRegistro.DeTransferencia) {
+                // 0.31.0: el importe y el nº de transacción son de la venta que pagó la transferencia: se corrigen aquí mismo.
+                f.venta?.let { v -> acciones.accionesVenta?.invoke(v) }
                 SpviSecondaryButton(
                     TextosRegistros.VER_VENTA, icon = SpviIcons.Comprobante, onClick = acciones.onVerVenta,
                     modifier = Modifier.align(Alignment.CenterHorizontally).testTag(RegistrosTags.FICHA_VER_VENTA),
                 )
             }
+            if (f is FichaRegistro.DeMovimiento) acciones.accionesMovimiento?.invoke(f.item)
         }
     }
 }

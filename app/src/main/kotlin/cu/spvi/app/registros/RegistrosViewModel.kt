@@ -48,7 +48,7 @@ import kotlinx.coroutines.launch
 /** Elemento abierto en la ventana (hoja inferior) al tocar una fila. */
 sealed interface FichaRegistro {
     data class DeVenta(val venta: Venta) : FichaRegistro
-    data class DeTransferencia(val transaccion: Transaccion) : FichaRegistro
+    data class DeTransferencia(val transaccion: Transaccion, val venta: Venta? = null) : FichaRegistro
     data class DeMovimiento(val item: ItemMovimiento) : FichaRegistro
 }
 
@@ -210,10 +210,27 @@ class RegistrosViewModel @Inject constructor(
     // ---------------- Ventana del elemento ----------------
 
     fun abrirVenta(id: Long) = abrir { v -> (v as? VistaRegistro.Ventas)?.items?.firstOrNull { it.id == id }?.let(FichaRegistro::DeVenta) }
-    fun abrirTransferencia(id: Long) =
+    fun abrirTransferencia(id: Long) {
         abrir { v -> (v as? VistaRegistro.Transferencias)?.items?.firstOrNull { it.id == id }?.let(FichaRegistro::DeTransferencia) }
+        cargarVentaDeTransferencia()
+    }
     fun abrirMovimiento(id: Long) =
         abrir { v -> (v as? VistaRegistro.Movimientos)?.items?.firstOrNull { it.movimiento.id == id }?.let(FichaRegistro::DeMovimiento) }
+
+    /**
+     * 0.31.0: trae la venta que pagó la transferencia abierta. Así su ficha puede ofrecer corregir el importe y el nº
+     * de transacción (que son de la venta) sin salir de ella.
+     */
+    private fun cargarVentaDeTransferencia() {
+        val f = local.value.ficha as? FichaRegistro.DeTransferencia ?: return
+        if (f.venta != null) return
+        viewModelScope.launch {
+            val v = try { ventasRepo.obtener(f.transaccion.ventaId) } catch (e: CancellationException) { throw e } catch (e: Exception) { null }
+            if (v != null) local.update { s ->
+                if ((s.ficha as? FichaRegistro.DeTransferencia)?.transaccion?.id == f.transaccion.id) s.copy(ficha = f.copy(venta = v)) else s
+            }
+        }
+    }
 
     private fun abrir(buscar: (VistaRegistro) -> FichaRegistro?) {
         val f = state.value.datos?.let(buscar) ?: return

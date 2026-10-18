@@ -31,6 +31,8 @@ enum class FiltroEntrada(val teclado: KeyboardOptions, val maximo: Int) {
     ENTERO(KeyboardOptions(keyboardType = KeyboardType.Number), 7),
     /** Cantidades de insumos: dígitos y UN separador decimal (punto o coma, que se guarda como punto), hasta 3 decimales. */
     DECIMAL(KeyboardOptions(keyboardType = KeyboardType.Decimal), 12),
+    /** 0.31.0: cantidad CON SIGNO de un ajuste de existencias («-1.25», «+3»), hasta 3 decimales. */
+    CANTIDAD(KeyboardOptions(keyboardType = KeyboardType.Decimal), 12),
     /** Importes en CUP: dígitos y UN separador decimal, hasta 2 decimales. */
     DINERO(KeyboardOptions(keyboardType = KeyboardType.Decimal), 12),
     /** Código de barras / QR del producto: letras, dígitos y - . sin espacios. */
@@ -49,6 +51,7 @@ enum class FiltroEntrada(val teclado: KeyboardOptions, val maximo: Int) {
         TELEFONO -> s.filter { it in '0'..'9' }.let { d -> if (d.length > 8 && d.startsWith("53")) d.drop(2) else d }
         TARJETA, CARNE, ENTERO, PORCENTAJE -> s.filter { it in '0'..'9' }
         DECIMAL -> decimal(s, 3)
+        CANTIDAD -> decimal(s, 3, conSigno = true)
         DINERO -> decimal(s, 2)
         CODIGO -> s.filter { it.isLetterOrDigit() && it.code < 128 || it == '-' || it == '.' || it == '_' } // = dominio (3–64)
         TRANSACCION -> s.filter { it.isLetterOrDigit() && it.code < 128 }.uppercase()
@@ -63,6 +66,7 @@ enum class FiltroEntrada(val teclado: KeyboardOptions, val maximo: Int) {
                 val cifras = if (this == DINERO) 2 else 3
                 escrito.length <= maximo && Regex("[0-9]*(?:[.,][0-9]{0,$cifras})?").matches(escrito)
             }
+            CANTIDAD -> escrito.length <= maximo && Regex("[+-]?[0-9]*(?:[.,][0-9]{0,3})?").matches(escrito)
             ENTERO -> escrito.length <= maximo && escrito.all { it in '0'..'9' }
             PORCENTAJE -> escrito.isEmpty() ||
                 (escrito.length <= maximo && escrito.all { it in '0'..'9' } && (escrito.toIntOrNull() ?: 101) <= 100)
@@ -75,11 +79,13 @@ enum class FiltroEntrada(val teclado: KeyboardOptions, val maximo: Int) {
         const val MAX_TEXTO = 500
 
         /** Dígitos y como mucho un separador (el primero que aparezca), con [decimales] cifras detrás. */
-        private fun decimal(s: String, decimales: Int): String {
+        private fun decimal(s: String, decimales: Int, conSigno: Boolean = false): String {
+            val texto = s.trimStart()
             val out = StringBuilder()
+            if (conSigno && (texto.firstOrNull() == '-' || texto.firstOrNull() == '+')) out.append(texto[0])
             var separador = false
             var tras = 0
-            for (c in s) {
+            for (c in texto) {
                 when {
                     c in '0'..'9' -> if (!separador) out.append(c) else if (tras < decimales) { out.append(c); tras++ }
                     // 0.21.6: la coma del teclado en español se guarda como punto. Antes «2,5» llegaba a Cantidad.parse, que quita

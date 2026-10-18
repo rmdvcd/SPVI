@@ -77,6 +77,26 @@ class AnularVenta @Inject constructor(
 }
 
 /**
+ * 0.31.0: corrige la cantidad de un ajuste de existencias del turno ABIERTO desde Registros → Movimientos. Solo la
+ * app principal (como anular o modificar ventas) y con motivo de 3 a 60 caracteres: la corrección queda en la nota
+ * del movimiento.
+ */
+class CorregirMovimiento @Inject constructor(
+    private val turnos: TurnoRepository,
+    private val clock: Clock,
+    private val secundaria: SecundariaRepository,
+) {
+    suspend operator fun invoke(movimientoId: Long, delta: Long, motivo: String): AppResult<Unit> {
+        if (!secundaria.esPrincipal()) return AppResult.Err(AppError.Validacion("movimiento", AppError.Regla.NO_PERMITIDO))
+        val m = when (val r = motivoValido(motivo, Anulacion.MOTIVO_MIN, Anulacion.MOTIVO_MAX)) {
+            is AppResult.Err -> return r
+            is AppResult.Ok -> r.value
+        }
+        return turnos.corregirMovimiento(movimientoId, delta, m, clock.now().toEpochMilli())
+    }
+}
+
+/**
  * 0.25.0: «Modificar» = anular la venta + registrar la corregida en el MISMO turno (mismo vendedor), en una transacción.
  * Las líneas que ya estaban conservan su precio y costo ORIGINALES; las nuevas usan el precio actual. Las existencias se
  * comprueban contando lo que devolvería la anulación ([Devueltos]).

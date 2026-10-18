@@ -17,12 +17,14 @@ import cu.spvi.domain.model.TipoMovimientoCaja
 import cu.spvi.data.db.tx
 import cu.spvi.data.mapper.toDomain
 import cu.spvi.domain.model.MovimientoInventario
+import cu.spvi.domain.model.TipoEntidad
 import cu.spvi.domain.model.Transaccion
 import cu.spvi.domain.model.Turno
 import cu.spvi.domain.model.Venta
 import cu.spvi.domain.repository.FiltroRegistro
 import cu.spvi.domain.repository.RegistroRepository
 import cu.spvi.domain.repository.TurnoRepository
+import cu.spvi.domain.service.CorreccionMovimiento
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -102,6 +104,31 @@ class TurnoRepositoryImpl @Inject constructor(private val db: SpviDatabase) : Tu
     }
 
     override suspend fun movimientosDe(turnoId: Long): List<MovimientoInventario> = movimientos.deTurno(turnoId).map { it.toDomain() }
+
+    /**
+     * 0.31.0: corregir la cantidad de un ajuste del turno ABIERTO (Registros → Movimientos). Todo en una transacción:
+     * el stock, el movimiento (cantidad nueva, motivo en la nota) y la existencia de los movimientos posteriores de
+     * esa entidad. Un movimiento de otro turno, de un turno cerrado o de otra clase no se corrige.
+     */
+    override suspend fun corregirMovimiento(movimientoId: Long, delta: Long, motivo: String, ahora: Long): AppResult<Unit> = db.tx {
+        val e = movimientos.obtener(movimientoId) ?: abortar(AppError.NoEncontrado)
+        val m = e.toDomain()
+        val t = turnos.activo() ?: abortar(AppError.TurnoCerrado)
+        if (!CorreccionMovimiento.puede(m.tipo, m.turnoId, t.id)) {
+            abortar(AppError.Validacion("movimiento", AppError.Regla.NO_PERMITIDO))
+        }
+        val diff = CorreccionMovimiento.diferencia(m.delta, delta)
+        if (diff != 0L) {
+            val filas = when (m.entidad) {
+                TipoEntidad.PRODUCTO -> db.productoDao().sumarStock(m.entidadId, diff, ahora)
+                TipoEntidad.INSUMO -> db.insumoDao().sumarStock(m.entidadId, diff, ahora)
+            }
+            if (filas == 0) abortar(AppError.StockInsuficiente(listOf(m.nombre)))
+            movimientos.desplazarExistencia(e.entidad, e.entidadId, e.id, diff)
+        }
+        movimientos.actualizar(e.copy(delta = delta, existencia = e.existencia + diff, nota = CorreccionMovimiento.nota(m.nota, motivo)))
+        Unit
+    }
 
     // ------------------------------------------------------------------ 0.25.0: caja
     override suspend fun registrarCaja(

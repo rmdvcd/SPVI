@@ -179,6 +179,15 @@ class TurnoRepo : TurnoRepository {
     }
     override suspend fun movimientosDe(turnoId: Long) = movimientos.filter { it.turnoId == turnoId }
 
+    /** 0.31.0: correcciones de un ajuste pedidas desde la ficha de un movimiento. */
+    val correcciones = mutableListOf<Triple<Long, Long, String>>()
+    var errorCorregir: AppError? = null
+    override suspend fun corregirMovimiento(movimientoId: Long, delta: Long, motivo: String, ahora: Long): AppResult<Unit> {
+        errorCorregir?.let { return AppResult.Err(it) }
+        correcciones += Triple(movimientoId, delta, motivo)
+        return AppResult.Ok(Unit)
+    }
+
     /** 0.25.0. */
     val caja = mutableListOf<cu.spvi.domain.model.MovimientoCaja>()
     override suspend fun registrarCaja(

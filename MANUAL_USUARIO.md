@@ -15,6 +15,11 @@
   centrados en el pie de la ventana. **Editar** abre una ventana para corregir el **nombre**, el **carné**
   y el **teléfono**; si el carné ya es de otro cliente no se guarda y te lo avisa, y sus compras anteriores
   quedan con los datos corregidos.
+- **Editar lo registrado:** con el turno **abierto** (y en la app principal), la ficha de una venta o un
+  servicio deja **Modificar** (cantidades, método de pago y nº de transacción) y **Anular**; la ficha de una
+  **transferencia** ofrece lo mismo sobre la venta que la pagó —su importe y su nº salen de ahí— y la de un
+  **movimiento** deja **corregir la cantidad** de un *Ajuste*: se aplica al stock, la «existencia después»
+  de los movimientos siguientes se corrige igual y el **motivo** queda anotado en el movimiento.
 - **Licencia:** se quitó el botón de llave del final; el asistente avanza con *Paso siguiente*.
 - **Actualizar** (antes «Actualizaciones»): al tocarlo sale un cuadro con una **barra de progreso
   circular** y al terminar dice *Actualizado*, *Estas al día* o *Sin conexión*.
