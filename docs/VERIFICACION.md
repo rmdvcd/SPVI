@@ -2,13 +2,14 @@
 
 > **Fuente única de verdad** del estado de verificación: solo se considera medido lo anotado aquí. Última actualización: **2026-10-18**. El repositorio mantiene la app Android nativa; Flutter/iOS y la web de escritorio se retiraron.
 
-## Cambio en curso: escáner OCR completo y geometría ajustada en el teléfono (2026-10-18, sin commitear)
+## Escáner OCR completo y geometría ajustada en el teléfono (2026-10-18, `6959eb1`, CI verde)
 
-Fases del escáner (lógica pura, ViewModel, pantalla y documentación) y las reglas de geometría corregidas con lo medido en el teléfono. Estado: **sin commitear**.
+Fases del escáner (lógica pura, ViewModel, pantalla y documentación) y las reglas de geometría corregidas con lo medido en el teléfono.
 
 - `./gradlew spviTests` (2026-10-18): **1057 casos JVM en verde**, contados en los XML de los seis tasks (19 `:core` + 114 `:licencia` + 248 `:domain` + 91 `:data` + 34 `:designsystem` + 551 `:app`). Los 551 de `:app` son los 527 anteriores + los 19 tests del escáner del merge #44 (existían, pero el merge no compilaba) + 5 nuevos de esta revisión.
 - `./gradlew spviCheck` (2026-10-18): **OK** (tests JVM + `lintDebug` + `assembleDebug` + `spviPermisos`).
 - `./gradlew verifyRoborazziDebug` (2026-10-18): **527 capturas en verde**, ninguna cambia.
+- CI (2026-10-18): [run `39176254439`](https://github.com/rmdvcd/SPVI/actions/runs/39176254439) sobre `6959eb1`: **verde** (permisos del manifiesto, API mínima 26, lint, tests JVM y compilación de instrumentados, release R8 y APK debug). Es la primera corrida verde desde el fallo de `84afc87`; los tests instrumentados en emulador no corren de forma ordinaria.
 - Prueba de extremo a extremo en el teléfono 4bc9f8f3 (Android 15, API 35), APK debug, con los tres PNG de tabla generados para la prueba:
   - **Productos**: 43 → **47 productos**; las 4 filas entraron con nombre, categoría, cantidad y ambos precios. El encabezado se detectó solo (5 columnas → Nombre / Categoría / Cantidad / Precio de costo / Precio de venta) y la revisión mostró los valores tal cual, con la categoría del texto («Alimentos», «Aseo», «Bebidas») en vez de «Otros».
   - **Insumos**: → **50 registros**; 3 insumos con unidad `kg` y cantidad decimal (`12.5`, `8.25`, `3.75`) contra `UnidadMedida`.
@@ -21,7 +22,7 @@ Fases del escáner (lógica pura, ViewModel, pantalla y documentación) y las re
 - Modelo PP-Layout/ONNX: sigue **bloqueado** (sin artefacto con licencia y contrato verificables) y `onnxruntime-android` está fuera del catálogo y de `:app`; los pasos para reincorporarlo están en `docs/ESCANEO_OCR.md`.
 - Pendiente de decisión del dueño: reescribir o no los mensajes de los commits `54c85f9 "j"` y `5dc2689 "6"` (ya publicados en `origin/main`).
 
-## Cambio en curso: filtro por alerta de Inicio y compilación del escaneo OCR (2026-10-18, sin commitear)
+## Filtro por alerta de Inicio y compilación del escaneo OCR (2026-10-18, `e31ff9a` y `7d71f72`, CI verde)
 
 - `./gradlew spviTests` (2026-10-18): **1033 casos JVM en verde**, contados en los XML de los seis tasks (19 `:core` + 114 `:licencia` + 248 `:domain` + 91 `:data` + 34 `:designsystem` + 527 `:app`, capturas incluidas). La cifra «896» de la sección anterior no contaba los tests de capturas de `:app`, que sí corren en `spviTests`.
 - `./gradlew spviCheck` (2026-10-18): **OK** (tests JVM + `lintDebug` + `assembleDebug` + `spviPermisos`).
@@ -44,7 +45,7 @@ Alerta de Inicio → Inventario filtrado, botón «Ver la venta» centrado en la
   - **Ficha de transferencia**: con el turno cerrado, «Ver la venta» centrado (x 515–568 de 1080; antes 156–209). Con el turno abierto y una transferencia del turno, la fila queda [Modificar venta][Anular venta][Ver la venta] (x 374–709, centro 541).
   - **Cierre de turno**: los campos por denominación se ven al abrir el diálogo; «Omitir el conteo de billetes» está en la esquina inferior derecha; 23 × 100 suma 2,300.00 CUP y muestra «Cuadra»; «Omitir el conteo de inventario» también en la esquina del paso de inventario y la revisión avisa «Conteo de inventario omitido: se cierra sin ajustar existencias.»; el turno **cerró** de verdad con ese conteo (sin error de inventario cambiado).
   - **Datos del teléfono**: la prueba abrió un turno (fondo 2,300.00), registró una venta por transferencia de prueba («Prueba Verificacion», 190.00 CUP, VERIF00001) y lo cerró con el conteo omitido; el teléfono queda como estaba, con el turno cerrado.
-- **Pendiente antes de publicar**: correr CI y decidir si se reescriben los mensajes de los commits `54c85f9 "j"` y `5dc2689 "6"` (ya publicados en `origin/main`). La regeneración de los datos de ejemplo del teléfono (nombres del catálogo sin unidad pegada) se hizo el 2026-10-18: ver la sección de arriba.
+- **Pendiente antes de publicar**: decidir si se reescriben los mensajes de los commits `54c85f9 "j"` y `5dc2689 "6"` (ya publicados en `origin/main`). La regeneración de los datos de ejemplo del teléfono (nombres del catálogo sin unidad pegada) se hizo el 2026-10-18: ver la sección de arriba. Estado del lote: **commiteado en `e31ff9a`** (con `7d71f72`, que arregló la compilación del escaneo) y **CI verde** en el run de `6959eb1`.
 
 ## Cambio en curso: editar importe, cantidad, método y nº en Registros (2026-10-18, `main`, `54c85f9`)
 

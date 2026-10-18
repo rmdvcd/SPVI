@@ -66,6 +66,6 @@ Un solo test: `./gradlew :domain:test --tests "cu.spvi.domain.Version025Test"`. 
 
 ## Estado de verificación
 
-El estado medido se mantiene en [docs/VERIFICACION.md](docs/VERIFICACION.md). El último CI observado (run `38802995010`, commit `84afc87`) falló en dos tests de Robolectric al no poder descargar el SDK instrumentado. En esta rama, `app/build.gradle.kts` prepara ese SDK con Gradle y configura modo offline para todos los tests JVM de `:app`; la corrección está pendiente de CI, aunque localmente `spviTests` y `spviCheck` ya pasan en verde (hay JDK 17 y Android SDK instalados en este equipo; `./gradlew` funciona).
+El estado medido se mantiene en [docs/VERIFICACION.md](docs/VERIFICACION.md). El CI de `main` volvió a verde el 2026-10-18 (run `39176254439`, commit `6959eb1`): permisos del manifiesto, API mínima 26, lint, tests JVM y compilación de instrumentados, release R8 y APK debug. El fallo anterior (run `38802995010`, `84afc87`) era el SDK instrumentado de Robolectric; `app/build.gradle.kts` lo prepara con Gradle y los tests JVM de `:app` corren en modo offline. `spviTests` cuenta **1057** casos JVM en verde y `spviCheck` pasa en local (hay JDK 17 y Android SDK instalados en este equipo; `./gradlew` funciona).
 
 El CI no ejecuta de forma ordinaria las capturas Roborazzi ni los tests instrumentados en un teléfono/emulador. Tampoco prueba la app instalada, la sincronización entre dos teléfonos ni la firma de release. Antes de publicar, sigue `Pruebas.md`, `PRUEBAS_DISPOSITIVO.md` y `RELEASE.md`.
