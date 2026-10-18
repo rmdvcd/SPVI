@@ -93,6 +93,7 @@ import cu.spvi.designsystem.token.SpviSize
 import cu.spvi.designsystem.token.SpviSpacing
 import cu.spvi.domain.model.GraficosPeriodo
 import cu.spvi.domain.model.OpcionPeriodo
+import cu.spvi.domain.model.TipoAlerta
 import cu.spvi.domain.model.ResumenGeneral
 import cu.spvi.domain.model.TopPersona
 import cu.spvi.domain.model.TopItem
@@ -141,6 +142,11 @@ class AcordeonesInicio(private val abiertosAlInicio: Boolean = false) {
 
 class AccionesInicio(
     val onNavigate: (Route) -> Unit,
+    /**
+     * 0.31.0: contar una alerta de inventario abre la pestaña Inventario con ese filtro. No es una ruta: el filtro
+     * viaja en el estado del destino (ver `MainScaffold.abrirAlertaInventario`).
+     */
+    val onVerAlerta: (TipoAlerta) -> Unit = {},
     val onTurno: (Boolean) -> Unit,
     val onNuevaVenta: () -> Unit,
     val onElegirVenta: (TipoVenta) -> Unit,
@@ -170,6 +176,8 @@ class AccionesInicio(
 @Composable
 fun InicioScreen(
     onNavigate: (Route) -> Unit,
+    /** 0.31.0: alerta de inventario pulsada (la pestaña Inventario se abre filtrada). */
+    onVerAlerta: (TipoAlerta) -> Unit = {},
     /** Aviso al volver de otra pantalla (p. ej. «Venta registrada: …»). */
     mensajeInicial: String? = null,
     onMensajeMostrado: () -> Unit = {},
@@ -220,6 +228,7 @@ fun InicioScreen(
         state = state,
         acciones = AccionesInicio(
             onNavigate = onNavigate,
+            onVerAlerta = onVerAlerta,
             onTurno = { abrir -> if (abrir) pedirPermisoAviso(); viewModel.cambiarTurno(abrir) },
             // 0.21.0 (C12): con un solo tipo de venta permitido se va directo, sin el diálogo.
             onNuevaVenta = { tiposVenta(permisos).singleOrNull()?.let(viewModel::elegirVenta) ?: viewModel.nuevaVenta() },
@@ -645,7 +654,7 @@ private fun LazyListScope.alertas(alertas: List<AlertaUi>, acciones: AccionesIni
                 grupo.forEach { a ->
                     ContadorAlerta(
                         etiqueta = a.etiqueta, cantidad = a.cantidad, tono = a.tono,
-                        onClick = { acciones.onNavigate(destinoAlerta(a.tipo)) },
+                        onClick = { acciones.onVerAlerta(a.tipo) },
                         modifier = Modifier.weight(1f).fillMaxHeight().testTag(InicioTags.alerta(a.tipo)),
                     )
                 }

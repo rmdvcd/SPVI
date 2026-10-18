@@ -12,4 +12,4 @@
 
 ## En este entorno
 
-No hay JDK ni Android SDK instalados, por lo que no se puede ejecutar Gradle localmente. El último CI observado está descrito en `docs/VERIFICACION.md`; la corrección de Robolectric en esta rama aún debe confirmarse en CI.
+Hay JDK 17 y Android SDK 35 instalados: `./gradlew spviTests` (891 tests JVM) y `./gradlew spviCheck` terminan en verde (2026-10-17), y hay un teléfono 4bc9f8f3 (Android 15) para instrumentados y prueba manual (2026-10-18). Lo pendiente es la corrida de CI de la rama; el último CI observado está descrito en `docs/VERIFICACION.md`.

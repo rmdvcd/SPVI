@@ -112,6 +112,12 @@ fun SpviDialog(
     confirmLoading: Boolean = false,
     confirmTag: String? = null,
     confirmIcon: ImageVector? = null,
+    /**
+     * 0.31.0: acción suelta en la **esquina inferior derecha** de la ventana (p. ej. «Omitir»). Cancelar y Confirmar
+     * siguen centrados; con `esquina = null` el pie es el de siempre. Va antes de [content] para no romper la lambda
+     * final de las llamadas.
+     */
+    esquina: (@Composable () -> Unit)? = null,
     content: (@Composable () -> Unit)? = null,
 ) {
     val cs = MaterialTheme.colorScheme
@@ -120,23 +126,28 @@ fun SpviDialog(
         title = title,
         modifier = modifier,
         footer = { cerrar ->
-            SpviIconAction(SpviIcons.Cancelar, dismissDescription, cerrar)
-            if (onConfirm != null) {
-                if (confirmLoading) {
-                    Box(Modifier.size(SpviSize.touchTarget), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(Modifier.size(SpviSize.icon).semantics { contentDescription = confirmDescription })
+            Box(Modifier.fillMaxWidth()) {
+                SpviButtonRow(Modifier.align(Alignment.Center)) {
+                    SpviIconAction(SpviIcons.Cancelar, dismissDescription, cerrar)
+                    if (onConfirm != null) {
+                        if (confirmLoading) {
+                            Box(Modifier.size(SpviSize.touchTarget), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(Modifier.size(SpviSize.icon).semantics { contentDescription = confirmDescription })
+                            }
+                        } else {
+                            SpviIconAction(
+                                icon = confirmIcon ?: if (destructive) SpviIcons.Eliminar else SpviIcons.Confirmar,
+                                contentDescription = confirmDescription,
+                                onClick = onConfirm,
+                                enabled = confirmEnabled,
+                                style = IconActionStyle.Filled,
+                                containerColor = if (destructive) cs.error else null,
+                                modifier = if (confirmTag != null) Modifier.testTag(confirmTag) else Modifier,
+                            )
+                        }
                     }
-                } else {
-                    SpviIconAction(
-                        icon = confirmIcon ?: if (destructive) SpviIcons.Eliminar else SpviIcons.Confirmar,
-                        contentDescription = confirmDescription,
-                        onClick = onConfirm,
-                        enabled = confirmEnabled,
-                        style = IconActionStyle.Filled,
-                        containerColor = if (destructive) cs.error else null,
-                        modifier = if (confirmTag != null) Modifier.testTag(confirmTag) else Modifier,
-                    )
                 }
+                esquina?.let { accion -> Box(Modifier.align(Alignment.CenterEnd)) { accion() } }
             }
         },
         divisor = false,

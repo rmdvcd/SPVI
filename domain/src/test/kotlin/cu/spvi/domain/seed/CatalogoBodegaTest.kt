@@ -32,6 +32,16 @@ class CatalogoBodegaTest {
         assertEquals(2, CatalogoBodega.TARJETAS.size)
     }
 
+    /**
+     * 0.31.0: el nombre no repite la unidad («Pan (lb)» → «Pan»); cada artículo tiene su columna de unidad. Los
+     * servicios sí conservan «(lb)»/«(pieza)»: no tienen campo de unidad propio.
+     */
+    @Test fun nombresSinUnidadPegada() {
+        (CatalogoBodega.PRODUCTOS.map { it.nombre } + CatalogoBodega.INSUMOS.map { it.nombre }).forEach {
+            assertFalse(it, it.contains('('))
+        }
+    }
+
     @Test fun productosConCostoMenorQueVenta() {
         CatalogoBodega.PRODUCTOS.forEach {
             assertTrue("${it.clave}: costo ${it.costoPesos} >= venta ${it.ventaPesos}", it.costoPesos < it.ventaPesos)

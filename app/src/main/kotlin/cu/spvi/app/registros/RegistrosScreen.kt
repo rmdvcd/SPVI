@@ -53,6 +53,7 @@ import cu.spvi.app.inicio.EstadoCarga
 import cu.spvi.app.navigation.Route
 import cu.spvi.designsystem.component.SpviBadge
 import cu.spvi.designsystem.component.SpviBottomSheet
+import cu.spvi.designsystem.component.SpviButtonRow
 import cu.spvi.designsystem.component.SpviChip
 import cu.spvi.designsystem.component.SpviComboBox
 import cu.spvi.designsystem.component.SpviEmptyState
@@ -113,8 +114,11 @@ class AccionesRegistros(
     val onLimpiarSeleccion: () -> Unit = {},
     /** P18 (A23): «Ayuda» desde el estado vacío. */
     val onAyuda: (() -> Unit)? = null,
-    /** 0.25.0 (§6bis): anular / modificar en la ficha de una venta (solo principal y turno abierto). */
-    val accionesVenta: (@Composable (Venta) -> Unit)? = null,
+    /**
+     * 0.25.0 (§6bis): anular / modificar en la ficha de una venta (solo principal y turno abierto).
+     * 0.31.0: el segundo parámetro es «Ver la venta» de una transferencia (null en una venta); va en la misma fila.
+     */
+    val accionesVenta: (@Composable (Venta, (() -> Unit)?) -> Unit)? = null,
     /** 0.31.0: corregir la cantidad de un ajuste en la ficha de un movimiento (solo principal, turno abierto). */
     val accionesMovimiento: (@Composable (ItemMovimiento) -> Unit)? = null,
 )
@@ -174,13 +178,14 @@ fun RegistrosScreen(
             onTurno = { onNavigate(Route.TurnoDetalle(it)) }, onReintentarTurnos = turnosViewModel::reintentar,
             onAlternar = viewModel::alternar, onSeleccionarTodo = viewModel::seleccionarTodo,
             onLimpiarSeleccion = viewModel::limpiarSeleccion,
-            accionesVenta = { v ->
+            accionesVenta = { v, verVenta ->
                 val accionesVm: VentaAccionesViewModel = hiltViewModel()
                 val scope = androidx.compose.runtime.rememberCoroutineScope()
                 AccionesFichaVenta(
                     v, accionesVm,
                     onMensaje = { m -> scope.launch { snackbar.showSnackbar(m) } },
                     onHecho = { viewModel.cerrarFicha(); viewModel.reintentar() },
+                    verVenta = verVenta,
                 )
             },
             accionesMovimiento = { i ->
@@ -544,14 +549,17 @@ private fun Ficha(f: FichaRegistro, acciones: AccionesRegistros, zona: ZoneId) {
             lineas.forEach { (titulo, subtitulo, valor) ->
                 SpviListItem(title = titulo, subtitle = subtitulo, value = valor, indicatorColor = null, valueMaxLines = 4)
             }
-            if (f is FichaRegistro.DeVenta) acciones.accionesVenta?.invoke(f.venta)
+            if (f is FichaRegistro.DeVenta) acciones.accionesVenta?.invoke(f.venta, null)
             if (f is FichaRegistro.DeTransferencia) {
                 // 0.31.0: el importe y el nº de transacción son de la venta que pagó la transferencia: se corrigen aquí mismo.
-                f.venta?.let { v -> acciones.accionesVenta?.invoke(v) }
-                SpviSecondaryButton(
-                    TextosRegistros.VER_VENTA, icon = SpviIcons.Comprobante, onClick = acciones.onVerVenta,
-                    modifier = Modifier.align(Alignment.CenterHorizontally).testTag(RegistrosTags.FICHA_VER_VENTA),
-                )
+                f.venta?.let { v -> acciones.accionesVenta?.invoke(v, acciones.onVerVenta) }
+                // Sin la venta cargada (o sin acciones de venta, p. ej. en capturas) el botón va solo, centrado como los demás.
+                if (f.venta == null || acciones.accionesVenta == null) SpviButtonRow {
+                    SpviSecondaryButton(
+                        TextosRegistros.VER_VENTA, icon = SpviIcons.Comprobante, onClick = acciones.onVerVenta,
+                        modifier = Modifier.testTag(RegistrosTags.FICHA_VER_VENTA),
+                    )
+                }
             }
             if (f is FichaRegistro.DeMovimiento) acciones.accionesMovimiento?.invoke(f.item)
         }

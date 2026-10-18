@@ -9,6 +9,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cu.spvi.core.money.Cup
@@ -34,6 +35,7 @@ fun DialogoCierreCompleto(
         return
     }
     var paso by rememberSaveable { mutableIntStateOf(0) }
+    var omitido by rememberSaveable { mutableStateOf(false) }
     var billetes by rememberSaveable { mutableStateOf(hashMapOf<Int, Long>()) }
     var otro by rememberSaveable { mutableLongStateOf(0L) }
     var motivo by rememberSaveable { mutableStateOf("") }
@@ -55,8 +57,22 @@ fun DialogoCierreCompleto(
         return ConteoForm.cantidad(t, l.entidad)
     }
     val completo = ls != null && ls.indices.all { cantidad(it) != null }
-    val inventario = if (completo) ls!!.mapIndexed { i, l -> l.copy(contado = cantidad(i)!!) } else emptyList()
-    val conteo = ConteoCierre(billetes, Cup(otro), inventario, motivo.trim())
+    // 0.31.0: «Omitir» cierra sin ajustar existencias: se guarda el conteo con lo esperado (sin diferencias) y el
+    // motivo lo deja dicho en la revisión, la ficha del turno y los exportados.
+    val inventario = when {
+        omitido -> ls?.map { it.copy(contado = it.esperado) }.orEmpty()
+        completo -> ls!!.mapIndexed { i, l -> l.copy(contado = cantidad(i)!!) }
+        else -> emptyList()
+    }
+    val conteo = ConteoCierre(billetes, Cup(otro), inventario, if (omitido) MOTIVO_OMITIDO else motivo.trim())
+    val omitirInventario: (@Composable () -> Unit)? = if (paso != 1) null else {
+        {
+            SpviTextButton(
+                "Omitir el conteo de inventario", onClick = { omitido = true; paso = 2 }, icon = SpviIcons.AhoraNo,
+                modifier = Modifier.testTag(CajaTags.OMITIR_INVENTARIO),
+            )
+        }
+    }
     SpviDialog(
         title = if (paso == 1) "Conteo de inventario" else "Revisar cierre",
         text = if (paso == 1) "Cuenta las existencias físicas. Los elaborados se concilian mediante sus insumos."
@@ -64,8 +80,9 @@ fun DialogoCierreCompleto(
         onDismiss = { if (!guardando) onDismiss() },
         onConfirm = { if (paso == 1) paso = 2 else viewModel.guardar(conteo) { onConfirmar(conteo.efectivo) } },
         confirmDescription = if (paso == 1) "Revisar diferencias" else confirmar,
-        confirmEnabled = completo && (paso == 1 || conteo.valido()) && !guardando && !trabajando,
+        confirmEnabled = (if (paso == 1) completo else conteo.valido()) && !guardando && !trabajando,
         confirmLoading = guardando || trabajando, dismissDescription = dismissDescription,
+        esquina = omitirInventario,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
             error?.let {
@@ -77,6 +94,7 @@ fun DialogoCierreCompleto(
                 SpviTextField(
                     value = cantidades.getOrNull(i).orEmpty(),
                     onValueChange = { nuevo -> if (nuevo.length <= 16 && nuevo.all { it.isDigit() || it == '.' || it == ',' }) {
+                        omitido = false
                         cantidades = cantidades.toMutableList().also { valores -> if (i < valores.size) valores[i] = nuevo }
                     } },
                     label = "${l.nombre} (${l.unidad})",
@@ -86,7 +104,8 @@ fun DialogoCierreCompleto(
                 )
             } else {
                 Text("Efectivo contado: ${cu.spvi.core.money.Money.format(conteo.efectivo)}", style = MaterialTheme.typography.bodyMedium)
-                if (!conteo.tieneDiferencias) Text("El inventario cuadra.", style = MaterialTheme.typography.bodyMedium)
+                if (omitido) Text("Conteo de inventario omitido: se cierra sin ajustar existencias.", style = MaterialTheme.typography.bodyMedium)
+                else if (!conteo.tieneDiferencias) Text("El inventario cuadra.", style = MaterialTheme.typography.bodyMedium)
                 inventario.filter { it.diferencia != 0L }.forEach { l ->
                     Text("${l.nombre}: esperado ${ConteoForm.formato(l.esperado, l.entidad)}, contado ${ConteoForm.formato(l.contado, l.entidad)}, diferencia ${ConteoForm.formato(l.diferencia, l.entidad)} ${l.unidad}",
                         style = MaterialTheme.typography.bodyMedium)
@@ -96,7 +115,10 @@ fun DialogoCierreCompleto(
                     supportingText = "De 3 a 160 caracteres. Los ajustes quedarán registrados.", modifier = Modifier.fillMaxWidth(),
                 )
             }
-            SpviTextButton("Atrás", onClick = { paso-- }, icon = SpviIcons.Listo, enabled = !guardando)
+            SpviTextButton("Atrás", onClick = { omitido = false; paso-- }, icon = SpviIcons.Listo, enabled = !guardando)
         }
     }
 }
+
+/** 0.31.0: motivo con el que se guarda un conteo de inventario omitido (queda en la ficha, el resumen y los exportados). */
+private const val MOTIVO_OMITIDO = "Conteo de inventario omitido"

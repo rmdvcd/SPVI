@@ -22,7 +22,9 @@ import cu.spvi.core.money.sumOfCup
 import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
 import cu.spvi.designsystem.component.IconActionStyle
+import cu.spvi.designsystem.component.SpviButtonRow
 import cu.spvi.designsystem.component.SpviDialog
+import cu.spvi.designsystem.component.SpviSecondaryButton
 import cu.spvi.designsystem.component.SpviIconAction
 import cu.spvi.designsystem.component.SpviTextField
 import cu.spvi.designsystem.icon.SpviIcons
@@ -144,21 +146,38 @@ object ModificacionLogic {
     fun motivoValido(m: String) = m.trim().replace(Regex("\\s+"), " ").length in Anulacion.MOTIVO_MIN..Anulacion.MOTIVO_MAX
 }
 
-/** Botones de la ficha (solo si se puede) + diálogos. [onHecho] cierra la ficha y recarga. */
+/**
+ * Botones de la ficha (solo si se puede) + diálogos. [onHecho] cierra la ficha y recarga.
+ *
+ * 0.31.0: [verVenta] («Ver la venta» de una transferencia) entra en esta misma fila —centrada— y **después** de
+ * «Anular venta»; antes colgaba suelta del contenido y, al no centrar los `Spvi*Button` un `Modifier.align` ajeno
+ * (el `modifier` del llamador se aplica dentro del `TooltipBox`), quedaba pegada a la izquierda.
+ */
 @Composable
-fun AccionesFichaVenta(v: Venta, vm: VentaAccionesViewModel, onMensaje: (String) -> Unit, onHecho: () -> Unit) {
+fun AccionesFichaVenta(
+    v: Venta, vm: VentaAccionesViewModel, onMensaje: (String) -> Unit, onHecho: () -> Unit,
+    verVenta: (() -> Unit)? = null,
+) {
     val s by vm.state.collectAsStateWithLifecycle()
     LaunchedEffect(v.id, v.anulada) { vm.comprobar(v) }
     LaunchedEffect(vm) { vm.eventos.collect(onMensaje) }
-    if (s.puede) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(SpviSpacing.lg, Alignment.CenterHorizontally)) {
-        SpviIconAction(
-            SpviIcons.Editar, TextosAnulacion.MODIFICAR, onClick = { vm.abrir(DialogoVenta.MODIFICAR) },
-            style = IconActionStyle.Tonal, modifier = Modifier.testTag(VentaAccionesTags.MODIFICAR),
-        )
-        SpviIconAction(
-            SpviIcons.Eliminar, TextosAnulacion.ANULAR, onClick = { vm.abrir(DialogoVenta.ANULAR) },
-            style = IconActionStyle.Tonal, modifier = Modifier.testTag(VentaAccionesTags.ANULAR),
-        )
+    if (s.puede || verVenta != null) SpviButtonRow {
+        if (s.puede) {
+            SpviIconAction(
+                SpviIcons.Editar, TextosAnulacion.MODIFICAR, onClick = { vm.abrir(DialogoVenta.MODIFICAR) },
+                style = IconActionStyle.Tonal, modifier = Modifier.testTag(VentaAccionesTags.MODIFICAR),
+            )
+            SpviIconAction(
+                SpviIcons.Eliminar, TextosAnulacion.ANULAR, onClick = { vm.abrir(DialogoVenta.ANULAR) },
+                style = IconActionStyle.Tonal, modifier = Modifier.testTag(VentaAccionesTags.ANULAR),
+            )
+        }
+        verVenta?.let {
+            SpviSecondaryButton(
+                TextosRegistros.VER_VENTA, onClick = it, icon = SpviIcons.Comprobante,
+                modifier = Modifier.testTag(RegistrosTags.FICHA_VER_VENTA),
+            )
+        }
     }
     when (s.dialogo) {
         DialogoVenta.ANULAR -> DialogoAnular(v, s.trabajando, onConfirmar = { m -> vm.anular(v, m, onHecho) }, onDismiss = vm::cerrar)

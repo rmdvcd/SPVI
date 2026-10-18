@@ -114,6 +114,37 @@ class VentaFlujoTest {
         assertEquals(listOf(1L), turnos.movimientos.map { it.entidadId })
     }
 
+    // ---------------- El precio de lo vendido queda congelado ----------------
+
+    /**
+     * 0.31.0 (tarea 4): cambiar el precio de venta no reescribe lo vendido; el detalle guarda el importe del momento
+     * y el histórico lee de ahí, no del catálogo. (El precio solo se refresca al *modificar* una venta, que es otra.)
+     */
+    @Test fun cambiarElPrecioNoTocaLasVentasRegistradas() = runBlocking {
+        productos.put(producto(1, "Refresco", cantidad = 10, venta = 30, costo = 20))
+        ok(AbrirTurno(turnos, UsuarioActual(perfil), clock)(Cup.ZERO))
+        val id = ok(registrar(listOf(LineaSolicitada(1, 4)), MetodoPago.EFECTIVO))
+        assertEquals(Cup.ofPesos(120), ventas.obtener(id)!!.total)
+
+        ok(productos.actualizarPrecios(mapOf(1L to Cup.ofPesos(99))))
+
+        val v = ventas.obtener(id)!!
+        assertEquals(Cup.ofPesos(30), v.detalles.single().precioUnitario)
+        assertEquals(Cup.ofPesos(20), v.detalles.single().costoUnitario)
+        assertEquals(Cup.ofPesos(120), v.total)
+    }
+
+    /** Igual con el costo de un elaborado: se congela con el precio de los insumos del momento. */
+    @Test fun cambiarElPrecioDeUnInsumoNoRearmaElCostoDeLoVendido() = runBlocking {
+        montarPan()
+        ok(AbrirTurno(turnos, UsuarioActual(perfil), clock)(Cup.ZERO))
+        val id = ok(registrar(listOf(LineaSolicitada(9, 2)), MetodoPago.EFECTIVO))
+        assertEquals(Cup.ofPesos(25), ventas.obtener(id)!!.detalles.single().costoUnitario) // 2×10 + 1×5
+        insumos.put(insumo(1, "Harina", precio = 100, cantidad = 10), insumo(2, "Sal", precio = 5, cantidad = 3))
+        assertEquals(Cup.ofPesos(25), ventas.obtener(id)!!.detalles.single().costoUnitario)
+        assertEquals(Cup.ofPesos(100), ventas.obtener(id)!!.total) // 2 × 50, el precio del Pan aquel día
+    }
+
     /** Dos Elaborados que comparten insumo se validan por separado; juntos no alcanzan → nada se registra. */
     @Test fun insumoCompartidoQueNoAlcanzaParaAmbosNoRegistraNada() = runBlocking {
         montarPan()

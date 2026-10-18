@@ -9,8 +9,11 @@ import kotlinx.serialization.Serializable
  */
 sealed interface Route {
     @Serializable data object Inicio : Route
-    /** [alerta] = nombre de TipoAlerta para abrir la lista filtrada desde Inicio (null = sin filtro). */
     /**
+     * [alerta] = nombre de TipoAlerta para abrir la lista filtrada desde Inicio. Desde la 0.31.0 **no se empuja** esta
+     * ruta con la alerta (rompía la barra inferior): se abre la pestaña de Inventario y el nombre viaja en el
+     * `SavedStateHandle` de esa entrada ([cu.spvi.app.inventario.InventarioViewModel.KEY_ALERTA]); el campo se conserva
+     * por si una entrada ya persistida la trae.
      * [venta] = nombre de TipoVenta → modo «elegir qué vender» (Prompt 13): checkbox + Continuar, sin exportar ni
      * borrar; [seleccion] = ids ya elegidos (CSV) al volver a «Agregar productos».
      */

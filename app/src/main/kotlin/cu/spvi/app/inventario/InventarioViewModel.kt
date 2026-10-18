@@ -27,6 +27,7 @@ import cu.spvi.domain.model.FiltroInventario
 import cu.spvi.domain.model.ItemInventario
 import cu.spvi.domain.model.Producto
 import cu.spvi.domain.model.TipoArticulo
+import cu.spvi.domain.model.TipoAlerta
 import cu.spvi.domain.model.VistaInventario
 import cu.spvi.domain.service.FormatoExport
 import cu.spvi.domain.service.TablasExport
@@ -133,10 +134,7 @@ class InventarioViewModel @Inject constructor(
 
     private val modoVenta: TipoVenta? = saved.get<String>(KEY_VENTA)?.let { v -> TipoVenta.entries.firstOrNull { it.name == v } }
     private val filtro = MutableStateFlow(
-        FiltroInventario(
-            alerta = saved.get<String>(KEY_ALERTA)?.let { a -> (ALERTAS_PRODUCTO + ALERTAS_INSUMO + ALERTAS_GENERALES).firstOrNull { it.name == a } },
-            tipo = SeleccionVenta.filtroInicial(modoVenta),
-        ),
+        FiltroInventario(alerta = alertaDe(saved.get<String>(KEY_ALERTA)), tipo = SeleccionVenta.filtroInicial(modoVenta)),
     )
     private val intento = MutableStateFlow(0)
 
@@ -188,6 +186,15 @@ class InventarioViewModel @Inject constructor(
 
     init {
         viewModelScope.launch { runCatchingCancelable { limpiarFotos() } }
+        // 0.31.0: una alerta de Inicio entra en el estado de esta pestaña (no como pantalla empujada). Se aplica
+        // también cuando este ViewModel ya existe —pestaña con estado guardado— y se consume para no reaplicarla.
+        viewModelScope.launch {
+            saved.getStateFlow<String?>(KEY_ALERTA, null).collect { nombre ->
+                val alerta = alertaDe(nombre) ?: return@collect
+                filtro.update { it.copy(alerta = alerta, texto = "") }
+                saved[KEY_ALERTA] = null
+            }
+        }
     }
 
     // ---------------- Buscador y filtro ----------------
@@ -418,3 +425,7 @@ class InventarioViewModel @Inject constructor(
         const val KEY_SELECCION = "seleccion"
     }
 }
+
+/** Nombre de `TipoAlerta` tal como llega del estado del destino (o de una pantalla filtrada de versiones anteriores). */
+private fun alertaDe(nombre: String?): TipoAlerta? =
+    nombre?.let { n -> (ALERTAS_PRODUCTO + ALERTAS_INSUMO + ALERTAS_GENERALES).firstOrNull { it.name == n } }

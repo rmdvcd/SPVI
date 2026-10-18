@@ -4,20 +4,20 @@
 
 El producto mantenido en este repositorio es la app Android nativa (`:app`, `:designsystem`, `:data`, `:domain`, `:licencia`, `:core`). La app Flutter/iOS y la aplicación web de escritorio se retiraron el 2026-10-15; sus pruebas y pipelines ya no forman parte del proceso. La sincronización local entre teléfonos Android, las licencias GL y el formato `.spvi` siguen activos.
 
-La versión del código es **0.30.0 (`versionCode 51`)**. Los cambios Android en curso aún no son un release.
+La versión del código es **0.30.0 (`versionCode 51`)**. Los cambios Android en curso aún no son un release: el de editar importe, cantidad, método y nº en Registros se rotula **0.31.0** (commiteado como `54c85f9`).
 
 ## Verificación pendiente
 
-- Cierre con billetes/conciliación (rama `arena/5c955caa-spvi`): generar con Room/KSP y versionar `13.json` para la migración 12→13, compilar y ejecutar los tests nuevos (dominio, DTO, migración, cierre y sincronización). Probar dos teléfonos actualizados, aprobación/rechazo, conteo desfasado, desconexión y reenvío. El cambio no se ha compilado por falta de JDK/SDK local.
+- Cierre con billetes/conciliación (rama `arena/5c955caa-spvi`, ya en `main`): `13.json` está versionado desde `54c85f9`; en este entorno compila y sus tests JVM pasaron dentro de `spviTests` (891 en verde, 2026-10-17). Faltan por confirmar los instrumentados de migración 12→13 y probar en dos teléfonos actualizados la aprobación/rechazo, el conteo desfasado, la desconexión y el reenvío.
 
 - El último CI observado antes de esta limpieza, run [38802995010](https://github.com/rmdvcd/SPVI/actions/runs/38802995010) sobre `main` (`84afc87`), falló en dos pruebas de `ProcesoActualizarTest` al no poder descargar el SDK de Robolectric desde el proceso de tests. Lint, permisos y API mínima sí pasaron. Consulta el detalle y el estado de la corrección en [docs/VERIFICACION.md](docs/VERIFICACION.md).
-- En esta rama se amplió la preparación del SDK Robolectric y el modo offline a todos los tests de `:app`. La corrección aún necesita una corrida de CI: no hay JDK/Android SDK local en este entorno para ejecutar Gradle.
-- Ejecutar `./gradlew spviCheck` en un entorno con JDK 17 y Android SDK 35, y confirmar que las pruebas JVM, lint, compilación y permisos terminan correctamente.
-- Ejecutar las capturas Roborazzi de `:app` y revisar los cambios de imágenes de referencia.
+- `./gradlew spviCheck` ejecutado el 2026-10-17 con JDK 17 y Android SDK 35: en verde (tests JVM, lint, compilación y permisos). `./gradlew spviTests`: 891 tests JVM en verde. Queda la corrida de CI de la rama.
+- Capturas Roborazzi ejecutadas el 2026-10-17: 525 capturas, **1 fallo de comparación** en `01f_inicio_dialogo_cerrar_turno.png`, que es del cambio de cierre con conteo ya en `main` (no regenerada aquí); ninguna captura de Registros cambia. Falta decidir si esa captura se regenera con el cambio de cierre.
+- Publicar los cambios en curso (editar Registros, 0.31.0, `54c85f9`): correr CI, subir y regenerar capturas tras decidir lo anterior.
 
 ## Validación en dispositivos antes de publicar
 
-- Correr los tests instrumentados de Room en teléfono o emulador API 26+.
+- Instrumentados de Room: `:data:RepositoriosRoomTest` 9/9 y `:data:TurnoRepositoryInstrumentedTest` 8/8 en verde el 2026-10-17 en el teléfono 4bc9f8f3 (Android 15, API 35). Faltan los instrumentados de UI de `:app`.
 - Comprobar en dos teléfonos Android la vinculación principal/secundaria, permisos, sincronización y desconexión/reconexión por la red local.
 - Probar activación y revalidación con GL real, incluida una licencia envelope v1 heredada si está disponible.
 - Crear e importar un respaldo `.spvi` con y sin contraseña; probar también lectura de un respaldo compatible anterior.

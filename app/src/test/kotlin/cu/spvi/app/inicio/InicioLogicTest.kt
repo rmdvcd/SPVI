@@ -1,6 +1,5 @@
 package cu.spvi.app.inicio
 
-import cu.spvi.app.navigation.Route
 import cu.spvi.core.money.Cup
 import cu.spvi.core.time.Dates
 import cu.spvi.core.time.FormatoFecha
@@ -70,12 +69,8 @@ class InicioLogicTest {
         assertEquals("Stock inventario bajo", TipoAlerta.STOCK_BAJO.etiqueta())
     }
 
-    @Test fun pulsarUnaAlertaNavegaFiltrado() {
-        assertEquals(Route.Inventario("STOCK_CRITICO"), destinoAlerta(TipoAlerta.STOCK_CRITICO))
-        assertEquals(Route.Inventario("PROXIMO_A_CADUCAR"), destinoAlerta(TipoAlerta.PROXIMO_A_CADUCAR))
-        // P29: los insumos viven en el Inventario.
-        assertEquals(Route.Inventario("INSUMO_BAJO"), destinoAlerta(TipoAlerta.INSUMO_BAJO))
-    }
+    // 0.31.0: pulsar una alerta ya no empuja una pantalla de Inventario (`destinoAlerta` se retiró): abre la pestaña
+    // de Inventario y le pasa el nombre de la alerta en su estado; lo cubre InventarioViewModelTest.
 
     @Test fun pagoElectronicoResumido() {
         assertFalse(Perfil().pagoResumen().configurado)

@@ -141,7 +141,7 @@ class EsquemaTest {
         for (i in 0 until entidades.length()) {
             val e = entidades.getJSONObject(i)
             val tabla = e.getString("tableName")
-            if (tabla == "movimiento_caja") continue // v8
+            if (tabla == "movimiento_caja" || tabla == "cliente_fijo") continue // v8 y v10
             var sql = sinV8(tabla, e.getString("createSql").replace("\${TABLE_NAME}", tabla))
             if (tabla == "empleado") (nuevas + V7_EMPLEADO + V9_EMPLEADO + V12_EMPLEADO).forEach { c -> sql = sql.replace(Regex(",\\s*`$c` [^,)]*"), "") }
             if (tabla == "movimiento") sql = sql.replace(Regex(",\\s*`hechoPor` [^,)]*"), "")
@@ -160,7 +160,7 @@ class EsquemaTest {
         for (i in 0 until entidades.length()) {
             val e = entidades.getJSONObject(i)
             val tabla = e.getString("tableName")
-            if (tabla == "empleado" || tabla == "movimiento_caja") continue
+            if (tabla == "empleado" || tabla == "movimiento_caja" || tabla == "cliente_fijo") continue // v5, v8 y v10
             var sql = sinV8(tabla, e.getString("createSql").replace("\${TABLE_NAME}", tabla))
             if (tabla == "movimiento") sql = sql.replace(Regex(",\\s*`hechoPor` [^,)]*"), "")
             if (tabla == "turno" || tabla == "venta") {
@@ -177,11 +177,16 @@ class EsquemaTest {
         return out
     }
 
-    /** Quita las columnas que añade la v8 (0.25.0) en `turno` y `venta`. */
+    /**
+     * Quita las columnas que añaden las versiones posteriores a las que se recrean aquí: la v8 (0.25.0) en `turno` y
+     * `venta`, la v9/v12 en `empleado` y la v10 (0.27.0) en `transaccion`. Sin esto, el `ALTER TABLE` de la migración
+     * correspondiente vuelve a añadir una columna que ya venía del `12.json` y falla con «duplicate column name».
+     */
     private fun sinV8(tabla: String, sql: String): String = when (tabla) {
         "turno" -> V8_TURNO
         "venta" -> V8_VENTA
         "empleado" -> V9_EMPLEADO + V12_EMPLEADO
+        "transaccion" -> V10_TRANSACCION
         else -> emptyList()
     }.fold(sql) { s, c -> s.replace(Regex(",\\s*`$c` [^,)]*"), "") }
 
@@ -272,6 +277,8 @@ class EsquemaTest {
         val V7_EMPLEADO = listOf("telefono", "cierrePedidoPorEmpleadoEn")
         val V8_TURNO = listOf("fondoCent", "contadoCent", "entradasCent", "salidasCent", "numAnuladas")
         val V8_VENTA = listOf("anuladaEn", "motivoAnulacion", "anuladaPor", "corrigeVentaId", "bajarCambio")
+        /** Columna que añade la v10 (0.27.0) en `transaccion`. */
+        val V10_TRANSACCION = listOf("clienteFijo")
         /** Columnas que añade la v9 (0.26.0) en `empleado`. */
         val V9_EMPLEADO = listOf("fondoAsignadoCent", "fondoAsignadoEn", "aperturaSolicitadaEn", "versionCode")
         /** Columnas que añade la v12 (0.31.0, mitigación 7) en `empleado`. */

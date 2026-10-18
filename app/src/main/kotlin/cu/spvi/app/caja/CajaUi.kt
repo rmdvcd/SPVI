@@ -114,6 +114,13 @@ object CajaTags {
     const val IMPORTE = "caja_importe"
     const val MOTIVO = "caja_motivo"
     const val CONFIRMAR = "caja_confirmar"
+
+    /** 0.31.0: «Omitir» el conteo por billetes y el botón para volver a él. */
+    const val OMITIR = "caja_omitir"
+    const val POR_BILLETES = "caja_por_billetes"
+
+    /** 0.31.0: «Omitir» el conteo de inventario al cerrar (se cierra sin ajustar existencias). */
+    const val OMITIR_INVENTARIO = "conteo_omitir"
 }
 
 /** Lógica pura de los diálogos (testeable sin Compose). */
@@ -123,6 +130,13 @@ object CajaForm {
 
     /** null = vacío o inválido; los negativos no valen. */
     fun importe(texto: String): Cup? = Money.parse(texto)?.takeUnless { it.isNegative }
+
+    /**
+     * 0.31.0: con el conteo por billetes visible, al menos un billete o moneda escritos. Declarar 0 sin contar
+     * descuadraría la caja: para el cero explícito se usa el total suelto (o «Cuadra»).
+     */
+    fun algoContado(desglose: Map<Int, Long>, otro: Cup?): Boolean =
+        desglose.values.any { it > 0L } || (otro?.centavos ?: 0L) > 0L
 
     fun motivoValido(m: String): Boolean = m.trim().replace(Regex("\\s+"), " ").length in MovimientoCaja.MOTIVO_MIN..MovimientoCaja.MOTIVO_MAX
 }
@@ -195,6 +209,8 @@ fun DialogoFondo(
  * 0.25.0 (§5.2): conteo al cerrar (o al pedir el cierre en una secundaria). Muestra en vivo el esperado y la diferencia;
  * «Cuadra» rellena el contado con el esperado. No se confirma con el campo vacío. [arqueo] null = turno sin fondo
  * (anterior a 0.25.0): se pide igualmente el contado, sin diferencia.
+ *
+ * 0.31.0: el conteo **por billetes** se muestra de entrada y «Omitir» (esquina inferior derecha) pasa al total suelto.
  */
 @Composable
 fun DialogoContado(
@@ -209,12 +225,22 @@ fun DialogoContado(
     onDesglose: ((Cup, Map<Int, Long>, Cup) -> Unit)? = null,
 ) {
     var valorTexto by rememberSaveable { androidx.compose.runtime.mutableStateOf("") }
-    var porBilletes by rememberSaveable { mutableStateOf(false) }
+    // 0.31.0: por billetes de entrada (antes quedaba oculto tras un botón de solo icono).
+    var porBilletes by rememberSaveable { mutableStateOf(true) }
     var cantidades by rememberSaveable { mutableStateOf(List(BilletesCUP.denominaciones.size) { "" }) }
     var otroTexto by rememberSaveable { mutableStateOf("0") }
     val otro = CajaForm.importe(otroTexto)
     val desglose = BilletesCUP.denominaciones.mapIndexed { i, d -> d to (cantidades[i].toLongOrNull() ?: 0L) }.toMap()
     val contado = if (porBilletes) otro?.let { runCatching { BilletesCUP.total(desglose, it) }.getOrNull() } else CajaForm.importe(valorTexto)
+    // 0.31.0: «Omitir» el conteo de billetes (no se cuentan uno a uno): se escribe el total contado.
+    val omitir: (@Composable () -> Unit)? = if (!porBilletes) null else {
+        {
+            SpviTextButton(
+                "Omitir el conteo de billetes", onClick = { porBilletes = false }, icon = SpviIcons.AhoraNo,
+                modifier = Modifier.testTag(CajaTags.OMITIR),
+            )
+        }
+    }
     SpviDialog(
         title = titulo,
         text = texto,
@@ -224,10 +250,12 @@ fun DialogoContado(
             else onConfirmar(c)
         } },
         confirmDescription = confirmar,
-        confirmEnabled = contado != null && !trabajando,
+        // Con los billetes a la vista hace falta algo contado; con el total suelto, el 0 es una decisión explícita.
+        confirmEnabled = contado != null && (!porBilletes || CajaForm.algoContado(desglose, otro)) && !trabajando,
         confirmLoading = trabajando,
         confirmTag = CajaTags.CONFIRMAR,
         dismissDescription = dismissDescription,
+        esquina = omitir,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
             arqueo?.let { a ->
@@ -244,9 +272,10 @@ fun DialogoContado(
                     maxLines = 3,
                 )
             }
-            SpviTextButton(
-                if (porBilletes) "Introducir total de efectivo" else "Contar billetes por denominación",
-                onClick = { porBilletes = !porBilletes }, icon = SpviIcons.Efectivo,
+            // 0.31.0: desde el total suelto se puede volver a contar billete a billete.
+            if (!porBilletes) SpviTextButton(
+                "Contar billetes por denominación", onClick = { porBilletes = true }, icon = SpviIcons.Efectivo,
+                modifier = Modifier.testTag(CajaTags.POR_BILLETES),
             )
             if (porBilletes) {
                 BilletesCUP.denominaciones.forEachIndexed { i, denominacion ->

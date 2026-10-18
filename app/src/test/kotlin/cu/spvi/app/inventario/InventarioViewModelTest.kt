@@ -58,9 +58,12 @@ class InventarioViewModelTest {
     @Before fun antes() = Dispatchers.setMain(UnconfinedTestDispatcher())
     @After fun despues() = Dispatchers.resetMain()
 
-    private fun TestScope.vm(alerta: String? = null): InventarioViewModel {
+    private fun TestScope.vm(
+        alerta: String? = null,
+        saved: SavedStateHandle = SavedStateHandle(if (alerta != null) mapOf(InventarioViewModel.KEY_ALERTA to alerta) else emptyMap()),
+    ): InventarioViewModel {
         val vm = InventarioViewModel(
-            saved = SavedStateHandle(if (alerta != null) mapOf("alerta" to alerta) else emptyMap()),
+            saved = saved,
             observarInventario = ObservarInventario(productos, insumosInv, prefs, reloj, Dispatchers.Unconfined),
             productosRepo = productos,
             obtenerFicha = ObtenerFichaProducto(productos, InsRepo(), prefs, reloj),
@@ -107,6 +110,23 @@ class InventarioViewModelTest {
         assertEquals(listOf(3L), vm.state.value.items.map { it.producto.id })
         vm.quitarFiltros()
         assertEquals(3, vm.state.value.items.size)
+    }
+
+    /**
+     * 0.31.0: pulsar una alerta de Inicio abre la pestaña de Inventario (no empuja una pantalla) y deja el nombre en
+     * el `SavedStateHandle` de esa entrada; si el Inventario ya estaba abierto, aplica el filtro y lo consume para no
+     * repetirlo al volver.
+     */
+    @Test fun alertaQueLlegaConLaPestanaAbiertaSeAplicaYSeConsume() = runTest {
+        cargar()
+        val saved = SavedStateHandle()
+        val vm = vm(saved = saved)
+        assertEquals(3, vm.state.value.items.size)
+
+        saved[InventarioViewModel.KEY_ALERTA] = TipoAlerta.SIN_EXISTENCIA.name
+        assertEquals(TipoAlerta.SIN_EXISTENCIA, vm.state.value.filtro.alerta)
+        assertEquals(listOf(3L), vm.state.value.items.map { it.producto.id })
+        assertNull(saved.get<String>(InventarioViewModel.KEY_ALERTA))
     }
 
     @Test fun buscadorYFiltroDeCategoria() = runTest {

@@ -1,7 +1,6 @@
 package cu.spvi.app.inicio
 
 import cu.spvi.core.quantity.Cantidad
-import cu.spvi.app.navigation.Route
 import cu.spvi.core.money.Cup
 import cu.spvi.core.money.Money
 import cu.spvi.core.money.Percent
@@ -176,9 +175,6 @@ fun TipoAlerta.tono(): AlertTone = when (this) {
 }
 
 val TipoAlerta.esInsumo: Boolean get() = this == TipoAlerta.INSUMO_BAJO || this == TipoAlerta.INSUMO_CRITICO
-
-/** P29: productos e insumos viven en el Inventario: toda alerta abre el Inventario filtrado. */
-fun destinoAlerta(tipo: TipoAlerta): Route = Route.Inventario(alerta = tipo.name)
 
 // ---------------- Pago electrónico ----------------
 

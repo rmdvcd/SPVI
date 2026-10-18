@@ -117,6 +117,25 @@ class RepositoriosRoomTest {
         assertTrue(turnos.movimientosDe(t.id).any { it.tipo == TipoMovimiento.VENTA && it.ventaId == id && it.delta == -4L })
     }
 
+    /**
+     * 0.31.0 (tarea 4): el importe de lo vendido no depende del precio de hoy. `actualizarPrecios` solo escribe en
+     * `producto`: ni el detalle, ni la venta, ni el histórico, ni el resumen del turno cambian de importe.
+     */
+    @Test fun cambiarElPrecioNoAlteraElImporteDeLoVendido() = runBlocking {
+        val p = productos.obtener(ok(productos.crear(producto("Refresco", 10, venta = 30), null)))!!
+        val t = ok(turnos.abrir(ahora, "Ana"))
+        val id = ok(ventas.registrar(Venta(turnoId = t.id, fecha = ahora, metodoPago = MetodoPago.EFECTIVO, detalles = listOf(detalle(p, 4)))))
+        assertEquals(Cup.ofPesos(120), ventas.obtener(id)!!.total)
+
+        ok(productos.actualizarPrecios(mapOf(p.id to Cup.ofPesos(99))))
+        assertEquals(Cup.ofPesos(99), productos.obtener(p.id)!!.precioVenta) // el catálogo sí cambia
+        assertEquals(Cup.ofPesos(30), ventas.obtener(id)!!.detalles.single().precioUnitario)
+        assertEquals(Cup.ofPesos(120), ventas.obtener(id)!!.total)
+        assertEquals(Cup.ofPesos(120), registros.ventas(FiltroRegistro()).first().single().total) // ni al releer el histórico
+        ok(turnos.cerrar(ahora, "Ana"))
+        assertEquals(Cup.ofPesos(120), turnos.obtener(t.id)!!.resumen!!.total)
+    }
+
     @Test fun ventaPorTransferenciaGuardaLaTransaccionConElCliente() = runBlocking {
         val p = productos.obtener(ok(productos.crear(producto("Refresco", 10), null)))!!
         val t = ok(turnos.abrir(ahora, "Ana"))

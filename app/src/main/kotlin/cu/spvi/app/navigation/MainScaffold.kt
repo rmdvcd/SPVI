@@ -63,6 +63,7 @@ import cu.spvi.designsystem.component.SpviNavigationBar
 import cu.spvi.designsystem.token.SpviMotion
 import cu.spvi.domain.model.Licencia
 import cu.spvi.domain.model.PasoConfiguracion
+import cu.spvi.domain.model.TipoAlerta
 
 @Composable
 fun MainScaffold(snapshot: Licencia) {
@@ -170,6 +171,7 @@ fun MainScaffold(snapshot: Licencia) {
                 val mensaje = e.savedStateHandle.getStateFlow<String?>(KEY_INICIO_MENSAJE, null).collectAsStateWithLifecycle().value
                 InicioScreen(
                     onNavigate = nav::navigateTo,
+                    onVerAlerta = nav::abrirAlertaInventario,
                     mensajeInicial = mensaje,
                     onMensajeMostrado = { e.savedStateHandle[KEY_INICIO_MENSAJE] = null },
                 )
@@ -348,6 +350,17 @@ private fun NavHostController.navigateTopLevel(route: Route) = navigate(route) {
     popUpTo(graph.findStartDestination().id) { saveState = true }
     launchSingleTop = true
     restoreState = true
+}
+
+/**
+ * 0.31.0: contar una alerta de Inicio abre la pestaña Inventario con el filtro. Antes se empujaba
+ * `Inventario(alerta)` como pantalla de detalle —el **mismo destino** que la pestaña—, y la barra inferior y el
+ * gesto volvían a poner esa entrada encima al ir a cualquier sección (Inicio incluido): no se llegaba a Inicio y el
+ * Inventario se quedaba filtrado. El filtro viaja en el estado del destino y el ViewModel lo consume.
+ */
+private fun NavHostController.abrirAlertaInventario(tipo: TipoAlerta) {
+    navigateTopLevel(Route.Inventario())
+    currentBackStackEntry?.savedStateHandle?.set(InventarioViewModel.KEY_ALERTA, tipo.name)
 }
 
 private fun NavHostController.navigateTo(route: Route) = navigate(route) { launchSingleTop = true }
