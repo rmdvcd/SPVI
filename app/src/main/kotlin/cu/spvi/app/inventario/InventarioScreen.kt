@@ -190,6 +190,10 @@ fun InventarioContent(
                 SpviTopBar(title = SeleccionVenta.titulo(venta), onBack = acciones.onAtras, actions = { BotonFiltro(state, acciones) })
             } else SpviTopBar(title = TextosInventario.TITULO, actions = {
                 BotonFiltro(state, acciones)
+                if (LocalPermisosApp.current.editarInventario) SpviIconAction(
+                    SpviIcons.Escanear, TextosInventario.ESCANEAR, onClick = { onNavigate(Route.EscanerInventario) },
+                    modifier = Modifier.testTag("inventario.escanear"),
+                )
                 if (LocalPermisosApp.current.exportar) SpviIconAction(
                     SpviIcons.Compartir, TextosInventario.EXPORTAR, onClick = { acciones.onHoja(HojaInventario.EXPORTAR) },
                     enabled = state.items.isNotEmpty() || state.seleccion.isNotEmpty(), modifier = Modifier.testTag(InventarioTags.EXPORTAR),
