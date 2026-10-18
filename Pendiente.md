@@ -12,8 +12,9 @@ La versión del código es **0.30.0 (`versionCode 51`)**. Los cambios Android en
 
 - El último CI observado antes de esta limpieza, run [38802995010](https://github.com/rmdvcd/SPVI/actions/runs/38802995010) sobre `main` (`84afc87`), falló en dos pruebas de `ProcesoActualizarTest` al no poder descargar el SDK de Robolectric desde el proceso de tests. Lint, permisos y API mínima sí pasaron. Consulta el detalle y el estado de la corrección en [docs/VERIFICACION.md](docs/VERIFICACION.md).
 - `./gradlew spviCheck` ejecutado el 2026-10-17 con JDK 17 y Android SDK 35: en verde (tests JVM, lint, compilación y permisos). `./gradlew spviTests`: 891 tests JVM en verde. Queda la corrida de CI de la rama.
-- Capturas Roborazzi ejecutadas el 2026-10-17: 525 capturas, **1 fallo de comparación** en `01f_inicio_dialogo_cerrar_turno.png`, que es del cambio de cierre con conteo ya en `main` (no regenerada aquí); ninguna captura de Registros cambia. Falta decidir si esa captura se regenera con el cambio de cierre.
-- Publicar los cambios en curso (editar Registros, 0.31.0, `54c85f9`): correr CI, subir y regenerar capturas tras decidir lo anterior.
+- Capturas Roborazzi ejecutadas el 2026-10-17: 525 capturas, **1 fallo de comparación** en `01f_inicio_dialogo_cerrar_turno.png`, que es del cambio de cierre con conteo ya en `main` (no regenerada aquí); ninguna captura de Registros cambia. Falta decidir si esa captura se regenera con el cambio de cierre. El 2026-10-18 `verifyRoborazziDebug` quedó en **527 capturas en verde** (incluye las 2 de Inventario del escáner).
+- Escáner OCR de inventario (0.31.0, sin commitear): lógica pura, ViewModel, pantalla y documentación terminados; probado en el teléfono 4bc9f8f3 con tres PNG de tabla (productos 43 → 47, insumos → 50, y un párrafo sin tabla que quedó bloqueado sin guardar nada). Faltan las comprobaciones manuales con **foto impresa real**, lista manuscrita, permiso de cámara concedido/denegado, cancelación durante el reconocimiento y **modo avión** (detalle en [docs/OPENCODE_ESCANEO_OCR.md](docs/OPENCODE_ESCANEO_OCR.md)).
+- Publicar los cambios en curso (editar Registros y escáner OCR, 0.31.0): correr CI, subir y regenerar capturas tras decidir lo anterior.
 
 ## Validación en dispositivos antes de publicar
 

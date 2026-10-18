@@ -32,6 +32,9 @@
 - **Animaciones:** al tocar la barra de abajo el contenido entra y sale con un **fundido**; al
   **deslizar** el dedo, la pantalla se mueve **hacia los lados** con la dirección del gesto; las ventanas y
   los diálogos **suben desde el centro de abajo**.
+- **Escanear inventario (OCR):** desde la barra de Inventario, importa una lista desde una **foto** con
+  reconocimiento local (sin internet). Es un asistente de 3 pasos —tipo de registro y campos + foto,
+  columnas, revisión— y **nada se guarda hasta confirmar**; los errores se señalan por fila y campo.
 
 ## Pago electrónico
 
@@ -74,6 +77,31 @@ la ficha mantiene además los datos completos de la operación.
 Las promociones no incluyen insumos. Las imágenes para clientes no llevan costos ni existencias.
 Los informes internos pueden incluir costos: revisa el destinatario antes de compartirlos.
 La ficha individual de producto se comparte como imagen o tarjeta promocional, no PDF.
+
+## Escanear inventario (OCR)
+
+Desde la barra de Inventario, el icono de escanear abre un asistente de **3 pasos**. Todo el reconocimiento
+ocurre **en el teléfono**: funciona en modo avión y **no se sube ninguna imagen**.
+
+1. **Tipo y campos + foto.** Elige si importas **productos** o **insumos** y marca los campos a extraer.
+   En productos, nombre, categoría, cantidad, costo y precio de venta son obligatorios y no se pueden
+   desmarcar; en insumos lo son nombre, cantidad, costo y unidad. La foto se hace con la cámara o se elige
+   de la galería.
+2. **Columnas detectadas.** Si la imagen tiene una tabla reconocible, se muestra cada columna con el
+   encabezado que se detectó (o la primera celda como muestra) y eliges **columna → campo**: lo que dejes
+   en «Ignorar» no se importa. Si la foto no tiene una tabla que se pueda confirmar, te lo avisa y pasa
+   directo a la revisión con **una línea por registro**.
+3. **Revisión.** Corrige lo que haga falta (puedes añadir o eliminar filas), y pulsa **Confirmar e
+   importar**. Se revisan **todas** las filas antes de guardar ninguna: si alguna falla, no entra nada y
+   se te señala la fila y el campo (por ejemplo, «No se pudo leer “Cantidad” en la fila 1»). Una categoría
+   que no se leyó aparece como **Otros**, a la vista y editable. Al terminar se informa cuántos registros
+   se añadieron; si falla alguno a mitad, se dice cuál quedó pendiente y no se duplica lo ya guardado.
+
+Consejos: usa una lista con encabezados («Nombre», «Cantidad», «Precio costo»…) y sin sombras ni
+arrugas; el OCR puede confundir la letra O con el cero o partir una palabra, y la revisión es el momento
+de corregirlo. El modo de una línea por registro se apoya en que cada renglón sea un producto.
+El reconocimiento de disposición con modelo (PP-Layout/ONNX) **no está implementado**: ver
+`docs/ESCANEO_OCR.md`.
 
 ## Notificación
 

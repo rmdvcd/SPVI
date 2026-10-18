@@ -50,6 +50,8 @@ object Categorias {
     const val ELABORADO = "Elaborado"
     /** P29: categoría reservada de los insumos en el Inventario (no se puede usar para un producto). */
     const val INSUMOS = "Insumos"
+    /** Última categoría habitual: el escáner la deja a la vista (editable) cuando la imagen no la trae. */
+    const val OTROS = "Otros"
     fun esInsumos(categoria: String) = categoria.trim().equals(INSUMOS, ignoreCase = true)
 
     /** Categorías habituales del comercio minorista. El usuario puede escribir otras (personalizadas). */
@@ -58,7 +60,7 @@ object Categorias {
         "Panadería y dulcería", "Confituras y snacks", "Conservas", "Granos y cereales", "Frutas y vegetales",
         "Congelados", "Condimentos y especias", "Aceites y grasas", "Aseo personal", "Limpieza del hogar",
         "Cosméticos", "Farmacia y salud", "Bebé", "Mascotas", "Ferretería", "Electrónica", "Electrodomésticos",
-        "Ropa y calzado", "Papelería", "Juguetes", "Hogar y cocina", "Cigarros y tabacos", "Otros",
+        "Ropa y calzado", "Papelería", "Juguetes", "Hogar y cocina", "Cigarros y tabacos", OTROS,
         ELABORADO,
     )
 
