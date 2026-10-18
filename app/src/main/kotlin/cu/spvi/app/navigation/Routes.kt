@@ -18,6 +18,7 @@ sealed interface Route {
      * borrar; [seleccion] = ids ya elegidos (CSV) al volver a «Agregar productos».
      */
     @Serializable data class Inventario(val alerta: String? = null, val venta: String? = null, val seleccion: String? = null) : Route
+    @Serializable data object EscanerInventario : Route
     /**
      * P29: Servicios (sustituye a Elaboración). [venta] = true → modo «elegir qué vender» de una venta de servicios
      * (checkbox + Continuar); [seleccion] = ids ya elegidos (CSV).

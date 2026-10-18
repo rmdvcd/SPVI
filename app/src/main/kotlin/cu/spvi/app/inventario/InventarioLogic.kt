@@ -14,6 +14,7 @@ import cu.spvi.domain.model.TipoAlerta
 import cu.spvi.domain.model.TipoArticulo
 
 object TextosInventario {
+    const val ESCANEAR = "Escanear"
     const val TITULO = "Inventario"
     const val BUSCAR = "Buscar por nombre, categoría o código"
     const val VACIO_TITULO = "Tu inventario está vacío"

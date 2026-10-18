@@ -1,5 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="scan_title">Escanear inventario</string>
+    <string name="scan_back">Volver</string>
+    <string name="scan_choose_type">¿Qué tipo de registros vas a importar?</string>
+    <string name="scan_products">Productos</string>
+    <string name="scan_supplies">Insumos</string>
+    <string name="scan_choose_fields">Selecciona los campos a extraer</string>
+    <string name="scan_field_name">Nombre</string>
+    <string name="scan_field_category">Categoría</string>
+    <string name="scan_field_description">Descripción</string>
+    <string name="scan_field_quantity">Cantidad</string>
+    <string name="scan_field_cost">Precio de costo</string>
+    <string name="scan_field_price">Precio de venta</string>
+    <string name="scan_field_unit">Unidad</string>
+    <string name="scan_gallery">Elegir imagen de la galería</string>
+    <string name="scan_process">Procesar imagen</string>
+    <string name="scan_cancel">Cancelar procesamiento</string>
+    <string name="scan_review">Revisa y corrige cada registro antes de guardar</string>
+    <string name="scan_structure_fallback">No se pudo confirmar la estructura de tabla. Revisa cuidadosamente las filas detectadas.</string>
+    <string name="scan_remove_row">Eliminar fila</string>
+    <string name="scan_add_row">Añadir fila</string>
+    <string name="scan_confirm">Confirmar e importar</string>
+    <string name="scan_added_count">Se añadieron %1$d registros al inventario.</string>
+    <string name="scan_partial_failure">Se añadieron %1$d registros; revisa los restantes. %2$s</string>
+    <string name="scan_no_text">No se reconoció texto en la imagen. Prueba con más luz y enfoque.</string>
+    <string name="scan_process_error">No se pudo procesar la imagen.</string>
+    <string name="scan_missing_name">Completa el nombre de cada registro antes de guardar.</string>
+    <string name="scan_invalid_product_values">Revisa costo, precio de venta y cantidad: deben ser valores válidos.</string>
+    <string name="scan_invalid_supply_values">Revisa precio y cantidad del insumo.</string>
+    <string name="scan_save_error">No se pudo guardar «%1$s»: %2$s</string>
+
     <string name="app_name">SPVI</string>
     <string name="compartir_sms">SPVI: nº de transacción</string>
     <string name="captura_sms_pago">Captura opcional de SMS de PAGOxMOVIL</string>

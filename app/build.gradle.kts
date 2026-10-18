@@ -159,6 +159,11 @@ dependencies {
     implementation(libs.camerax.lifecycle)
     implementation(libs.camerax.view)
     implementation(libs.mlkit.barcode)
+    // OCR local, sin descarga dinámica del modelo.
+    implementation(libs.mlkit.text)
+    // Runtime para el detector local PP-Layout (el archivo de pesos se documenta en docs/ESCANEO_OCR.md).
+    implementation(libs.onnxruntime.android)
+    implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.coil.compose)
     implementation(libs.zxing.core)          // QR de cobro (solo generación, sin cámara ni red)
     implementation(libs.hilt.android)
