@@ -10,6 +10,7 @@ import cu.spvi.app.InsRepo
 import cu.spvi.app.PrefRepo
 import cu.spvi.app.ProdRepo
 import cu.spvi.app.RelojFijo
+import cu.spvi.app.inicio.AlertaPendiente
 import cu.spvi.app.inicio.EstadoCarga
 import cu.spvi.app.navigation.Route
 import cu.spvi.app.prod
@@ -55,13 +56,14 @@ class InventarioViewModelTest {
     private val eventos = mutableListOf<EventoInventario>()
     private val insumosInv = cu.spvi.app.InsRepo()
 
-    @Before fun antes() = Dispatchers.setMain(UnconfinedTestDispatcher())
-    @After fun despues() = Dispatchers.resetMain()
+    @Before fun antes() { AlertaPendiente.consumir(); Dispatchers.setMain(UnconfinedTestDispatcher()) }
+    @After fun despues() { AlertaPendiente.consumir(); Dispatchers.resetMain() }
 
     private fun TestScope.vm(
-        alerta: String? = null,
-        saved: SavedStateHandle = SavedStateHandle(if (alerta != null) mapOf(InventarioViewModel.KEY_ALERTA to alerta) else emptyMap()),
+        alerta: TipoAlerta? = null,
+        saved: SavedStateHandle = SavedStateHandle(),
     ): InventarioViewModel {
+        alerta?.let(AlertaPendiente::pedir)
         val vm = InventarioViewModel(
             saved = saved,
             observarInventario = ObservarInventario(productos, insumosInv, prefs, reloj, Dispatchers.Unconfined),
@@ -105,7 +107,7 @@ class InventarioViewModelTest {
     @Test fun alertaDeInicioPreseleccionaElFiltro() = runTest {
         cargar()
         // 0.21.0 (C1): el Café a 0 está «Sin existencia».
-        val vm = vm(alerta = TipoAlerta.SIN_EXISTENCIA.name)
+        val vm = vm(alerta = TipoAlerta.SIN_EXISTENCIA)
         assertEquals(TipoAlerta.SIN_EXISTENCIA, vm.state.value.filtro.alerta)
         assertEquals(listOf(3L), vm.state.value.items.map { it.producto.id })
         vm.quitarFiltros()
@@ -113,20 +115,20 @@ class InventarioViewModelTest {
     }
 
     /**
-     * 0.31.0: pulsar una alerta de Inicio abre la pestaña de Inventario (no empuja una pantalla) y deja el nombre en
-     * el `SavedStateHandle` de esa entrada; si el Inventario ya estaba abierto, aplica el filtro y lo consume para no
-     * repetirlo al volver.
+     * 0.31.0: la alerta de Inicio viaja por [AlertaPendiente] (señal de proceso) y el Inventario la aplica al
+     * construirse, una sola vez: la pestaña que se abra después no repite el filtro. El canal importa: el
+     * `SavedStateHandle` que Hilt inyecta al ViewModel no es el de la entrada de navegación, y escribir en la entrada
+     * no llegaba al filtro (fallo comprobado en el teléfono).
      */
-    @Test fun alertaQueLlegaConLaPestanaAbiertaSeAplicaYSeConsume() = runTest {
+    @Test fun laAlertaPendienteSeAplicaUnaVezYSeConsume() = runTest {
         cargar()
-        val saved = SavedStateHandle()
-        val vm = vm(saved = saved)
-        assertEquals(3, vm.state.value.items.size)
-
-        saved[InventarioViewModel.KEY_ALERTA] = TipoAlerta.SIN_EXISTENCIA.name
+        AlertaPendiente.pedir(TipoAlerta.SIN_EXISTENCIA)
+        val vm = vm()
         assertEquals(TipoAlerta.SIN_EXISTENCIA, vm.state.value.filtro.alerta)
         assertEquals(listOf(3L), vm.state.value.items.map { it.producto.id })
-        assertNull(saved.get<String>(InventarioViewModel.KEY_ALERTA))
+        val otra = vm()
+        assertNull(otra.state.value.filtro.alerta)
+        assertEquals(3, otra.state.value.items.size)
     }
 
     @Test fun buscadorYFiltroDeCategoria() = runTest {

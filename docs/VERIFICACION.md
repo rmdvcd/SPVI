@@ -2,20 +2,30 @@
 
 > **Fuente única de verdad** del estado de verificación: solo se considera medido lo anotado aquí. Última actualización: **2026-10-18**. El repositorio mantiene la app Android nativa; Flutter/iOS y la web de escritorio se retiraron.
 
-## Cambio en curso: cinco correcciones de la revisión del dueño (2026-10-18, sin commitear)
+## Cambio en curso: filtro por alerta de Inicio y compilación del escaneo OCR (2026-10-18, sin commitear)
+
+- `./gradlew spviTests` (2026-10-18): **1033 casos JVM en verde**, contados en los XML de los seis tasks (19 `:core` + 114 `:licencia` + 248 `:domain` + 91 `:data` + 34 `:designsystem` + 527 `:app`, capturas incluidas). La cifra «896» de la sección anterior no contaba los tests de capturas de `:app`, que sí corren en `spviTests`.
+- `./gradlew spviCheck` (2026-10-18): **OK** (tests JVM + `lintDebug` + `assembleDebug` + `spviPermisos`).
+- `./gradlew verifyRoborazziDebug` (2026-10-18): **15 capturas de Inventario estaban viejas** porque el merge del escaneo OCR (que no compilaba) añadió el icono **Escanear** a la barra sin regenerarlas; se regeneraron las **30 doradas** afectadas (15 × claro/oscuro) y la suite completa (**527**) queda en verde. Revisada una captura, el único cambio es el icono nuevo en la barra.
+- Prueba en el teléfono 4bc9f8f3 (Android 15, API 35), APK debug con estos cambios:
+  - **Alerta de Inicio → Inventario**: pulsar «Sin existencia: 1» abre la **pestaña** con el filtro puesto — «1 de 43 productos», chip «Sin existencia / Quitar filtro», el producto «Sal fina» (0 kg, Insumos) y el contador del icono de filtro en la barra. La barra inferior vuelve a **Inicio**; volver a Inventario conserva el filtro; ATRÁS desde Inventario vuelve a Inicio (ya no sale de la app); una segunda alerta («Insumo bajo») deja «3 de 43 productos» con «Leche en polvo».
+  - **Escaneo OCR (merge #44)**: el botón de la barra de Inventario abre el asistente («¿Qué tipo de registros vas a importar?», Productos/Insumos y los campos a extraer) y ATRÁS vuelve a la lista; `logcat -b crash` vacío.
+  - **Diagnóstico**: los logs temporales mostraron que la entrada de Inventario tenía la alerta en su `SavedStateHandle` y el ViewModel se construía con `null` (Hilt le inyecta otro handle, creado de los argumentos de la ruta). El arreglo cambia el canal (señal de proceso `AlertaPendiente`); los logs se retiraron.
+
+## Cinco correcciones de la revisión del dueño (2026-10-18, `5dc2689`)
 
 Alerta de Inicio → Inventario filtrado, botón «Ver la venta» centrado en la ficha de una transferencia, nombres del catálogo sin unidad pegada, auditoría de precios congelados y conteo de billetes visible con «Omitir» al cerrar turno.
 
-- `./gradlew spviTests` (2026-10-18): **896 tests JVM en verde**, sin red ni dispositivo (891 antes de este lote + 5 nuevos).
+- `./gradlew spviTests` (2026-10-18): **896 tests JVM en verde**, sin red ni dispositivo (891 antes de este lote + 5 nuevos). Cuenta corregida en la sección de arriba: `spviTests` son **1033** casos contando los de capturas de `:app` (19 + 114 + 248 + 91 + 34 + 527).
 - `./gradlew spviCheck` (2026-10-18): **OK** (tests JVM + `lintDebug` + `assembleDebug` + `spviPermisos`).
 - `./gradlew verifyRoborazziDebug` (2026-10-18): **527 capturas en verde**. Cambiaban dos doradas y se regeneraron por decisión del dueño: `04p_registros_ficha_transferencia` (el botón ya sale centrado) y `01f_inicio_dialogo_cerrar_turno` (billetes a la vista y «Omitir» en la esquina), en claro y oscuro; ningún otro PNG cambia.
 - `:data:connectedDebugAndroidTest` en el teléfono 4bc9f8f3 (Android 15, API 35), 2026-10-18: **60/60 en verde**. Incluye el caso nuevo `RepositoriosRoomTest.cambiarElPrecioNoAlteraElImporteDeLoVendido`, comprobado **en rojo** (esperado 30.00 CUP, obtenido 99.00 CUP al reescribir el detalle a propósito) y arregla los tres tests de migración de `EsquemaTest`, que fallaban con «duplicate column name: clienteFijo» por un recorte incompleto del fixture (fallo del test, no de las migraciones).
 - Prueba de extremo a extremo en el teléfono 4bc9f8f3 (2026-10-18), APK debug con estos cambios:
-  - **Alerta de Inicio → Inventario**: pendiente de repetir con este APK (el código es el de este lote; la prueba anterior del síntoma se hizo sobre el comportamiento viejo).
+  - **Alerta de Inicio → Inventario**: con este APK **no filtraba** (el filtro viajaba por el `SavedStateHandle` de la entrada, que el ViewModel no lee); se arregló después y la prueba de arriba es la buena.
   - **Ficha de transferencia**: con el turno cerrado, «Ver la venta» centrado (x 515–568 de 1080; antes 156–209). Con el turno abierto y una transferencia del turno, la fila queda [Modificar venta][Anular venta][Ver la venta] (x 374–709, centro 541).
   - **Cierre de turno**: los campos por denominación se ven al abrir el diálogo; «Omitir el conteo de billetes» está en la esquina inferior derecha; 23 × 100 suma 2,300.00 CUP y muestra «Cuadra»; «Omitir el conteo de inventario» también en la esquina del paso de inventario y la revisión avisa «Conteo de inventario omitido: se cierra sin ajustar existencias.»; el turno **cerró** de verdad con ese conteo (sin error de inventario cambiado).
   - **Datos del teléfono**: la prueba abrió un turno (fondo 2,300.00), registró una venta por transferencia de prueba («Prueba Verificacion», 190.00 CUP, VERIF00001) y lo cerró con el conteo omitido; el teléfono queda como estaba, con el turno cerrado.
-- **Pendiente antes de publicar**: regenerar los datos de ejemplo del teléfono para ver los nombres del catálogo sin unidad (el dato semilla solo se aplica al sembrar), correr CI y decidir si estos cambios se commitean con un mensaje descriptivo (el lote anterior quedó como `54c85f9 "j"`).
+- **Pendiente antes de publicar**: regenerar los datos de ejemplo del teléfono para ver los nombres del catálogo sin unidad (el dato semilla solo se aplica al sembrar), correr CI y decidir si se reescriben los mensajes de los commits `54c85f9 "j"` y `5dc2689 "6"` (ya publicados en `origin/main`).
 
 ## Cambio en curso: editar importe, cantidad, método y nº en Registros (2026-10-18, `main`, `54c85f9`)
 

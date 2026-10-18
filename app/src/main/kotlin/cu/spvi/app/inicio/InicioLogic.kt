@@ -141,6 +141,19 @@ data class AlertaUi(val tipo: TipoAlerta, val cantidad: Int) {
     val tono: AlertTone get() = tipo.tono()
 }
 
+/**
+ * 0.31.0: alerta de Inicio pulsada, pendiente de que la pestaña Inventario aplique el filtro. Se consume una vez.
+ *
+ * No sirve el `SavedStateHandle` de la entrada de navegación: el que Hilt inyecta en el ViewModel es **otro** (se crea
+ * a partir de los argumentos de la ruta), así que lo escrito en la entrada no llegaba al filtro. Como `TourPendiente`,
+ * es una señal de proceso: si el proceso muere entre medias la alerta se pierde y la lista abre sin filtro.
+ */
+object AlertaPendiente {
+    private val pendiente = java.util.concurrent.atomic.AtomicReference<TipoAlerta?>(null)
+    fun pedir(tipo: TipoAlerta) = pendiente.set(tipo)
+    fun consumir(): TipoAlerta? = pendiente.getAndSet(null)
+}
+
 /** Orden de SPVI.txt. Un contador en 0 se oculta. */
 fun alertasVisibles(c: ConteoAlertas): List<AlertaUi> =
     ORDEN_ALERTAS.map { AlertaUi(it, c.de(it)) }.filter { it.cantidad > 0 }

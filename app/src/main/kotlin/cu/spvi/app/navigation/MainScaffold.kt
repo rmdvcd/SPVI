@@ -40,6 +40,7 @@ import cu.spvi.app.servicios.ServicioFormScreen
 import cu.spvi.app.servicios.ServiciosScreen
 import cu.spvi.app.servicios.ServiciosViewModel
 import cu.spvi.app.vinculacion.qr.QrVinculacionScreen
+import cu.spvi.app.inicio.AlertaPendiente
 import cu.spvi.app.inicio.InicioScreen
 import cu.spvi.app.inicio.TipoVenta
 import cu.spvi.app.inventario.InventarioScreen
@@ -178,7 +179,7 @@ fun MainScaffold(snapshot: Licencia) {
                 )
             }
             composable<Route.Inventario> { e ->
-                // El filtro por alerta llega como argumento "alerta" y lo lee el ViewModel (SavedStateHandle).
+                // El filtro por alerta llega por `AlertaPendiente` y lo lee el ViewModel.
                 val mensaje = e.savedStateHandle.getStateFlow<String?>(KEY_PRODUCTO_GUARDADO, null).collectAsStateWithLifecycle().value
                 InventarioScreen(
                     onNavigate = nav::navigateTo,
@@ -367,11 +368,12 @@ private fun NavHostController.navigateTopLevel(route: Route) = navigate(route) {
  * 0.31.0: contar una alerta de Inicio abre la pestaña Inventario con el filtro. Antes se empujaba
  * `Inventario(alerta)` como pantalla de detalle —el **mismo destino** que la pestaña—, y la barra inferior y el
  * gesto volvían a poner esa entrada encima al ir a cualquier sección (Inicio incluido): no se llegaba a Inicio y el
- * Inventario se quedaba filtrado. El filtro viaja en el estado del destino y el ViewModel lo consume.
+ * Inventario se quedaba filtrado. Ahora se abre la pestaña y el ViewModel recibe la alerta por [AlertaPendiente]
+ * (escribir en el `SavedStateHandle` de la entrada no llegaba al ViewModel: Hilt le inyecta otro).
  */
 private fun NavHostController.abrirAlertaInventario(tipo: TipoAlerta) {
+    AlertaPendiente.pedir(tipo)
     navigateTopLevel(Route.Inventario())
-    currentBackStackEntry?.savedStateHandle?.set(InventarioViewModel.KEY_ALERTA, tipo.name)
 }
 
 private fun NavHostController.navigateTo(route: Route) = navigate(route) { launchSingleTop = true }
