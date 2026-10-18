@@ -161,6 +161,7 @@ fun InventarioScreen(
     InventarioContent(
         state = state,
         snackbar = snackbar,
+        onNavigate = onNavigate,
         acciones = AccionesInventario(
             onAyuda = { onNavigate(Route.Ayuda) },
             onBuscar = viewModel::buscar, onFiltro = viewModel::aplicarFiltro, onQuitarFiltros = viewModel::quitarFiltros,
@@ -182,6 +183,8 @@ fun InventarioContent(
     state: InventarioUiState,
     acciones: AccionesInventario,
     snackbar: SnackbarHostState = remember { SnackbarHostState() },
+    /** Escanear (OCR) navega: el `Content` no conoce la navegación, la recibe del llamador. */
+    onNavigate: (Route) -> Unit = {},
 ) {
     val venta = state.modoVenta
     Scaffold(

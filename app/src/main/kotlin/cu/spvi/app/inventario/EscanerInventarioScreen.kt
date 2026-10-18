@@ -99,7 +99,7 @@ class EscanerInventarioViewModel @Inject constructor(
         filas = filas.toMutableList().also { it[index] = FilaEscaneo(it[index].valores + (c to value)) }
     }
     fun agregar() { filas = filas + FilaEscaneo(mapOf(CampoEscaneo.NOMBRE to "")) }
-    fun setError(message: String?) { error = message }
+    fun mostrarError(message: String?) { error = message }
     fun eliminar(i: Int) { filas = filas.filterIndexed { index, _ -> index != i } }
     fun guardar(context: android.content.Context, tipo: String, onDone: (Int, String?) -> Unit) {
         if (guardando) return
@@ -181,7 +181,7 @@ fun EscanerInventarioScreen(onBack: () -> Unit, onGuardado: (String) -> Unit, vi
                     TextButton(onClick = viewModel::agregar) { Text(stringResource(R.string.scan_add_row)) }
                     TextButton(onClick = { etapa = 0 }) { Text(stringResource(R.string.scan_back)) }
                 }
-                Button(onClick = { viewModel.guardar(context, tipo) { n, err -> if (err != null) viewModel.setError(if (n > 0) context.getString(R.string.scan_partial_failure, n, err) else err) else onGuardado(context.getString(R.string.scan_added_count, n)) } }, enabled = viewModel.filas.isNotEmpty() && !viewModel.procesando && !viewModel.guardando) {
+                Button(onClick = { viewModel.guardar(context, tipo) { n, err -> if (err != null) viewModel.mostrarError(if (n > 0) context.getString(R.string.scan_partial_failure, n, err) else err) else onGuardado(context.getString(R.string.scan_added_count, n)) } }, enabled = viewModel.filas.isNotEmpty() && !viewModel.procesando && !viewModel.guardando) {
                     if (viewModel.guardando) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) else Text(stringResource(R.string.scan_confirm))
                 }
             }
