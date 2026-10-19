@@ -82,6 +82,11 @@ interface ServicioRepository {
 interface FotoRepository {
     /** Copia una imagen elegida por el usuario con el selector de fotos del sistema (content://). */
     suspend fun importar(origen: String): AppResult<String>
+    /**
+     * Copia una imagen incluida en la app (`assets/seed/fotos/<nombre>.jpg`, solo depuración) con el mismo
+     * tratamiento que las del usuario. `Err` si esa imagen no viene en esta compilación.
+     */
+    suspend fun importarIncluida(nombre: String): AppResult<String>
     suspend fun eliminar(uri: String)
     /** Borra fotos que ningún producto usa y tienen más de un día (borradores abandonados). */
     suspend fun limpiarHuerfanas(enUso: Set<String>)

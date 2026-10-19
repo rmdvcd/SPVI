@@ -21,6 +21,7 @@ import cu.spvi.domain.model.TarjetaBancaria
 import cu.spvi.domain.model.Telefono
 import cu.spvi.domain.model.Venta
 import cu.spvi.domain.repository.InsumoRepository
+import cu.spvi.domain.repository.FotoRepository
 import cu.spvi.domain.repository.MantenimientoRepository
 import cu.spvi.domain.repository.PerfilRepository
 import cu.spvi.domain.repository.PreciosRepository
@@ -45,8 +46,9 @@ import kotlinx.coroutines.flow.first
  * corriendo [GeneradorSeed] contra los repositorios reales, con la misma secuencia que [cu.spvi.domain.usecase.RegistrarVenta]
  * pero con fechas explícitas. Fail fast: cualquier `Err` aborta con ese error (no deja stock a medias).
  *
- * Limitaciones conocidas: ALTA/AJUSTE/BAJA de inventario salen con la fecha actual (los repos usan `clock.now()`);
- * sin fotos en productos/servicios.
+ * Limitaciones conocidas: ALTA/AJUSTE/BAJA de inventario salen con la fecha actual (los repos usan `clock.now()`).
+ * Los productos (menos los Elaborados) y los servicios llevan la foto incluida en la app para su clave; los
+ * insumos no tienen foto en el modelo.
  */
 class OrquestadorSeed @Inject constructor(
     private val cotizar: CotizarVenta,
@@ -59,6 +61,7 @@ class OrquestadorSeed @Inject constructor(
     private val perfil: PerfilRepository,
     private val preferencias: PreferenciasRepository,
     private val mantenimiento: MantenimientoRepository,
+    private val fotos: FotoRepository,
 ) {
     suspend fun ejecutar(onProgreso: (dia: Int, total: Int) -> Unit, dias: Int = DIAS): AppResult<Unit> {
         val generador = GeneradorSeed()
@@ -244,6 +247,7 @@ class OrquestadorSeed @Inject constructor(
             val id = when (val r = productos.crear(
                 Producto(
                     0, s.categoria, s.nombre,
+                    fotoUri = if (elaborado) null else importarFoto(s.clave),
                     precioCosto = Cup.ofPesos(s.costoPesos), precioVenta = Cup.ofPesos(s.ventaPesos),
                     cantidad = cantidad,
                     nivelBajo = if (elaborado) null else s.nivelBajo,
@@ -264,7 +268,7 @@ class OrquestadorSeed @Inject constructor(
         val ids = mutableMapOf<String, Long>()
         CatalogoBodega.SERVICIOS.forEach { s ->
             val id = when (val r = servicios.crear(
-                Servicio(0, s.nombre, s.tipo, Cup.ofPesos(s.importePesos), creadoEn = creadoEn),
+                Servicio(0, s.nombre, s.tipo, Cup.ofPesos(s.importePesos), fotoUri = importarFoto(s.clave), creadoEn = creadoEn),
                 s.insumos.map { RecetaLinea(idsInsumos[it.insumo]!!, Cantidad(it.milesimas)) },
             )) {
                 is AppResult.Err -> return r
@@ -274,6 +278,16 @@ class OrquestadorSeed @Inject constructor(
         }
         return AppResult.Ok(ids)
     }
+
+    /**
+     * Foto incluida en la app para esa clave (`assets/seed/fotos/<clave>.jpg`). Si la compilación no la trae
+     * (release) o falla la copia, el artículo se siembra sin foto: la foto es cosmética y no aborta el seed.
+     */
+    private suspend fun importarFoto(clave: String): String? =
+        when (val r = fotos.importarIncluida(clave)) {
+            is AppResult.Ok -> r.value
+            is AppResult.Err -> null
+        }
 
     private fun datosCliente(clave: String): DatosCliente {
         val nombre = CatalogoBodega.nombreCliente(clave)

@@ -1,12 +1,23 @@
 # SPVI — Verificación real
 
-> **Fuente única de verdad** del estado de verificación: solo se considera medido lo anotado aquí. Última actualización: **2026-10-18**. El repositorio mantiene la app Android nativa; Flutter/iOS y la web de escritorio se retiraron.
+> **Fuente única de verdad** del estado de verificación: solo se considera medido lo anotado aquí. Última actualización: **2026-10-19**. El repositorio mantiene la app Android nativa; Flutter/iOS y la web de escritorio se retiraron.
+
+## Fotos del seed «Bodega cubana»: 38 imágenes dentro del APK debug (2026-10-19, 0.31.0)
+
+«Generar datos de prueba» deja de sembrar sin foto: los 30 productos (los 2 Elaborados no admiten foto) y los 8 servicios llevan una foto real, copiada del propio APK, sin red en tiempo de ejecución.
+
+- Origen y licencias: **Wikimedia Commons**, solo dominio público / CC0 / CC BY / CC BY-SA (ninguna NC ni ND). Se bajaron 4 candidatas por artículo y se eligieron **mirando** hojas de contactos; el primer paso automático falló en ~25 de 38 (un lince como «desodorante», una planta como «galletas», autopistas de Salt Lake City como «sal»). Detalle con autoría y enlace de cada una en `docs/CREDITOS_FOTOS_SEED.md`.
+- Las 38 imágenes viven en `app/src/debug/assets/seed/fotos/<clave>.jpg` (solo depuración; el release no las lleva) a ≤512 px JPEG: **1,5 MB** en total. `app/src/debug/assets/seed/fotos/CREDITOS.md` viaja con ellas.
+- `./gradlew spviTests` (2026-10-19): **922 casos JVM en verde**, contados en los XML de los seis tasks (19 `:core` + 114 `:licencia` + **250** `:domain` + 91 `:data` + 34 `:designsystem` + 414 `:app`). Los 2 nuevos de `:domain` son de este lote y se vieron en **rojo** antes del arreglo, y se comprobó con una mutación temporal que fallan si la foto no se asigna.
+- `./gradlew spviCheck` (2026-10-19): **OK** (tests JVM + `lintDebug` + `assembleDebug` + `spviPermisos`).
+- Teléfono 4bc9f8f3 (Android 15, API 35), APK debug `app-arm64-v8a-debug.apk` instalado: Ajustes › «Generar datos de prueba» › «Seed listo.»; **Inventario** (43 filas) y **Servicios** (8 filas) muestran las fotos elegidas, los Elaborados «Dulce de coco» y «Pan con lechón» salen sin foto, y `run-as cu.spvi.app.debug ls files/fotos` devuelve **38 archivos**.
+- Lo que **no** se probó: la vista de la foto en la ficha del producto (misma imagen ya verificada en la lista) y que un release sin assets siembre igual —el código devuelve `Err` y siembra sin foto, cubierto por el test `unaFotoQueFaltaNoAbortaElSeed`—. Tampoco entra en el respaldo ni en la sincronización LAN: las fotos siguen siendo locales, como antes.
 
 ## Escáner OCR completo y geometría ajustada en el teléfono (2026-10-18, `6959eb1`, CI verde)
 
 Fases del escáner (lógica pura, ViewModel, pantalla y documentación) y las reglas de geometría corregidas con lo medido en el teléfono.
 
-- `./gradlew spviTests` (2026-10-18): **1057 casos JVM en verde**, contados en los XML de los seis tasks (19 `:core` + 114 `:licencia` + 248 `:domain` + 91 `:data` + 34 `:designsystem` + 551 `:app`). Los 551 de `:app` son los 527 anteriores + los 19 tests del escáner del merge #44 (existían, pero el merge no compilaba) + 5 nuevos de esta revisión.
+- `./gradlew spviTests` (2026-10-18): **920 casos JVM en verde**, contados en los XML de los seis tasks (19 `:core` + 114 `:licencia` + 248 `:domain` + 91 `:data` + 34 `:designsystem` + 414 `:app`). Los 414 de `:app` son los 385 anteriores + los 19 tests del escáner del merge #44 (existían, pero el merge no compilaba) + 5 nuevos de esta revisión. **Cifra corregida el 2026-10-19**: aquí se anotó «1057 / 551», que contaba los 137 `@Test` de `app/src/test/.../capturas/` — `spviTests` **no** los ejecuta, los graba `recordRoborazziDebug` (`app/build.gradle.kts` excluye `**/capturas/**` salvo en tareas Roborazzi).
 - `./gradlew spviCheck` (2026-10-18): **OK** (tests JVM + `lintDebug` + `assembleDebug` + `spviPermisos`).
 - `./gradlew verifyRoborazziDebug` (2026-10-18): **527 capturas en verde**, ninguna cambia.
 - CI (2026-10-18): [run `39176254439`](https://github.com/rmdvcd/SPVI/actions/runs/39176254439) sobre `6959eb1`: **verde** (permisos del manifiesto, API mínima 26, lint, tests JVM y compilación de instrumentados, release R8 y APK debug). Es la primera corrida verde desde el fallo de `84afc87`; los tests instrumentados en emulador no corren de forma ordinaria.
@@ -24,7 +35,7 @@ Fases del escáner (lógica pura, ViewModel, pantalla y documentación) y las re
 
 ## Filtro por alerta de Inicio y compilación del escaneo OCR (2026-10-18, `e31ff9a` y `7d71f72`, CI verde)
 
-- `./gradlew spviTests` (2026-10-18): **1033 casos JVM en verde**, contados en los XML de los seis tasks (19 `:core` + 114 `:licencia` + 248 `:domain` + 91 `:data` + 34 `:designsystem` + 527 `:app`, capturas incluidas). La cifra «896» de la sección anterior no contaba los tests de capturas de `:app`, que sí corren en `spviTests`.
+- `./gradlew spviTests` (2026-10-18): **896 casos JVM en verde**, contados en los XML de los seis tasks (19 `:core` + 114 `:licencia` + 248 `:domain` + 91 `:data` + 34 `:designsystem` + 390 `:app`). La cifra «1033» que se anotó aquí contaba los tests de capturas de `:app`, que **no** corren en `spviTests` (corregido el 2026-10-19).
 - `./gradlew spviCheck` (2026-10-18): **OK** (tests JVM + `lintDebug` + `assembleDebug` + `spviPermisos`).
 - `./gradlew verifyRoborazziDebug` (2026-10-18): **15 capturas de Inventario estaban viejas** porque el merge del escaneo OCR (que no compilaba) añadió el icono **Escanear** a la barra sin regenerarlas; se regeneraron las **30 doradas** afectadas (15 × claro/oscuro) y la suite completa (**527**) queda en verde. Revisada una captura, el único cambio es el icono nuevo en la barra.
 - Prueba en el teléfono 4bc9f8f3 (Android 15, API 35), APK debug con estos cambios:
@@ -36,7 +47,7 @@ Fases del escáner (lógica pura, ViewModel, pantalla y documentación) y las re
 
 Alerta de Inicio → Inventario filtrado, botón «Ver la venta» centrado en la ficha de una transferencia, nombres del catálogo sin unidad pegada, auditoría de precios congelados y conteo de billetes visible con «Omitir» al cerrar turno.
 
-- `./gradlew spviTests` (2026-10-18): **896 tests JVM en verde**, sin red ni dispositivo (891 antes de este lote + 5 nuevos). Cuenta corregida en la sección de arriba: `spviTests` son **1033** casos contando los de capturas de `:app` (19 + 114 + 248 + 91 + 34 + 527).
+- `./gradlew spviTests` (2026-10-18): **896 tests JVM en verde**, sin red ni dispositivo (891 antes de este lote + 5 nuevos). Esta cifra es la correcta: la «corrección» a **1033** que se anotó aquí el mismo día contaba los tests de capturas de `:app`, que `spviTests` no ejecuta (los graba `recordRoborazziDebug`); deshecha el 2026-10-19.
 - `./gradlew spviCheck` (2026-10-18): **OK** (tests JVM + `lintDebug` + `assembleDebug` + `spviPermisos`).
 - `./gradlew verifyRoborazziDebug` (2026-10-18): **527 capturas en verde**. Cambiaban dos doradas y se regeneraron por decisión del dueño: `04p_registros_ficha_transferencia` (el botón ya sale centrado) y `01f_inicio_dialogo_cerrar_turno` (billetes a la vista y «Omitir» en la esquina), en claro y oscuro; ningún otro PNG cambia.
 - `:data:connectedDebugAndroidTest` en el teléfono 4bc9f8f3 (Android 15, API 35), 2026-10-18: **60/60 en verde**. Incluye el caso nuevo `RepositoriosRoomTest.cambiarElPrecioNoAlteraElImporteDeLoVendido`, comprobado **en rojo** (esperado 30.00 CUP, obtenido 99.00 CUP al reescribir el detalle a propósito) y arregla los tres tests de migración de `EsquemaTest`, que fallaban con «duplicate column name: clienteFijo» por un recorte incompleto del fixture (fallo del test, no de las migraciones).

@@ -22,6 +22,8 @@ class FakeFotos : FotoRepository {
     var fallarImportar = false
     override suspend fun importar(origen: String): AppResult<String> =
         if (fallarImportar) AppResult.Err(AppError.FormatoInvalido("foto")) else AppResult.Ok("file:///fotos/importada.jpg")
+    override suspend fun importarIncluida(nombre: String): AppResult<String> =
+        AppResult.Ok("file:///incluidas/$nombre.jpg")
     override suspend fun eliminar(uri: String) = Unit
     override suspend fun limpiarHuerfanas(enUso: Set<String>) = Unit
 }

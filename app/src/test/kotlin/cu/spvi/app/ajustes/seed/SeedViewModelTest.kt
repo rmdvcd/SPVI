@@ -1,6 +1,7 @@
 package cu.spvi.app.ajustes.seed
 
 import androidx.lifecycle.viewModelScope
+import cu.spvi.app.FakeFotos
 import cu.spvi.app.PerfilRepo
 import cu.spvi.app.PrefRepo
 import cu.spvi.app.PreciosRepo
@@ -66,7 +67,7 @@ class SeedViewModelTest {
         return OrquestadorSeed(
             CotizarVenta(productos, precios, insumos, servicios),
             TurnoRepo(), VentaRepo(), productos, insumos, servicios, precios,
-            PerfilRepo(), PrefRepo(), MantenimientoFake(fallarBorrado),
+            PerfilRepo(), PrefRepo(), MantenimientoFake(fallarBorrado), FakeFotos(),
         )
     }
 

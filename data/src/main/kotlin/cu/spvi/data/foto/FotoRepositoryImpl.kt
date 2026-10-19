@@ -85,7 +85,8 @@ object Imagenes {
 /**
  * Fotos de productos en `filesDir/fotos` (privado, dentro del sandbox de la app). Toda imagen se decodifica
  * y se RE-CODIFICA a JPEG ≤ 1024 px: se descartan metadatos (EXIF con GPS, etc.) y cualquier contenido que no
- * sea imagen. Solo fotos propias (cámara/galería): ya no hay descarga de internet.
+ * sea imagen. Solo fotos propias (cámara/galería) y, en depuración, las imágenes que trae el seed dentro de la
+ * app (`assets/seed/fotos`, ver [importarIncluida]): nunca se descarga nada de internet.
  */
 @Singleton
 class FotoRepositoryImpl @Inject constructor(
@@ -109,8 +110,20 @@ class FotoRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun eliminar(uri: String) { withContext(io) { almacen.eliminar(uri) } }
+    override suspend fun importarIncluida(nombre: String): AppResult<String> = withContext(io) {
+        try {
+            val bytes = context.assets.open("seed/fotos/$nombre.jpg").use {
+                Imagenes.leerLimitado(it, Imagenes.MAX_BYTES_IMPORTAR)
+            } ?: return@withContext AppResult.Err(AppError.FormatoInvalido("imagen"))
+            guardar(bytes)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AppResult.Err(AppError.NoEncontrado)
+        }
+    }
 
+    override suspend fun eliminar(uri: String) { withContext(io) { almacen.eliminar(uri) } }
     override suspend fun limpiarHuerfanas(enUso: Set<String>) { withContext(io) { runCatching { almacen.limpiar(enUso) } } }
 
     /** Decodifica (muestreado), corrige la orientación EXIF, escala y re-codifica. */

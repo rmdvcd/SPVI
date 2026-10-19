@@ -59,6 +59,7 @@ class RendimientoInicioTest {
                 turnos = entorno.turnos, ventas = entorno.ventas, productos = entorno.productos,
                 insumos = entorno.insumos, servicios = entorno.servicios, precios = entorno.precios,
                 perfil = entorno.perfil, preferencias = entorno.prefs, mantenimiento = mantenimiento,
+                fotos = entorno.fotos,
             )
             val generado = orquestador.ejecutar({ _, _ -> }, dias = OrquestadorSeed.DIAS)
             assertTrue("el seed falló: $generado", generado is AppResult.Ok)

@@ -4,6 +4,7 @@ import cu.spvi.core.money.Cup
 import cu.spvi.core.money.sumOfCup
 import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
+import cu.spvi.domain.FakeFotos
 import cu.spvi.domain.FakeInsumos
 import cu.spvi.domain.FakeMantenimiento
 import cu.spvi.domain.FakePerfil
@@ -33,11 +34,12 @@ private fun armado(diario: MutableList<String>): OrquestadorSeedParts {
     val preferencias = FakePreferencias()
     val mantenimiento = FakeMantenimiento(diario)
     val servicios = FakeServicios()
+    val fotos = FakeFotos()
     val orquestador = OrquestadorSeed(
         CotizarVenta(productos, precios, insumos, servicios),
-        turnos, ventas, productos, insumos, servicios, precios, perfil, preferencias, mantenimiento,
+        turnos, ventas, productos, insumos, servicios, precios, perfil, preferencias, mantenimiento, fotos,
     )
-    return OrquestadorSeedParts(orquestador, turnos, ventas, productos, insumos)
+    return OrquestadorSeedParts(orquestador, turnos, ventas, productos, insumos, fotos)
 }
 
 private data class OrquestadorSeedParts(
@@ -46,6 +48,7 @@ private data class OrquestadorSeedParts(
     val ventas: FakeVentas,
     val productos: FakeProductos,
     val insumos: FakeInsumos,
+    val fotos: FakeFotos = FakeFotos(),
 )
 
 class OrquestadorSeedTest {
@@ -75,6 +78,32 @@ class OrquestadorSeedTest {
         assertTrue(i1.items.value.values.all { it.cantidad.milesimas >= 0 })
     }
 
+    @Test fun fotosIncluidasEnProductosYServicios() = runTest {
+        val (orquestador, _, _, productos, _, fotos) = armado(mutableListOf())
+        assertTrue(orquestador.ejecutar({ _, _ -> }, dias = 4) is AppResult.Ok)
+        val conFoto = CatalogoBodega.PRODUCTOS.filterNot { CatalogoBodega.esElaborado(it.clave) }
+        conFoto.forEach { s ->
+            val p = productos.items.value.values.first { it.nombre == s.nombre }
+            assertEquals("file:///incluidas/${s.clave}.jpg", p.fotoUri)
+        }
+        // Elaborados: no admiten foto, así que ni se pide la imagen.
+        CatalogoBodega.PRODUCTOS.filter { CatalogoBodega.esElaborado(it.clave) }
+            .forEach { s -> assertTrue("no debe pedir foto de ${s.clave}", s.clave !in fotos.incluidas) }
+        CatalogoBodega.SERVICIOS.forEach { s -> assertTrue(s.clave in fotos.incluidas) }
+        // Insumos: sin foto en el modelo, así que tampoco se pide.
+        val clavesInsumos = CatalogoBodega.INSUMOS.map { it.clave }
+        assertTrue(fotos.incluidas.none { it in clavesInsumos })
+    }
+
+    @Test fun unaFotoQueFaltaNoAbortaElSeed() = runTest {
+        val (orquestador, _, _, productos, _, fotos) = armado(mutableListOf())
+        fotos.fallarIncluidas = true
+        assertTrue(fotos.incluidas.isEmpty())
+        assertTrue(orquestador.ejecutar({ _, _ -> }, dias = 4) is AppResult.Ok)
+        assertTrue(fotos.incluidas.isNotEmpty())
+        assertTrue(productos.items.value.values.all { it.fotoUri == null })
+    }
+
     @Test fun rotacionDeVendedoresPorRachas() = runTest {
         val diario = mutableListOf<String>()
         val (orquestador, turnos) = armado(diario)
@@ -98,7 +127,7 @@ class OrquestadorSeedTest {
         val orquestador = OrquestadorSeed(
             CotizarVenta(productos, precios, insumos, servicios),
             turnos, ventas, productos, insumos, servicios, precios,
-            FakePerfil(), FakePreferencias(), FakeMantenimiento(mutableListOf()),
+            FakePerfil(), FakePreferencias(), FakeMantenimiento(mutableListOf()), FakeFotos(),
         )
         assertTrue(orquestador.ejecutar({ _, _ -> }, dias = 8) is AppResult.Err)
         // El reintento parte de borrarTodo: en producción borra la BD; aquí se emula limpiando los fakes.
