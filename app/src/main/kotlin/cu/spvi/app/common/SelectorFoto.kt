@@ -118,8 +118,12 @@ fun SelectorFoto(
             SpviIconAction(
                 SpviIcons.Camara, TextosFoto.CAMARA, enabled = !importando, style = IconActionStyle.Tonal,
                 onClick = {
-                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) abrirCamara()
-                    else permiso.launch(Manifest.permission.CAMERA)
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                        sinPermiso = false // se concedió después del aviso: no dejar el mensaje viejo
+                        abrirCamara()
+                    } else {
+                        permiso.launch(Manifest.permission.CAMERA)
+                    }
                 },
                 modifier = Modifier.testTag(SelectorFotoTags.CAMARA),
             )
