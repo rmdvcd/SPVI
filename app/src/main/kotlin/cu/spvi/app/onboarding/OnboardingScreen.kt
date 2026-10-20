@@ -263,7 +263,7 @@ private fun BarraInferior(state: OnboardingUiState, acciones: OnboardingAcciones
         if (state.puedeVolver) SpviTextButton(text = "Atrás", icon = SpviIcons.Atras, onClick = acciones.onAtras, enabled = !state.ocupado)
         if (state.pasoOmitible) {
             SpviTextButton(
-                text = "Ahora no", icon = SpviIcons.AhoraNo, onClick = acciones.onOmitirPaso, enabled = !state.ocupado,
+                text = "Ahora no", icon = SpviIcons.Saltar, onClick = acciones.onOmitirPaso, enabled = !state.ocupado,
                 modifier = Modifier.testTag(OnboardingTags.OMITIR_PASO),
             )
         }

@@ -80,6 +80,9 @@ fun SpviStatusBanner(
             }
             if (actionIcon != null && onAction != null) {
                 SpviIconAction(actionIcon, actionDescription ?: text, onClick = onAction)
+            } else if (onClick != null) {
+                // El banner entero es clicable: la flecha lo hace evidente sin añadir otra acción.
+                Icon(SpviIcons.Abrir, contentDescription = null, modifier = Modifier.size(SpviSize.icon))
             }
         }
     }

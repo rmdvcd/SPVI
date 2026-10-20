@@ -74,6 +74,7 @@ Módulo `:designsystem`. **Regla única: ninguna pantalla define colores, tamañ
 - Área táctil ≥ 48dp; todos los botones de solo icono tienen descripción y tooltip.
 - Texto en `sp`: respeta el tamaño de letra del sistema.
 - Indicadores de color siempre acompañados de texto o descripción (estado de stock en TalkBack, contadores con número).
+- **Filtros con contador (0.31.0):** el número va en la descripción del botón («Filtrar, 2 filtros activos»); el badge es decorativo y no se lee como nodo suelto.
 - Interruptor de turno con rol `Switch` y región viva; temas de Ayuda con estado «Abierto/Cerrado»; onboarding anuncia «Página X de N»; gráficos con descripción textual.
 - Iconos decorativos con `contentDescription = null`.
 - **Letra grande** (probado con escala 2.0): etiquetas de botón en hasta 2 líneas sin altura máxima; filas con el importe debajo del nombre; pestañas en 2 líneas.

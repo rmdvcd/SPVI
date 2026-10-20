@@ -2,6 +2,15 @@
 
 > **Fuente única de verdad** del estado de verificación: solo se considera medido lo anotado aquí. Última actualización: **2026-10-19**. El repositorio mantiene la app Android nativa; Flutter/iOS y la web de escritorio se retiraron.
 
+## Auditoría de UI aplicada (2026-10-19, 0.31.0)
+
+Se aplicaron los hallazgos de `ui-ux-pro-max` que no contradicen el sistema de diseño: chips de Precios en `FlowRow`, subtítulo de acordeón oculto al abrir, título de tarjeta como encabezado, chevron en banners clicables, `selected` solo cuando es verdadero, contador de filtros en la descripción del botón, icono de saltar en onboarding e icono de salida en «Salir sin guardar».
+
+- `./gradlew spviTests` (2026-10-19): **905 casos JVM en verde** (19 `:core` + 114 `:licencia` + 250 `:domain` + 91 `:data` + 34 `:designsystem` + **397** `:app`). Los 7 nuevos son `AuditoriaUiTest`; 5 se vieron en rojo antes de implementar, el de `selected = true` pasó como control y el de la descripción del filtro se añadió con el helper.
+- `./gradlew spviCheck` (2026-10-19): **OK** (tests JVM + `lintDebug` + `assembleDebug` + `spviPermisos`), con `-Xmx4g`.
+- `./gradlew :app:verifyRoborazziDebug` (2026-10-19): **verde**; 137 tests de captura en claro/oscuro (274 PNG) y 534 tests de `:app` en total. Se regeneraron **38 PNG** de este lote: 11 capturas de Inicio, 2 de Precios, 4 de onboarding y los diálogos de salida de Perfil e Inventario, × claro/oscuro. Los 30 de Inventario ya estaban regenerados por la retirada del OCR.
+- Lo que **no** se probó: reinstalar el APK en el teléfono para este lote, TalkBack real, landscape y pantallas pequeñas. La accesibilidad se comprobó por semántica de Compose y por las capturas de contenido; no sustituye una pasada con lector de pantalla.
+
 ## OCR de inventario retirado (2026-10-19, 0.31.0)
 
 Por decisión del dueño se eliminó el escáner OCR de inventario: no quedan código, ruta, textos ni dependencia de reconocimiento de texto.
@@ -44,7 +53,7 @@ Fases del escáner (lógica pura, ViewModel, pantalla y documentación) y las re
   - el **título** de la lista («Inventario de productos») ocupaba la primera fila y estorbaba el encabezado → ahora el encabezado se busca en las tres primeras filas y lo de encima (título, fecha) no es un registro;
   - un **nombre largo** que desborda su columna unía su columna con la vecina (una banda ancha se comía las dos) → las columnas se agrupan por el **borde izquierdo** de la celda y cada celda va a la columna de inicio más cercano;
   - el corte de una línea con dos columnas pegadas partía celdas normales: «Jabon de tocador» (26 px de hueco, 20 px de alto) se partía en dos y creaba columnas fantasma → ahora solo corta si el hueco **duplica el alto** del texto. El diagnóstico se hizo con `logcat` temporal, ya retirado.
-- Modelo PP-Layout/ONNX: sigue **bloqueado** (sin artefacto con licencia y contrato verificables) y `onnxruntime-android` está fuera del catálogo y de `:app`; los pasos para reincorporarlo están en `docs/ESCANEO_OCR.md`.
+- Modelo PP-Layout/ONNX: sigue **bloqueado** (sin artefacto con licencia y contrato verificables) y `onnxruntime-android` está fuera del catálogo y de `:app`; los pasos para reincorporarlo estaban en `docs/ESCANEO_OCR.md` (retirado el 2026-10-19 con el escáner).
 - Pendiente de decisión del dueño: reescribir o no los mensajes de los commits `54c85f9 "j"` y `5dc2689 "6"` (ya publicados en `origin/main`).
 
 ## Filtro por alerta de Inicio y compilación del escaneo OCR (2026-10-18, `e31ff9a` y `7d71f72`, CI verde)

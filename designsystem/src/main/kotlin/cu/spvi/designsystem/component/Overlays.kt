@@ -187,6 +187,7 @@ fun SpviBottomSheet(
             confirmDescription = SpviSheetTextos.SALIR,
             dismissDescription = SpviSheetTextos.SEGUIR,
             destructive = true,
+            confirmIcon = SpviIcons.Salir,
         )
     }
     SpviVentana(

@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -49,6 +50,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cu.spvi.app.common.CampoFecha
 import cu.spvi.app.common.Compartir
 import cu.spvi.app.common.SecureWindow
+import cu.spvi.app.common.descripcionFiltro
 import cu.spvi.app.inicio.EstadoCarga
 import cu.spvi.app.navigation.Route
 import cu.spvi.designsystem.component.SpviBadge
@@ -217,9 +219,12 @@ fun RegistrosContent(
             SpviTopBar(title = TextosRegistros.TITULO, actions = {
                 if (tipo != null) {
                     val n = state.filtro.activos
-                    BadgedBox(badge = { if (n > 0) SpviBadge(n) }) {
+                    val textoFiltro = if (tipo == TipoRegistro.MOVIMIENTOS) TextosRegistros.FILTRAR_FECHA else TextosRegistros.FILTRAR
+                    BadgedBox(badge = {
+                        if (n > 0) SpviBadge(n, Modifier.clearAndSetSemantics { })
+                    }) {
                         SpviIconAction(
-                            SpviIcons.Filtrar, if (tipo == TipoRegistro.MOVIMIENTOS) TextosRegistros.FILTRAR_FECHA else TextosRegistros.FILTRAR,
+                            SpviIcons.Filtrar, descripcionFiltro(textoFiltro, n),
                             onClick = acciones.onAbrirFiltro, selected = n > 0, modifier = Modifier.testTag(RegistrosTags.FILTRO),
                         )
                     }

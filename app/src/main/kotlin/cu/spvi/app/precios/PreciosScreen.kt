@@ -6,6 +6,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -193,6 +195,7 @@ fun PreciosContent(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun FormularioPreajuste(state: PreciosUiState, f: PreajusteForm, acciones: AccionesPrecios) {
     val err = state.errores          // tras pulsar Guardar (incluye «elige productos»)
@@ -209,7 +212,11 @@ private fun FormularioPreajuste(state: PreciosUiState, f: PreajusteForm, accione
         },
     ) {
         Titulo("1. ¿Subir o bajar el precio?")
-        Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
+        FlowRow(
+            Modifier.fillMaxWidth().selectableGroup(),
+            horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
+        ) {
             SpviChip("Subir", selected = f.sube, onClick = { acciones.onCambiar { it.copy(sube = true) } }, icon = SpviIcons.Agregar)
             SpviChip("Bajar", selected = !f.sube, onClick = { acciones.onCambiar { it.copy(sube = false) } }, icon = SpviIcons.Quitar)
         }
@@ -228,7 +235,11 @@ private fun FormularioPreajuste(state: PreciosUiState, f: PreajusteForm, accione
         )
 
         Titulo("2. ¿Cuándo se aplica?")
-        Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs)) {
+        FlowRow(
+            Modifier.fillMaxWidth().selectableGroup(),
+            horizontalArrangement = Arrangement.spacedBy(SpviSpacing.xs, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(SpviSpacing.xs),
+        ) {
             SpviChip("Cualquier pago", selected = f.metodo == null, onClick = { acciones.onCambiar { it.copy(metodo = null) } })
             SpviChip(etiqueta(MetodoPago.EFECTIVO), selected = f.metodo == MetodoPago.EFECTIVO, icon = SpviIcons.Efectivo,
                 onClick = { acciones.onCambiar { it.copy(metodo = MetodoPago.EFECTIVO) } })

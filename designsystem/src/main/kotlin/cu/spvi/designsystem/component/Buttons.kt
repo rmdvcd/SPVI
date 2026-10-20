@@ -195,7 +195,7 @@ fun SpviIconAction(
         FilledIconButton(
             onClick = onClick,
             enabled = enabled,
-            modifier = modifier.size(SpviSize.touchTarget).semantics { this.selected = selected },
+            modifier = modifier.size(SpviSize.touchTarget).semantics { if (selected) this.selected = true },
             colors = IconButtonDefaults.filledIconButtonColors(containerColor = animBg, contentColor = animFg),
         ) { Icon(icon, contentDescription = contentDescription) }
     }

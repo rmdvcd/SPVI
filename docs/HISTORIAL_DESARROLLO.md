@@ -1,5 +1,17 @@
 # SPVI - Historial de desarrollo
 
+## 2026-10-19 - Auditoría de UI: chips de Precios y remates de accesibilidad (0.31.0)
+
+Se auditó la interfaz con `ui-ux-pro-max` y se contrastaron sus propuestas con `DESIGN_SYSTEM.md` y `UI_UX_IX.md`. Se aplican solo los hallazgos que no contradicen las reglas del proyecto: la barra inferior de cinco ítems sigue siendo de solo iconos (con tooltip y TalkBack) y los botones de acción siguen la regla P24/P25.
+
+**(1) Precios.** Los tres chips de método de pago (Cualquier pago, Efectivo, Transferencia) pasan a `FlowRow` con separación y alineación centrada. Antes, a 360 dp, Transferencia se comprimía a 34 px y el texto se cortaba; ahora baja a una segunda fila y conserva su ancho mínimo. La prueba `elChipDeTransferenciaNoSeAplastaEnElFormularioDePrecios` mide el ancho y falló en rojo antes del cambio.
+
+**(2) Inicio y componentes.** El subtítulo de `SpviAccordionCard` se oculta cuando la tarjeta está abierta: el total de «Ventas» ya no aparece dos veces. `SpviCard` marca su título como encabezado para TalkBack. `SpviStatusBanner` muestra un chevron cuando es clicable y no tiene una acción propia. `SpviIconAction` y `SpviListItem` solo anuncian `selected` cuando es verdadero, no como «no seleccionado» en cada fila.
+
+**(3) Filtros, onboarding y salida.** En Inventario, Servicios y Registros el contador del filtro va en la descripción del botón («Filtrar, 2 filtros activos») y el badge queda decorativo, para no leer un número suelto. «Ahora no» del onboarding usa el icono de saltar en vez del reloj, que se confundía con «más tarde». La confirmación de «Salir sin guardar» usa el icono de salida (`SpviIcons.Salir`), no la papelera, tanto en `GuardiaCambios` como en `SpviBottomSheet`.
+
+**Pruebas.** `AuditoriaUiTest` añade 7 casos: encabezado de tarjeta, subtítulo de acordeón, `selected` verdadero/falso en botón y fila, descripción de filtros con plural y ancho del chip a 360 dp. Antes de implementar, los 5 casos de los arreglos fallaron; el de `selected = true` pasó como control y el séptimo (descripción del filtro) se añadió con el helper. `spviTests`: **905 casos JVM en verde** (19 `:core` + 114 `:licencia` + 250 `:domain` + 91 `:data` + 34 `:designsystem` + **397** `:app`). `spviCheck`: **OK**. `:app:verifyRoborazziDebug`: **verde** tras regenerar **38 PNG** de este lote (11 capturas de Inicio, 2 de Precios, 4 de onboarding y los diálogos de salida de Perfil e Inventario, × claro/oscuro); los 30 de Inventario ya venían de la retirada del OCR. No se reinstaló el APK ni se probó con TalkBack o en landscape; la accesibilidad se comprobó por semántica de Compose y por las capturas.
+
 ## 2026-10-19 - Se retira el escáner OCR de inventario (0.31.0)
 
 Por decisión del dueño, el escáner OCR de inventario se elimina del proyecto. Se borran `EscanerInventarioLogic.kt`, `EscanerInventarioViewModel.kt`, `EscanerInventarioScreen.kt` y sus dos pruebas JVM (`EscanerInventarioLogicTest`, `EscanerInventarioViewModelTest`), la ruta `Route.EscanerInventario`, su `composable` en `MainScaffold`, el icono **Escanear** de la barra de Inventario, `TextosInventario.ESCANEAR` y los 42 textos `scan_*`. También sale `com.google.mlkit:text-recognition` (versión `mlkitText` y entrada `mlkit-text` del catálogo): el APK deja de llevar el modelo OCR y sus bibliotecas. Se conservan el lector QR de vinculación (`barcode-scanning`), la cámara para fotos de productos y servicios, y el permiso `CAMERA`.

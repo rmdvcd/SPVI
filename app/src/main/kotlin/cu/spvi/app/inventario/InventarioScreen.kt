@@ -47,6 +47,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -56,6 +57,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import cu.spvi.app.common.Compartir
+import cu.spvi.app.common.descripcionFiltro
 import cu.spvi.app.inicio.EstadoCarga
 import cu.spvi.app.navigation.Route
 import cu.spvi.core.money.Money
@@ -292,10 +294,14 @@ private fun Buscador(state: InventarioUiState, acciones: AccionesInventario) {
 
 @Composable
 private fun BotonFiltro(state: InventarioUiState, acciones: AccionesInventario) {
-    BadgedBox(badge = { if (state.filtro.activos > 0) SpviBadge(state.filtro.activos) }) {
+    val activos = state.filtro.activos
+    BadgedBox(badge = {
+        if (activos > 0) SpviBadge(activos, Modifier.clearAndSetSemantics { })
+    }) {
         SpviIconAction(
-            SpviIcons.Filtrar, TextosInventario.FILTRAR, onClick = { acciones.onHoja(HojaInventario.FILTRO) },
-            selected = state.filtro.activos > 0, modifier = Modifier.testTag(InventarioTags.FILTRO),
+            SpviIcons.Filtrar, descripcionFiltro(TextosInventario.FILTRAR, activos),
+            onClick = { acciones.onHoja(HojaInventario.FILTRO) },
+            selected = activos > 0, modifier = Modifier.testTag(InventarioTags.FILTRO),
         )
     }
 }

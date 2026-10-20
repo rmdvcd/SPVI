@@ -9,6 +9,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import cu.spvi.designsystem.component.SpviDialog
 import cu.spvi.designsystem.component.SpviSheetTextos
+import cu.spvi.designsystem.icon.SpviIcons
 
 object TextosGuardia {
     const val TITULO = SpviSheetTextos.SALIR_TITULO
@@ -42,6 +43,7 @@ fun rememberSalidaProtegida(
             confirmDescription = TextosGuardia.SALIR,
             dismissDescription = TextosGuardia.SEGUIR,
             destructive = true,
+            confirmIcon = SpviIcons.Salir,
         )
     }
     return { if (hayCambios) preguntar = true else salir() }

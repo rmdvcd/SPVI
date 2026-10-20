@@ -107,7 +107,7 @@ fun SpviCard(
                         it,
                         style = MaterialTheme.typography.titleMedium,
                         textAlign = if (titleCentered) TextAlign.Center else TextAlign.Start,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().semantics { heading() },
                     )
                 }
                 content()
@@ -158,7 +158,8 @@ fun SpviAccordionCard(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                subtitle?.let { SpviSecondaryText(it, modifier = Modifier.fillMaxWidth(), maxLines = 1, textAlign = TextAlign.Center) }
+                // El resumen es «de un vistazo»: al abrir, el contenido ya muestra el dato y no se repite.
+                if (!expanded) subtitle?.let { SpviSecondaryText(it, modifier = Modifier.fillMaxWidth(), maxLines = 1, textAlign = TextAlign.Center) }
             }
             Icon(SpviIcons.Desplegar, contentDescription = null, modifier = Modifier.size(SpviSize.icon).rotate(giro))
         }
@@ -219,7 +220,7 @@ fun SpviListItem(
                 .fillMaxWidth()
                 .background(if (selected) cs.primaryContainer else Color.Transparent)
                 .then(clickable)
-                .semantics(mergeDescendants = true) { this.selected = selected }
+                .semantics(mergeDescendants = true) { if (selected) this.selected = true }
                 .heightIn(min = SpviSize.touchTarget)
                 .padding(horizontal = SpviSpacing.md, vertical = SpviSpacing.xs),
             verticalAlignment = Alignment.CenterVertically,
