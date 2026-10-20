@@ -1,16 +1,16 @@
-# SPVI — Estado histórico de instrucciones de sesiones anteriores
+# Shalev — Estado histórico de instrucciones de sesiones anteriores
 
 > Instantánea de 2026-10-08. Los estados de ramas y tareas aquí descritos ya no son actuales; prevalecen `AGENTS.md`, `Pendiente.md` y `docs/VERIFICACION.md`.
 
-> **Comprobación:** 2026-10-08 · **Base:** `main` @ `82672fd` (movida a `8ef4842` después, ver la novedad) · **Rama de la sesión:** `arena/cb554258-spvi`
+> **Comprobación:** 2026-10-08 · **Base:** `main` @ `82672fd` (movida a `8ef4842` después, ver la novedad) · **Rama de la sesión:** `arena/cb554258-shalev`
 >
 > **Método.** Lectura del código y de la documentación de `main` y de las ramas remotas `arena/*`, búsquedas en el árbol y consulta de la CI con `gh`. **No se ha compilado ni ejecutado nada**: la sesión no tiene Android SDK ni acceso a Maven o Google (solo GitHub, npm y PyPI).
 >
 > **Leyenda.** ✅ está en el código (no significa que funcione) · 🟡 parcial · ❌ no está · 🔀 está solo en otra rama, no en `main` · ⚠️ conflicto que necesita tu decisión · ⏳ sin empezar · 🧪 **NO VERIFICADO**: requiere ejecutar (Gradle, Roborazzi, dispositivo) o mirar la pantalla.
 
-> **Novedad: `main` cambió después de esta comprobación.** El dueño fusionó la PR #4 (`arena/1c545bdc-spvi`) en `main` con el commit `8ef4842`, el 2026-10-08 a las 20:56 (hora local). Esa fusión trae:
+> **Novedad: `main` cambió después de esta comprobación.** El dueño fusionó la PR #4 (`arena/1c545bdc-shalev`) en `main` con el commit `8ef4842`, el 2026-10-08 a las 20:56 (hora local). Esa fusión trae:
 > - `CapturaSmsPagoService`: captura el SMS de PAGOxMOVIL desde las notificaciones (`NotificationListenerService`). Solo actúa si el usuario activa el acceso en Ajustes y mientras hay una venta por transferencia esperando el pago. No lee el buzón ni pide `READ_SMS`.
-> - `spviGithubRepo=rmdvcd/SPVI` en `gradle.properties`, que la app usa para consultar GitHub.
+> - `shalevGithubRepo=rmdvcd/Shalev` en `gradle.properties`, que la app usa para consultar GitHub.
 >
 > Choca con la regla 3 de `AGENTS.md` («SMS solo pegando o compartiendo (nunca leer SMS ni el portapapeles en segundo plano)») y con «vacío = no consulta nada» (D2 y D7). La CI de `8ef4842` estaba en curso al redactar: cuatro jobs ✅ y «Release (R8) y APK debug» sin terminar.
 >
@@ -29,22 +29,22 @@ No tengo acceso al chat de esas sesiones. Si hubo instrucciones que no quedaron 
 ## 2. Resumen
 
 - **En `main`:** F0 en código y CI, salvo tu prueba en el teléfono (T0.6). F1 en T1.1–T1.3. Y 12 de las 14 tareas del PROMPT 0.27.0 en código; T2 y T8 quedan a medias.
-- **Solo en otras ramas, sin fusionar:** T1.4 (agregación SQL), T2.2–T2.5 (seguridad), T3.4–T3.6, la mayor parte de F6 y T4.2–T4.4. Casi todo está en `arena/c64c3dc9-spvi`.
+- **Solo en otras ramas, sin fusionar:** T1.4 (agregación SQL), T2.2–T2.5 (seguridad), T3.4–T3.6, la mayor parte de F6 y T4.2–T4.4. Casi todo está en `arena/c64c3dc9-shalev`.
 - **Sin hacer:** T1.5 (medición en dispositivo), T1.6 (opcional), F5, y parte de F3 (T3.2 y T3.5).
 - **Riesgos que hay que resolver antes de fusionar:**
-  1. `arena/c64c3dc9-spvi` tiene la CI en rojo en su último commit (`9aabb7b`, cuatro trabajos fallan).
+  1. `arena/c64c3dc9-shalev` tiene la CI en rojo en su último commit (`9aabb7b`, cuatro trabajos fallan).
   2. Su reescritura de `AGENTS.md`, `Contexto.md` y `README.md` elimina reglas que decidiste tú (por ejemplo, «nunca leer SMS ni el portapapeles en segundo plano»).
-  3. `arena/1c545bdc-spvi` añade captura automática de notificaciones de SMS, que contradice la regla 3 de `AGENTS.md`.
+  3. `arena/1c545bdc-shalev` añade captura automática de notificaciones de SMS, que contradice la regla 3 de `AGENTS.md`.
 
 ## 3. Ramas remotas y CI
 
 | Rama | Último commit | Qué contiene (frente a `main`) | CI del último commit |
 |---|---|---|---|
-| `main` | `8ef4842` (PR #4 fusionada por el dueño) | — | En curso al redactar (cuatro jobs ✅). La CI de `82672fd` fue ✅ ([37715675514](https://github.com/rmdvcd/SPVI/actions/runs/37715675514)) |
-| `arena/c64c3dc9-spvi` | `9aabb7b` | 9 commits: T1.4, T2.1–T2.5, T3.1, T3.4–T3.6, T4.1–T4.4 y F6 | ❌ fallan Lint, Tests JVM, R8/APK y API mínima ([37856092133](https://github.com/rmdvcd/SPVI/actions/runs/37856092133)). En `43cc5df` la CI era ✅ ([37836886846](https://github.com/rmdvcd/SPVI/actions/runs/37836886846)) |
-| `arena/3c116bea-spvi` | `c2d3cf6` | Corrección del seed (recetas en g/mL, costo menor que venta) | ✅ `success` ([37857577330](https://github.com/rmdvcd/SPVI/actions/runs/37857577330)) |
-| `arena/1c545bdc-spvi` | `f7ab5aa` | Tablas, pagos (logos de bancos y captura de SMS), actualizaciones | ❌ en `b9559b2`; `f7ab5aa` estaba en curso al comprobarlo |
-| `arena/d7f67f1f-spvi` | `6fe6321` | Validaciones, respaldos, documentación reescrita, guía de dispositivo | ❌ falla «Tests JVM y compilación de instrumentados» ([37723487443](https://github.com/rmdvcd/SPVI/actions/runs/37723487443)) |
+| `main` | `8ef4842` (PR #4 fusionada por el dueño) | — | En curso al redactar (cuatro jobs ✅). La CI de `82672fd` fue ✅ ([37715675514](https://github.com/rmdvcd/Shalev/actions/runs/37715675514)) |
+| `arena/c64c3dc9-shalev` | `9aabb7b` | 9 commits: T1.4, T2.1–T2.5, T3.1, T3.4–T3.6, T4.1–T4.4 y F6 | ❌ fallan Lint, Tests JVM, R8/APK y API mínima ([37856092133](https://github.com/rmdvcd/Shalev/actions/runs/37856092133)). En `43cc5df` la CI era ✅ ([37836886846](https://github.com/rmdvcd/Shalev/actions/runs/37836886846)) |
+| `arena/3c116bea-shalev` | `c2d3cf6` | Corrección del seed (recetas en g/mL, costo menor que venta) | ✅ `success` ([37857577330](https://github.com/rmdvcd/Shalev/actions/runs/37857577330)) |
+| `arena/1c545bdc-shalev` | `f7ab5aa` | Tablas, pagos (logos de bancos y captura de SMS), actualizaciones | ❌ en `b9559b2`; `f7ab5aa` estaba en curso al comprobarlo |
+| `arena/d7f67f1f-shalev` | `6fe6321` | Validaciones, respaldos, documentación reescrita, guía de dispositivo | ❌ falla «Tests JVM y compilación de instrumentados» ([37723487443](https://github.com/rmdvcd/Shalev/actions/runs/37723487443)) |
 
 No he podido descargar los registros de los fallos: el servicio de GitHub responde con error EOF. Por eso el prompt pide reproducirlos en local.
 
@@ -54,11 +54,11 @@ No he podido descargar los registros de los fallos: el servicio de GitHub respon
 |---|---|---|---|---|
 | T1 | Títulos centrados, sin logo | ✅ 🧪 | — | `Navigation.kt`: `CenterAlignedTopAppBar` y sin `showLogo`. `Overlays.kt`: diálogos y hojas sin logo. Falta revisión visual. |
 | T2 | Textos que no se cortan ni se parten | 🟡 | — | Hay casos Roborazzi «letra 200 %» para Inicio, ficha, Licencia y Caja (`InicioCapturas.kt`, `InventarioCapturas.kt`, `AjustesCapturas.kt`). Quedan unos 10 usos de `maxLines`/`Ellipsis` (`Surfaces.kt`, `Selectores.kt`, `Tabs.kt`, `Navigation.kt`, `CajaUi.kt`). 🧪 |
-| T3 | Medallas del Top 3 | ✅ | — | `SpviMedalla` y `SpviMedallaColores` en `Indicators.kt`; tokens `MEDALLA_*` en `ColorTokens.kt`; `ContrastTest.medallasLegibles`. |
-| T4 | Animaciones con `SpviMotion` | ✅ 🧪 | — | `muelle()` = `spring(NoBouncy, MediumLow)` en `Tokens.kt`. No quedan `delay(16)` ni `withFrameNanos`. `profileinstaller` añadido. La fluidez en gama baja es 🧪. |
+| T3 | Medallas del Top 3 | ✅ | — | `ShalevMedalla` y `ShalevMedallaColores` en `Indicators.kt`; tokens `MEDALLA_*` en `ColorTokens.kt`; `ContrastTest.medallasLegibles`. |
+| T4 | Animaciones con `ShalevMotion` | ✅ 🧪 | — | `muelle()` = `spring(NoBouncy, MediumLow)` en `Tokens.kt`. No quedan `delay(16)` ni `withFrameNanos`. `profileinstaller` añadido. La fluidez en gama baja es 🧪. |
 | T5 | Deslizar solo entre las cinco raíces | ✅ | — | `deslizarPermitido` en `MainScaffold.kt`; `DeslizarTest`. |
 | T6 | Placeholder centrado | ✅ | — | `TextFields.kt` (`textAlign = Center`). Ningún `TextField` directo en `app`. |
-| T7 | Iconos PDF y Excel | ✅ | — | `SpviIcons.Pdf` (PictureAsPdf) y `SpviIcons.Excel` (TableView), usados en `IconosFormato.kt`. |
+| T7 | Iconos PDF y Excel | ✅ | — | `ShalevIcons.Pdf` (PictureAsPdf) y `ShalevIcons.Excel` (TableView), usados en `IconosFormato.kt`. |
 | T8 | Sin textos técnicos | 🟡 | — | En los literales de UI no quedan términos técnicos (solo un `SHA-256` interno). Falta la tabla «antes → después» y revisar los textos compuestos. 🧪 |
 | T9 | Una principal nunca pasa a secundaria | ✅ | — | `Vinculacion.puedeVincularseComoSecundaria` (dominio), comprobación en `VinculacionViewModel`, botón oculto y tests en `VinculacionViewModelTest`. Diferencia menor: devuelve un mensaje propio en vez de `SinPermiso`. |
 | T10 | Contraseña del respaldo opcional (v4) | ✅ ⚠️ | 🔀 `c64c3dc9`: encendida por defecto | `BackupCipher` (cabecera v4 con indicador), `RespaldoLogic.conContrasena = false`, `BackupCipherTest`, `FORMATOS.md` en v4. Ver D1. |
@@ -88,7 +88,7 @@ No he podido descargar los registros de los fallos: el servicio de GitHub respon
 | T1.1 | `withContext(io)` en casos de uso de Inicio | ✅ | — | `IoDispatcher` en `InicioUseCases.kt`. |
 | T1.2 | `flowOn(io)` en cadenas reactivas | ✅ | — | `flowOn` en los casos de uso de `domain` (Elaboración, Inicio, Inventario, Registro y Servicio). |
 | T1.3 | `debounce` en buscadores | 🟡 | — | Está en `InventarioViewModel`, `RegistrosViewModel` y `ServiciosViewModel`. No encuentro el de Precios ni el de la ficha: revisar. |
-| T1.4 | Agregación en SQL | ❌ | 🔀 `c64c3dc9` (`dda0408`) | `GROUP BY` por ventanas, con tests de paridad SQL/memoria (`VentaAgregadosRoomTest`). CI ✅ en `cc30f77` (run [37766967443](https://github.com/rmdvcd/SPVI/actions/runs/37766967443)), según su propio `docs/VERIFICACION.md`. Sin fusionar. |
+| T1.4 | Agregación en SQL | ❌ | 🔀 `c64c3dc9` (`dda0408`) | `GROUP BY` por ventanas, con tests de paridad SQL/memoria (`VentaAgregadosRoomTest`). CI ✅ en `cc30f77` (run [37766967443](https://github.com/rmdvcd/Shalev/actions/runs/37766967443)), según su propio `docs/VERIFICACION.md`. Sin fusionar. |
 | T1.5 | Medición en dispositivo | 🧪 NO VERIFICADO | — | `RendimientoInicioTest` compila; no se ha ejecutado en un dispositivo autorizado. |
 | T1.6 | Baseline profile (opcional) | ⏳ | — | No existe el módulo `:baselineprofile`. |
 
@@ -97,9 +97,9 @@ No he podido descargar los registros de los fallos: el servicio de GitHub respon
 | ID | Tarea | `main` | Otras ramas | Evidencia y notas |
 |---|---|---|---|---|
 | T2.1 | Respaldo protegido por defecto | ⚠️ | 🔀 `c64c3dc9` (`0b5b765`) | `main` lo deja apagado (decisión de la 0.27.0). Ver D1. |
-| T2.2 | Sesiones LAN que no se sustituyen sin autenticar | ❌ | 🔀 `c64c3dc9` (`3bf4fc1`) | `ControlConexiones.kt`, `SesionesActivas.kt`, `ControlConexionesTest` y `sesionNoSeCierraSinPruebaDeClave`. CI ✅ en `3bf4fc1` (run [37834591679](https://github.com/rmdvcd/SPVI/actions/runs/37834591679)). |
+| T2.2 | Sesiones LAN que no se sustituyen sin autenticar | ❌ | 🔀 `c64c3dc9` (`3bf4fc1`) | `ControlConexiones.kt`, `SesionesActivas.kt`, `ControlConexionesTest` y `sesionNoSeCierraSinPruebaDeClave`. CI ✅ en `3bf4fc1` (run [37834591679](https://github.com/rmdvcd/Shalev/actions/runs/37834591679)). |
 | T2.3 | «Hola» con respuesta uniforme | ❌ | 🔀 `c64c3dc9` (`3bf4fc1`) | `AutenticacionHola.kt` (`rechazoIdentidadHola`). |
-| T2.4 | Caché del registro de prueba | ❌ | 🔀 `c64c3dc9` (`43cc5df`) | `CacheLecturas.kt` y `CacheLecturasTest`. CI ✅ en `43cc5df` (run [37836886846](https://github.com/rmdvcd/SPVI/actions/runs/37836886846)). |
+| T2.4 | Caché del registro de prueba | ❌ | 🔀 `c64c3dc9` (`43cc5df`) | `CacheLecturas.kt` y `CacheLecturasTest`. CI ✅ en `43cc5df` (run [37836886846](https://github.com/rmdvcd/Shalev/actions/runs/37836886846)). |
 | T2.5 | Aviso si GitHub no responde | ❌ | 🔀 `c64c3dc9` (`43cc5df`) | `diasSinComprobar` y aviso en Ajustes (14 días). |
 
 ### F3 · Coherencia documental
@@ -107,8 +107,8 @@ No he podido descargar los registros de los fallos: el servicio de GitHub respon
 | ID | Tarea | `main` | Otras ramas | Evidencia y notas |
 |---|---|---|---|---|
 | T3.1 | Retirar el escáner de códigos de barras | 🟡 | 🔀 `c64c3dc9` | El código ya no tiene escáner de productos (v11, 0.30.0). Quedan «escáner (CameraX + ML Kit)» en `Contexto.md` (Inventario), «ML Kit (escáner)» en `AGENTS.md` (es el QR de vinculación), un comentario en `app/build.gradle.kts` (el plan dice `data/`, pero está en `app/`) y la carpeta `tools/escaner/`. CameraX y ML Kit **no se quitan**: los usa la vinculación por QR (`vinculacion/qr/CamaraEscaner.kt`). |
-| T3.2 | Esquema Room v11 en la documentación | ❌ | 🔀 README reescrito en `c64c3dc9` | La base de datos es v11 (`SpviDatabase.VERSION = 11`, `MIGRACION_10_11`, `11.json`). README, AGENTS.md y Contexto.md dicen v10. |
-| T3.3 | Codificación del historial | 🟡 | — | `HISTORIAL_DESARROLLO.md` sin mojibake (`fb82943`). Queda un carácter U+FFFD en `ANALISIS_SPVI.md`. |
+| T3.2 | Esquema Room v11 en la documentación | ❌ | 🔀 README reescrito en `c64c3dc9` | La base de datos es v11 (`ShalevDatabase.VERSION = 11`, `MIGRACION_10_11`, `11.json`). README, AGENTS.md y Contexto.md dicen v10. |
+| T3.3 | Codificación del historial | 🟡 | — | `HISTORIAL_DESARROLLO.md` sin mojibake (`fb82943`). Queda un carácter U+FFFD en `ANALISIS_Shalev.md`. |
 | T3.4 | Manual, guía de dispositivo y pendientes | ❌ | 🔀 `c64c3dc9` (3 archivos) · 🔀 `d7f67f1f` (2) | `main` enlaza cuatro archivos que no existen (ver D3). Además, AGENTS.md, Contexto.md y OPENCODE_DESKTOP.md mencionan `opencode.json` y `.opencode/commands/`, que nunca han estado en git: se comprueban en el PC del dueño (ver §7). |
 | T3.5 | Cabeceras de versión | ❌ | 🔀 `c64c3dc9` (UI/UX a 0.30.0) | `UI_UX_IX.md` dice 0.19.3 y `SECURITY.md` dice 0.26.0 en `main`. |
 | T3.6 | Chequeo automático de documentación | ❌ | 🔀 `c64c3dc9` (`tools/verificacion/documentacion.py` y job `docs`) | Añadido, pero no ejecutado. |
@@ -141,7 +141,7 @@ No he podido descargar los registros de los fallos: el servicio de GitHub respon
 
 | Turno | Resultado | Estado |
 |---|---|---|
-| Validación local | 826 tests, 0 fallos; lint con 0 errores y 127 avisos; `spviPermisos` correcto. Lo informó OpenCode en Windows | ✅ informado; no lo he reproducido |
+| Validación local | 826 tests, 0 fallos; lint con 0 errores y 127 avisos; `shalevPermisos` correcto. Lo informó OpenCode en Windows | ✅ informado; no lo he reproducido |
 | Medición de T1.5 | Sin dispositivo de pruebas autorizado | 🧪 NO VERIFICADO |
 | Diseño de T1.4 | Pedido en el turno; implementado en `c64c3dc9` (`dda0408`) | 🔀 sin fusionar |
 | Decisiones pedidas al dueño (T1.4 y dispositivo) | Sin respuesta registrada en el repositorio | ⏳ |
@@ -156,7 +156,7 @@ El dueño aceptó todas las recomendaciones (D1–D7). `docs/PROMPT_OPENCODE_PEN
 - **D4 · Versión de salida.** ¿0.30.0 (51) o 0.31.0 (52)? *Recomendación:* no subir la versión hasta que F1 y F2 estén en verde.
 - **D5 · F5** (multimoneda, descuentos, usuarios locales, `strings.xml`). *Recomendación:* no empezar sin reglas de negocio.
 - **D6 · Dispositivo de pruebas.** ¿Emulador o teléfono dedicado? Nunca el de uso diario con datos reales. Hace falta para T1.5 y para las 136 pruebas instrumentadas.
-- **D7 · Actualizaciones por defecto (`1c545bdc`).** Su `gradle.properties` fija `spviGithubRepo=rmdvcd/SPVI`, así que la app consultaría GitHub sin configurar nada. Hoy la regla es «vacío = no consulta nada» (README y Contexto). **Estado:** `main` ya lo tiene desde `8ef4842`: decisión pendiente del dueño. *Recomendación:* decidirlo antes de integrar esa rama.
+- **D7 · Actualizaciones por defecto (`1c545bdc`).** Su `gradle.properties` fija `shalevGithubRepo=rmdvcd/Shalev`, así que la app consultaría GitHub sin configurar nada. Hoy la regla es «vacío = no consulta nada» (README y Contexto). **Estado:** `main` ya lo tiene desde `8ef4842`: decisión pendiente del dueño. *Recomendación:* decidirlo antes de integrar esa rama.
 
 ## 8. Riesgos de integración
 

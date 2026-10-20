@@ -1,4 +1,4 @@
-# Verificación real de SPVI (T0.1 del PLAN_CORRECCIONES.md).
+# Verificación real de Shalev (T0.1 del PLAN_CORRECCIONES.md).
 # Repositorio público: los minutos de Actions son gratis e ilimitados.
 # Cada trabajo corresponde a un comando del proyecto; si uno se pone rojo, el log dice exactamente dónde.
 #
@@ -34,7 +34,7 @@ permissions:
   contents: read
 
 jobs:
-  # ./gradlew spviTests + compilar los tests instrumentados de :data y :app (los que hoy no compilaban, D2).
+  # ./gradlew shalevTests + compilar los tests instrumentados de :data y :app (los que hoy no compilaban, D2).
   tests:
     name: Tests JVM y compilación de instrumentados
     runs-on: ubuntu-24.04
@@ -51,10 +51,10 @@ jobs:
           test -d "$ANDROID_HOME/build-tools/35.0.0" || { echo "Faltan build-tools 35.0.0"; exit 1; }
           echo "SDK: $ANDROID_HOME (android-35 y build-tools 35.0.0 presentes)"
       - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
-      - name: spviTests + compilar androidTest
+      - name: shalevTests + compilar androidTest
         run: |
           set -o pipefail
-          ./gradlew spviTests :data:compileDebugAndroidTestKotlin :app:compileDebugAndroidTestKotlin \
+          ./gradlew shalevTests :data:compileDebugAndroidTestKotlin :app:compileDebugAndroidTestKotlin \
             --continue --stacktrace --console=plain --no-configuration-cache 2>&1 | tee /tmp/salida.log
       - name: Resumen del fallo
         if: failure()
@@ -178,7 +178,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 30
 
-  # ./gradlew spviPermisos — el manifiesto FUSIONADO de debug y release no pide nada fuera de la lista autorizada.
+  # ./gradlew shalevPermisos — el manifiesto FUSIONADO de debug y release no pide nada fuera de la lista autorizada.
   permisos:
     name: Permisos del manifiesto fusionado
     runs-on: ubuntu-24.04
@@ -195,10 +195,10 @@ jobs:
           test -d "$ANDROID_HOME/build-tools/35.0.0" || { echo "Faltan build-tools 35.0.0"; exit 1; }
           echo "SDK: $ANDROID_HOME (android-35 y build-tools 35.0.0 presentes)"
       - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
-      - name: spviPermisos
+      - name: shalevPermisos
         run: |
           set -o pipefail
-          ./gradlew spviPermisos --no-configuration-cache --stacktrace --console=plain 2>&1 | tee /tmp/salida.log
+          ./gradlew shalevPermisos --no-configuration-cache --stacktrace --console=plain 2>&1 | tee /tmp/salida.log
       - name: Resumen del fallo
         if: failure()
         run: bash tools/verificacion/resumen_fallos.sh /tmp/salida.log

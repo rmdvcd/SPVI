@@ -1,10 +1,10 @@
-# Prompt para OpenCode: SPVI 0.27.0 (retoques tras la prueba en el teléfono)
+# Prompt para OpenCode: Shalev 0.27.0 (retoques tras la prueba en el teléfono)
 
-> Copia todo lo que hay debajo de la línea y pégalo en OpenCode (modo Build). Está pensado para hacerse por fases. Al terminar cada fase, OpenCode debe pasar `./gradlew spviTests`.
+> Copia todo lo que hay debajo de la línea y pégalo en OpenCode (modo Build). Está pensado para hacerse por fases. Al terminar cada fase, OpenCode debe pasar `./gradlew shalevTests`.
 
 ---
 
-Eres el desarrollador de **SPVI**. La 0.26.0 ya se compiló, se instaló y se probó en un teléfono, y casi todo funciona. Ahora toca la **0.27.0 (versionCode 49)**: una serie de retoques de interfaz y tres funciones pequeñas.
+Eres el desarrollador de **Shalev**. La 0.26.0 ya se compiló, se instaló y se probó en un teléfono, y casi todo funciona. Ahora toca la **0.27.0 (versionCode 49)**: una serie de retoques de interfaz y tres funciones pequeñas.
 
 ## 0. Antes de tocar nada
 
@@ -24,7 +24,7 @@ Eres el desarrollador de **SPVI**. La 0.26.0 ya se compiló, se instaló y se pr
 ## 1. Cómo trabajar (no negociable)
 
 - **Mantén el estilo que ya existe:**
-  - componentes `Spvi*`, tokens (`SpviSpacing` xs=8/md=16/lg=24/xl=32, **no existe `sm`**), `SpviTextos`, `SpviMotion` y `SpviIcons`;
+  - componentes `Shalev*`, tokens (`ShalevSpacing` xs=8/md=16/lg=24/xl=32, **no existe `sm`**), `ShalevTextos`, `ShalevMotion` y `ShalevIcons`;
   - nada de colores, tamaños ni `fontWeight` sueltos en las pantallas;
   - Material 3 claro y oscuro, con contraste WCAG AA (si añades colores, amplía `ContrastTest`);
   - botones de solo icono con descripción y tooltip; Guardar = ✓; diálogos centrados; el «+» abajo a la derecha;
@@ -32,7 +32,7 @@ Eres el desarrollador de **SPVI**. La 0.26.0 ya se compiló, se instaló y se pr
 - **Arreglos en la base.** Cuando sea posible, arregla en el componente del `:designsystem` y no pantalla por pantalla. Así queda uniforme en toda la app.
 - **Clean Architecture:** la lógica va en ViewModels, casos de uso o funciones puras testeables, nunca en las pantallas.
 - **Cambios mínimos, sin refactorizar** lo que no forma parte de la tarea.
-- **Tests:** cada regla nueva lleva su test JVM. `./gradlew spviTests` siempre en verde; al final, `./gradlew spviCheck`.
+- **Tests:** cada regla nueva lleva su test JVM. `./gradlew shalevTests` siempre en verde; al final, `./gradlew shalevCheck`.
 - **Ambigüedades:** elige la opción más segura y simple, y anótala como «Suposición» en el informe final.
 
 ## 2. Decisiones del dueño para esta versión (ya confirmadas)
@@ -48,11 +48,11 @@ Eres el desarrollador de **SPVI**. La 0.26.0 ya se compiló, se instaló y se pr
 
 ### T1 · Títulos de las ventanas centrados arriba, sin icono
 
-- **Diálogos y hojas** (`SpviDialog`, `SpviBottomSheet` y su base común en `Overlays.kt`):
+- **Diálogos y hojas** (`ShalevDialog`, `ShalevBottomSheet` y su base común en `Overlays.kt`):
   - quita el logo de la cabecera;
   - el título va arriba del todo, centrado, con `titleLarge` o el estilo que ya usen.
-- **Barra superior:** `SpviTopBar` pasa a `CenterAlignedTopAppBar`. El título queda centrado y sin icono, y desaparece `showLogo`.
-  - En Inicio el título es «SPVI» con la fuente de marca (`SpviMarca.fuente`), centrado y sin el logo.
+- **Barra superior:** `ShalevTopBar` pasa a `CenterAlignedTopAppBar`. El título queda centrado y sin icono, y desaparece `showLogo`.
+  - En Inicio el título es «Shalev» con la fuente de marca (`ShalevMarca.fuente`), centrado y sin el logo.
   - Atrás y las acciones siguen en sus lados.
   - Un título largo baja a 2 líneas como mucho y nunca tapa las acciones.
 - **Criterio:** ningún diálogo, hoja ni barra superior muestra el logo.
@@ -73,21 +73,21 @@ Eres el desarrollador de **SPVI**. La 0.26.0 ya se compiló, se instaló y se pr
 
 - El número de cada puesto (1, 2, 3) va dentro de un **círculo**: oro, plata y bronce.
 - **Colores:** añádelos como tokens en `ColorTokens.kt` (por ejemplo `medallaOro`, `medallaPlata`, `medallaBronce`) y dibuja el número con un color que cumpla AA sobre cada uno, en claro y en oscuro. Amplía `ContrastTest`.
-- **Componente:** reutilizable, `SpviMedalla(puesto)` en el designsystem. Tamaño de 28–32 dp; el número usa el peso de dato (`SpviTextos.PESO_DATO`).
+- **Componente:** reutilizable, `ShalevMedalla(puesto)` en el designsystem. Tamaño de 28–32 dp; el número usa el peso de dato (`ShalevTextos.PESO_DATO`).
 - **Accesibilidad:** «Primer puesto», «Segundo puesto», «Tercer puesto».
 - Nada de líneas de rejilla ni de decoración extra.
 
 ### T4 · Animaciones sutiles, fluidas y a la frecuencia de la pantalla
 
-- **Todas** las animaciones salen de `SpviMotion`:
+- **Todas** las animaciones salen de `ShalevMotion`:
   - duraciones de 150–250 ms;
-  - para lo que cambia de tamaño o posición, `spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)` (añádelo a `SpviMotion`);
+  - para lo que cambia de tamaño o posición, `spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)` (añádelo a `ShalevMotion`);
   - desplazamientos cortos (como mucho ¼ del contenedor) y fundidos.
 - **Busca y elimina:**
   - bucles con `delay(16)` o similares que simulen frames (usa `Animatable`, `animate*AsState` o `withFrameNanos`, que siguen el refresco real de la pantalla: 60, 90 o 120 Hz);
   - animaciones que se reinician en cada recomposición;
   - `animateContentSize` dentro de las celdas de listas largas.
-- **Rendimiento:** listas con `key` estable y `Modifier.animateItem()` (o `spviAnimateItem()`) solo donde aporte. Los gráficos siguen con `drawWithCache`.
+- **Rendimiento:** listas con `key` estable y `Modifier.animateItem()` (o `shalevAnimateItem()`) solo donde aporte. Los gráficos siguen con `drawWithCache`.
 - **No fuerces** la frecuencia de refresco por código (Android la elige; forzarla gasta batería). Respeta «Quitar animaciones» del sistema.
 - **Fluidez en release:** añade `androidx.profileinstaller` (sin permisos) para que las Baseline Profiles de Compose se apliquen.
 - **Criterio:** sin tirones al cambiar de sección, abrir diálogos, desplegar el «+» ni desplazar listas, en un teléfono de gama baja.
@@ -105,13 +105,13 @@ Eres el desarrollador de **SPVI**. La 0.26.0 ya se compiló, se instaló y se pr
 
 ### T6 · Placeholders centrados en todos los campos de texto
 
-- En `SpviTextField` (y en cualquier otro campo propio del designsystem), el **placeholder** va centrado: `Text(…, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())`.
+- En `ShalevTextField` (y en cualquier otro campo propio del designsystem), el **placeholder** va centrado: `Text(…, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())`.
 - **No cambies** la alineación del texto escrito ni la de la etiqueta (anótalo como suposición).
-- Comprueba que ninguna pantalla use `OutlinedTextField` o `TextField` directamente. Si alguna lo hace, pásala a `SpviTextField`.
+- Comprueba que ninguna pantalla use `OutlinedTextField` o `TextField` directamente. Si alguna lo hace, pásala a `ShalevTextField`.
 
 ### T7 · PDF y Excel con su icono
 
-- Añade a `SpviIcons`:
+- Añade a `ShalevIcons`:
   - `Pdf` = `Icons.Filled.PictureAsPdf`;
   - `Excel` = un icono de tabla de Material (`TableChart` o `GridOn`). **Sin logotipos de marcas.**
 - Úsalos en todas las hojas y opciones de exportar: Registros, Turno, Inventario, Servicios y la ficha.
@@ -127,8 +127,8 @@ Eres el desarrollador de **SPVI**. La 0.26.0 ya se compiló, se instaló y se pr
   - IDs internos;
   - textos de depuración;
   - **cualquier explicación de cómo funcionan la licencia o el registro de la prueba**.
-- **Aviso del permiso de fotos** (`TextosPrueba`): debe decir solo lo necesario, sin explicar el mecanismo. Por ejemplo, «Permite el acceso a fotos para que SPVI pueda conservar los datos de tu periodo de prueba». Ajusta `MANUAL_USUARIO.md` en la misma línea.
-- **Errores:** siempre un texto amable y una acción («No se pudo leer el archivo. Comprueba que es un respaldo de SPVI.»). El detalle técnico no se muestra ni va a los logs con datos sensibles.
+- **Aviso del permiso de fotos** (`TextosPrueba`): debe decir solo lo necesario, sin explicar el mecanismo. Por ejemplo, «Permite el acceso a fotos para que Shalev pueda conservar los datos de tu periodo de prueba». Ajusta `MANUAL_USUARIO.md` en la misma línea.
+- **Errores:** siempre un texto amable y una acción («No se pudo leer el archivo. Comprueba que es un respaldo de Shalev.»). El detalle técnico no se muestra ni va a los logs con datos sensibles.
 - **Se mantienen**, porque el usuario los necesita: el ID de la licencia, el vencimiento y el nº de transacción bancario.
 - **Entrega:** una tabla «antes → después» en el informe.
 
@@ -144,7 +144,7 @@ Eres el desarrollador de **SPVI**. La 0.26.0 ya se compiló, se instaló y se pr
 
 - **Exportar:**
   - un interruptor «Proteger con contraseña», **apagado** por defecto;
-  - apagado: no se piden contraseñas, y una línea avisa: «Sin contraseña, cualquiera con SPVI podrá abrir este archivo.»;
+  - apagado: no se piden contraseñas, y una línea avisa: «Sin contraseña, cualquiera con Shalev podrá abrir este archivo.»;
   - encendido: los dos campos actuales, con un mínimo de 8 caracteres.
 - **Cifrado** (`BackupCipher`): sube el formato del archivo a **v4**, con un byte de indicador en la cabecera: con o sin contraseña.
   - Sin contraseña: la clave se deriva de un secreto interno ofuscado de la app (mismo AES-GCM; puedes bajar las iteraciones de PBKDF2).
@@ -153,12 +153,12 @@ Eres el desarrollador de **SPVI**. La 0.26.0 ya se compiló, se instaló y se pr
 - **Importar:** si el archivo no tiene contraseña, se importa tras la confirmación, sin pedirla. Si la tiene, se pide como ahora.
 - **Migrar a otro teléfono:** mantén los **4 pasos**. El paso de la contraseña pasa a «Proteger (opcional)».
 - **Tests:** ida y vuelta con y sin contraseña; un v3 sigue importándose; contraseña incorrecta = error claro; un archivo sin contraseña no la pide.
-- **Documentación:** actualiza `FORMATOS.md` (cabecera v4) y `SECURITY.md` (riesgo aceptado: sin contraseña, cualquiera con SPVI puede abrir el archivo).
+- **Documentación:** actualiza `FORMATOS.md` (cabecera v4) y `SECURITY.md` (riesgo aceptado: sin contraseña, cualquiera con Shalev puede abrir el archivo).
 
 ### T11 · Acceso con biometría o PIN del teléfono (opcional)
 
 - **Dependencia:** `androidx.biometric:biometric` (versión estable en `libs.versions.toml`). `MainActivity` pasa a `FragmentActivity` (no hace falta AppCompat).
-- **Permisos:** añade `USE_BIOMETRIC` y `USE_FINGERPRINT` a la lista de `spviPermisos` (`build.gradle.kts` raíz), al paso 9 de `tools/verificacion/verificar.sh` y a las listas de `AGENTS.md`, `README.md`, `SECURITY.md`, `RELEASE.md` y `Contexto.md`.
+- **Permisos:** añade `USE_BIOMETRIC` y `USE_FINGERPRINT` a la lista de `shalevPermisos` (`build.gradle.kts` raíz), al paso 9 de `tools/verificacion/verificar.sh` y a las listas de `AGENTS.md`, `README.md`, `SECURITY.md`, `RELEASE.md` y `Contexto.md`.
 - **Cómo se pide:** `BiometricPrompt` con `BIOMETRIC_WEAK or DEVICE_CREDENTIAL` en API 30+. En API 26–29, la combinación que admita la librería, con el PIN/patrón del teléfono como alternativa.
   - Si el teléfono no tiene bloqueo de pantalla, la opción aparece desactivada, con «Configura un bloqueo de pantalla en Ajustes del teléfono».
 - **Cuándo se pide:** al abrir la app desde cero y al volver tras **≥ 10 minutos** en segundo plano.
@@ -177,13 +177,13 @@ Eres el desarrollador de **SPVI**. La 0.26.0 ya se compiló, se instaló y se pr
 
 ### T12 · Iconos en los datos de Soporte
 
-- La ficha de `SoporteScreen` (`SoporteInfo.filas`: Desarrollador, CI, Teléfono, Especialidad) pasa de etiqueta + valor sueltos a filas con **icono a la izquierda**, con el patrón de `SpviListItem`:
+- La ficha de `SoporteScreen` (`SoporteInfo.filas`: Desarrollador, CI, Teléfono, Especialidad) pasa de etiqueta + valor sueltos a filas con **icono a la izquierda**, con el patrón de `ShalevListItem`:
   - Desarrollador → `Person`;
   - CI → `Badge`;
   - Teléfono → `Phone`;
   - Especialidad → `Work`.
 - **Lo que se mantiene:** el valor sigue siendo seleccionable (`SelectionContainer`) y la fuente única sigue siendo `DeveloperContact`.
-- **Iconos:** añádelos a `SpviIcons` si faltan (también a `iconos.json` de `tools/capturas`).
+- **Iconos:** añádelos a `ShalevIcons` si faltan (también a `iconos.json` de `tools/capturas`).
 - **Texto del pie:** ajusta «Nunca te pediremos contraseñas de respaldo…» para que siga siendo correcto con la contraseña opcional (por ejemplo, «Nunca te pediremos tus contraseñas ni datos de tu tarjeta.»).
 
 ### T13 · Foto primero en Nuevo producto y Nuevo servicio
@@ -223,7 +223,7 @@ Eres el desarrollador de **SPVI**. La 0.26.0 ya se compiló, se instaló y se pr
    - `Pendiente.md` (marca lo resuelto y añade lo que quede);
    - `Pruebas.md`: añade las pruebas de la 0.27.0 (bloqueo con clave, respaldo con y sin contraseña, foto con cámara y galería, deslizar solo en las 5 principales, letra al 200 %);
    - una entrada «0.27.0» en `docs/HISTORIAL_DESARROLLO.md`.
-3. `./gradlew spviCheck` en verde, `./gradlew :app:recordRoborazziDebug` y luego la instalación en el teléfono.
+3. `./gradlew shalevCheck` en verde, `./gradlew :app:recordRoborazziDebug` y luego la instalación en el teléfono.
 4. **Informe final** en español:
    - tabla tarea → archivos → tests añadidos;
    - las cifras de tests por módulo;

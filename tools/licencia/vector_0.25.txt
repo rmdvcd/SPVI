@@ -3,8 +3,8 @@
 {"datos":"{\"v\":1,\"emitidaEn\":1791000000,\"revocadas\":[\"22bc3546ab2eb0ec2a9b68fdf86d474c\"]}","firma":"YycDDst6oToxfkLYm6IEuCExuhQNPlTDjGCe36NskeDxMx2cKiBQEv9V_yy7CU2HF-PGzHep2ERghSftDO5bKA"}
 
 # Solicitud de recuperación (ejemplo, payload con "recupera"):
-Recuperar licencia SPVI
-Nombre: Prueba Compatibilidad Spvi
+Recuperar licencia Shalev
+Nombre: Prueba Compatibilidad Shalev
 Carné de identidad: 00000000000
 Teléfono: +5351815604
 Licencia anterior: 7c9e6679-7425-40de-944b-e07fc1f90ae7

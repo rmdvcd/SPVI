@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace = "cu.spvi.data"
+    namespace = "cu.shalev.data"
     compileSdk = 35
 
     defaultConfig {

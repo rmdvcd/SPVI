@@ -1,4 +1,16 @@
-# SPVI - Historial de desarrollo
+# Shalev - Historial de desarrollo
+
+## 2026-10-20 - Renombrado a Shalev y ajustes de filtros (0.31.0)
+
+**(1) Nombre.** La app pasa de SPVI a **Shalev**: etiqueta del icono, textos de pantalla, `rootProject.name`, paquete `cu.shalev.*` (módulos `:app`, `:data`, `:domain`, `:licencia`, `:core`, `:designsystem`), clases `Shalev*`, tareas Gradle (`shalevTests`, `shalevCheck`, `shalevPermisos`, `shalevRelease`, `shalevInstrumentedTests`), esquema Room `cu.shalev.data.db.ShalevDatabase`, base de datos `shalev.db`, respaldo `.shalev` (formato `spvi-respaldo`), nombres de archivo exportados (`Shalev_*`), carpeta `Pictures/Shalev`, servicio NSD `Shalev-*`, User-Agent y toda la documentación. **No cambia** el contrato con GL ni el de los ficheros ya escritos: se conservan `SPVI2:`, `SPVI1:`, `SPVIR1:`, el prefijo `deviceId = "SPVI:"`, `SPVI-VINC1:`, `SPVI-REV|`, la magia `SPVIBAK`, las etiquetas HKDF/AAD del canal cifrado, el tipo `spVi` del registro de prueba y los alias del Keystore (`spvi_aead_v1`, `spvi_device_ecdh_v1`, `spvi_licencia_firma_v1`). Cambiar cualquiera de ellos rompería licencias ya emitidas, la vinculación entre apps o las claves guardadas en el teléfono. Como el paquete cambia de nombre, la app se instala **como una app nueva**: no hereda datos, prueba ni vinculaciones de la anterior.
+
+**(2) Filtro de Registros  Movimientos.** La ventana de filtro ya no muestra la sección ni el aviso de importe: solo el período (y las fechas si es personalizado). Se retiran `TextosRegistros.SIN_IMPORTE_EN_MOVIMIENTOS` y el `Seccion("Importe")` que se dibujaba siempre.
+
+**(3) Filtro de Inventario.** El combo **Estado** queda en **Todos, Stock bajo, Stock crítico, Próximos a caducar y Sin existencia** (`ALERTAS_FILTRO`). Los avisos de insumos y el nombre repetido siguen existiendo en Inicio y en la ficha, pero ya no se ofrecen como filtro de la lista.
+
+**(4) Manual y Ayuda.** `MANUAL_USUARIO.md` recoge los dos filtros y corrige las secciones reales de la Ayuda. `AyudaContenido` ańade el tema **Buscar y filtrar el inventario** y aclara que en Movimientos solo se filtra por fecha.
+
+**Pruebas.** `shalevTests` en verde, incluido el caso nuevo `filtroDeEstadoSoloOfreceLasCincoOpciones`. `shalevCheck` y `:app:assembleDebug` en verde tras limpiar las cachés incrementales (el paquete anterior dejaba clases `cu.spvi.*` en `build/`). APK debug instalado y abierto en el teléfono 4bc9f8f3.
 
 ## 2026-10-19 - Auditoría de UI: chips de Precios y remates de accesibilidad (0.31.0)
 
@@ -6,11 +18,11 @@ Se auditó la interfaz con `ui-ux-pro-max` y se contrastaron sus propuestas con 
 
 **(1) Precios.** Los tres chips de método de pago (Cualquier pago, Efectivo, Transferencia) pasan a `FlowRow` con separación y alineación centrada. Antes, a 360 dp, Transferencia se comprimía a 34 px y el texto se cortaba; ahora baja a una segunda fila y conserva su ancho mínimo. La prueba `elChipDeTransferenciaNoSeAplastaEnElFormularioDePrecios` mide el ancho y falló en rojo antes del cambio.
 
-**(2) Inicio y componentes.** El subtítulo de `SpviAccordionCard` se oculta cuando la tarjeta está abierta: el total de «Ventas» ya no aparece dos veces. `SpviCard` marca su título como encabezado para TalkBack. `SpviStatusBanner` muestra un chevron cuando es clicable y no tiene una acción propia. `SpviIconAction` y `SpviListItem` solo anuncian `selected` cuando es verdadero, no como «no seleccionado» en cada fila.
+**(2) Inicio y componentes.** El subtítulo de `ShalevAccordionCard` se oculta cuando la tarjeta está abierta: el total de «Ventas» ya no aparece dos veces. `ShalevCard` marca su título como encabezado para TalkBack. `ShalevStatusBanner` muestra un chevron cuando es clicable y no tiene una acción propia. `ShalevIconAction` y `ShalevListItem` solo anuncian `selected` cuando es verdadero, no como «no seleccionado» en cada fila.
 
-**(3) Filtros, onboarding y salida.** En Inventario, Servicios y Registros el contador del filtro va en la descripción del botón («Filtrar, 2 filtros activos») y el badge queda decorativo, para no leer un número suelto. «Ahora no» del onboarding usa el icono de saltar en vez del reloj, que se confundía con «más tarde». La confirmación de «Salir sin guardar» usa el icono de salida (`SpviIcons.Salir`), no la papelera, tanto en `GuardiaCambios` como en `SpviBottomSheet`.
+**(3) Filtros, onboarding y salida.** En Inventario, Servicios y Registros el contador del filtro va en la descripción del botón («Filtrar, 2 filtros activos») y el badge queda decorativo, para no leer un número suelto. «Ahora no» del onboarding usa el icono de saltar en vez del reloj, que se confundía con «más tarde». La confirmación de «Salir sin guardar» usa el icono de salida (`ShalevIcons.Salir`), no la papelera, tanto en `GuardiaCambios` como en `ShalevBottomSheet`.
 
-**Pruebas.** `AuditoriaUiTest` añade 7 casos: encabezado de tarjeta, subtítulo de acordeón, `selected` verdadero/falso en botón y fila, descripción de filtros con plural y ancho del chip a 360 dp. Antes de implementar, los 5 casos de los arreglos fallaron; el de `selected = true` pasó como control y el séptimo (descripción del filtro) se añadió con el helper. `spviTests`: **905 casos JVM en verde** (19 `:core` + 114 `:licencia` + 250 `:domain` + 91 `:data` + 34 `:designsystem` + **397** `:app`). `spviCheck`: **OK**. `:app:verifyRoborazziDebug`: **verde** tras regenerar **38 PNG** de este lote (11 capturas de Inicio, 2 de Precios, 4 de onboarding y los diálogos de salida de Perfil e Inventario, × claro/oscuro); los 30 de Inventario ya venían de la retirada del OCR. No se reinstaló el APK ni se probó con TalkBack o en landscape; la accesibilidad se comprobó por semántica de Compose y por las capturas.
+**Pruebas.** `AuditoriaUiTest` añade 7 casos: encabezado de tarjeta, subtítulo de acordeón, `selected` verdadero/falso en botón y fila, descripción de filtros con plural y ancho del chip a 360 dp. Antes de implementar, los 5 casos de los arreglos fallaron; el de `selected = true` pasó como control y el séptimo (descripción del filtro) se añadió con el helper. `shalevTests`: **905 casos JVM en verde** (19 `:core` + 114 `:licencia` + 250 `:domain` + 91 `:data` + 34 `:designsystem` + **397** `:app`). `shalevCheck`: **OK**. `:app:verifyRoborazziDebug`: **verde** tras regenerar **38 PNG** de este lote (11 capturas de Inicio, 2 de Precios, 4 de onboarding y los diálogos de salida de Perfil e Inventario, × claro/oscuro); los 30 de Inventario ya venían de la retirada del OCR. No se reinstaló el APK ni se probó con TalkBack o en landscape; la accesibilidad se comprobó por semántica de Compose y por las capturas.
 
 ## 2026-10-19 - Se retira el escáner OCR de inventario (0.31.0)
 
@@ -18,7 +30,7 @@ Por decisión del dueño, el escáner OCR de inventario se elimina del proyecto.
 
 Se retiran `docs/ESCANEO_OCR.md` y `docs/OPENCODE_ESCANEO_OCR.md`; las entradas anteriores de este historial que los enlazan son históricas. PP-Layout/ONNX nunca llegó a implementarse y sale del alcance.
 
-**Pruebas.** `spviTests`: **898 casos JVM en verde** (19 `:core` + 114 `:licencia` + 250 `:domain` + 91 `:data` + 34 `:designsystem` + 390 `:app`); son **24 menos** que los 922 anteriores: los 25 tests del escáner retirados menos 1 prueba de limpieza que se había añadido antes de retirarlo. `spviCheck`: **OK** (la primera pasada falló al empaquetar por `Java heap space` con `-Xmx3072m`; con `-Xmx4g` terminó en verde). `verifyRoborazziDebug`: **527 capturas en verde** tras regenerar las **30 doradas** de Inventario (15 × claro/oscuro) que llevaban el icono; ningún otro PNG cambia. En el teléfono 4bc9f8f3 (Android 15, API 35), APK debug instalado: la barra de Inventario muestra solo **Filtrar** y **Exportar**, sin **Escanear**, y la lista sigue operativa.
+**Pruebas.** `shalevTests`: **898 casos JVM en verde** (19 `:core` + 114 `:licencia` + 250 `:domain` + 91 `:data` + 34 `:designsystem` + 390 `:app`); son **24 menos** que los 922 anteriores: los 25 tests del escáner retirados menos 1 prueba de limpieza que se había añadido antes de retirarlo. `shalevCheck`: **OK** (la primera pasada falló al empaquetar por `Java heap space` con `-Xmx3072m`; con `-Xmx4g` terminó en verde). `verifyRoborazziDebug`: **527 capturas en verde** tras regenerar las **30 doradas** de Inventario (15 × claro/oscuro) que llevaban el icono; ningún otro PNG cambia. En el teléfono 4bc9f8f3 (Android 15, API 35), APK debug instalado: la barra de Inventario muestra solo **Filtrar** y **Exportar**, sin **Escanear**, y la lista sigue operativa.
 
 ## 2026-10-19 - El seed de prueba con fotos de verdad, sin red y con licencia redistribuible (0.31.0)
 
@@ -32,15 +44,15 @@ Se retiran `docs/ESCANEO_OCR.md` y `docs/OPENCODE_ESCANEO_OCR.md`; las entradas 
 
 **(4) Créditos.** `docs/CREDITOS_FOTOS_SEED.md` lista las 38 con título original, autor, licencia y enlace a Commons (copia dentro de los propios assets, `CREDITOS.md`). Las CC BY-SA se comparten bajo la misma licencia por ser versiones reducidas; las CC BY solo piden atribución; las CC0 y de dominio público se acreditan igual, por trazabilidad.
 
-**Pruebas.** Primero en rojo, en `OrquestadorSeedTest`: `fotosIncluidasEnProductosYServicios` (cada producto no elaborado y cada servicio llevan la foto de **su** clave, el elaborado no la pide, el insumo tampoco) y `unaFotoQueFaltaNoAbortaElSeed` (con el almacén de fotos fallando, el seed termina `Ok` y todo queda sin foto). Se comprobó que muerden de verdad con una **mutación temporal** (foto siempre `Err`) que puso las dos en rojo, y se revirtió. `spviTests`: **922 casos JVM en verde**; `spviCheck`: **OK**; `mergeReleaseAssets` no lleva ninguna de las 38 (solo debug). En el teléfono 4bc9f8f3 (Android 15, API 35), APK debug: Ajustes › Generar datos de prueba › «Seed listo.», Inventario y Servicios muestran las fotos elegidas, los dos Elaborados salen sin foto y `files/fotos` queda con **38 archivos** (comprobado con `run-as`). Commit `a1743cb`, **CI verde** (run `39198204810`).
+**Pruebas.** Primero en rojo, en `OrquestadorSeedTest`: `fotosIncluidasEnProductosYServicios` (cada producto no elaborado y cada servicio llevan la foto de **su** clave, el elaborado no la pide, el insumo tampoco) y `unaFotoQueFaltaNoAbortaElSeed` (con el almacén de fotos fallando, el seed termina `Ok` y todo queda sin foto). Se comprobó que muerden de verdad con una **mutación temporal** (foto siempre `Err`) que puso las dos en rojo, y se revirtió. `shalevTests`: **922 casos JVM en verde**; `shalevCheck`: **OK**; `mergeReleaseAssets` no lleva ninguna de las 38 (solo debug). En el teléfono 4bc9f8f3 (Android 15, API 35), APK debug: Ajustes › Generar datos de prueba › «Seed listo.», Inventario y Servicios muestran las fotos elegidas, los dos Elaborados salen sin foto y `files/fotos` queda con **38 archivos** (comprobado con `run-as`). Commit `a1743cb`, **CI verde** (run `39198204810`).
 
-**Corrección de una cifra de las entradas anteriores.** `spviTests` **no** corre los tests de capturas: el `Test` de `:app` excluye `**/capturas/**` salvo cuando la tarea invocada es de Roborazzi (`app/build.gradle.kts`, línea 219), así que los 137 `@Test` de `app/src/test/.../capturas/` (que `recordRoborazziDebug` graba como PNG) **no cuentan** en `spviTests`: `:app` corre 414, no 551, y el total honesto es **922** (19 `:core` + 114 `:licencia` + 250 `:domain` + 91 `:data` + 34 `:designsystem` + 414 `:app`). Se corrigió el texto en `docs/VERIFICACION.md` y en `AGENTS.md`.
+**Corrección de una cifra de las entradas anteriores.** `shalevTests` **no** corre los tests de capturas: el `Test` de `:app` excluye `**/capturas/**` salvo cuando la tarea invocada es de Roborazzi (`app/build.gradle.kts`, línea 219), así que los 137 `@Test` de `app/src/test/.../capturas/` (que `recordRoborazziDebug` graba como PNG) **no cuentan** en `shalevTests`: `:app` corre 414, no 551, y el total honesto es **922** (19 `:core` + 114 `:licencia` + 250 `:domain` + 91 `:data` + 34 `:designsystem` + 414 `:app`). Se corrigió el texto en `docs/VERIFICACION.md` y en `AGENTS.md`.
 
 ## 2026-10-18 - El escáner OCR de inventario, terminado y ajustado con el teléfono (0.31.0)
 
 El asistente de escaneo del merge #44 llegó sin compilar y sin pruebas; en este lote se terminó (lógica, ViewModel y pantalla), se probó en el teléfono y se corrigieron con esa medición los tres defectos de geometría que impedían importar una lista impresa normal. Todo sin red: ML Kit Text Recognition v2 latino empaquetado, sin descargas dinámicas ni telemetría.
 
-**(1) La lógica, fuera de Android.** `EscanerInventarioLogic.kt` reconstruye la tabla por coordenadas (sin tabuladores ni barras), mapea columnas a campos, arma las filas en revisión y revisa el lote con los validadores del dominio. `EscanerInventarioViewModel.kt` se queda con lo que depende de Android (imagen + ML Kit + estado) y no usa textos: los errores son tipos (`ErrorEscaneo`) que la pantalla traduce. La pantalla es un asistente de 3 pasos (tipo y campos + foto → columnas → revisión) con `Spvi*`; los obligatorios de producto son nombre, categoría, cantidad, costo y venta, y los de insumo nombre, cantidad, costo y unidad, y no se pueden desmarcar (comprobado en el teléfono por el estado `checkable`/`enabled` de la interfaz).
+**(1) La lógica, fuera de Android.** `EscanerInventarioLogic.kt` reconstruye la tabla por coordenadas (sin tabuladores ni barras), mapea columnas a campos, arma las filas en revisión y revisa el lote con los validadores del dominio. `EscanerInventarioViewModel.kt` se queda con lo que depende de Android (imagen + ML Kit + estado) y no usa textos: los errores son tipos (`ErrorEscaneo`) que la pantalla traduce. La pantalla es un asistente de 3 pasos (tipo y campos + foto → columnas → revisión) con `Shalev*`; los obligatorios de producto son nombre, categoría, cantidad, costo y venta, y los de insumo nombre, cantidad, costo y unidad, y no se pueden desmarcar (comprobado en el teléfono por el estado `checkable`/`enabled` de la interfaz).
 
 **(2) Nada se guarda sin revisar y confirmar.** Se validan **todas** las filas antes de insertar ninguna; si alguna falla no entra nada y se señala la fila y el campo. El guardado usa los casos de uso existentes fila por fila y **quita cada fila al guardarse**, así un reintento tras un fallo parcial no duplica y se informa cuántos entraron y cuál quedó pendiente. La cantidad del producto es en unidades enteras (como el formulario) y la del insumo en milésimas; una categoría vacía se muestra a la vista como «Otros» (`Categorias.OTROS`), editable, y «Insumos»/«Elaborado» se rechazan con su motivo porque se crean en sus pantallas. La unidad se busca contra `UnidadMedida` y, si no se reconoce, **no se inventa**: la fila se señala.
 
@@ -51,7 +63,7 @@ El asistente de escaneo del merge #44 llegó sin compilar y sin pruebas; en este
 
 **(4) PP-Layout/ONNX: retirado y bloqueado.** La detección de disposición con modelo ONNX **no está implementada**: no hay artefacto con licencia de redistribución, procedencia y contrato de salida verificables, así que `onnxruntime-android` salió de `gradle/libs.versions.toml` y de `:app` (declarar el runtime solo engordaba el APK) y los pasos exactos para reincorporarlo quedan en `docs/ESCANEO_OCR.md`. El fallback de ML Kit se conserva: sin estructura confirmada, **una línea = un registro** con aviso visible.
 
-**Pruebas.** `spviTests`: **920 casos JVM en verde** (19 `:core` + 114 `:licencia` + 248 `:domain` + 91 `:data` + 34 `:designsystem` + 414 `:app`; cifra corregida el 2026-10-19: los 137 tests de `app/src/test/.../capturas/` **no** corren en `spviTests`); los 414 de `:app` incluyen los 19 tests del escáner del merge #44 —que existían pero no corrían porque el merge no compilaba— y **5 nuevos** de `EscanerInventarioLogicTest` (19 en total): corte de columnas pegadas, hueco de palabra que no corta, nombre que desborda su columna y encabezado bajo un título, todos en rojo antes del arreglo. `spviCheck`: **OK**. `verifyRoborazziDebug`: **527 capturas en verde**, ninguna cambia. En el teléfono 4bc9f8f3 (Android 15, API 35), APK debug, con tres PNG generados para la prueba: **productos 43 → 47** (4 filas correctas, encabezado mapeado solo), **insumos → 50** (3 filas con unidad `kg` y cantidades `12.5`/`8.25`/`3.75`) y el **párrafo sin tabla**: aviso de estructura no confirmada, «No se pudo leer “Cantidad” en la fila 1» y **nada guardado** (sigue con 50). Se regeneraron también los datos de ejemplo del teléfono (Ajustes › Generar datos de prueba), que cierra el pendiente de los nombres del catálogo sin unidad pegada.
+**Pruebas.** `shalevTests`: **920 casos JVM en verde** (19 `:core` + 114 `:licencia` + 248 `:domain` + 91 `:data` + 34 `:designsystem` + 414 `:app`; cifra corregida el 2026-10-19: los 137 tests de `app/src/test/.../capturas/` **no** corren en `shalevTests`); los 414 de `:app` incluyen los 19 tests del escáner del merge #44 —que existían pero no corrían porque el merge no compilaba— y **5 nuevos** de `EscanerInventarioLogicTest` (19 en total): corte de columnas pegadas, hueco de palabra que no corta, nombre que desborda su columna y encabezado bajo un título, todos en rojo antes del arreglo. `shalevCheck`: **OK**. `verifyRoborazziDebug`: **527 capturas en verde**, ninguna cambia. En el teléfono 4bc9f8f3 (Android 15, API 35), APK debug, con tres PNG generados para la prueba: **productos 43 → 47** (4 filas correctas, encabezado mapeado solo), **insumos → 50** (3 filas con unidad `kg` y cantidades `12.5`/`8.25`/`3.75`) y el **párrafo sin tabla**: aviso de estructura no confirmada, «No se pudo leer “Cantidad” en la fila 1» y **nada guardado** (sigue con 50). Se regeneraron también los datos de ejemplo del teléfono (Ajustes › Generar datos de prueba), que cierra el pendiente de los nombres del catálogo sin unidad pegada.
 
 ## 2026-10-18 - El filtro por alerta de Inicio y la compilación del escaneo OCR (0.31.0)
 
@@ -59,7 +71,7 @@ El asistente de escaneo del merge #44 llegó sin compilar y sin pruebas; en este
 
 **(2) El merge del escaneo OCR (#44) llegó sin compilar.** Dos errores que impedían construir el APK: `InventarioContent` llamaba a `onNavigate` sin tener ese parámetro (se añade con valor por defecto al final: las capturas y los tests que montan el `Content` no cambian) y `EscanerInventarioViewModel` declaraba a la vez `var error` y `fun setError(...)`, que chocan en la JVM (la función pasa a `mostrarError`). Con eso el escaneo se puede probar en el teléfono: el botón de la barra de Inventario abre el asistente («¿Qué tipo de registros vas a importar?», Productos/Insumos y los campos a extraer) y ATRÁS vuelve a la lista, sin crash. El PR tampoco regeneró las capturas de Inventario, que ahora llevan ese icono **Escanear** en la barra: 15 capturas × claro/oscuro = **30 PNG** regenerados, y ningún otro cambia.
 
-**Pruebas.** `spviTests`: **896 casos JVM en verde** (19 `:core` + 114 `:licencia` + 248 `:domain` + 91 `:data` + 34 `:designsystem` + 390 `:app`; la cifra «1033» que llegó a escribirse aquí contaba los tests de capturas de `:app`, que `spviTests` no ejecuta —los graba `recordRoborazziDebug`—, corregido el 2026-10-19). `spviCheck`: **OK**. `verifyRoborazziDebug`: **527 en verde** tras regenerar las 30 doradas de Inventario. En el teléfono 4bc9f8f3 (Android 15), con el arreglo: la alerta «Sin existencia» abre el Inventario con «1 de 43 productos» y «Sal fina»; la barra inferior vuelve a Inicio; volver a Inventario conserva el filtro; ATRÁS desde Inventario vuelve a Inicio; la alerta «Insumo bajo» deja «3 de 43 productos» con «Leche en polvo». El test nuevo `InventarioViewModelTest.laAlertaPendienteSeAplicaUnaVezYSeConsume` cubre el canal; el fallo real (handle de Hilt ≠ handle de la entrada) se vio en el teléfono con logs temporales, ya retirados.
+**Pruebas.** `shalevTests`: **896 casos JVM en verde** (19 `:core` + 114 `:licencia` + 248 `:domain` + 91 `:data` + 34 `:designsystem` + 390 `:app`; la cifra «1033» que llegó a escribirse aquí contaba los tests de capturas de `:app`, que `shalevTests` no ejecuta —los graba `recordRoborazziDebug`—, corregido el 2026-10-19). `shalevCheck`: **OK**. `verifyRoborazziDebug`: **527 en verde** tras regenerar las 30 doradas de Inventario. En el teléfono 4bc9f8f3 (Android 15), con el arreglo: la alerta «Sin existencia» abre el Inventario con «1 de 43 productos» y «Sal fina»; la barra inferior vuelve a Inicio; volver a Inventario conserva el filtro; ATRÁS desde Inventario vuelve a Inicio; la alerta «Insumo bajo» deja «3 de 43 productos» con «Leche en polvo». El test nuevo `InventarioViewModelTest.laAlertaPendienteSeAplicaUnaVezYSeConsume` cubre el canal; el fallo real (handle de Hilt ≠ handle de la entrada) se vio en el teléfono con logs temporales, ya retirados.
 
 ## 2026-10-18 - Móvil: cinco correcciones de la revisión del dueño (0.31.0)
 
@@ -67,15 +79,15 @@ Cinco encargos sobre la app instalada; la versión declarada sigue siendo 0.30.0
 
 **(1) Inicio → alerta → Inventario filtrado.** Pulsar una tarjeta de alerta empujaba `Route.Inventario(alerta = …)`, que **es el destino de una pestaña**: la barra inferior (`navigateTopLevel` = `popUpTo(start){saveState=true}` + `restoreState=true`) reproducía después esa entrada guardada, así que cualquier vuelta a una sección aterrizaba en el Inventario filtrado y BACK salía de la app —entrada fantasma, sin excepción en el log—. Ahora se abre la **pestaña** (`navigateTopLevel(Route.Inventario())`) y el filtro entra por `AlertaPendiente` (ver la entrada del arreglo, más abajo): la entrega por el `SavedStateHandle` de la entrada no funcionaba. Se retiró `InicioLogic.destinoAlerta`.
 
-**(2) Ficha de una transferencia.** «Ver la venta» quedaba pegado a la izquierda (medido en el teléfono antes del arreglo: x 156–209 de 1080) porque los `Spvi*Button` envuelven el botón en un `TooltipBox` y el `Modifier.align(…)` del llamador se aplicaba a un nodo interno, no al botón. Entra en la misma fila centrada (`SpviButtonRow`) que Modificar/Anular —después de «Anular venta»— desde `AccionesFichaVenta(..., verVenta = …)`; sin turno abierto queda solo y centrado. No se tocó el sistema de diseño para esto.
+**(2) Ficha de una transferencia.** «Ver la venta» quedaba pegado a la izquierda (medido en el teléfono antes del arreglo: x 156–209 de 1080) porque los `Shalev*Button` envuelven el botón en un `TooltipBox` y el `Modifier.align(…)` del llamador se aplicaba a un nodo interno, no al botón. Entra en la misma fila centrada (`ShalevButtonRow`) que Modificar/Anular —después de «Anular venta»— desde `AccionesFichaVenta(..., verVenta = …)`; sin turno abierto queda solo y centrado. No se tocó el sistema de diseño para esto.
 
 **(3) Nombres del catálogo.** El catálogo de datos de ejemplo repetía la unidad en el nombre («Pan (lb)», «Hilo (bobina)»): todos los productos y ese insumo quedan sin sufijo, porque la unidad tiene su columna. Los dos servicios conservan «(lb)»/«(pieza)»: no tienen campo de unidad. Es solo dato semilla —los nombres ya copiados a `detalle_venta`/`movimiento` son históricos y no se reescriben—, así que en un teléfono ya sembrado se ven al regenerar los datos de ejemplo.
 
 **(4) Precios e importes (auditoría, sin bug).** Cambiar un precio **no** altera las ventas pasadas: el importe se congela en `detalle_venta` al registrar (`PlanificadorVenta`), `ProductoRepositoryImpl.actualizarPrecios` solo escribe `producto` y ninguna consulta del histórico se une con el catálogo. Lo único intencional es que, al *modificar* una venta, las líneas nuevas usan el precio actual. Se añadieron tests (dominio y Room) para que siga siendo así.
 
-**(5) Conteo de billetes al cerrar turno.** Estaba implementado (commit `78ca9ae`) pero no se veía: los campos por denominación colgaban de `if (porBilletes)` (por defecto `false`) y el botón que los activaba es de solo icono, así que parecía que no existía. Ahora las denominaciones se ven **de entrada**, «Omitir el conteo de billetes» (esquina inferior derecha, nuevo parámetro `esquina` de `SpviDialog`) pasa al total suelto —y desde ahí se vuelve a contar— y `CajaForm.algoContado` impide confirmar sin contar al menos un billete o moneda: declarar 0 sin contar descuadraría la caja, así que el 0 explícito se hace con el total. En el inventario, «Omitir el conteo de inventario» guarda el conteo con **contado = esperado** y motivo «Conteo de inventario omitido»: `comprobarConteo` exige que las claves del conteo coincidan con la instantánea actual (una lista vacía se rechaza) y el motivo deja la traza en `ResumenConteo`, en el PDF/Excel del turno y en el respaldo. «Atrás» y editar un campo reinician la omisión para no ignorar lo escrito.
+**(5) Conteo de billetes al cerrar turno.** Estaba implementado (commit `78ca9ae`) pero no se veía: los campos por denominación colgaban de `if (porBilletes)` (por defecto `false`) y el botón que los activaba es de solo icono, así que parecía que no existía. Ahora las denominaciones se ven **de entrada**, «Omitir el conteo de billetes» (esquina inferior derecha, nuevo parámetro `esquina` de `ShalevDialog`) pasa al total suelto —y desde ahí se vuelve a contar— y `CajaForm.algoContado` impide confirmar sin contar al menos un billete o moneda: declarar 0 sin contar descuadraría la caja, así que el 0 explícito se hace con el total. En el inventario, «Omitir el conteo de inventario» guarda el conteo con **contado = esperado** y motivo «Conteo de inventario omitido»: `comprobarConteo` exige que las claves del conteo coincidan con la instantánea actual (una lista vacía se rechaza) y el motivo deja la traza en `ResumenConteo`, en el PDF/Excel del turno y en el respaldo. «Atrás» y editar un campo reinician la omisión para no ignorar lo escrito.
 
-**Pruebas.** `spviTests`: **896 tests JVM en verde**; `spviCheck`: **OK**; `verifyRoborazziDebug`: **527 capturas en verde** tras regenerar las dos doradas que cambian (`04p_registros_ficha_transferencia` por el botón centrado y `01f_inicio_dialogo_cerrar_turno` por los billetes y «Omitir», en claro y oscuro). Nuevas: `CajaConteoUiTest` (Robolectric: los billetes se ven de entrada, ✓ deshabilitado sin contar, «Omitir» pasa al total suelto, el 0 escrito a mano sí vale y 23 × 100 suma 2,300.00 «Cuadra»), caso de alerta en `InventarioViewModelTest` (el `SavedStateHandle` aplica el filtro y lo consume), `CatalogoBodegaTest.nombresSinUnidadPegada`, el precio congelado en `VentaFlujoTest` (producto y costo de un elaborado) y `RepositoriosRoomTest.cambiarElPrecioNoAlteraElImporteDeLoVendido`, comprobado **en rojo** reescribiendo a propósito el detalle desde `actualizarPrecios` (esperado 30.00 CUP, obtenido 99.00 CUP) y en verde después. En el teléfono 4bc9f8f3 (Android 15): «Ver la venta» centrado (x 515–568) y, con el turno abierto, la fila [Modificar][Anular][Ver la venta] (x 374–709, centro 541); cierre de turno completo con el conteo por billetes (23 × 100 = 2,300.00, «Cuadra») y los dos «Omitir» en la esquina, cerrando de verdad sin error de inventario cambiado. `:data:connectedDebugAndroidTest`: **60/60 en verde**.
+**Pruebas.** `shalevTests`: **896 tests JVM en verde**; `shalevCheck`: **OK**; `verifyRoborazziDebug`: **527 capturas en verde** tras regenerar las dos doradas que cambian (`04p_registros_ficha_transferencia` por el botón centrado y `01f_inicio_dialogo_cerrar_turno` por los billetes y «Omitir», en claro y oscuro). Nuevas: `CajaConteoUiTest` (Robolectric: los billetes se ven de entrada, ✓ deshabilitado sin contar, «Omitir» pasa al total suelto, el 0 escrito a mano sí vale y 23 × 100 suma 2,300.00 «Cuadra»), caso de alerta en `InventarioViewModelTest` (el `SavedStateHandle` aplica el filtro y lo consume), `CatalogoBodegaTest.nombresSinUnidadPegada`, el precio congelado en `VentaFlujoTest` (producto y costo de un elaborado) y `RepositoriosRoomTest.cambiarElPrecioNoAlteraElImporteDeLoVendido`, comprobado **en rojo** reescribiendo a propósito el detalle desde `actualizarPrecios` (esperado 30.00 CUP, obtenido 99.00 CUP) y en verde después. En el teléfono 4bc9f8f3 (Android 15): «Ver la venta» centrado (x 515–568) y, con el turno abierto, la fila [Modificar][Anular][Ver la venta] (x 374–709, centro 541); cierre de turno completo con el conteo por billetes (23 × 100 = 2,300.00, «Cuadra») y los dos «Omitir» en la esquina, cerrando de verdad sin error de inventario cambiado. `:data:connectedDebugAndroidTest`: **60/60 en verde**.
 
 **Hallazgo aparte (no era del encargo):** los tres tests de migración de `EsquemaTest` (4→5, 5→6 y 6→7) fallaban con «duplicate column name: clienteFijo»: construyen la BD vieja recortando el `12.json` y no quitaban `transaccion.clienteFijo`, que la v10 añade, así que `MIGRACION_9_10` la volvía a añadir. Es un fallo del fixture, no de las migraciones —un teléfono real que venga de la v9 sí la necesita—; ahora el recorte incluye esa columna (y la tabla `cliente_fijo`) en los esquemas anteriores a la v10.
 
@@ -85,7 +97,7 @@ Decisiones del dueño: billetes CUP, incluidos **5000 y 20000**; ajuste del inve
 
 Room pasa a v13 con `conteoCierreJson` nullable y migración aditiva 12→13. La declaración no cambia stock. En el cierre propio, comprobación de existencias, ajustes, movimientos AJUSTE y resumen/cierre van en una transacción. Para empleados, la principal aplica en la transacción de aprobación y la secundaria cierra sin repetir ajustes. Se comparan las existencias antes de aplicar, se protege la idempotencia y se liga la aprobación al UUID y al contenido del conteo. Los reenvíos no borran autorizaciones de la principal. Un conteo sin aprobación impide el cierre remoto; los turnos anteriores sin conteo conservan compatibilidad. Se requiere actualizar ambas apps para usar la conciliación nueva.
 
-Pruebas añadidas: cálculo/validación/exportación en dominio, ida/vuelta Room-DTO-JSON, migración 12→13 instrumentada y JDBC, cierre con ajustes y rollback ante stock cambiado, y sincronización con dos bases de datos (declaración, aprobación y reenvío sin duplicar). **No ejecutadas** por falta de JDK/SDK. El análisis sintáctico Tree-sitter de los Kotlin cambiados no detectó errores (no es compilación). Se ejecutaron `git diff --check` y una prueba Python/SQLite del SQL aditivo contra el esquema v12 (conserva fondo/contado, nueva columna nullable). `./gradlew spviTests` no pudo iniciar por falta de Java; API mínima no pudo ejecutarse por falta de ANDROID_HOME. **Pendientes: generar `13.json` con Room/KSP, compilar, ejecutar toda la suite, capturas y dos teléfonos. No es un release verificado.**
+Pruebas añadidas: cálculo/validación/exportación en dominio, ida/vuelta Room-DTO-JSON, migración 12→13 instrumentada y JDBC, cierre con ajustes y rollback ante stock cambiado, y sincronización con dos bases de datos (declaración, aprobación y reenvío sin duplicar). **No ejecutadas** por falta de JDK/SDK. El análisis sintáctico Tree-sitter de los Kotlin cambiados no detectó errores (no es compilación). Se ejecutaron `git diff --check` y una prueba Python/SQLite del SQL aditivo contra el esquema v12 (conserva fondo/contado, nueva columna nullable). `./gradlew shalevTests` no pudo iniciar por falta de Java; API mínima no pudo ejecutarse por falta de ANDROID_HOME. **Pendientes: generar `13.json` con Room/KSP, compilar, ejecutar toda la suite, capturas y dos teléfonos. No es un release verificado.**
 
 ## 2026-10-17 - Móvil: corregir lo registrado en las cuatro pestañas de Registros (0.31.0)
 
@@ -101,35 +113,35 @@ Descartado: editar el importe de una venta por separado (sale de cantidad × pre
 
 ## 2026-10-17 - Móvil: la ficha del cliente fijo se puede corregir (0.31.0)
 
-En Registros → Clientes, la ficha no permitía arreglar un nombre mal escrito, un carné equivocado o un teléfono viejo: la única salida era quitar el cliente y volver a crearlo (perdiendo, además, el vínculo con sus compras). La ficha gana el botón «Editar» y los dos botones (Editar y Quitar de clientes fijos) pasan a un pie fijo centrado (`SpviBottomSheet` con `footer` y `SpviButtonRow`, que ya centra y separa); antes colgaban del contenido y quedaban a la izquierda. La ventana de corrección reutiliza el formulario de la venta (`FormCliente`/`CampoCliente`): `VentaScreen` extrae `CampoClienteField` para no duplicar la configuración de los campos y `FormCliente.erroresCliente()` valida sin el nº de transacción, que aquí no se toca. Se edita nombre, carné y teléfono; se normaliza como en la venta (nombre sin espacios de más, teléfono E.164). Un carné que ya es de otro cliente no se admite: la regla vive en el repositorio (`ClienteFijoRepository.actualizar` → `false`, además del índice único de Room) y la VM muestra «Ese carné ya es de otro cliente». Al guardar, sus compras anteriores quedan con los datos corregidos (`UPDATE transaccion SET clienteCi, clienteNombre, clienteTelefono` en la misma transacción) y la ficha sigue abierta con el cliente ya corregido: antes el carné era el vínculo, así que corregirlo le borraba el historial y sus transferencias seguían con los datos viejos. De paso, `FLAG_SECURE` de los diálogos pasa al `SecureDialogWindow()` compartido (`common/SecureWindow.kt`): la ventana del diálogo no hereda la de la Activity, así que la ficha, la corrección y `ModificarVenta` lo aplican por su cuenta. Se eliminó un import muerto en `AjustesPantallasUiTest` que impedía compilar todo el androidTest de `:app`.
+En Registros → Clientes, la ficha no permitía arreglar un nombre mal escrito, un carné equivocado o un teléfono viejo: la única salida era quitar el cliente y volver a crearlo (perdiendo, además, el vínculo con sus compras). La ficha gana el botón «Editar» y los dos botones (Editar y Quitar de clientes fijos) pasan a un pie fijo centrado (`ShalevBottomSheet` con `footer` y `ShalevButtonRow`, que ya centra y separa); antes colgaban del contenido y quedaban a la izquierda. La ventana de corrección reutiliza el formulario de la venta (`FormCliente`/`CampoCliente`): `VentaScreen` extrae `CampoClienteField` para no duplicar la configuración de los campos y `FormCliente.erroresCliente()` valida sin el nº de transacción, que aquí no se toca. Se edita nombre, carné y teléfono; se normaliza como en la venta (nombre sin espacios de más, teléfono E.164). Un carné que ya es de otro cliente no se admite: la regla vive en el repositorio (`ClienteFijoRepository.actualizar` → `false`, además del índice único de Room) y la VM muestra «Ese carné ya es de otro cliente». Al guardar, sus compras anteriores quedan con los datos corregidos (`UPDATE transaccion SET clienteCi, clienteNombre, clienteTelefono` en la misma transacción) y la ficha sigue abierta con el cliente ya corregido: antes el carné era el vínculo, así que corregirlo le borraba el historial y sus transferencias seguían con los datos viejos. De paso, `FLAG_SECURE` de los diálogos pasa al `SecureDialogWindow()` compartido (`common/SecureWindow.kt`): la ventana del diálogo no hereda la de la Activity, así que la ficha, la corrección y `ModificarVenta` lo aplican por su cuenta. Se eliminó un import muerto en `AjustesPantallasUiTest` que impedía compilar todo el androidTest de `:app`.
 
-**Pruebas:** nueva `ClientesFijosViewModelTest` (5 casos: la corrección guarda, carné inválido muestra el error del campo, carné de otro cliente no se acepta, al cambiar el carné la ficha sigue abierta con el nuevo, cancelar no cambia nada), comprobada en rojo rompiendo el guardado a propósito; el test instrumentado de `RepositoriosRoomTest` corrige un cliente con una compra por transferencia y exige que la transferencia quede con el carné, el nombre y el teléfono nuevos y que la ficha conserve la compra, en verde en el teléfono 4bc9f8f3 (9 tests) y en rojo sin la corrección de las compras. `spviTests` y `spviCheck` en verde local (869 tests JVM) y `:app`/`:data` androidTest compilan. Pendiente CI y la prueba de la interfaz en el teléfono.
+**Pruebas:** nueva `ClientesFijosViewModelTest` (5 casos: la corrección guarda, carné inválido muestra el error del campo, carné de otro cliente no se acepta, al cambiar el carné la ficha sigue abierta con el nuevo, cancelar no cambia nada), comprobada en rojo rompiendo el guardado a propósito; el test instrumentado de `RepositoriosRoomTest` corrige un cliente con una compra por transferencia y exige que la transferencia quede con el carné, el nombre y el teléfono nuevos y que la ficha conserve la compra, en verde en el teléfono 4bc9f8f3 (9 tests) y en rojo sin la corrección de las compras. `shalevTests` y `shalevCheck` en verde local (869 tests JVM) y `:app`/`:data` androidTest compilan. Pendiente CI y la prueba de la interfaz en el teléfono.
 
 ## 2026-10-16 - Móvil: Inicio abre siempre por arriba (0.31.0 P1)
 
 Inicio aparecía a media lista al abrir la app: sin el título «Alertas de inventario» y con las tarjetas de alerta cortadas por arriba (medido en el teléfono 4bc9f8f3: la fila de alertas 53 px por encima del borde de la lista y el título fuera; dos franjas en vez de las tarjetas). Eran **dos** causas: el `LazyColumn` no tenía estado propio, así que usaba su `rememberLazyListState()` interno —que es `rememberSaveable`— y Android restauraba la posición al reabrir la app; y, además, los datos llegan después del primer dibujo: al insertarse las alertas **por encima** del primer elemento visible, Compose ancla ese elemento para no moverlo y la lista se desplazaba sola (traza temporal: primer fotograma en índice 0 y, 0,7 s después, al llegar las alertas, índice 1 + 139 px). Por decisión del dueño, Inicio empieza siempre por arriba: la lista recibe un `LazyListState` creado con `remember` (no se guarda) y, en la primera carga, vuelve al principio; después la posición es cosa del usuario, así que una alerta nueva mientras lee no le mueve la pantalla.
 
-**Pruebas:** `InicioPeriodoTest` gana dos casos con la lista como referencia: `inicioAbreArribaAunqueSeGuardeLaPosicion` (`StateRestorationTester`: desplaza hasta el Top 3, emula el guardado y la restauración del estado y exige que vuelva a 0; en rojo antes del arreglo, 125) y `alLlegarLasAlertasLaListaSigueArriba` (primer dibujo sin datos y después alertas + resumen: la lista sigue en 0; en rojo antes, 1000). `spviTests` y `verifyRoborazziDebug` en verde —las doradas de Inicio no cambian, porque en el arnés los datos están desde el primer dibujo— y `:app:installDebug` en el teléfono 4bc9f8f3, donde ahora se ve el título y las tarjetas completas al abrir.
+**Pruebas:** `InicioPeriodoTest` gana dos casos con la lista como referencia: `inicioAbreArribaAunqueSeGuardeLaPosicion` (`StateRestorationTester`: desplaza hasta el Top 3, emula el guardado y la restauración del estado y exige que vuelva a 0; en rojo antes del arreglo, 125) y `alLlegarLasAlertasLaListaSigueArriba` (primer dibujo sin datos y después alertas + resumen: la lista sigue en 0; en rojo antes, 1000). `shalevTests` y `verifyRoborazziDebug` en verde —las doradas de Inicio no cambian, porque en el arnés los datos están desde el primer dibujo— y `:app:installDebug` en el teléfono 4bc9f8f3, donde ahora se ve el título y las tarjetas completas al abrir.
 
 ## 2026-10-16 - Móvil: el selector de período vuelve a verse en Inicio, apilado y fijo con el banner (0.31.0 P1)
 
-El selector de período estaba implementado desde la 0.31.0 (P1) pero no se veía ni en el teléfono ni en las capturas: la tarjeta del turno ocupaba toda la fila y el combo quedaba con ancho 0 (medido en el teléfono 4bc9f8f3 antes del arreglo: turno 70→1010 y selector 992→1080 sin texto). Causa: el `Modifier.weight(1f)` del `Row` de `FilaTurnoPeriodo` no llegaba a sus hijos directos — `TurnoContenedor` recibía `modifier` y lo ignoraba (usaba `Modifier.testTag(TURNO)`) y `SpviComboBox` aplicaba el `modifier` del llamador al `Surface` de dentro en vez del `ExposedDropdownMenuBox` raíz. Los dos ya aplican el `modifier` del llamante en su raíz.
+El selector de período estaba implementado desde la 0.31.0 (P1) pero no se veía ni en el teléfono ni en las capturas: la tarjeta del turno ocupaba toda la fila y el combo quedaba con ancho 0 (medido en el teléfono 4bc9f8f3 antes del arreglo: turno 70→1010 y selector 992→1080 sin texto). Causa: el `Modifier.weight(1f)` del `Row` de `FilaTurnoPeriodo` no llegaba a sus hijos directos — `TurnoContenedor` recibía `modifier` y lo ignoraba (usaba `Modifier.testTag(TURNO)`) y `ShalevComboBox` aplicaba el `modifier` del llamador al `Surface` de dentro en vez del `ExposedDropdownMenuBox` raíz. Los dos ya aplican el `modifier` del llamante en su raíz.
 
 Además, media fila no da para el combo: en una pantalla de 360 dp el reparto equitativo dejaba 156 dp y, entre el relleno (32 dp), el círculo del icono (40 dp), la flecha (24 dp) y sus dos huecos (16 + 16 dp), a la etiqueta y a la opción elegida les quedaban 28 dp, así que se partían en 2–4 líneas (medido con Robolectric). El bloque de arriba pasa a ser una columna a todo el ancho: el turno, debajo el selector de período y, debajo, el banner de licencia (que sale de la lista y también queda fijo). `FilaTurnoPeriodo` pasa a `BloqueFijo`; `TurnoContenedor` pierde el parámetro `ajustar` y `SelectorPeriodo` el suyo `modifier` (ya no se usaban). Las 14 doradas de Inicio (claro y oscuro) se regeneraron; las demás no cambian, así que el arreglo del combo es neutro en Inventario, Registros, Servicios y Vinculación (todos le pasan `fillMaxWidth`).
 
-**Pruebas:** nueva `InicioPeriodoTest` (Robolectric, JVM): el selector va debajo del turno, el banner debajo del selector y los tres siguen en el mismo sitio tras desplazar la lista hasta el Top 3 (`performScrollToNode`). En rojo antes del arreglo (selector 0×0) y en verde después. `spviTests` y `verifyRoborazziDebug` en verde; `:app:installDebug` en el teléfono 4bc9f8f3 y comprobado con `uiautomator`.
+**Pruebas:** nueva `InicioPeriodoTest` (Robolectric, JVM): el selector va debajo del turno, el banner debajo del selector y los tres siguen en el mismo sitio tras desplazar la lista hasta el Top 3 (`performScrollToNode`). En rojo antes del arreglo (selector 0×0) y en verde después. `shalevTests` y `verifyRoborazziDebug` en verde; `:app:installDebug` en el teléfono 4bc9f8f3 y comprobado con `uiautomator`.
 
 ## 2026-10-16 - Móvil: checklist de permisos en la primera apertura y Ayuda a la izquierda
 
 La primera apertura muestra UNA ventana (`root/PermisosIniciales.kt`) con el checklist de permisos (cámara, aviso de turno y fotos, cada uno con su para qué) en vez de lanzar los diálogos del sistema sin explicación y el diálogo aparte de fotos («Guardar tu periodo de prueba», eliminado junto a `PermisoRegistroPrueba`/`TextosPrueba`). «Continuar» pide los permisos del sistema de una vez; «Ahora no» o cerrar no insiste y cada función los vuelve a pedir donde hacen falta. La lógica no cambia: se marca lo pedido en ambos repositorios y se relee el registro de la prueba con el permiso nuevo. En Ayuda, el detalle de cada sección y los pasos de cada tema van alineados a la izquierda (antes centrados por la card).
 
-**Pruebas:** pendiente `./gradlew spviTests` y CI.
+**Pruebas:** pendiente `./gradlew shalevTests` y CI.
 
 ## 2026-10-16 - Móvil: auditoría visual completa (292 capturas Roborazzi + teléfono real)
 
-Compilado `:app:assembleDebug` con JDK 17, instalado en el teléfono 4bc9f8f3 (Android 15) y regeneradas las capturas Roborazzi en claro y oscuro (146 por tema). Correcciones: título de `SpviVentana` en `titleMedium` (era `titleLarge`; el design system exige 15sp para diálogos); aviso de la fila de Inventario en 2 líneas (la fecha de vencimiento se cortaba: «Crítico · Vence 0…»); caso `07d_perfil_errores` ahora con `mostrarErrores = true` (antes no mostraba los errores); limpieza de `Icon`/`Checkbox`/`SpviSize` fully-qualified en PagoElectronicoScreen y ServiciosScreen. Descartados como artefactos del arnés (fondo claro de la ventana de prueba en `Content` sin `Scaffold`): textos de Licencia/Migrar en oscuro. El resto observado (pestañas en 2 líneas a 360dp, franja de exportando, pie fijo sobre formularios largos sin desplazar) es el diseño vigente.
+Compilado `:app:assembleDebug` con JDK 17, instalado en el teléfono 4bc9f8f3 (Android 15) y regeneradas las capturas Roborazzi en claro y oscuro (146 por tema). Correcciones: título de `ShalevVentana` en `titleMedium` (era `titleLarge`; el design system exige 15sp para diálogos); aviso de la fila de Inventario en 2 líneas (la fecha de vencimiento se cortaba: «Crítico · Vence 0…»); caso `07d_perfil_errores` ahora con `mostrarErrores = true` (antes no mostraba los errores); limpieza de `Icon`/`Checkbox`/`ShalevSize` fully-qualified en PagoElectronicoScreen y ServiciosScreen. Descartados como artefactos del arnés (fondo claro de la ventana de prueba en `Content` sin `Scaffold`): textos de Licencia/Migrar en oscuro. El resto observado (pestañas en 2 líneas a 360dp, franja de exportando, pie fijo sobre formularios largos sin desplazar) es el diseño vigente.
 
-**Pruebas:** `spviTests` en verde local (incluye la corrección Robolectric offline de `app/build.gradle.kts`, pendiente de CI).
+**Pruebas:** `shalevTests` en verde local (incluye la corrección Robolectric offline de `app/build.gradle.kts`, pendiente de CI).
 
 Registro **histórico** de lo implementado en cada fase y de las suposiciones vigentes en ese momento. Se conserva para trazabilidad; no es una lista de productos o tareas actuales.
 
@@ -137,9 +149,9 @@ Registro **histórico** de lo implementado en cada fase y de las suposiciones vi
 
 ## 2026-10-16 - Móvil: recorte de sobre-ingeniería (auditoría ponytail)
 
-49 ficheros, neto −462 líneas, sin cambio de comportamiento: fuera el flujo envelope v1 muerto en producción (`SolicitudEnvelope`/`RequestPayloadV1` + `EnvelopeV1Test`), campos del payload sin lectores, `texto/esMaestra/ID_MAESTRA` y `formatear()` (a `FakeGl`), `coerceIn`/`movilLocal` duplicados, helper `ByteArray.aHex()` en `:core`, `leerAcotado` único en `:data` (4 bucles + `sha256` por `DigestInputStream`), `SyncJson` desde `SpviJson`, `ms/inst` de `DtoMappers` a las extensiones de `EntityMappers`, flag muerto `soloHttps`; en UI, FAB expandible, `AccionesVinculacion`, contador/medalla, renderizadores, `EjecutorSeed`, sobrecarga de texto secundario, tokens y params especulativos, todo plegado a sus puntos de uso. No se tocó: `IoDispatcher` (idioma Hilt, churn mayor que el ahorro), unificación `Mutex+editar` (cada mapeo difiere), `MemoriaComandos` (su test la usa directo), consts de cabecera/`cifrarFormatoV3`/`chunked` (peor el remedio), `HexFormat` (exige API 34; minSdk 26 sin desugaring).
+49 ficheros, neto −462 líneas, sin cambio de comportamiento: fuera el flujo envelope v1 muerto en producción (`SolicitudEnvelope`/`RequestPayloadV1` + `EnvelopeV1Test`), campos del payload sin lectores, `texto/esMaestra/ID_MAESTRA` y `formatear()` (a `FakeGl`), `coerceIn`/`movilLocal` duplicados, helper `ByteArray.aHex()` en `:core`, `leerAcotado` único en `:data` (4 bucles + `sha256` por `DigestInputStream`), `SyncJson` desde `ShalevJson`, `ms/inst` de `DtoMappers` a las extensiones de `EntityMappers`, flag muerto `soloHttps`; en UI, FAB expandible, `AccionesVinculacion`, contador/medalla, renderizadores, `EjecutorSeed`, sobrecarga de texto secundario, tokens y params especulativos, todo plegado a sus puntos de uso. No se tocó: `IoDispatcher` (idioma Hilt, churn mayor que el ahorro), unificación `Mutex+editar` (cada mapeo difiere), `MemoriaComandos` (su test la usa directo), consts de cabecera/`cifrarFormatoV3`/`chunked` (peor el remedio), `HexFormat` (exige API 34; minSdk 26 sin desugaring).
 
-**Pruebas:** `spviTests`, `spviCheck` (tests + lint + assemble + permisos) y `verifyRoborazziDebug` en verde, doradas intactas. Tres fallos intermedios por ediciones de agentes (import `Text`, variable vecina, `Int`/`Long`) y dos propios del recorte (`open` en renderizadores, colector conflado en `SeedViewModelTest`), todos corregidos.
+**Pruebas:** `shalevTests`, `shalevCheck` (tests + lint + assemble + permisos) y `verifyRoborazziDebug` en verde, doradas intactas. Tres fallos intermedios por ediciones de agentes (import `Text`, variable vecina, `Int`/`Long`) y dos propios del recorte (`open` en renderizadores, colector conflado en `SeedViewModelTest`), todos corregidos.
 
 ## 2026-10-16 - Móvil: textos y proporción de Ayuda
 
@@ -147,27 +159,27 @@ Revisión con `@ui-ux-pro-max` y captura real en el teléfono: la sección DATOS
 
 ## 2026-10-16 - Móvil: se elimina Migrar
 
-Ajustes → Migrar (asistente de 4 pasos + paso de datos por QR Emisor/Receptor, 0.31.0 P6) desaparece por decisión del dueño. Borrados 31 ficheros (`app/migrar/` con `CanalMigracion`, `MigrarRed`/`MigrarModule` Hilt, pantallas y textos; `MigracionUseCases`, `Migracion.kt`, sus tests; `TransferAuthorizationTest`; 18 doradas Roborazzi 09n–09v). En `domain`, fuera `verificarAutorizacionMigracion`/`cederLicencia` de `LicenciaRepository`; en `:licencia`, fuera `TransferAuthorization`, `checkTransferAuthorization` y `transferOut`. Se conserva todo lo de **recuperación**: `recupera`, `aplicarRevocaciones`/`markRevoked`, `lic.migrated_at`/`Outdated`, «Licencia transferida» y `MantenimientoRepository.borrarTodo` (lo usan semilla, caja y vinculación). Para cambiar de teléfono: respaldo `.spvi` + recuperación de la licencia. Actualizados navegación, Ajustes, onboarding (sin paso final), Ayuda, icono, tests, fakes y documentos (README, MANUAL, Contexto, FORMATOS sin §2, LICENSE_CLIENT §7 como retirado, SECURITY, UI_UX_IX, CAPTURAS, Pendiente, AGENTS, VINCULACION H7).
+Ajustes → Migrar (asistente de 4 pasos + paso de datos por QR Emisor/Receptor, 0.31.0 P6) desaparece por decisión del dueño. Borrados 31 ficheros (`app/migrar/` con `CanalMigracion`, `MigrarRed`/`MigrarModule` Hilt, pantallas y textos; `MigracionUseCases`, `Migracion.kt`, sus tests; `TransferAuthorizationTest`; 18 doradas Roborazzi 09n–09v). En `domain`, fuera `verificarAutorizacionMigracion`/`cederLicencia` de `LicenciaRepository`; en `:licencia`, fuera `TransferAuthorization`, `checkTransferAuthorization` y `transferOut`. Se conserva todo lo de **recuperación**: `recupera`, `aplicarRevocaciones`/`markRevoked`, `lic.migrated_at`/`Outdated`, «Licencia transferida» y `MantenimientoRepository.borrarTodo` (lo usan semilla, caja y vinculación). Para cambiar de teléfono: respaldo `.shalev` + recuperación de la licencia. Actualizados navegación, Ajustes, onboarding (sin paso final), Ayuda, icono, tests, fakes y documentos (README, MANUAL, Contexto, FORMATOS sin §2, LICENSE_CLIENT §7 como retirado, SECURITY, UI_UX_IX, CAPTURAS, Pendiente, AGENTS, VINCULACION H7).
 
-**Pruebas:** `./gradlew spviTests` en verde (93 tareas) y `./gradlew spviCheck` en verde (tests + lintDebug + assembleDebug + spviPermisos; hubo que limpiar `app/build/generated` por la trampa de Hilt con clases viejas). El test instrumentado de cesión se reescribió por la vía de revocación (pendiente de correrlo en el teléfono).
+**Pruebas:** `./gradlew shalevTests` en verde (93 tareas) y `./gradlew shalevCheck` en verde (tests + lintDebug + assembleDebug + shalevPermisos; hubo que limpiar `app/build/generated` por la trampa de Hilt con clases viejas). El test instrumentado de cesión se reescribió por la vía de revocación (pendiente de correrlo en el teléfono).
 
 ## 2026-10-15 - Móvil: 2.ª rotación de claves GL del día (captura de pantalla)
 
 La pantalla Claves del teléfono GL (serial 4bc9f8f3) muestra un par nuevo: el de la mañana del mismo día ya no existe (otra reinstalación o borrado de datos). Como `screencap` sale en negro por `FLAG_SECURE`, se leyó el árbol UI (`uiautomator`): ECDH `sha256:eb52:2ee8:…:fea1`, firma `sha256:e693:6c20:…:0a6e`; ambas huellas recalculadas desde el Base64 y coincidentes con las mostradas. `LicenseTrust`: ECDH **sustituida**; firma vigente **añadida** en primer lugar, conservando las 3 anteriores (15/10 1.ª, 05/10, 30/09) para lo ya emitido. Actualizados `LicenseTrustTest` (4 firmas en orden, ECDH distinta de las 3 anteriores), `tools/licencia/probar_gl.py`, README, LICENSE_CLIENT, `docs/GL_CONTEXTO_LICENCIAS.md` y `Contexto.md`. Hay que generar una solicitud nueva con este build: las solicitudes cifradas hacia la ECDH de la mañana GL ya no puede abrirlas.
 
-**Pruebas:** huellas verificadas criptográficamente (SHA-256 del SPKI DER) contra lo mostrado en pantalla; sin JDK/Android SDK local, pendiente `./gradlew spviTests` y CI. Pendiente también re-verificación de extremo a extremo con GL.
+**Pruebas:** huellas verificadas criptográficamente (SHA-256 del SPKI DER) contra lo mostrado en pantalla; sin JDK/Android SDK local, pendiente `./gradlew shalevTests` y CI. Pendiente también re-verificación de extremo a extremo con GL.
 
 ## 2026-10-15 - Móvil: rotación de claves GL (solicitud no reconocida)
 
-La solicitud `SPVIR1:` llegaba a GL como «solicitud dañada o no es para GL». Causa: el teléfono GL regeneró su par al reinstalarse tras el 05/10/2026 y SPVI seguía cifrando hacia la ECDH vieja (`sha256:2a3f:9fce:…`). El formato, HKDF, AAD y campos estaban correctos en ambos lados. `LicenseTrust`: ECDH **sustituida** (`sha256:1d7f:515c:…:39b1`); firma vigente **añadida** (`sha256:d9c4:d821:…:998e`) en primer lugar, conservando las del 05/10/2026 y 30/09/2026 para lo ya emitido. Actualizados `LicenseTrustTest`, `tools/licencia/probar_gl.py`, README, LICENSE_CLIENT y `docs/GL_CONTEXTO_LICENCIAS.md`. Hay que generar una solicitud nueva con este build y reinstalar/actualizar SPVI donde se vaya a pedir licencia.
+La solicitud `SPVIR1:` llegaba a GL como «solicitud dañada o no es para GL». Causa: el teléfono GL regeneró su par al reinstalarse tras el 05/10/2026 y Shalev seguía cifrando hacia la ECDH vieja (`sha256:2a3f:9fce:…`). El formato, HKDF, AAD y campos estaban correctos en ambos lados. `LicenseTrust`: ECDH **sustituida** (`sha256:1d7f:515c:…:39b1`); firma vigente **añadida** (`sha256:d9c4:d821:…:998e`) en primer lugar, conservando las del 05/10/2026 y 30/09/2026 para lo ya emitido. Actualizados `LicenseTrustTest`, `tools/licencia/probar_gl.py`, README, LICENSE_CLIENT y `docs/GL_CONTEXTO_LICENCIAS.md`. Hay que generar una solicitud nueva con este build y reinstalar/actualizar Shalev donde se vaya a pedir licencia.
 
 **Pruebas:** `:licencia:test` en verde (incluye la rotación con 3 firmas). Verificado de extremo a extremo en el teléfono 4bc9f8f3 con test instrumentado temporal en GL (borrado tras correr): la ECDH del Keystore coincide con la fijada y una `SPVIR1:` cifrada hacia ella abre con nombre, tipo y secundarias correctos (2/2 PASSED). La prueba manual por UI quedó pendiente solo por la escritura del código largo por adb; el camino criptográfico real está probado. Pendiente CI.
 
 ## 2026-10-15 - Móvil: rejilla de espaciado y tokens (optimización UI)
 
-Se eliminan los valores fuera de la rejilla de 8dp (`SpviSpacing.xs / 2` = 4dp en las listas densas de Inventario, Servicios, Precios, Registros y Clientes fijos: ahora `SpviSpacing.xs`) y los literales sueltos (`24.dp` → `SpviSize.icon`, `48.dp` → `SpviSize.touchTarget`, `1.dp` → `SpviSize.strokeHairline`, `2.dp` → `SpviSize.strokeRegular`). La altura máxima de las listas cortas de fijados (`240.dp`, repetida en 3 pantallas) pasa al token nuevo `SpviSize.listaCortaMax`. Sin cambios de comportamiento; solo la separación entre filas densas pasa de 4 a 8dp. Se mantiene la paleta AA verificada y todos los componentes `Spvi*` existentes.
+Se eliminan los valores fuera de la rejilla de 8dp (`ShalevSpacing.xs / 2` = 4dp en las listas densas de Inventario, Servicios, Precios, Registros y Clientes fijos: ahora `ShalevSpacing.xs`) y los literales sueltos (`24.dp` → `ShalevSize.icon`, `48.dp` → `ShalevSize.touchTarget`, `1.dp` → `ShalevSize.strokeHairline`, `2.dp` → `ShalevSize.strokeRegular`). La altura máxima de las listas cortas de fijados (`240.dp`, repetida en 3 pantallas) pasa al token nuevo `ShalevSize.listaCortaMax`. Sin cambios de comportamiento; solo la separación entre filas densas pasa de 4 a 8dp. Se mantiene la paleta AA verificada y todos los componentes `Shalev*` existentes.
 
-**Pruebas:** sin JDK/Android SDK local; pendiente `./gradlew spviTests` y CI.
+**Pruebas:** sin JDK/Android SDK local; pendiente `./gradlew shalevTests` y CI.
 
 ## 2026-10-15 - Limpieza del repositorio: solo Android
 
@@ -203,7 +215,7 @@ saltar pasos, importar, contraseña lista y QR de vinculación.
 Se conservan intactos los avisos de borrado, los de seguridad (contraseña, licencia, recuperación), los consentimientos (cámara, SMS,
 notificaciones) y las guías de error. El manual no citaba esos textos.
 
-**Pruebas:** `spviTests` en verde.
+**Pruebas:** `shalevTests` en verde.
 
 ## 2026-10-15 - Web: Inicio en 3 zonas (principal + secundaria de datos)
 
@@ -228,7 +240,7 @@ Kotlin 2.3 y con Kotlin 2.0.21 no compilaba ningún test de `:app`) y se crean e
 de acordeones (`resumenVentas`, `resumenGanancia`, `resumenInventario`, `resumenMetodos`, `resumenTop`,
 `resumenTopPersonas`) que `InicioLogicTest.resumenesDeLosAcordeones` ya exigía.
 
-**Pruebas:** `spviTests` en verde (todos los módulos JVM, incluido `ProcesoActualizarTest`).
+**Pruebas:** `shalevTests` en verde (todos los módulos JVM, incluido `ProcesoActualizarTest`).
 
 ## 2026-10-15 - Web: Inicio sin tarjeta «Sin turno abierto», barra compacta
 
@@ -254,7 +266,7 @@ se revierte si se cancela; bloqueado sin licencia) y a la derecha el período co
 (formulario y «Generar QR de solicitud») y el botón «Importar lista de revocaciones»; la sección queda
 en estado + «Activar licencia». La API (`/api/license/request`, `/api/license/qr`, revocaciones) no cambia.
 El campo de activación acepta la clave maestra `GLMK-PERM-MAXS-9999` (antes el formateo solo dejaba dígitos)
-y el envío la deja pasar al backend, que la valida solo con `SPVI_DESARROLLO=1`.
+y el envío la deja pasar al backend, que la valida solo con `Shalev_DESARROLLO=1`.
 MANUAL_USUARIO.md y desktop/README.md actualizados.
 
 **Pruebas:** 131 pruebas Python OK (1 omitida); `node --check` del JS.
@@ -264,11 +276,11 @@ MANUAL_USUARIO.md y desktop/README.md actualizados.
 Capturas de las 10 secciones y correcciones solo en `desktop/spvi_web/static` (sin API ni modelo):
 
 1. La lista deja 80 px bajo el FAB (`app.css`, `.vista:has(.fab)`): «Nuevo servicio» ya no tapa el precio de la última fila.
-2. Banner de licencia global: `SPVI.render` (`core.js`) lo antepone en las 10 secciones; se quitan las llamadas por vista (`inicio.js`, `venta.js`, `vinculadas.js`).
+2. Banner de licencia global: `Shalev.render` (`core.js`) lo antepone en las 10 secciones; se quitan las llamadas por vista (`inicio.js`, `venta.js`, `vinculadas.js`).
 3. Registros: buscador y chips de período en filas separadas (`registros.js`).
 4. Interruptor «Costos» en Inventario (`inventario.js`, flag `spvi-ver-costos` en `localStorage`): oculta los costos sin desalinear la fila.
 5. Pestañas inactivas con más peso (`font-weight: 600`).
-6. «Salir de SPVI» pasa a botón de texto (`kind: 'texto'`) en Ajustes; «Reiniciar» conserva el borde.
+6. «Salir de Shalev» pasa a botón de texto (`kind: 'texto'`) en Ajustes; «Reiniciar» conserva el borde.
 7. `duracionCorta()` (`core.js`: «6 min», «2 h 5 min», «3 días») junto a los cronómetros de Tiempo en línea.
 
 **Pruebas:** 131 pruebas Python OK (1 omitida) y las 10 capturas Playwright revisadas.
@@ -284,7 +296,7 @@ compileSdk 36/37 y AGP 8.9.1/9.1) y `coroutines` 1.11.0 → 1.9.0 (su stdlib tra
 ilegibles para el compilador 2.0).
 
 **Pruebas:** `assembleDebug` OK con JDK 17; APK `arm64` instalado en el teléfono (23021RAAEG,
-API 35) y `MainActivity` en primer plano. No se corrió `spviTests`.
+API 35) y `MainActivity` en primer plano. No se corrió `shalevTests`.
 
 ## 2026-10-14 — Escritorio 0.31.0: las cinco mejoras del informe de feedback móvil
 
@@ -295,10 +307,10 @@ Cierra el informe de feedback móvil (`desktop/INFORME_FEEDBACK_MOVIL.md`, retir
    (Turno / Hoy / 7 / 30 / 90 días / Todo). `Business.dashboard()` acepta `1, 7, 30, 90`, `0` (todo el
    historial) y `'turno'` (desde la apertura del turno; sin turno abierto, desde el inicio del día);
    `/api/dashboard` pasa el valor tal cual. La serie diaria del gráfico se deriva del período
-   (`SPVI.diasSerie`: en «Todo» usa los días con datos, máximo 30 barras). Con «Turno» y «Todo» no hay
+   (`Shalev.diasSerie`: en «Todo» usa los días con datos, máximo 30 barras). Con «Turno» y «Todo» no hay
    comparación con el período anterior. Registros usa los mismos chips (`chipsPeriodo`) y gana «Turno»
    y «90 días».
-2. **1.5 Animaciones** (`static/app.css`, `core.js`): `SPVI.fundir()` desvanece la sección anterior
+2. **1.5 Animaciones** (`static/app.css`, `core.js`): `Shalev.fundir()` desvanece la sección anterior
    120 ms antes de pintar la nueva y los diálogos entran desde el centro-abajo
    (`@keyframes ventana-entra`, `translateY(48px) scale(.97)`). Se respeta `prefers-reduced-motion`.
 3. **1.2 Fila de inventario** (`static/js/inventario.js`): nombre, categoría y existencias a la izquierda;
@@ -341,16 +353,16 @@ Implementado en `app/` **sin compilar ni probar** (en este entorno no hay JDK/An
    limpiada al cambiar de pestaña; casilla en ventas, transferencias, movimientos, turnos y clientes
    fijos; barra de selección con «seleccionar todo», exportar solo lo marcado y quitar la selección.
 4. **Licencia** (`licencia/LicenciaScreen.kt`): fuera el botón de llave «Ya tengo el mensaje de
-   licencia» y su etiqueta; el asistente avanza con «Paso siguiente» del `SpviStepper`.
-5. **Migrar** (`migrar/`): pasa a **Migrar**. Nuevo `MigrarQr.kt` (`CodigoMigracion`, `SPVIM1|…`, puro) y
-   `CanalMigracion.kt` (socket TCP directo por la red local; el `.spvi` cifrado de siempre viaja dentro).
+   licencia» y su etiqueta; el asistente avanza con «Paso siguiente» del `ShalevStepper`.
+5. **Migrar** (`migrar/`): pasa a **Migrar**. Nuevo `MigrarQr.kt` (`CodigoMigracion`, `ShalevM1|…`, puro) y
+   `CanalMigracion.kt` (socket TCP directo por la red local; el `.shalev` cifrado de siempre viaja dentro).
    **Emisor** muestra el QR y, tras la confirmación del receptor, se borra el teléfono
    (`MantenimientoRepository.borrarTodo()`); **Receptor** lee el QR con la cámara y aplica el respaldo.
    Todo detrás del **acceso con clave** definido en Ajustes (si no está, se le dice que lo defina) y
    del diálogo de biometría del sistema. Nueva sección en el recorrido inicial (`PasoWizard.MIGRAR`).
 6. **Actualizar** (`actualizacion/GestorActualizacion.kt`, `ajustes/AjustesScreen.kt`): «Actualizaciones»
-   pasa a **Actualizar** y abre un cuadro con `SpviCircularProgress` (nuevo en `:designsystem`,
-   `SpviSize.progresoCircular`) y el resultado: «Actualizado», «Estas al día» o «Sin conexión».
+   pasa a **Actualizar** y abre un cuadro con `ShalevCircularProgress` (nuevo en `:designsystem`,
+   `ShalevSize.progresoCircular`) y el resultado: «Actualizado», «Estas al día» o «Sin conexión».
    `descargarEInstalar` refleja el avance solo cuando el cuadro lo abrió (`conProceso`).
 7. **Ayuda** (`ayuda/`): manual por secciones con icono por tema y esquemas dibujados con formas
    (barra inferior, turno, venta, respaldo y migración). **No lleva capturas**: son esquemas vectoriales
@@ -364,25 +376,25 @@ Implementado en `app/` **sin compilar ni probar** (en este entorno no hay JDK/An
     con la dirección del dedo (`cambioSeccion(dir)`, puro); ventanas y diálogos entran desplazados
     media altura (`ventanaEntra` = `it / 2`).
 
-## 2026-10-14 — Una sola pestaña de SPVI
+## 2026-10-14 — Una sola pestaña de Shalev
 
-- Los dos procesos `SPVI.exe` visibles son una sola instancia: el cargador del portable (padre) y la
-  app (hija); el candado `spvi.lock` ya impedía un segundo proceso con los mismos datos.
+- Los dos procesos `Shalev.exe` visibles son una sola instancia: el cargador del portable (padre) y la
+  app (hija); el candado `shalev.lock` ya impedía un segundo proceso con los mismos datos.
 - `static/js/core.js`: control de pestaña única con reclamo en `localStorage`, latido cada 3 s y
-  caducidad de 9 s. La segunda pestaña muestra «SPVI ya está abierto en otra pestaña» con **Usar aquí**,
+  caducidad de 9 s. La segunda pestaña muestra «Shalev ya está abierto en otra pestaña» con **Usar aquí**,
   que transfiere el control (la anterior queda bloqueada por evento `storage`). El identificador vive en
   `sessionStorage` para sobrevivir a la recarga. Sin almacenamiento no se controla y se permite.
 - Verificado en Chromium: primera pestaña activa, segunda bloqueada, «Usar aquí» activa la segunda y
   bloquea la primera; sin errores de consola.
 
-## 2026-10-14 — Dominio https://spvi.io y pulido de interfaz web
+## 2026-10-14 — Dominio https://shalev.io y pulido de interfaz web
 
-- `desktop/`: la pantalla principal es `https://spvi.io` por HTTPS y puerto 443 (reemplaza a
-  `http://127.0.0.1:8765`). El dominio es parametrizable (`--dominio spvi.io`, `--cert`, `--key`);
+- `desktop/`: la pantalla principal es `https://shalev.io` por HTTPS y puerto 443 (reemplaza a
+  `http://127.0.0.1:8765`). El dominio es parametrizable (`--dominio shalev.io`, `--cert`, `--key`);
   el lanzador exige resolución a 127.0.0.1 (archivo `hosts`) y certificado válido de CA privada
   instalada a mano. `--local` mantiene el modo sin HTTPS de desarrollo. Opción B2 elegida por el dueño
   (sin propiedad del dominio público). `setup_https.py` acepta `--dominio`; `tls.validate_certificate`
-  y `TRUSTED_HOSTS` usan `spvi.io` por defecto.
+  y `TRUSTED_HOSTS` usan `shalev.io` por defecto.
 - Inicio suma dos gráficos SVG propios (sin librerías ni rejilla): dona de Formas de cobro
   (Efectivo/Transferencias) y área de Ganancia por día; las barras de Ingresos por día crecen con
   retardo escalonado. Transición de entrada entre secciones y micro-interacciones en botones/listas,
@@ -395,7 +407,7 @@ Implementado en `app/` **sin compilar ni probar** (en este entorno no hay JDK/An
 
 ## 2026-10-13 — Licencias en las tres apps: clave maestra, sub-tokens y envelope v1 (mitigaciones 1, 7 y 8, Opción A)
 
-- Se implementó en SPVI el sistema de licencias documentado por GL (`SISTEMA_LICENCIAS_CLIENTES.md`,
+- Se implementó en Shalev el sistema de licencias documentado por GL (`SISTEMA_LICENCIAS_CLIENTES.md`,
   `docs/INTEGRATION.md`, `CONTEXTO_LICENCIAS.md`, `SECURITY.md`) con las decisiones del propietario:
   todo el alcance, incluido el flujo v1 y los sub-tokens.
 - **Android:** `ModoDesarrollo.esDebug = BuildConfig.DEBUG` (clave maestra solo en depuración);
@@ -407,7 +419,7 @@ Implementado en `app/` **sin compilar ni probar** (en este entorno no hay JDK/An
   `empleado.device` y su migración explícita (`MIGRACION_11_12`), y `EsquemaTest` ya no fija el número
   de versión. El envelope v1 sella con la AAD canónica y sigue abriendo lo ya emitido con la heredada.
 - **Escritorio:** `sync/server.py` anota el `device` de la secundaria al vincular y en `hola`;
-  `licensing/subtokens.py` y `licensing/trust.py` ya cubrían el sub-token y `SPVI_DESARROLLO=1`.
+  `licensing/subtokens.py` y `licensing/trust.py` ya cubrían el sub-token y `Shalev_DESARROLLO=1`.
   Pruebas nuevas en `test_sync_server.py`. **126 pruebas Python correctas** (`pytest tests -q`).
 - **iOS (Flutter):** `flutter_app/lib/src/licensing/` reescrito sobre `pointycastle` 3.9.1 (P-256, ECDH,
   HKDF-SHA256, AES-256-GCM, ECDSA DER/crudo, AAD con longitud prefijada): solicitud `SPVIR1`, licencia
@@ -415,7 +427,7 @@ Implementado en `app/` **sin compilar ni probar** (en este entorno no hay JDK/An
   sub-tokens, limitador de intentos y renovación. `ClienteLicencia` es ahora el estado real de la
   pantalla de Licencia (se retiró el campo de texto de «clave» inventada). Tests con un GL de prueba en
   `test/` (los corre Codemagic; en esta máquina no hay Dart).
-- Verificación: Android compila y pasa `spviTests` en el CI del repositorio (lint, R8, permisos del manifiesto y API
+- Verificación: Android compila y pasa `shalevTests` en el CI del repositorio (lint, R8, permisos del manifiesto y API
   mínima 26, en verde). La app iOS **no se compiló aquí** (no hay Dart en el entorno): queda pendiente `flutter test`
   (Codemagic) y commitear `data/schemas/…/12.json`, que Room exporta al compilar.
 - Documentación: [LICENSE_CLIENT.md](../LICENSE_CLIENT.md) §11–§13, [SECURITY.md](../SECURITY.md) §4 quater
@@ -436,21 +448,21 @@ Implementado en `app/` **sin compilar ni probar** (en este entorno no hay JDK/An
 
 - `desktop/`: interfaz reescrita (`templates/index.html`, `static/app.css`, `static/js/*.js`; se retiran
   `app.js`, `management.js` y `management.html`) con tokens de color de `ColorTokens.kt`, iconos generados
-  desde `SpviIcons.kt` (`tools/generar_iconos.py`), Roboto/Orbitron y diálogos con el logo. CSP sin estilos
+  desde `ShalevIcons.kt` (`tools/generar_iconos.py`), Roboto/Orbitron y diálogos con el logo. CSP sin estilos
   en línea: los estilos dinámicos se asignan por CSSOM.
 - Lanzador con icono de notificación (pystray), instancia única que reabre la pantalla principal,
   reinicio, inicio con Windows (`HKCU\…\Run`) con retraso, clave opcional y red local reanudada.
   `build_windows.ps1` genera el `.exe` con `--noconsole` e icono; la autoprueba devuelve código de salida.
 - Licencia de PC: `licensing/pc_code.py` (código de 16 dígitos con `K` de ECDH+HKDF) y solicitud con
-  `plataforma`/`transaccion` y QR de WhatsApp. Para GL se escribieron `SpviPc16`, la rama PC de
-  `EmitirSpvi2UseCase`, la validación de los campos nuevos, la fila Plataforma/Transacción del Generador y la
+  `plataforma`/`transaccion` y QR de WhatsApp. Para GL se escribieron `ShalevPc16`, la rama PC de
+  `EmitirShalev2UseCase`, la validación de los campos nuevos, la fila Plataforma/Transacción del Generador y la
   revalidación al importar `.glreg` (sin cambio del contrato v1 ni de Room). **No están en el repositorio GL:**
   la copia de trabajo de GL se perdió al reiniciarse la sesión, antes de publicarla; hay que rehacerlos.
 - Datos de prueba `seed.py` (548 días, parecidos al móvil, no idénticos), Registros paginados, Tiempo en
   línea y rutas nuevas (`/api/app*`, `/api/uptime`, `/api/registros/<tipo>`, `/api/license/qr`, `/api/seed`).
 - Móvil: pestañas de Registros en varias filas, títulos y selectores sin «…», textos sin términos técnicos.
 - Verificación: 103 pruebas Python y autoprueba; recorrido en Chromium sin pantalla a 1440×900, 800×1000 y
-  390×844, claro y oscuro, y un flujo de venta/licencia. GL: `SpviPc16Test` más las pruebas SPVI existentes
+  390×844, claro y oscuro, y un flujo de venta/licencia. GL: `ShalevPc16Test` más las pruebas Shalev existentes
   (38) compiladas con el compilador Kotlin del kernel Jupyter y stubs mínimos de JUnit/Truth/coroutines;
   ida y vuelta real PC (Python) → GL (Kotlin) → PC (antes de perderse la copia de GL). **No** se compiló Android ni GL con Gradle (sin JDK/SDK),
   no se regeneraron capturas Roborazzi ni se probó en Windows.
@@ -459,8 +471,8 @@ Implementado en `app/` **sin compilar ni probar** (en este entorno no hay JDK/An
 
 - PDF/Excel/PNG y promociones textuales con encabezado; ZIP cuando hay varias imágenes. Política en servidor,
   filtro de catálogo, validación de selección y prevención de fórmulas de Excel.
-- Respaldo cifrado `.spvidesk` y restauración atómica con validación previa y copia cifrada de seguridad.
-  No se confunde con el formato Android `.spvi`; su interoperabilidad sigue pendiente.
+- Respaldo cifrado `.shalevdesk` y restauración atómica con validación previa y copia cifrada de seguridad.
+  No se confunde con el formato Android `.shalev`; su interoperabilidad sigue pendiente.
 - Dashboard con comparación del período anterior, evolución diaria y precios bajo costo.
 - Workflow Windows: pruebas → PyInstaller → autoprueba `.exe` → SHA-256 → artefacto. Aún no ejecutado.
 - Generador de CA/certificado local y verificación del dominio, vigencia y clave en el lanzador; sin cambiar
@@ -483,9 +495,9 @@ Implementado en `app/` **sin compilar ni probar** (en este entorno no hay JDK/An
 - Notificación expandida sin información financiera/personal.
 - `desktop/`: Flask/Cheroot/SQLite, acceso local autenticado, turnos, catálogo, ventas, movimientos,
   arqueo y dashboard; lanzador de navegador, script PyInstaller y guía del dominio HTTPS.
-- **No implementado en escritorio:** protocolo TCP/QR Android, GL, respaldo `.spvi`, exportaciones,
+- **No implementado en escritorio:** protocolo TCP/QR Android, GL, respaldo `.shalev`, exportaciones,
   funciones contables avanzadas. No se generó un ejecutable Windows ni se cambió DNS/certificados.
-- Verificación: 17 pruebas Python pasan, `node --check` y `git diff --check` correctos. `spviTests`
+- Verificación: 17 pruebas Python pasan, `node --check` y `git diff --check` correctos. `shalevTests`
   no pudo arrancar: faltan Java/JAVA_HOME. Android y Windows requieren compilación y prueba visual real.
 
 ## Afirmaciones superadas
@@ -496,10 +508,10 @@ Implementado en `app/` **sin compilar ni probar** (en este entorno no hay JDK/An
 | Prompt 5, suposición 1 | Todavía no existe ninguna llamada de red | Desde el Prompt 8 el escáner consulta 4 bases públicas, solo con consentimiento |
 | Prompt 5, suposición 3 | La cámara real llega en la fase 3 | CameraX + ML Kit desde el Prompt 8 |
 | Prompt 6, suposición 5 | «Nueva venta» con el turno cerrado lo abre | Sustituido en el Prompt 7 (ya indicado allí) |
-| Prompt 8, suposición 3 | «Tiempo máximo por base = Ajustes (5 s)» y User-Agent `SPVI/0.7` | El tiempo es la preferencia `timeoutRedSegundos` (5 s por defecto); **no hay control en la pantalla Ajustes** para cambiarlo. El User-Agent actual es `SPVI/0.12 (Android; escaner de codigos)` |
+| Prompt 8, suposición 3 | «Tiempo máximo por base = Ajustes (5 s)» y User-Agent `Shalev/0.7` | El tiempo es la preferencia `timeoutRedSegundos` (5 s por defecto); **no hay control en la pantalla Ajustes** para cambiarlo. El User-Agent actual es `Shalev/0.12 (Android; escaner de codigos)` |
 | Prompt 8, Exportar | Imagen = tarjetas PNG de 6 productos | Desde el Prompt 14, Imagen = lista de precios y Tarjetas = tarjetas por producto |
 | Prompt 11, suposición 6 | PDF/Excel no están en Registros | Añadido en el Prompt 14 (botón Exportar) |
-| Prompt 12, suposición 3 | Importar desde WhatsApp: primero guardar el archivo | Desde el Prompt 14 SPVI recibe el `.spvi` con Compartir / Abrir con (ya indicado allí) |
+| Prompt 12, suposición 3 | Importar desde WhatsApp: primero guardar el archivo | Desde el Prompt 14 Shalev recibe el `.shalev` con Compartir / Abrir con (ya indicado allí) |
 
 ## Suposiciones de la base (Prompts 1 y 2)
 
@@ -576,7 +588,7 @@ Orden de arriba abajo (`inicio/`): banner de licencia → turno + **Nueva venta*
 | Bloque | Implementación | Regla |
 |---|---|---|
 | Banner | `bannerInicio` → `bannerText` de `:licencia` | Prueba en días, Mensual en días, Semestral/Anual en meses; **Perpetua: oculto**. |
-| Alertas | `ObservarAlertas` + `alertasVisibles` + `SpviAlertCounter` | Stock bajo (amarillo, 5), Stock crítico (rojo, 1), Insumo bajo (verde claro, 5), Insumo crítico (naranja, 1), Próximo a caducar (púrpura claro). **Un contador en 0 no se muestra.** Al pulsar: Inventario (o Elaboración para insumos) filtrado, con chip «Quitar filtro». |
+| Alertas | `ObservarAlertas` + `alertasVisibles` + `ShalevAlertCounter` | Stock bajo (amarillo, 5), Stock crítico (rojo, 1), Insumo bajo (verde claro, 5), Insumo crítico (naranja, 1), Próximo a caducar (púrpura claro). **Un contador en 0 no se muestra.** Al pulsar: Inventario (o Elaboración para insumos) filtrado, con chip «Quitar filtro». |
 | Pago electrónico | `pagos/` (hoja en Inicio + pantalla en Ajustes) | Elegir o escribir teléfono y tarjeta/cuenta; los números nuevos se añaden a las listas del Perfil (sin duplicar) y quedan elegidos. Lista editable (alta, edición, borrado, elegir) en Ajustes → «Pago electrónico». |
 | Precios | `precios/` | Preajustes: subir/bajar un % a uno o varios productos, opcionalmente solo con un método de pago y/o desde un importe mínimo (envergadura). Pausar, editar y borrar. Vista previa del precio resultante. |
 | Turno | Interruptor accesible (`toggleable`, `Role.Switch`) | Abrir es inmediato; **cerrar pide confirmación** y muestra el resumen (ventas y total). |
@@ -631,9 +643,9 @@ Estados de carga (`EstadoCarga`): Idle → Cargando → Éxito / Vacío / Error 
 
 **Suposiciones del Prompt 8**
 
-1. **Paquete**: integrado en `cu.spvi.app.escaner` / `cu.spvi.app.producto` / `cu.spvi.app.inventario` (decisión O1). `com.ejemplo.escannerproductos` era un ejemplo; integrarlo evita duplicar tema, Hilt, Room y navegación.
+1. **Paquete**: integrado en `cu.shalev.app.escaner` / `cu.shalev.app.producto` / `cu.shalev.app.inventario` (decisión O1). `com.ejemplo.escannerproductos` era un ejemplo; integrarlo evita duplicar tema, Hilt, Room y navegación.
 2. **CAMERA solo en uso**: se pide al abrir el escáner con explicación previa (Prompt 5) y la cámara se enlaza solo en la fase «Escaneando». En equipos sin cámara queda la entrada manual.
-3. **INTERNET solo para consultas**: solo se consultan **GTIN válidos** (EAN-8/UPC-A/EAN-13/GTIN-14 con dígito de control correcto): un QR o un código interno nunca sale del teléfono. Requiere consentimiento (Preguntar / Sí / Nunca, cambiable en Ajustes). Tiempo máximo por base = Ajustes (5 s). HTTPS obligatorio, sin caché, sin cookies, sin reintentos silenciosos; User-Agent `SPVI/0.7` sin datos del usuario. La foto encontrada se descarga una vez (máx. 5 MB), se re-codifica y Coil solo muestra archivos locales (Coil sin módulo de red).
+3. **INTERNET solo para consultas**: solo se consultan **GTIN válidos** (EAN-8/UPC-A/EAN-13/GTIN-14 con dígito de control correcto): un QR o un código interno nunca sale del teléfono. Requiere consentimiento (Preguntar / Sí / Nunca, cambiable en Ajustes). Tiempo máximo por base = Ajustes (5 s). HTTPS obligatorio, sin caché, sin cookies, sin reintentos silenciosos; User-Agent `Shalev/0.7` sin datos del usuario. La foto encontrada se descarga una vez (máx. 5 MB), se re-codifica y Coil solo muestra archivos locales (Coil sin módulo de red).
 4. **Telemetría de ML Kit eliminada**: ML Kit fusiona `datatransport` (Google), que añade `ACCESS_NETWORK_STATE` y servicios de envío de métricas. Se eliminan con `tools:node="remove"` en el manifiesto (v2: sin telemetría). Verifica en tu equipo con *Merged Manifest* que solo quedan CAMERA e INTERNET.
 5. **Fecha de caducidad por código**: al guardar un producto con código y fecha (o desde el escáner) la fecha queda recordada para ese código y se propone la próxima vez; siempre se puede cambiar.
 6. **Tarjetas de imagen** = para clientes: nunca incluyen costo ni existencias. El PDF de la ficha sí (uso interno).
@@ -643,7 +655,7 @@ Estados de carga (`EstadoCarga`): Idle → Cargando → Éxito / Vacío / Error 
 
 - **Pestaña Insumos**: lista **cronológica** (más reciente primero) con indicador de color (normal / bajo / crítico) y su descripción para TalkBack, **checkbox** por fila (seleccionar ≠ abrir), **buscador** (sin tildes ni mayúsculas), **filtro** (existencias: bajo / crítico; uso: en recetas / sin uso; distintivo con el número de filtros), estados Cargando / Vacío / «Sin resultados» / Error con Reintentar. Cada fila muestra cantidad con su unidad, en cuántas recetas se usa y el precio de costo por unidad.
 - **Selección**: barra «N seleccionados» con Marcar todo (lo visible), Exportar, Eliminar y Quitar selección; sobrevive a búsquedas y filtros y se poda si un insumo desaparece.
-- **Agregar nuevo insumo**: botón flotante `SpviFab` (nuevo en el sistema de diseño: mismos colores y elevación que el FAB de Inventario).
+- **Agregar nuevo insumo**: botón flotante `ShalevFab` (nuevo en el sistema de diseño: mismos colores y elevación que el FAB de Inventario).
 - **Exportar**: la selección o, sin selección, lo que se ve. PDF y Excel → Compartir o Guardar en el dispositivo (SAF); **Texto** → selector del sistema. Sin permisos de almacenamiento.
 - **Ficha** al tocar: nivel, cantidad, precio, valor de las existencias, niveles y **«Usado en»** (Elaborados y cuánto gasta cada unidad). Acciones **Editar**, **Compartir (Texto)** y **Eliminar** (con confirmación).
 - **Formulario de insumo** con los atributos del Prompt Maestro: **Nombre, Precio (costo), Cantidad, Nivel bajo (opcional), Nivel crítico (opcional)**, más la unidad de medida (u, kg, g, L, ml). Validación en tiempo real y mensajes sin jerga; hasta 3 decimales en cantidades.
@@ -658,7 +670,7 @@ Estados de carga (`EstadoCarga`): Idle → Cargando → Éxito / Vacío / Error 
 1. **Reutilización**: repositorios y casos de uso existentes (`ObservarInsumos`, `GuardarInsumo`, `EliminarInsumo`, `ProducirElaborado`, `ExportarInsumos`, `Validadores.insumo`). Se añadieron solo composiciones de dominio (`ObservarElaboracion`, `ObservarProduccion`, `ObtenerFichaInsumo`, `EliminarInsumos`) y **ningún SQL ni cambio de esquema** (BD v2).
 2. **Unidad de medida**: el Prompt Maestro dice «solo» 5 atributos, pero sin unidad «Cantidad 2» es ambigua y la receta no puede calcular. Se muestra como selector con «u» (unidades) por defecto; no es un campo más que rellenar.
 3. **Un insumo usado en una receta no se puede eliminar** (lo impide `:data` con `EnUso`): la app dice qué recetas lo usan. En un borrado múltiple se eliminan los demás y se informa.
-4. **Pestañas con chips** (`SpviChip`): el sistema de diseño no tiene pestañas y los chips ya cumplen tamaño táctil y contraste AA.
+4. **Pestañas con chips** (`ShalevChip`): el sistema de diseño no tiene pestañas y los chips ya cumplen tamaño táctil y contraste AA.
 5. **Alertas de Inicio**: «Insumo bajo / crítico» abre Elaboración con el filtro puesto (sustituye a la lista provisional `AlertaListaScreen`, eliminada).
 6. **Versión 0.8.0** (`versionCode 8`). Base de datos sin cambios (v2).
 
@@ -679,7 +691,7 @@ Estados de carga (`EstadoCarga`): Idle → Cargando → Éxito / Vacío / Error 
 3. **El texto se filtra en el dominio** y no con el LIKE de la BD: así el buscador se comporta igual que en Inventario y Elaboración (sin tildes) y busca en más campos. La fecha y el importe sí se filtran en la BD.
 4. **Privacidad al compartir**: el texto de **una venta** es un comprobante para el cliente y **no incluye costo ni ganancia**; la tabla de Ventas sí los incluye (informe para el dueño). En los textos de transferencias el **carné de identidad se muestra solo con sus 3 últimas cifras** (empieza por la fecha de nacimiento); en la ventana de la app se ve completo. La ventana avisa de ambas cosas.
 5. **Tope de 300 filas** al compartir una tabla como texto (Android y las apps de mensajería rechazan textos enormes). Si hay más, el texto lo dice y sugiere filtrar por fecha; el total sigue contando todas.
-6. **Exportar a PDF / Excel** (SPVI.txt, «Exportaciones») no está en esta pantalla porque el Prompt 11 pide «Compartir solo texto». El caso de uso `ExportarRegistros` ya existe y respeta el mismo filtro: añadirlo es solo UI, si lo quieres.
+6. **Exportar a PDF / Excel** (Shalev.txt, «Exportaciones») no está en esta pantalla porque el Prompt 11 pide «Compartir solo texto». El caso de uso `ExportarRegistros` ya existe y respeta el mismo filtro: añadirlo es solo UI, si lo quieres.
 7. **Etiquetas de movimiento con tilde** («Producción») en un solo sitio del dominio (`Estadisticas.etiqueta`), que usan Registros, el detalle de turno y las exportaciones; antes el PDF/Excel mostraba «Produccion».
 8. **Versión 0.9.0** (`versionCode 9`). Base de datos sin cambios (v2).
 
@@ -709,8 +721,8 @@ Estados de carga (`EstadoCarga`): Idle → Cargando → Éxito / Vacío / Error 
    - **Contrato GL sin cambios.** La solicitud de migración lleva IDs y nombre, **sin CI**.
 3. **Respaldo:**
    - Por defecto «Configuración», que es lo que pide el Prompt. «Todo» existe porque Migrar lo necesita.
-   - **Sin permisos de almacenamiento** (SAF y FileProvider). El archivo `.spvi` enviado por otra app queda en `cacheDir/compartir`, cifrado, y se borra a las 24 h.
-   - **Importar desde WhatsApp/Telegram:** primero se guarda el archivo y luego se elige. *(Superado en el Prompt 14: ahora SPVI también recibe el `.spvi` desde «Compartir» o «Abrir con»; ver abajo.)*
+   - **Sin permisos de almacenamiento** (SAF y FileProvider). El archivo `.shalev` enviado por otra app queda en `cacheDir/compartir`, cifrado, y se borra a las 24 h.
+   - **Importar desde WhatsApp/Telegram:** primero se guarda el archivo y luego se elige. *(Superado en el Prompt 14: ahora Shalev también recibe el `.shalev` desde «Compartir» o «Abrir con»; ver abajo.)*
 4. **Sin datos sensibles en vistas recientes:** `FLAG_SECURE` por pantalla en Perfil, Pago electrónico, Licencia, Respaldo, Migrar y, **nuevo**, en Registros mientras se ven transferencias (nombre y carné del cliente). Ayuda y Soporte no muestran datos del usuario.
 5. **Sin datos sensibles en logs:** la única llamada de log de la app es un aviso genérico de cámara, y R8 elimina todas en release. El código nuevo no registra nada. Las contraseñas llegan como `CharArray` al caso de uso, que las borra. Viven como `String` solo en el estado de la pantalla, porque el TextField lo exige, y se vacían al terminar.
 6. **Ayuda y Soporte no tienen ViewModel:** no tienen estado de negocio, son texto fijo más intents. Su contenido es puro y está testeado (`AyudaContenido`, `SoporteInfo`). Los datos de Soporte vienen de `DeveloperContact`, la misma fuente que Licencia.
@@ -725,7 +737,7 @@ Estados de carga (`EstadoCarga`): Idle → Cargando → Éxito / Vacío / Error 
 - **Transferencia → QR:**
   1. QR con los datos de **Pago electrónico** (tarjeta y móvil) y, debajo, el **total en grande**.
   2. Botones «Abrir Transfermóvil» / «Abrir Enzona».
-  3. «Ya pagó: pedir datos» pide **Nombre y apellidos, CI, Teléfono y Nº de transacción**. El número se captura con **«Pegar SMS»** o **compartiendo el SMS de PAGOxMOVIL a SPVI** (menú Compartir del sistema). Si el SMS trae importe y no coincide con el total, se avisa sin bloquear.
+  3. «Ya pagó: pedir datos» pide **Nombre y apellidos, CI, Teléfono y Nº de transacción**. El número se captura con **«Pegar SMS»** o **compartiendo el SMS de PAGOxMOVIL a Shalev** (menú Compartir del sistema). Si el SMS trae importe y no coincide con el total, se avisa sin bloquear.
   4. La venta se registra **solo al confirmar**.
 - **Registro atómico** (una transacción Room): venta, detalle, movimientos de inventario **VENTA**, producción al vuelo de Elaborados (**CONSUMO** de insumos + **PRODUCCION**) y datos del cliente si es transferencia. Precios y stock se **recalculan al confirmar** por si cambiaron desde el comprobante.
 - **Turno:** sin turno abierto no se vende. Se ve el bloqueo con «Abrir turno», también si el turno se cierra con el comprobante en pantalla. Al terminar se vuelve a Inicio (gráficos al día) con el aviso «Venta registrada: 1,450.00 CUP en efectivo.».
@@ -733,8 +745,8 @@ Estados de carga (`EstadoCarga`): Idle → Cargando → Éxito / Vacío / Error 
 
 **Suposiciones del Prompt 13**
 
-1. **SMS sin permisos (C2):** ni `READ_SMS` ni SMS User Consent API. El portapapeles se lee **solo al tocar «Pegar SMS»**. SPVI recibe texto compartido (`ACTION_SEND text/plain`, `singleTask`) y, si hay una venta esperando el número, lo rellena. Si no lo reconoce, el usuario lo teclea. Formatos reconocidos: «Nro. Transaccion:» y «No. Transaccion:»; si se pega la conversación entera se toma la **última**.
-2. **QR (C3, cerrado):** formato **verificado** con el QR real de Transfermóvil: `TRANSFERMOVIL_ETECSA,TRANSFERENCIA,<tarjeta>,<móvil>,`. **El QR oficial no lleva importe**, así que SPVI no inventa un campo: el cliente teclea el total que se muestra bajo el QR. Enzona no publica su formato, solo se ofrece abrirla (`cu.xetid.apk.enzona`). El QR se genera en el dispositivo con **ZXing core**, sin red. Si no hay tarjeta en Pago electrónico se ofrece configurarla.
+1. **SMS sin permisos (C2):** ni `READ_SMS` ni SMS User Consent API. El portapapeles se lee **solo al tocar «Pegar SMS»**. Shalev recibe texto compartido (`ACTION_SEND text/plain`, `singleTask`) y, si hay una venta esperando el número, lo rellena. Si no lo reconoce, el usuario lo teclea. Formatos reconocidos: «Nro. Transaccion:» y «No. Transaccion:»; si se pega la conversación entera se toma la **última**.
+2. **QR (C3, cerrado):** formato **verificado** con el QR real de Transfermóvil: `TRANSFERMOVIL_ETECSA,TRANSFERENCIA,<tarjeta>,<móvil>,`. **El QR oficial no lleva importe**, así que Shalev no inventa un campo: el cliente teclea el total que se muestra bajo el QR. Enzona no publica su formato, solo se ofrece abrirla (`cu.xetid.apk.enzona`). El QR se genera en el dispositivo con **ZXing core**, sin red. Si no hay tarjeta en Pago electrónico se ofrece configurarla.
 3. **Elaborado sin existencias:** se **produce al vuelo** en la misma transacción, consumiendo insumos según la receta. Si ni así alcanza, se informa qué falta.
 4. **Abrir Transfermóvil/Enzona:** `getLaunchIntentForPackage` con `<queries>` en el manifiesto (Android 11+), sin permisos. Si no está instalada, se avisa.
 5. **Sin permisos nuevos:** siguen CAMERA e INTERNET. `FLAG_SECURE` en el paso de datos del cliente (nombre, CI, teléfono).
@@ -745,11 +757,11 @@ Estados de carga (`EstadoCarga`): Idle → Cargando → Éxito / Vacío / Error 
 - **Base de datos (Ajustes → Respaldo):** «Configuración» o «Todo», cifrado con contraseña. **Guardar en el teléfono** usa el selector del sistema (SAF), donde también aparecen **Google Drive, OneDrive** y cualquier otro proveedor de documentos instalado. **Enviar** usa el menú Compartir (FileProvider): **WhatsApp, Telegram, Zapya, Bluetooth**, correo…
 - **Importar**, de tres maneras:
   1. «Importar» → selector de archivos (almacenamiento, Drive, OneDrive…).
-  2. **Compartir** el `.spvi` a SPVI desde WhatsApp, Telegram o Zapya.
-  3. **Abrir con → SPVI** desde un gestor de archivos o la descarga de Bluetooth.
+  2. **Compartir** el `.shalev` a Shalev desde WhatsApp, Telegram o Zapya.
+  3. **Abrir con → Shalev** desde un gestor de archivos o la descarga de Bluetooth.
 
-  En los casos 2 y 3, SPVI copia el archivo a su caché, abre Respaldo y muestra el diálogo de importación.
-- **Antes de pedir la contraseña, se comprueba el archivo:** qué es («Respaldo completo del 29/09/2026»), y si llegó completo e intacto. El aviso dice exactamente qué se reemplazará (todo, o solo la configuración). Si el archivo está **cortado** (envío interrumpido) o **dañado**, o no es de SPVI, se explica sin pedir la contraseña. Tus datos no se tocan.
+  En los casos 2 y 3, Shalev copia el archivo a su caché, abre Respaldo y muestra el diálogo de importación.
+- **Antes de pedir la contraseña, se comprueba el archivo:** qué es («Respaldo completo del 29/09/2026»), y si llegó completo e intacto. El aviso dice exactamente qué se reemplazará (todo, o solo la configuración). Si el archivo está **cortado** (envío interrumpido) o **dañado**, o no es de Shalev, se explica sin pedir la contraseña. Tus datos no se tocan.
 - **Progreso visible**, paso a paso:
   - Exportar: «Paso 1 de 3 · Reuniendo los datos…» → «Cifrando con tu contraseña…» → «Guardando el archivo…».
   - Importar: leer → comprobar que esté completo → comprobar la contraseña → importar.
@@ -757,7 +769,7 @@ Estados de carga (`EstadoCarga`): Idle → Cargando → Éxito / Vacío / Error 
   Mientras dura, las demás acciones quedan deshabilitadas.
 - **Confirmación:** un diálogo final al terminar. Si sale bien, dice qué se guardó o importó (nombre del archivo y conteos). Si falla, explica qué pasó y qué hacer. La contraseña incorrecta deja el diálogo abierto para reintentar.
 - **Perfil, preajustes de precios y tasas de cambio → PDF** (tarjeta «Documento PDF» en Respaldo): guardar o enviar. La tarjeta avisa de que el PDF no lleva contraseña.
-- **Registros → Ventas, Transferencias y Movimientos → PDF y Excel:** botón **Exportar** en la barra superior. Se exporta **lo que se ve**, con la búsqueda y el filtro aplicados (se indican en el título). Cada formato se puede **enviar** o **guardar**. Nombres sin datos personales: `SPVI_ventas_2026-09-30.pdf`. En Transferencias se avisa de que incluye datos de clientes.
+- **Registros → Ventas, Transferencias y Movimientos → PDF y Excel:** botón **Exportar** en la barra superior. Se exporta **lo que se ve**, con la búsqueda y el filtro aplicados (se indican en el título). Cada formato se puede **enviar** o **guardar**. Nombres sin datos personales: `Shalev_ventas_2026-09-30.pdf`. En Transferencias se avisa de que incluye datos de clientes.
 - **Inventario → PDF, Excel, Imagen y Tarjetas promocionales** (selección o todo):
   - **Imagen:** una **lista de precios** en PNG (categoría, producto y precio), 25 filas por imagen, numeradas si hay varias.
   - **Tarjetas:** una por producto, con foto, nombre y precio (como antes).
@@ -767,7 +779,7 @@ Estados de carga (`EstadoCarga`): Idle → Cargando → Éxito / Vacío / Error 
 
 1. **Sin permisos de almacenamiento:** ni `READ/WRITE_EXTERNAL_STORAGE` ni `MANAGE_EXTERNAL_STORAGE`. Todo pasa por SAF (el usuario elige el destino o el archivo) y por FileProvider (URI temporal de solo lectura para la app elegida). Siguen solo CAMERA e INTERNET.
 2. **Drive, OneDrive y Bluetooth no se integran por su API:** se usan por el sistema (proveedor de documentos o destino de Compartir). Sin SDK, sin cuentas y sin red propia. Si la app no está instalada, simplemente no aparece.
-3. **Recibir archivos:** dos `intent-filter` (`SEND` y `VIEW` con `content://`, tipo `application/octet-stream`, el tipo genérico con el que se envía un archivo de extensión desconocida como `.spvi`). La etiqueta es «Importar respaldo en SPVI». El archivo recibido:
+3. **Recibir archivos:** dos `intent-filter` (`SEND` y `VIEW` con `content://`, tipo `application/octet-stream`, el tipo genérico con el que se envía un archivo de extensión desconocida como `.shalev`). La etiqueta es «Importar respaldo en Shalev». El archivo recibido:
    - se copia **acotado a 128 MB** a `cacheDir/compartir` (se borra a las 24 h);
    - se acepta solo por `content://`, nunca rutas `file://` ajenas;
    - **no se importa solo**: siempre hace falta la contraseña y la confirmación.
@@ -791,11 +803,11 @@ Toda la suite se ejecuta **sin red**. Los tests JVM no necesitan dispositivo; lo
 
 | Qué | Terminal | Android Studio |
 |---|---|---|
-| Todos los JVM (core, licencia, domain, data, designsystem, app) | `./gradlew spviTests` | Gradle ▸ spvi ▸ Tasks ▸ verification ▸ `spviTests`, o clic derecho en `src/test` ▸ *Run Tests* |
+| Todos los JVM (core, licencia, domain, data, designsystem, app) | `./gradlew shalevTests` | Gradle ▸ shalev ▸ Tasks ▸ verification ▸ `shalevTests`, o clic derecho en `src/test` ▸ *Run Tests* |
 | Un módulo JVM | `./gradlew :domain:test` · `./gradlew :app:testDebugUnitTest` | Clic derecho en la carpeta `src/test/kotlin` del módulo ▸ *Run* |
-| Una clase o un test | `./gradlew :domain:test --tests "cu.spvi.domain.CasosBordeTest"` | Icono ▶ junto a la clase o al método |
-| Todos los instrumentados | `./gradlew spviInstrumentedTests` (emulador o teléfono conectado, API 26+) | Clic derecho en `src/androidTest` ▸ *Run Tests* con el dispositivo elegido |
-| Solo los flujos de integración | `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.package=cu.spvi.app.integracion` | Clic derecho en el paquete `integracion` ▸ *Run* |
+| Una clase o un test | `./gradlew :domain:test --tests "cu.shalev.domain.CasosBordeTest"` | Icono ▶ junto a la clase o al método |
+| Todos los instrumentados | `./gradlew shalevInstrumentedTests` (emulador o teléfono conectado, API 26+) | Clic derecho en `src/androidTest` ▸ *Run Tests* con el dispositivo elegido |
+| Solo los flujos de integración | `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.package=cu.shalev.app.integracion` | Clic derecho en el paquete `integracion` ▸ *Run* |
 
 Los informes quedan en `<módulo>/build/reports/tests/` (JVM) y `<módulo>/build/reports/androidTests/connected/` (instrumentados).
 
@@ -818,7 +830,7 @@ Los informes quedan en `<módulo>/build/reports/tests/` (JVM) y `<módulo>/build
 | UI Compose | `app/src/androidTest` | Pantallas sin estado (`*Content`) con datos fijos |
 | Integración | `app/src/androidTest/.../integracion` | Pantalla real + ViewModel real + casos de uso + Room en memoria: `FlujoVentaTest` (Efectivo, Transferencia y sin turno), `FlujoTurnoTest` (apertura y cierre desde Inicio), `FlujoEscanerTest`, `FlujoRespaldoTest`, `FlujoLicenciaTest` (bloqueo → activar → Inicio) |
 
-En la integración solo se simulan los bordes que dependen del dispositivo o de terceros (`EntornoIntegracion`): Keystore y DataStore (perfil, preferencias, licencia), cámara (se escribe el código a mano, el mismo camino que un código leído), el selector de archivos del sistema (se entrega la URI al ViewModel, igual que el callback del launcher) y las bases públicas de productos. `MainScaffold` necesita Hilt, así que `FlujoLicenciaTest` reproduce la puerta de `SpviRoot` con `RootViewModel` y un marcador en lugar de Inicio.
+En la integración solo se simulan los bordes que dependen del dispositivo o de terceros (`EntornoIntegracion`): Keystore y DataStore (perfil, preferencias, licencia), cámara (se escribe el código a mano, el mismo camino que un código leído), el selector de archivos del sistema (se entrega la URI al ViewModel, igual que el callback del launcher) y las bases públicas de productos. `MainScaffold` necesita Hilt, así que `FlujoLicenciaTest` reproduce la puerta de `ShalevRoot` con `RootViewModel` y un marcador en lugar de Inicio.
 
 ### Casos borde
 
@@ -830,7 +842,7 @@ En la integración solo se simulan los bordes que dependen del dispositivo o de 
 | Archivo corrupto | `CasosBordeTest` (el error se propaga y la contraseña se borra igual), `BackupCipherTest`, `RespaldoTest`, `RespaldoRoomTest`, `FlujoRespaldoTest` |
 | Empate en el Top 3 | `CasosBordeTest` (empate total determinista; la ganancia empatada la decide el margen; más de 3 empatados; eliminados fuera de «lento»), `StockEstadisticasTest`, `TurnoUseCasesTest` |
 | Licencia perpetua | `CasosBordeLicenciaTest` (sigue desbloqueada 20 años después), `CasosBordeTest`, `LicenseFlowTest`, `RuntimeVerificationTest`, `LicenciaFormTest`, `BannerTest`, `FlujoLicenciaTest` |
-| `devicePub` faltante | `CasosBordeLicenciaTest`: una solicitud sin `devicePub` hace que GL cifre hacia su propia clave. SPVI la rechaza, no guarda nada y sigue en prueba. La solicitud de SPVI nunca la omite. También `LicenseFlowTest`, `RuntimeVerificationTest` y `LicenciaInstrumentedTest` |
+| `devicePub` faltante | `CasosBordeLicenciaTest`: una solicitud sin `devicePub` hace que GL cifre hacia su propia clave. Shalev la rechaza, no guarda nada y sigue en prueba. La solicitud de Shalev nunca la omite. También `LicenseFlowTest`, `RuntimeVerificationTest` y `LicenciaInstrumentedTest` |
 
 ### Suposiciones
 
@@ -844,21 +856,21 @@ Plan completo y decisiones en `PLAN_OPTIMIZACION_P17.md` (§9; retirado en la 0.
 
 | Fase | Qué se hizo |
 |---|---|
-| A. Limpieza | 20 casos de uso sin uso borrados; fuera `TextoWriter`, `sqlite-ktx` y `compose-animation`; OkHttp directo en lugar de Retrofit; iconos propios (trazados de Material Symbols, Apache 2.0) en lugar de `material-icons-extended`, con `SpviIconsTest`; días de aviso de caducidad (7) y tiempo de espera de red (5 s) pasan a constantes |
+| A. Limpieza | 20 casos de uso sin uso borrados; fuera `TextoWriter`, `sqlite-ktx` y `compose-animation`; OkHttp directo en lugar de Retrofit; iconos propios (trazados de Material Symbols, Apache 2.0) en lugar de `material-icons-extended`, con `ShalevIconsTest`; días de aviso de caducidad (7) y tiempo de espera de red (5 s) pasan a constantes |
 | B. Funciones retiradas | *Clave del emisor* (`GlKeyPolicy`, `GlKeyStore`, `ClaveEmisorScreen` y sus tests); botón «Abrir Enzona» y su `<queries>`; caducidad recordada por código; tasas de cambio; respaldo solo «Todo» (formato v3, sin lectura de v1/v2); BD v3 con `fallbackToDestructiveMigrationFrom(1, 2)` y sin `Migraciones.kt` |
 | C. Casos de uso que solo reenvían | 20 clases borradas; los ViewModels usan directamente las interfaces de repositorio de `:domain`. Se quedan los que tienen lógica |
-| D. Estructura | `:security` se integra en `:data` (`cu.spvi.data.security`), quedan 6 módulos; exportación unificada en `app/common/ExportadorArchivos.kt`; fakes de `:app` compartidos en `app/src/sharedTest` |
-| E. Automatización local | `./gradlew spviCheck` (tests JVM + lint con `app/lint-baseline.xml` + APK debug + control de permisos), `EsquemaTest` (instrumentado) y `.github/workflows/ci.yml` preparado e inactivo |
+| D. Estructura | `:security` se integra en `:data` (`cu.shalev.data.security`), quedan 6 módulos; exportación unificada en `app/common/ExportadorArchivos.kt`; fakes de `:app` compartidos en `app/src/sharedTest` |
+| E. Automatización local | `./gradlew shalevCheck` (tests JVM + lint con `app/lint-baseline.xml` + APK debug + control de permisos), `EsquemaTest` (instrumentado) y `.github/workflows/ci.yml` preparado e inactivo |
 | F. Documentación | 0.13.0 (13) |
 
-**Desviaciones de SPVI.txt (decididas por el usuario):** tasas de cambio (:11), botón Enzona (:6), caducidad por código (:87) y respaldo «Solo configuración» (:132). Detalle en el README.
+**Desviaciones de Shalev.txt (decididas por el usuario):** tasas de cambio (:11), botón Enzona (:6), caducidad por código (:87) y respaldo «Solo configuración» (:132). Detalle en el README.
 
 ### Suposiciones del Prompt 17
 
-1. **`data/schemas/cu.spvi.data.db.SpviDatabase/3.json`** lo genera Room (KSP) en la primera compilación en Android Studio; hay que subirlo a git. `EsquemaTest` lo lee desde los assets de `androidTest`.
+1. **`data/schemas/cu.shalev.data.db.ShalevDatabase/3.json`** lo genera Room (KSP) en la primera compilación en Android Studio; hay que subirlo a git. `EsquemaTest` lo lee desde los assets de `androidTest`.
 2. **S6 (fakes compartidos):** se compartieron los 3 fakes que usaban a la vez los tests JVM y los instrumentados; los que solo usa un lado se quedaron donde estaban.
 3. **Teléfonos de prueba:** al abrir la 0.13.0, una BD v1 o v2 se recrea vacía. Lo más sencillo es desinstalar y reinstalar.
-4. **Baseline de lint vacío:** no se pudo ejecutar lint en este entorno. La primera ejecución de `spviCheck` dirá si hay que regenerarlo con `./gradlew updateLintBaseline`.
+4. **Baseline de lint vacío:** no se pudo ejecutar lint en este entorno. La primera ejecución de `shalevCheck` dirá si hay que regenerarlo con `./gradlew updateLintBaseline`.
 
 ## Rediseño UI/UX/IX (Prompt 18) — 0.14.0
 
@@ -866,14 +878,14 @@ Auditoría, plan y especificación por pantalla en `AUDITORIA_UI_UX_IX_P18.md` (
 
 | Área | Cambio |
 |---|---|
-| Design system | `SpviTabs`, `SpviStepper`, `SpviStatusBanner` con `BannerTone` (Info/Aviso/Crítico), `SpviHaptics`; `bodyMedium` 14sp y `bodySmall` 13sp; modo letra grande (`letraGrande()`, escala ≥ 1.3); tokens `fabClearance`, `qr`, `fotoMiniatura`, `campoCantidad`, `contentMaxWidth`, `tonalBar`; motion direccional y de listas; `spviAnimateItem()`, `spviContentWidth()`; `SpviTextField` con acción de teclado; `SpviEmptyState` con Ayuda |
+| Design system | `ShalevTabs`, `ShalevStepper`, `ShalevStatusBanner` con `BannerTone` (Info/Aviso/Crítico), `ShalevHaptics`; `bodyMedium` 14sp y `bodySmall` 13sp; modo letra grande (`letraGrande()`, escala ≥ 1.3); tokens `fabClearance`, `qr`, `fotoMiniatura`, `campoCantidad`, `contentMaxWidth`, `tonalBar`; motion direccional y de listas; `shalevAnimateItem()`, `shalevContentWidth()`; `ShalevTextField` con acción de teclado; `ShalevEmptyState` con Ayuda |
 | Navegación | Fundido entre pestañas y deslizamiento direccional hacia los detalles; estado leído con `collectAsStateWithLifecycle` |
 | Licencia | Asistente de 3 pasos (datos → solicitud → activación) dentro de la misma pantalla; aviso de caducidad en Inicio con tono según los días restantes |
 | Respaldo | Exportar en 2 pasos (contraseña → destino) e importar con «Paso n de 3» |
 | Formularios | «¿Salir sin guardar?» al volver con cambios (`rememberSalidaProtegida`) en Producto, Insumo y Perfil, y en las hojas de Precios y Pago electrónico; cadena Siguiente/Listo en el teclado |
 | Registros y Elaboración | Pestañas accesibles con contador; Registros recuerda pestaña y filtros (`SavedStateHandle` + `FiltrosGuardados`) |
 | Venta y Escáner | Vibración de éxito al terminar la venta y al leer un código; `FLAG_SECURE` también en el paso QR |
-| Accesibilidad | Pestañas con rol y posición, regiones vivas en asistentes y banners, valor de `SpviListItem` debajo del título con letra grande, probado con escala 2.0 |
+| Accesibilidad | Pestañas con rol y posición, regiones vivas en asistentes y banners, valor de `ShalevListItem` debajo del título con letra grande, probado con escala 2.0 |
 
 Tests nuevos: `BannerTonoTest`, `FiltrosGuardadosTest`, `LicenciaPasosTest`, `RespaldoPasosTest` (JVM, `:app`), `P18ComponentesTest` (JVM, `:designsystem`) y `DisenoP18UiTest` (instrumentado).
 
@@ -887,16 +899,16 @@ Tests nuevos: `BannerTonoTest`, `FiltrosGuardadosTest`, `LicenciaPasosTest`, `Re
 6. **Vibración:** éxito al terminar la venta y en el escáner; un toque breve con cada snackbar. La producción en Elaboración no vibra porque su resultado es un mensaje genérico.
 7. **La Ayuda conserva «Abrir turno»** (lo exige `AyudaSoporteTest`).
 8. **Recomposiciones:** no hay test automático; ver `UI_UX_IX.md` §4.
-9. **Pendiente opcional:** el asistente de Onboarding y Migrar todavía no usan `SpviStepper`.
+9. **Pendiente opcional:** el asistente de Onboarding y Migrar todavía no usan `ShalevStepper`.
 
 ## Revisión final y empaquetado (Prompt 19) — 0.14.1
 
 Sin funciones nuevas. El informe completo está en `REVISION_FINAL.md` y el procedimiento de release en `RELEASE.md`.
 
 - **Build:**
-  - `spviPermisos` revisa debug y release, y admite el permiso propio `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` de androidx.core; sin esa excepción, `spviCheck` habría fallado.
-  - Nueva tarea `spviRelease`.
-  - `signingConfig` desde `keystore.properties` o variables `SPVI_*`.
+  - `shalevPermisos` revisa debug y release, y admite el permiso propio `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` de androidx.core; sin esa excepción, `shalevCheck` habría fallado.
+  - Nueva tarea `shalevRelease`.
+  - `signingConfig` desde `keystore.properties` o variables `Shalev_*`.
   - `gradlew` ejecutable, también en la CI.
   - Secretos de firma en `.gitignore`.
 - **Contrato GL:** el `deviceId` se limita a ASCII `a-z0-9` y a 128 caracteres (`DeviceIdTest`). Con un ANDROID_ID real el valor no cambia.
@@ -918,11 +930,11 @@ Sin funciones nuevas. El informe completo está en `REVISION_FINAL.md` y el proc
 
 Sin cambios en dominio, casos de uso, repositorios, criptografía, contrato GL, permisos, manifiesto ni base de datos. Sin dependencias nuevas.
 
-- **A16, validación homogénea:** `SpviTextField` gana `validarAlSalir` y `forzarError` (lógica pura en `SpviValidacion`). Se aplica a Producto, Insumo, Perfil, Pago electrónico (sustituye la heurística por longitud), Precios, Venta→Cliente, Onboarding (datos y niveles), Licencia, Respaldo y Escáner (el «Escribe el nombre» pasa a ayuda, sin rojo antes de escribir).
+- **A16, validación homogénea:** `ShalevTextField` gana `validarAlSalir` y `forzarError` (lógica pura en `ShalevValidacion`). Se aplica a Producto, Insumo, Perfil, Pago electrónico (sustituye la heurística por longitud), Precios, Venta→Cliente, Onboarding (datos y niveles), Licencia, Respaldo y Escáner (el «Escribe el nombre» pasa a ayuda, sin rojo antes de escribir).
 - **Pregunta 3, Respaldo:** Exportar 1 Contraseña → 2 Destino → 3 «Respaldo listo» (`RespaldoUiState.exportado`, botón «Hacer otro respaldo»); Importar 1 Elegir → 2 Comprobar → 3 Contraseña → 4 Confirmar. El progreso de la operación pasa a llamarse «Etapa N de M».
-- **L9:** Onboarding y Migrar usan `SpviStepper` (`pasoMigrar` deriva el paso en curso). `SpviStepper` sin flechas ya no reserva huecos.
+- **L9:** Onboarding y Migrar usan `ShalevStepper` (`pasoMigrar` deriva el paso en curso). `ShalevStepper` sin flechas ya no reserva huecos.
 - **A07:** «Siguiente»/«Listo» en el paso Datos del Onboarding («Listo» = Siguiente).
-- **A18 / A22:** `spviAnimateItem()` en el carrito de Venta y en las listas de Pago electrónico; `spviContentWidth()` en Onboarding, Perfil, Pago electrónico, Escáner, Venta, Migrar y Soporte.
+- **A18 / A22:** `shalevAnimateItem()` en el carrito de Venta y en las listas de Pago electrónico; `shalevContentWidth()` en Onboarding, Perfil, Pago electrónico, Escáner, Venta, Migrar y Soporte.
 - **Pregunta 4:** sin «Deshacer» (solo confirmación). **Pregunta 2:** tipografía +1sp ya aplicada, ahora con test.
 - **Tests:** +10 JVM (`RespaldoPasosTest` 7, `P18ComponentesTest` +5 entre validación y tipografía, `MigrarTest` +2; `RespaldoTest` amplía 2) y +3 Compose (`DisenoP18UiTest` ×2, `AjustesPantallasUiTest.respaldoPaso3HechoYHacerOtro`); `OnboardingUiTest` y `AjustesPantallasUiTest` actualizados.
 - **Verificación:** 219 + 54 + 301 tests JVM correctos; 0 avisos del compilador; instrumentados compilados.
@@ -936,22 +948,22 @@ Respuestas aplicadas: texto solo en «Nueva venta»; ilustraciones libres estilo
 | # | Pedido | Cómo quedó |
 |---|---|---|
 | 1–2 | «Nueva venta» centrada; Escanear a su derecha | Inicio: «Nueva venta» (único botón con texto) centrada; Escanear sale de la barra superior y va a su lado. |
-| 3, 10 | Botones sin texto; ancho según contenido | `SpviPrimaryButton`/`SpviSecondaryButton`/`SpviTextButton` con `icon` obligatorio; circulares de 48dp; texto como TalkBack + tooltip. Ningún botón ocupa todo el ancho (`fillMaxWidth` retirado en Escáner, Migrar, Respaldo, Soporte, Registros, formularios). |
+| 3, 10 | Botones sin texto; ancho según contenido | `ShalevPrimaryButton`/`ShalevSecondaryButton`/`ShalevTextButton` con `icon` obligatorio; circulares de 48dp; texto como TalkBack + tooltip. Ningún botón ocupa todo el ancho (`fillMaxWidth` retirado en Escáner, Migrar, Respaldo, Soporte, Registros, formularios). |
 | 4 | Intensidad de las barras de Ventas | `ChartMath.intensidad`: opacidad 0,30 → 1 según el valor respecto al máximo de la escala Y. |
 | 5 | Menos texto en tarjetas | Explicaciones de tarjetas, estados vacíos, ayudas de campos y diálogos reducidas a una frase (Inicio, Inventario, Elaboración, Precios, Registros, Turnos, Venta, Licencia, formularios). |
-| 6, 16 | Textos alineados y sin partir | Tipografía `.titulo()`/`.cuerpo()`; `SpviTextoAjustable` (reduce la letra antes de cortar) en los importes de las filas y en las celdas de Inicio. |
-| 7 | Icono de Precios «$» | `SpviIcons.Precios` = AttachMoney. |
-| 8 | Período en combobox | `SpviComboBox` en Inicio. |
-| 9, 12 | Ventanas centradas; Confirmar/Cancelar centrados | `SpviBottomSheet` y `SpviDialog` comparten `SpviVentana` centrada; tocar fuera cierra; pie con `SpviButtonRow` centrado (16dp). El selector de fecha también centra sus botones. `SpviDialog` gana `confirmEnabled`/`confirmLoading`/`confirmTag`/`confirmIcon`. |
-| 11 | Fitts, Hick, Jakob, Proximidad, Von Restorff | Tabla en DESIGN_SYSTEM.md («Prompt 24»). Ejemplos: botón flotante en Precios, `SpviBarraAcciones` fija en formularios, un FAB por pestaña en Elaboración, botones juntos a lo que afectan. |
-| 13 | Imágenes de «Algo salió mal», «Sin resultados», vacíos | 9 ilustraciones unDraw (npm `undraw-svg` 2.0.0, MIT) en `designsystem/.../ilustracion/SpviIlustraciones.kt`; acento = `primary`, grises invertidos en oscuro. |
-| 14 | Campos redondeados | `SpviTextField`: 12dp una línea, 16dp multilínea. |
+| 6, 16 | Textos alineados y sin partir | Tipografía `.titulo()`/`.cuerpo()`; `ShalevTextoAjustable` (reduce la letra antes de cortar) en los importes de las filas y en las celdas de Inicio. |
+| 7 | Icono de Precios «$» | `ShalevIcons.Precios` = AttachMoney. |
+| 8 | Período en combobox | `ShalevComboBox` en Inicio. |
+| 9, 12 | Ventanas centradas; Confirmar/Cancelar centrados | `ShalevBottomSheet` y `ShalevDialog` comparten `ShalevVentana` centrada; tocar fuera cierra; pie con `ShalevButtonRow` centrado (16dp). El selector de fecha también centra sus botones. `ShalevDialog` gana `confirmEnabled`/`confirmLoading`/`confirmTag`/`confirmIcon`. |
+| 11 | Fitts, Hick, Jakob, Proximidad, Von Restorff | Tabla en DESIGN_SYSTEM.md («Prompt 24»). Ejemplos: botón flotante en Precios, `ShalevBarraAcciones` fija en formularios, un FAB por pestaña en Elaboración, botones juntos a lo que afectan. |
+| 13 | Imágenes de «Algo salió mal», «Sin resultados», vacíos | 9 ilustraciones unDraw (npm `undraw-svg` 2.0.0, MIT) en `designsystem/.../ilustracion/ShalevIlustraciones.kt`; acento = `primary`, grises invertidos en oscuro. |
+| 14 | Campos redondeados | `ShalevTextField`: 12dp una línea, 16dp multilínea. |
 | 15 | Formato de fecha/hora del dispositivo | `Dates.formato` (core) lo fija `FormatoFechaDispositivo` al arrancar; guía del campo de fecha derivada (`FechasUi.guia()`). |
 | 17 | Varias tablas → pestañas | Detalle del turno: Resumen · Ventas · Inventario (`PestanaTurno`). Elaboración y Registros ya las tenían. |
-| 18 | Botones repetidos | Guardar arriba + abajo → uno solo en `SpviBarraAcciones` (Insumo, Producto); «Agregar» del estado vacío que repetía el «+» (Inventario, Elaboración, Precios); «Ahora no» duplicado en la consulta en línea del Escáner; «Nuevo elaborado» al final de la lista; editar en la fila de Elaborado sin receta. |
+| 18 | Botones repetidos | Guardar arriba + abajo → uno solo en `ShalevBarraAcciones` (Insumo, Producto); «Agregar» del estado vacío que repetía el «+» (Inventario, Elaboración, Precios); «Ahora no» duplicado en la consulta en línea del Escáner; «Nuevo elaborado» al final de la lista; editar en la fila de Elaborado sin receta. |
 | 19 | Filas con el dato principal | Inventario/Insumos: nombre + existencias; subtítulo solo como aviso (Crítico, Bajo, Vence…). Elaborados: nombre + existencias (aviso «Sin receta» / «Sin insumos suficientes»). Registros: nombre/Nº + fecha + importe. Precios: nombre + porcentaje (el resumen queda para TalkBack). Turno: ventas con hora y total. Carrito: precio c/u y existencias solo al llegar al tope o si se elabora al vender. |
 
-- **Tests:** +3 JVM en core (`FormatoFechaTest`), +4 en app/design system (`P24ComponentesTest`, `SpviIlustracionesTest`, `FechasUiTest`, `VentaLogicTest.existenciasSoloComoAviso`); actualizados `ElaboracionLogicTest`, `RegistrosLogicTest`, `RegistrosViewModelTest`, `InicioLogicTest`. Compose: los clics por texto en botones pasan a `onNodeWithContentDescription`; `ElaboracionUiTest` (un FAB por pestaña, confirmar Producir desactivado), `InventarioUiTest` (vacío sin «Agregar» repetido), `TurnoUiTest` (pestaña Ventas). Capturas: +2 (`04r2`, `04r3`).
+- **Tests:** +3 JVM en core (`FormatoFechaTest`), +4 en app/design system (`P24ComponentesTest`, `ShalevIlustracionesTest`, `FechasUiTest`, `VentaLogicTest.existenciasSoloComoAviso`); actualizados `ElaboracionLogicTest`, `RegistrosLogicTest`, `RegistrosViewModelTest`, `InicioLogicTest`. Compose: los clics por texto en botones pasan a `onNodeWithContentDescription`; `ElaboracionUiTest` (un FAB por pestaña, confirmar Producir desactivado), `InventarioUiTest` (vacío sin «Agregar» repetido), `TurnoUiTest` (pestaña Ventas). Capturas: +2 (`04r2`, `04r3`).
 - **Verificación:** 222 + 54 + 305 tests JVM correctos; instrumentados y capturas compilados; SQL 0 errores.
 
 
@@ -959,9 +971,9 @@ Respuestas aplicadas: texto solo en «Nueva venta»; ilustraciones libres estilo
 
 | Petición | Cambio |
 |---|---|
-| «Nueva venta» solo icono, centrada con Escanear y espacio moderado | `InicioScreen.TurnoCard`: pareja centrada con `SpviSpacing.lg` (24dp); se quita el hueco de compensación. `SpviPrimaryButton` pierde `mostrarTexto`. |
-| Combobox de Período acorde a la UI | `SpviComboBox` rediseñado como tarjeta tonal (ver DESIGN_SYSTEM.md). |
-| Guardar → Confirmar | `SpviIcons.Guardar = Confirmar`. Afecta a Producto, Insumo, Perfil, Pago electrónico, Precios y Escáner. |
+| «Nueva venta» solo icono, centrada con Escanear y espacio moderado | `InicioScreen.TurnoCard`: pareja centrada con `ShalevSpacing.lg` (24dp); se quita el hueco de compensación. `ShalevPrimaryButton` pierde `mostrarTexto`. |
+| Combobox de Período acorde a la UI | `ShalevComboBox` rediseñado como tarjeta tonal (ver DESIGN_SYSTEM.md). |
+| Guardar → Confirmar | `ShalevIcons.Guardar = Confirmar`. Afecta a Producto, Insumo, Perfil, Pago electrónico, Precios y Escáner. |
 | Ventas, transferencias, turnos y movimientos por fecha | `RegistrosLogic` (título = fecha), `TurnoLogic` (`tituloTurno` = fecha, `tituloDetalleTurno`, `horasTurno`) y `TablasExport` (`tituloVenta/Transaccion/Movimiento`; sin «Nº» de venta, «Venta Nº» ni «Turno #» en fichas, textos compartidos y exportaciones). El buscador de Ventas ya no menciona «Nº». |
 
 - **Tests:** se actualizan RegistrosLogicTest, TurnoLogicTest, RegistrosViewModelTest, RegistrosUiTest, RegistrosTest y TablasExportTest.
@@ -995,7 +1007,7 @@ Desde el Prompt 25 las ventas se identifican por su fecha y el número interno n
 
 **Se mantiene:** la búsqueda por el **Nº de transacción bancaria** (el del SMS de PAGOxMOVIL), que sí se ve en pantalla y en la ficha. El texto de ayuda de Transferencias («Nº de transacción, cliente, CI o teléfono») ya no mencionaba el número de venta, así que no cambia.
 
-**Textos largos en filas (detectado al preparar las capturas):** «Sin insumos suficientes» no cabía en el 45 % del ancho de la fila ni con la letra reducida a 11 sp, así que en un móvil de 360 dp se habría cortado con «…» (incumple el punto 16 del Prompt 24). `SpviListItem` tiene ahora `valueMaxLines` y `subtitleMaxLines`, los dos a 1 por defecto, así que el resto de la app no cambia. Se usan así: 2 líneas para el valor de las filas de Elaborados (Inventario, modo venta y Elaboración) y para el subtítulo de la línea del carrito («400.00 CUP c/u · Alcanza para 15»); 4 líneas para los valores de las fichas de Inventario y de Registros (receta, descripción, nota, cliente).
+**Textos largos en filas (detectado al preparar las capturas):** «Sin insumos suficientes» no cabía en el 45 % del ancho de la fila ni con la letra reducida a 11 sp, así que en un móvil de 360 dp se habría cortado con «…» (incumple el punto 16 del Prompt 24). `ShalevListItem` tiene ahora `valueMaxLines` y `subtitleMaxLines`, los dos a 1 por defecto, así que el resto de la app no cambia. Se usan así: 2 líneas para el valor de las filas de Elaborados (Inventario, modo venta y Elaboración) y para el subtítulo de la línea del carrito («400.00 CUP c/u · Alcanza para 15»); 4 líneas para los valores de las fichas de Inventario y de Registros (receta, descripción, nota, cliente).
 
 **Capturas:** maquetas HTML de las pantallas de los Prompts 26 y 27 en `CAPTURAS_P26.pdf` (retirado en la 0.18.0, sustituido por `CAPTURAS_P29.pdf`), con el mismo método que en el Prompt 24 (no son capturas de un dispositivo; ver L11/L12 en `REVISION_FINAL.md`).
 
@@ -1007,16 +1019,16 @@ Cinco peticiones: (1) en «Cobro por transferencia», quitar «Abrir Transfermó
 
 | Cambio | Dónde |
 |---|---|
-| Fuera el botón «Abrir Transfermóvil», el evento `AbrirApp`, `PagoQr.PAQUETE_TRANSFERMOVIL` y el bloque `<queries>` del manifiesto (SPVI ya no consulta qué apps hay instaladas) | `AndroidManifest.xml`, `venta/*`, `PagoQr.kt` |
+| Fuera el botón «Abrir Transfermóvil», el evento `AbrirApp`, `PagoQr.PAQUETE_TRANSFERMOVIL` y el bloque `<queries>` del manifiesto (Shalev ya no consulta qué apps hay instaladas) | `AndroidManifest.xml`, `venta/*`, `PagoQr.kt` |
 | `TotalVenta`: el total va **una sola vez**, centrado arriba, en `headlineSmall` negrita. La etiqueta cambia según el paso: «Total estimado» (carrito, sin cotización), «Total» o «Importe a transferir» (QR). Se quitaron el total inferior, el «Importe a transferir» bajo el QR y la fila Total de los datos del cliente | `venta/VentaScreen.kt`, `TextosVenta.etiquetaTotal` |
-| Barra inferior con `SpviBarraAcciones`: ✕ (tonal) y ✓ (relleno), solo iconos, centrados y separados 16dp; el nombre va en TalkBack/tooltip | ídem |
+| Barra inferior con `ShalevBarraAcciones`: ✕ (tonal) y ✓ (relleno), solo iconos, centrados y separados 16dp; el nombre va en TalkBack/tooltip | ídem |
 | La tarjeta del comprobante pierde su título (repetía el de la barra superior) | ídem |
 | Ficha de Registros: «Total» (venta) o «Importe» (transferencia) arriba y centrado, y fuera de la tabla | `registros/RegistrosScreen.kt` |
 | Detalle de turno: «Total vendido» arriba y centrado, fuera de la tarjeta Totales | `registros/TurnoDetalleScreen.kt` |
 
 **2. Centrado**
 
-- `SpviCard` centra su contenido y el título (por defecto) y activa `LocalSpviCentrado`. Con eso, `SpviSecondaryText` se centra dentro de tarjetas y ventanas, pero no dentro de las filas (`SpviListItem` lo desactiva). Lo mismo para el cuerpo de `SpviVentana`. «Paso X de Y» del `SpviStepper` va centrado.
+- `ShalevCard` centra su contenido y el título (por defecto) y activa `LocalShalevCentrado`. Con eso, `ShalevSecondaryText` se centra dentro de tarjetas y ventanas, pero no dentro de las filas (`ShalevListItem` lo desactiva). Lo mismo para el cuerpo de `ShalevVentana`. «Paso X de Y» del `ShalevStepper` va centrado.
 - 25 párrafos sueltos y los títulos de sección (Inicio, Precios, «Método de pago» en Venta, «Se mide en», «Receta») van centrados.
 - Contadores con acción («N elegidos» + icono en Inventario, Elaboración, Registros y Precios; barra «Continuar» del modo venta) centrados como grupo. `SeleccionVenta.continuar` dice «1 elegido» / «N elegidos».
 - Inicio: una alerta sola va centrada y con el mismo ancho que cuando son dos. En la tarjeta del turno, «Desde las…» sigue alineado a la izquierda, junto a su icono.
@@ -1029,11 +1041,11 @@ Cinco peticiones: (1) en «Cobro por transferencia», quitar «Abrir Transfermó
 | Total de la venta en 3–4 sitios | Uno solo, arriba (punto 1) |
 | Licencia: tarjeta «Costos» con los mismos precios que los chips de tipo | Fuera la tarjeta. Los precios siguen en los chips |
 | Licencia: filas Tipo / Vence / ID que repetían el título del estado | `detalle()` deja solo «Emitida» y, con licencia activa, «Tiempo restante» |
-| Asistente: título del paso dentro del contenido y otra vez en la cabecera | Solo en la cabecera (`SpviStepper`) |
+| Asistente: título del paso dentro del contenido y otra vez en la cabecera | Solo en la cabecera (`ShalevStepper`) |
 | Inicio, «Ganancia Neta»: «Venta» = total de la tarjeta Ventas | Fuera. Quedan Costo y Ganancia |
 | Detalle de turno: fila «Abierto/Cerrado · horario» = Apertura + Cierre; «Ventas» y «Movimientos de inventario» = números de las pestañas | Fuera las tres filas |
 | Pago electrónico: «En uso» con barra lateral + fondo + etiqueta | Fuera la barra |
-| Teléfonos y tarjetas en Perfil, en la pantalla Pago electrónico y en una ventana de Inicio (**opción A** elegida por el usuario) | Solo en la pantalla Pago electrónico, que ahora se abre también desde la tarjeta de Inicio. Perfil queda con nombre, apellidos y carné (subtítulo en Ajustes: «Nombre, apellidos y carné»). Se borran `PagoElectronicoSheet`, `PagoSheetContent`, `BorradorPago`, `abrirBorrador/editarBorrador/guardarBorrador/cerrarBorrador`, `EventoPago.Cerrar` y sus pruebas y capturas (06a, 06b). **Se aparta a propósito de SPVI.txt 119–123** (listas en Perfil). El caso de uso de dominio `IntroducirPagoElectronico` se conserva con sus pruebas, aunque la app ya no lo usa |
+| Teléfonos y tarjetas en Perfil, en la pantalla Pago electrónico y en una ventana de Inicio (**opción A** elegida por el usuario) | Solo en la pantalla Pago electrónico, que ahora se abre también desde la tarjeta de Inicio. Perfil queda con nombre, apellidos y carné (subtítulo en Ajustes: «Nombre, apellidos y carné»). Se borran `PagoElectronicoSheet`, `PagoSheetContent`, `BorradorPago`, `abrirBorrador/editarBorrador/guardarBorrador/cerrarBorrador`, `EventoPago.Cerrar` y sus pruebas y capturas (06a, 06b). **Se aparta a propósito de Shalev.txt 119–123** (listas en Perfil). El caso de uso de dominio `IntroducirPagoElectronico` se conserva con sus pruebas, aunque la app ya no lo usa |
 
 **4. Licencia sin identificadores**: no se muestran el ID del dispositivo ni el de la licencia (fuera `idCorto` y el `SelectionContainer`). La solicitud ya los lleva cifrados, así que el usuario no los necesita. El ID del dispositivo solo hace falta para migrar, y se ve (copiable y centrado) en Ajustes → Migrar a otro teléfono; los textos de Migrar apuntan ahí. La lista «Teléfonos de tu Perfil» pasa a «Tus teléfonos», y el resumen dice «De tu Perfil y de Pago electrónico».
 
@@ -1047,16 +1059,16 @@ Ocho peticiones. Respuestas del usuario a las dudas: (1) QR solo aviso, (2) tipo
 
 | # | Petición | Resultado |
 |---|---|---|
-| 1 | «Transfermóvil captura los datos del QR excepto el importe» | **Sin cambios.** El QR que genera SPVI es el de transferencia de persona (`TRANSFERMOVIL_ETECSA,TRANSFERENCIA,<tarjeta>,<móvil>,`), que no lleva importe. Los QR con importe son de comercios registrados en la pasarela. El total sigue arriba y centrado para que el cliente lo escriba |
-| 2 | Tipografía «Anurati» en el título | La licencia de Anurati es contradictoria (en unas fuentes es gratuita, en otras solo personal). Se usa **Orbitron** (SIL OFL 1.1), con un estilo geométrico parecido: `designsystem/res/font/orbitron.ttf`, peso 700, en `SpviMarca`. `SpviTopBar` la aplica al título «SPVI». La licencia está en `designsystem/src/main/OFL_Orbitron.txt` |
+| 1 | «Transfermóvil captura los datos del QR excepto el importe» | **Sin cambios.** El QR que genera Shalev es el de transferencia de persona (`TRANSFERMOVIL_ETECSA,TRANSFERENCIA,<tarjeta>,<móvil>,`), que no lleva importe. Los QR con importe son de comercios registrados en la pasarela. El total sigue arriba y centrado para que el cliente lo escriba |
+| 2 | Tipografía «Anurati» en el título | La licencia de Anurati es contradictoria (en unas fuentes es gratuita, en otras solo personal). Se usa **Orbitron** (SIL OFL 1.1), con un estilo geométrico parecido: `designsystem/res/font/orbitron.ttf`, peso 700, en `ShalevMarca`. `ShalevTopBar` la aplica al título «Shalev». La licencia está en `designsystem/src/main/OFL_Orbitron.txt` |
 | 3 | Elaboración → Servicios; insumos en Inventario | Fuera la sección Elaboración (paquete `elaboracion/`). Los insumos aparecen en Inventario como la categoría «Insumos» (id negativo para no mezclarse con productos), con ficha, eliminar, el filtro «Insumos» y la acción «Insumo» en el botón +. El formulario de insumo pasa a `app/…/insumos/` y gana «Precio de venta» (opcional): si lo tiene, se vende en unidades enteras. Ningún producto puede usar la categoría «Insumos» (`NO_PERMITIDO`) |
 | 4 | Servicios | Nueva sección (icono: mano que recibe, `VolunteerActivism`). Campos: Nombre, Tipo (libre, con sugerencias), Importe, y opcionales Foto y Descripción. Puede gastar insumos («por vez»): muestra «Alcanza para N» y no se vende si no alcanzan. Venta separada: «Nueva venta» → Productos o Servicios. Un carrito no puede mezclar ambos. Registros tiene la pestaña **Servicios** y la exportación incluye la clase de cada línea. Inicio tiene «Servicios: top ventas» y «Servicios: menos vendidos» («1 vez» / «N veces») |
-| 5 | Deslizar | `navigation/Deslizar.kt`: un gesto horizontal de 72dp cambia de sección en la barra inferior. Solo funciona en las 5 secciones, y no en formularios ni en la venta. Se ignoran los toques en las franjas de gestos del sistema y los gestos que ya usa un hijo. En Registros cambia de pestaña y, después de la última, pasa a la sección siguiente. `SpviTabs` se vuelve desplazable con más de 4 pestañas |
+| 5 | Deslizar | `navigation/Deslizar.kt`: un gesto horizontal de 72dp cambia de sección en la barra inferior. Solo funciona en las 5 secciones, y no en formularios ni en la venta. Se ignoran los toques en las franjas de gestos del sistema y los gestos que ya usa un hijo. En Registros cambia de pestaña y, después de la última, pasa a la sección siguiente. `ShalevTabs` se vuelve desplazable con más de 4 pestañas |
 | 6 | Barras de navegación de los lanzadores | `consumeWindowInsets(padding)` en 10 pantallas con `Scaffold` + `imePadding` (antes la barra de navegación se contaba dos veces y quedaba un hueco sobre el teclado o los botones). En `MainActivity`, la barra de navegación es transparente en los 3 modos (gestos, 2 y 3 botones), sin el contraste forzado que pinta algunos fabricantes, y hay margen horizontal para el notch en horizontal |
-| 7 | Icono transparente | Las PNG `mipmap-*/ic_launcher*` y el fondo adaptativo son transparentes, y solo se ve la figura. Algunos lanzadores (One UI, MIUI) siempre ponen una placa detrás de los iconos adaptativos, y eso SPVI no lo puede evitar. La pantalla de inicio (splash) sigue usando `@color/ic_launcher_background` |
-| 8 | Aviso de turno abierto | `notificacion/AvisoTurno.kt`: notificación fija (canal «Turno», importancia baja, sin sonido) con el texto «Turno abierto desde las HH:MM», sin importes. Aparece cuando SPVI pasa a segundo plano o se cierra con el turno abierto, y se quita al volver o al cerrar el turno. Al tocarla, abre SPVI. Si el proceso termina, el aviso desaparece y no se restaura tras reiniciar (no hay `RECEIVE_BOOT_COMPLETED`). El permiso `POST_NOTIFICATIONS` (Android 13+) se pide al abrir un turno. Si se niega, todo funciona igual |
+| 7 | Icono transparente | Las PNG `mipmap-*/ic_launcher*` y el fondo adaptativo son transparentes, y solo se ve la figura. Algunos lanzadores (One UI, MIUI) siempre ponen una placa detrás de los iconos adaptativos, y eso Shalev no lo puede evitar. La pantalla de inicio (splash) sigue usando `@color/ic_launcher_background` |
+| 8 | Aviso de turno abierto | `notificacion/AvisoTurno.kt`: notificación fija (canal «Turno», importancia baja, sin sonido) con el texto «Turno abierto desde las HH:MM», sin importes. Aparece cuando Shalev pasa a segundo plano o se cierra con el turno abierto, y se quita al volver o al cerrar el turno. Al tocarla, abre Shalev. Si el proceso termina, el aviso desaparece y no se restaura tras reiniciar (no hay `RECEIVE_BOOT_COMPLETED`). El permiso `POST_NOTIFICATIONS` (Android 13+) se pide al abrir un turno. Si se niega, todo funciona igual |
 
-**Datos:** base de datos **v4** (`MIGRACION_3_4`: tablas `servicio` y `servicio_insumo`, columnas `insumo.precioVentaCent` y `detalle_venta.clase`, con `'PRODUCTO'` por defecto). El respaldo sigue en JSON **v3**: añade servicios, la clase de cada línea y el precio de venta de los insumos, todos con valor por defecto, así que los respaldos de la 0.17.x se restauran sin cambios. «Borrar datos» y «Restaurar» incluyen los servicios. Se quitó el filtro de insumos «por uso» (ahora es un filtro de Inventario). Permisos: `CAMERA`, `INTERNET` y `POST_NOTIFICATIONS` (la tarea `spviPermisos` lo admite).
+**Datos:** base de datos **v4** (`MIGRACION_3_4`: tablas `servicio` y `servicio_insumo`, columnas `insumo.precioVentaCent` y `detalle_venta.clase`, con `'PRODUCTO'` por defecto). El respaldo sigue en JSON **v3**: añade servicios, la clase de cada línea y el precio de venta de los insumos, todos con valor por defecto, así que los respaldos de la 0.17.x se restauran sin cambios. «Borrar datos» y «Restaurar» incluyen los servicios. Se quitó el filtro de insumos «por uso» (ahora es un filtro de Inventario). Permisos: `CAMERA`, `INTERNET` y `POST_NOTIFICATIONS` (la tarea `shalevPermisos` lo admite).
 
 **Ayuda:** «Primeros pasos» (Servicios y deslizar), «Vender» (Productos/Servicios y el aviso), «Insumos y elaborados» y «Servicios» (nuevos).
 
@@ -1064,29 +1076,29 @@ Ocho peticiones. Respuestas del usuario a las dudas: (1) QR solo aviso, (2) tipo
 
 **Capturas:** `CAPTURAS_P29.pdf` (retirado en la 0.18.1, sustituido por `CAPTURAS_0.18.1.pdf`). Son 20 pantallas en modo claro y oscuro: Nueva venta, indicadores de servicios, Servicios (lista, vacío, ficha, formulario, elegir, venta), insumos en Inventario (acción +, filtro, ficha, formulario), Registros → Servicios, deslizar, permiso y aviso de turno, icono antes y después, y barra de 3 botones. Son maquetas HTML con los mismos tokens y textos que el código, no capturas de un dispositivo. Las de Roborazzi (`ServiciosCapturas`) se generan con `./gradlew :app:recordRoborazziDebug`.
 
-**Limpieza:** a petición del usuario se borró todo lo que había fuera de `SPVI/`: entregas `ENTREGA_*`, documentos de trabajo, capturas y PDF anteriores, archivos subidos y herramientas auxiliares. El proyecto no depende de ninguno de ellos.
+**Limpieza:** a petición del usuario se borró todo lo que había fuera de `Shalev/`: entregas `ENTREGA_*`, documentos de trabajo, capturas y PDF anteriores, archivos subidos y herramientas auxiliares. El proyecto no depende de ninguno de ellos.
 
 ## Prompt 30 — icono de Servicios, «+» centrado, cantidades centradas, icono de la notificación — 0.18.1 (23)
 
 | Petición | Cambio | Dónde |
 |---|---|---|
-| Icono de Servicios sin corazón, solo la mano | `SpviIcons.Servicios` usa `MaterialSolido.ManoRecibe`: el trazado de «volunteer_activism» sin el corazón y desplazado 4.5 hacia arriba para centrarlo en el cuadro de 24. Afecta a la barra inferior, «Nueva venta» y Registros. Se elimina `VolunteerActivism` | `designsystem/icon/SpviIcons.kt` |
-| Botón «+» centrado abajo | `floatingActionButtonPosition = FabPosition.Center` en Inventario, Servicios y Precios. En `SpviExpandableFab`, cada acción se reparte en dos mitades de igual peso: el mini botón queda sobre el «+» y la etiqueta a su izquierda | `InventarioScreen`, `ServiciosScreen`, `PreciosScreen`, `component/Overlays.kt` |
-| Números centrados en los selectores de cantidad | `SpviTextField` acepta `textAlign` (opcional, por defecto sin cambio). Se centra en el carrito de la venta (− [n] +) y en los niveles del asistente inicial | `component/TextFields.kt`, `VentaScreen`, `OnboardingScreen` |
-| Icono de la notificación = el del lanzador | El icono pequeño es la silueta del icono de SPVI (`drawable-*dpi/ic_stat_spvi.png`, 24dp, generado del `ic_launcher_monochrome`). Android solo usa su transparencia, así que no puede ir en color. El icono grande es el del lanzador en color (`setLargeIcon`), y `setColor` tiñe la cabecera con el primario de marca. Se elimina `drawable/ic_stat_turno.xml` | `notificacion/AvisoTurno.kt`, `res/drawable-*dpi/` |
+| Icono de Servicios sin corazón, solo la mano | `ShalevIcons.Servicios` usa `MaterialSolido.ManoRecibe`: el trazado de «volunteer_activism» sin el corazón y desplazado 4.5 hacia arriba para centrarlo en el cuadro de 24. Afecta a la barra inferior, «Nueva venta» y Registros. Se elimina `VolunteerActivism` | `designsystem/icon/ShalevIcons.kt` |
+| Botón «+» centrado abajo | `floatingActionButtonPosition = FabPosition.Center` en Inventario, Servicios y Precios. En `ShalevExpandableFab`, cada acción se reparte en dos mitades de igual peso: el mini botón queda sobre el «+» y la etiqueta a su izquierda | `InventarioScreen`, `ServiciosScreen`, `PreciosScreen`, `component/Overlays.kt` |
+| Números centrados en los selectores de cantidad | `ShalevTextField` acepta `textAlign` (opcional, por defecto sin cambio). Se centra en el carrito de la venta (− [n] +) y en los niveles del asistente inicial | `component/TextFields.kt`, `VentaScreen`, `OnboardingScreen` |
+| Icono de la notificación = el del lanzador | El icono pequeño es la silueta del icono de Shalev (`drawable-*dpi/ic_stat_shalev.png`, 24dp, generado del `ic_launcher_monochrome`). Android solo usa su transparencia, así que no puede ir en color. El icono grande es el del lanzador en color (`setLargeIcon`), y `setColor` tiñe la cabecera con el primario de marca. Se elimina `drawable/ic_stat_turno.xml` | `notificacion/AvisoTurno.kt`, `res/drawable-*dpi/` |
 
-**Verificación:** sin compilar. A petición del usuario se borraron las herramientas de compilación del entorno de trabajo en el Prompt 29. Son cambios pequeños, que siguen patrones ya compilados en el proyecto, y ninguna prueba depende de ellos. Hay que comprobarlos con `./gradlew spviCheck` en Android Studio.
+**Verificación:** sin compilar. A petición del usuario se borraron las herramientas de compilación del entorno de trabajo en el Prompt 29. Son cambios pequeños, que siguen patrones ya compilados en el proyecto, y ninguna prueba depende de ellos. Hay que comprobarlos con `./gradlew shalevCheck` en Android Studio.
 
-**Capturas (0.18.1):** `CAPTURAS_0.18.1.pdf` (retirado en la 0.18.2, sustituido por `CAPTURAS_0.18.2.pdf`). Son 21 pantallas en claro y oscuro, con un anillo naranja discontinuo en lo que cambió: icono de Servicios (solo la mano), «+» centrado en Servicios, Inventario (abierto y cerrado) y Precios, números centrados en «Cantidad» y en los niveles del asistente, y aviso de turno con el icono de SPVI. Son maquetas HTML con los tokens, textos, iconos e ilustraciones del código, no capturas de un dispositivo: el código 0.18.1 aún no se ha compilado.
+**Capturas (0.18.1):** `CAPTURAS_0.18.1.pdf` (retirado en la 0.18.2, sustituido por `CAPTURAS_0.18.2.pdf`). Son 21 pantallas en claro y oscuro, con un anillo naranja discontinuo en lo que cambió: icono de Servicios (solo la mano), «+» centrado en Servicios, Inventario (abierto y cerrado) y Precios, números centrados en «Cantidad» y en los niveles del asistente, y aviso de turno con el icono de Shalev. Son maquetas HTML con los tokens, textos, iconos e ilustraciones del código, no capturas de un dispositivo: el código 0.18.1 aún no se ha compilado.
 
 ## Prompt 31 — icono de insumo, aviso sin icono repetido, «+» de Inventario, insumos como categoría — 0.18.2 (24)
 
 **Pedido:** (1) icono de insumo = un saco o bolsa; (2) el icono de la notificación sale duplicado; (3) en Inventario, Escanear, Escribir y Cancelar se ven debajo de la tabla y sin su texto; (4) «Insumo» es una categoría, no un botón.
 
 **Cambios:**
-1. `SpviIcons.Insumo` = `MaterialSolido.Saco`, un saco atado dibujado a mano en 24×24 (Material no trae ninguno). Se retira `LocalPizza`, que ya no se usaba. Al quitar el botón «Insumo», el saco se muestra en la opción «Insumos» de Categoría (formulario de producto) y en el chip «Insumos» del filtro de Inventario.
+1. `ShalevIcons.Insumo` = `MaterialSolido.Saco`, un saco atado dibujado a mano en 24×24 (Material no trae ninguno). Se retira `LocalPizza`, que ya no se usaba. Al quitar el botón «Insumo», el saco se muestra en la opción «Insumos» de Categoría (formulario de producto) y en el chip «Insumos» del filtro de Inventario.
 2. `AvisoTurno`: se quita `setLargeIcon` (y `iconoLanzador()`). Android ya pinta el icono pequeño (silueta del lanzador, teñida con `#2B4FA3`) en la cabecera; con el grande a la derecha se veía dos veces.
-3. `SpviExpandableFab`: cada acción es `FilaAccionFab`, un `Layout` propio con ancho simétrico respecto al mini botón (etiqueta a la izquierda). Sustituye a `Row(fillMaxWidth)` + `weight`, que dependía de que el hueco del FAB del Scaffold tuviera ancho acotado; si no, la etiqueta quedaba en 0 y solo se veían los iconos. `InventarioContent` añade un velo (`scrim` al 32 %) sobre la tabla mientras el «+» está abierto: las acciones se leen encima de la tabla, y tocar fuera o Atrás lo cierra.
+3. `ShalevExpandableFab`: cada acción es `FilaAccionFab`, un `Layout` propio con ancho simétrico respecto al mini botón (etiqueta a la izquierda). Sustituye a `Row(fillMaxWidth)` + `weight`, que dependía de que el hueco del FAB del Scaffold tuviera ancho acotado; si no, la etiqueta quedaba en 0 y solo se veían los iconos. `InventarioContent` añade un velo (`scrim` al 32 %) sobre la tabla mientras el «+» está abierto: las acciones se leen encima de la tabla, y tocar fuera o Atrás lo cierra.
 4. Insumos como categoría:
    - Se quita la acción «Insumo» del «+» y de la hoja Agregar (con `TextosInventario.INSUMO`, `InventarioTags.OPCION_INSUMO`, `onAgregarInsumo` y `InventarioViewModel.agregarInsumo`).
    - En el formulario de un producto **nuevo**, «Insumos» es la primera opción de Categoría. Elegirla (o escribirla) emite `EventoForm.EsInsumo(nombre)` y se pasa al formulario de insumo (`Route.InsumoForm(nombre = …)`, sustituyendo al de producto) con el nombre ya escrito.
@@ -1106,9 +1118,9 @@ Ocho peticiones. Respuestas del usuario a las dudas: (1) QR solo aviso, (2) tipo
 **Pedido:** eliminar el icono de insumo; mostrar el nombre del servicio en Registros; el icono de Guardar es igual al de Confirmar.
 
 **Cambios:**
-1. **Sin icono de insumo:** se quitan `SpviIcons.Insumo` y el trazado `Saco`. El chip «Insumos» del filtro y la opción «Insumos» de Categoría quedan solo con texto, como las demás.
+1. **Sin icono de insumo:** se quitan `ShalevIcons.Insumo` y el trazado `Saco`. El chip «Insumos» del filtro y la opción «Insumos» de Categoría quedan solo con texto, como las demás.
 2. **Nombre del servicio en Registros → Servicios:** nueva `subtituloFila(v: Venta)`. Cada fila sigue titulada con la fecha (regla P25) y debajo lleva el servicio: «Corte de pelo», «Corte de pelo y Lavado» o «Corte de pelo, Lavado y 2 más». Las ventas de productos no llevan subtítulo.
-3. **Guardar ≠ Confirmar:** `SpviIcons.Guardar` vuelve a ser el disquete (`Save`, Material) en lugar del ✓; revierte la decisión P25. Afecta a los formularios de producto, insumo, servicio, Perfil, Pago electrónico, Precios y escáner, y al diálogo «Consultas en internet» de Ajustes (`confirmIcon = SpviIcons.Guardar`). Los diálogos que confirman una acción siguen con ✓.
+3. **Guardar ≠ Confirmar:** `ShalevIcons.Guardar` vuelve a ser el disquete (`Save`, Material) en lugar del ✓; revierte la decisión P25. Afecta a los formularios de producto, insumo, servicio, Perfil, Pago electrónico, Precios y escáner, y al diálogo «Consultas en internet» de Ajustes (`confirmIcon = ShalevIcons.Guardar`). Los diálogos que confirman una acción siguen con ✓.
 4. Textos: MANUAL (§ botones, insumos, servicios), PRUEBAS_DISPOSITIVO y DESIGN_SYSTEM. Versión 0.18.3 (25).
 
 **Pruebas nuevas:** `RegistrosLogicTest.ventaDeServiciosMuestraElNombreDelServicio`.
@@ -1120,7 +1132,7 @@ Ocho peticiones. Respuestas del usuario a las dudas: (1) QR solo aviso, (2) tipo
 **Pedido:** «Guardar tiene que ser = ✓»; en Registros, la cantidad de servicios en vez del nombre (los nombres se ven al abrir la información de esa fecha).
 
 **Cambios:**
-1. `SpviIcons.Guardar` = `SpviIcons.Confirmar` (✓) otra vez (decisión P25 confirmada). Se retira el trazado `Save` y el `confirmIcon` del diálogo «Consultas en internet». Se deshace el punto 3 del Prompt 32.
+1. `ShalevIcons.Guardar` = `ShalevIcons.Confirmar` (✓) otra vez (decisión P25 confirmada). Se retira el trazado `Save` y el `confirmIcon` del diálogo «Consultas en internet». Se deshace el punto 3 del Prompt 32.
 2. `subtituloFila(v: Venta)`: en ventas de servicios, «1 servicio» / «N servicios» (suma de cantidades: 2 × Lavado cuenta 2). La ficha de la fecha ya enumera cada servicio («2 × Lavado y peinado»). Las ventas de productos siguen sin subtítulo.
 3. MANUAL, PRUEBAS_DISPOSITIVO y DESIGN_SYSTEM ajustados. Versión 0.18.4 (26).
 
@@ -1161,7 +1173,7 @@ La sección va en Ajustes/Sistema, debajo de Licencia.
 3. **`data/sync`:**
    - Protocolo, canal cifrado (ECDH P-256 + HKDF + AES-GCM con secuencia), `ConfigSync`, `RedLocal` (NSD).
    - `AlmacenSync`, `ServidorSync`, `EjecutorComandos`, `ClienteSync`.
-   - Decoradores `…SegunTipo`, implementaciones de repositorios y `ArranqueSync` (en `SpviApplication`).
+   - Decoradores `…SegunTipo`, implementaciones de repositorios y `ArranqueSync` (en `ShalevApplication`).
 4. **UI:**
    - Ajustes → **Apps vinculadas**, debajo de Licencia. En una secundaria se ocultan Configurar, Perfil, Licencia, Pago electrónico, Avisos, Respaldo y Migrar, y Precios si no tiene ese permiso.
    - `VinculacionScreen`: lista, agregar con QR, permisos, nuevo código, quitar, usar como secundaria, sincronizar, modo y desvincular.
@@ -1234,7 +1246,7 @@ La sección va en Ajustes/Sistema, debajo de Licencia.
 **Petición:** «A», es decir, la opción A de la entrega anterior: servicio en primer plano para la principal, con los permisos autorizados.
 
 **Hecho:**
-- **Permisos** (normales, sin diálogo): `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE` y `CHANGE_NETWORK_STATE`. Añadidos al manifiesto y a la lista de `spviPermisos`. `verificar.sh` incluye un paso 8 que compara el manifiesto de `:app` con esa lista.
+- **Permisos** (normales, sin diálogo): `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE` y `CHANGE_NETWORK_STATE`. Añadidos al manifiesto y a la lista de `shalevPermisos`. `verificar.sh` incluye un paso 8 que compara el manifiesto de `:app` con esa lista.
 - **`ServicioSync`** (`app/notificacion`):
   - servicio `connectedDevice`, no exportado y `START_NOT_STICKY`;
   - no hace trabajo propio: solo mantiene vivo el proceso donde corre `ServidorSync`.
@@ -1286,7 +1298,7 @@ La sección va en Ajustes/Sistema, debajo de Licencia.
 
 Los generadores están en `tools/capturas/` (ver CAPTURAS.md). Son maquetas HTML, no capturas de un dispositivo. No cambia el código de la app.
 
-**Observación al maquetar:** `SpviStatusBanner` con tono Info usa el icono de Licencia (llave). Por eso «Red local activa» y «Conectada con la app principal» llevan una llave. Se deja como está en el código, pendiente de decisión.
+**Observación al maquetar:** `ShalevStatusBanner` con tono Info usa el icono de Licencia (llave). Por eso «Red local activa» y «Conectada con la app principal» llevan una llave. Se deja como está en el código, pendiente de decisión.
 
 ## Prompt 45 — 0.20.0 (31): integración de las apps vinculadas
 
@@ -1335,7 +1347,7 @@ Respuestas sobre «Consultas de códigos en internet» y sobre los botones del b
 ## Prompt 47 — Precios por secundaria y prompt para GL
 - Importe por cada app secundaria: Mensual 1 000, Semestral 5 000, Anual 9 000 y Perpetua 17 000 CUP (`PLAN_0.21.md`).
 - `docs/GL_PROMPT_0.21.md`: prompt para opencode desktop que actualiza GL. Añade el campo opcional `secundarias` a la solicitud y a la licencia, sin cambiar el contrato v1 ni el envelope, junto con el precio, el historial y el ID fuera del JSON.
-- `tools/licencia/probar_gl.py`: genera la solicitud de prueba (`docs/GL_SOLICITUD_PRUEBA.txt`, MENSUAL con 2 secundarias = 8 000 CUP, dispositivo de `GoldenVectorTest`) y verifica la licencia que devuelva GL como lo hará SPVI. `autoprueba` hace la ida y vuelta con un GL simulado (correcta).
+- `tools/licencia/probar_gl.py`: genera la solicitud de prueba (`docs/GL_SOLICITUD_PRUEBA.txt`, MENSUAL con 2 secundarias = 8 000 CUP, dispositivo de `GoldenVectorTest`) y verifica la licencia que devuelva GL como lo hará Shalev. `autoprueba` hace la ida y vuelta con un GL simulado (correcta).
 - Suposición: el máximo es 10 secundarias por licencia (constante, fácil de cambiar).
 
 ## Prompt 48 — 0.21.0 (32): plan C1–C13
@@ -1363,7 +1375,7 @@ Revisión de la paleta (`docs/PROPUESTA_COLOR.md`) y aplicación de H1–H5:
 
 
 ## Prompt 50 — 0.21.2 (34): H6, «Insumo bajo» sin verde
-- «Stock insumo bajo» pasa del verde de SPVI.txt (`#3D7A1F` / `#AED581`, que se confundía con `success`) al azul petróleo del rol terciario (`#2F6F80` / `#7FC4D4`). Cambio pedido por el usuario.
+- «Stock insumo bajo» pasa del verde de Shalev.txt (`#3D7A1F` / `#AED581`, que se confundía con `success`) al azul petróleo del rol terciario (`#2F6F80` / `#7FC4D4`). Cambio pedido por el usuario.
 - El tercer color de los gráficos pasa a caramelo (`#8B5E34` / `#D4A373`, ≥ 5:1 sobre las cards) para no repetir el tono de una alerta.
 - `ContrastTest.alertasDistintasDeMarcaYGraficos` comprueba además que insumo bajo ≠ éxito y = terciario. `verificar.sh`: **645 tests JVM correctos**, «Todo correcto».
 - Docs: DESIGN_SYSTEM, PROPUESTA_COLOR (H6 aplicado; H7 no), README, RELEASE, PRUEBAS_DISPOSITIVO, REVISION_FINAL, CAPTURAS.
@@ -1391,7 +1403,7 @@ Revisión de la paleta (`docs/PROPUESTA_COLOR.md`) y aplicación de H1–H5:
   - **Filtro de código:** `FiltroEntrada.CODIGO` con 64 caracteres y «_».
   - **QR o URL en modo Producto:** aviso `CODIGO_NO_VALIDO` y formulario sin código.
   - **Nombre antes que la foto:** «Guardar» espera la foto como mucho 5 s; texto «Descargando la imagen…».
-  - **User-Agent:** «SPVI/0.21».
+  - **User-Agent:** «Shalev/0.21».
 - `verificar.sh`: **662 tests JVM correctos** (domain 186, data 72, app 307), «Todo correcto».
 - **Prueba en vivo repetida:**
   - UPC-E encontrado; balanza y todo ceros ya no salen a internet;
@@ -1445,7 +1457,7 @@ Revisión de la paleta (`docs/PROPUESTA_COLOR.md`) y aplicación de H1–H5:
 
 ## Prompt 61 — propuesta de licencia más fluida (sin cambios de código)
 - Pregunta: «¿existe algún mecanismo o flujo de licencia más fluido, pero sin perder seguridad?».
-- Propuestas: L-a «Compartir → SPVI» con activación directa; L-b licencia corta de un SMS; L-c QR; L-d nº de transacción en la solicitud; L-e renovar sin perder días + «Renovar igual».
+- Propuestas: L-a «Compartir → Shalev» con activación directa; L-b licencia corta de un SMS; L-c QR; L-d nº de transacción en la solicitud; L-e renovar sin perder días + «Renovar igual».
 - Descartadas por seguridad o por las reglas: servidor de activación, códigos no atados al teléfono, claves simétricas en el APK, leer SMS o portapapeles.
 
 ## Prompt 62 — 0.22.0 (42): licencia corta, QR y renovación sin perder días
@@ -1466,7 +1478,7 @@ Revisión de la paleta (`docs/PROPUESTA_COLOR.md`) y aplicación de H1–H5:
   - `LicenciaCorta.kt` reescrita a `SPVI2:` (cuerpo cifrado hacia la clave del teléfono + firma de GL encima, 216 caracteres).
   - `EcP256.comprimir/descomprimir`.
   - `RequestPayload` v2: `devicePub` comprimida, sin `appName` ni `licenciaCorta`.
-  - `LicenseManager`: `buildRequest` → `SolicitudGenerada(texto, codigo)`; activar solo `SPVI2`; la larga instalada se sigue re-verificando.
+  - `LicenseManager`: `buildRequest` → `SolicitudGenerada(texto, codigo)`; activar solo `Shalev2`; la larga instalada se sigue re-verificando.
   - Quitados el sellador del envelope de la solicitud y `LicenseMessageParser`.
 - `:domain` / `:data`: `construirSolicitud` devuelve `SolicitudGenerada`.
 - `:app`:
@@ -1477,11 +1489,11 @@ Revisión de la paleta (`docs/PROPUESTA_COLOR.md`) y aplicación de H1–H5:
 - Tests:
   - `LicenciaCortaTest` reescrito (13);
   - `RuntimeVerificationTest` reescrito;
-  - `FakeGl` con el emisor `SPVI2` y la larga v1 para la compatibilidad;
+  - `FakeGl` con el emisor `Shalev2` y la larga v1 para la compatibilidad;
   - `LicenseFlowTest`: formato de la solicitud, la larga ya no se activa, solo cuenta el código;
   - `GoldenVectorTest`: la larga real de GL instalada sigue activa;
   - `PngQrTest` (2).
-  - `TestEmisor` (androidTest) pasa a `SPVIR1`/`SPVI2`.
+  - `TestEmisor` (androidTest) pasa a `SPVIR1`/`Shalev2`.
 - GL:
   - `docs/GL_PROMPT_0.23.md`: especificación, descompresión en Java, texto exacto del mensaje, vector con efímera y firma de prueba, compatibilidad.
   - `docs/GL_SOLICITUD_PRUEBA.txt` + `.png` (renovación de d53a020b…, debe vencer el 2026-12-02).
@@ -1498,7 +1510,7 @@ Revisión de la paleta (`docs/PROPUESTA_COLOR.md`) y aplicación de H1–H5:
   - evento `Enviar(via, texto)`;
   - `TextosQrLicencia` → `TextosActivacion.INSTRUCCION`;
   - Ayuda (Licencia) y texto del paso 2 sin QR.
-  - `:licencia` sin cambios (formato `SPVIR1`/`SPVI2` igual).
+  - `:licencia` sin cambios (formato `SPVIR1`/`Shalev2` igual).
 - Tests: quitados `PngQrTest` (2) y los del QR/cámara de Licencia (3). Nuevo `soloSePegaElMensajeElCodigoBastaAunqueVengaSolo`.
 - GL:
   - `docs/GL_PROMPT_0.23.md`: solo texto, sin QR ni imágenes, con botón «Copiar mensaje»;
@@ -1506,7 +1518,7 @@ Revisión de la paleta (`docs/PROPUESTA_COLOR.md`) y aplicación de H1–H5:
   - `probar_gl.py` sin `--qr`.
 - `verificar.sh` (v23): «Todo correcto». 718 tests JVM (core 16, licencia 77, domain 195, data 79, designsystem 24, app 327) + 36 de Room en la JVM.
 - Maquetas: licencia nº 63–67 (sin el diálogo «Escanear licencia» ni QR en los chats) → `~/CAPTURAS_0.23.1.pdf` (68 páginas), que sustituye a 0.23.0.
-- Prompt 66: `docs/GL_PROMPT_0.23.md` revisado (punto 0: quitar SPVI1, QR y licencia larga de GL; extracción tolerante a saltos de línea; validaciones; botón «Copiar mensaje»; pruebas d y e). `GL_PROMPT_0.22.md` marcado como obsoleto.
+- Prompt 66: `docs/GL_PROMPT_0.23.md` revisado (punto 0: quitar Shalev1, QR y licencia larga de GL; extracción tolerante a saltos de línea; validaciones; botón «Copiar mensaje»; pruebas d y e). `GL_PROMPT_0.22.md` marcado como obsoleto.
 
 ## Prompt 67 — 0.24.0 (45): la Descripción distingue artículos con el mismo nombre
 - Petición: «Descripción debe utilizarse para describir de forma resumida características de un producto que faciliten su identificación… ejemplo Nombre (Cerveza Cristal) Descripción (Lata 350 ml Superior); cuando 2 o más productos tienen el mismo nombre se le exige al usuario que los diferencie mediante la descripción antes de ingresarlos».
@@ -1545,7 +1557,7 @@ Revisión de la paleta (`docs/PROPUESTA_COLOR.md`) y aplicación de H1–H5:
   - los parsers de `SPVIR1` toleran espacios (Kotlin y `probar_gl.py`);
   - nuevo `docs/GL_ESPECIFICACION.md`.
 - `:licencia`:
-  - `RequestPayload.recupera` y texto «Recuperar licencia SPVI»;
+  - `RequestPayload.recupera` y texto «Recuperar licencia Shalev»;
   - `ListaRevocaciones` (firma `SPVI-REV1|`, huellas `SPVI-REV|`) e `IdLicencia`;
   - `LicenseManager.aplicarRevocaciones` y marca de revocación (`Revoked`).
 - `:domain`:
@@ -1565,7 +1577,7 @@ Revisión de la paleta (`docs/PROPUESTA_COLOR.md`) y aplicación de H1–H5:
   - tarjeta de actualización (Inicio/Ajustes) con `PackageInstaller`, y «Buscar actualizaciones» en Ajustes;
   - «Licencia transferida» con `ACTION_DELETE`;
   - campo de recuperación en Licencia (rellenado desde el respaldo);
-  - activación automática al compartir `SPVI2:` a SPVI.
+  - activación automática al compartir `SPVI2:` a Shalev.
 - Manifiesto: `REQUEST_INSTALL_PACKAGES` y `REQUEST_DELETE_PACKAGES` (autorizados en P68b; añadidos a `permitidos`).
 - Tests nuevos:
   - `Version025Test` (domain, 20): arqueo, caja, anular/modificar, recordatorio, versiones, comprobación y revocación;
@@ -1573,8 +1585,8 @@ Revisión de la paleta (`docs/PROPUESTA_COLOR.md`) y aplicación de H1–H5:
   - `Version025AppTest` (app, 5).
   - Ajustados `TablasExportTest` (Estado), `TurnoPersistenciaTest` (v8) y `Version020SyncTest` (respaldo v4).
 - Correcciones de compilación halladas por la verificación:
-  - `SpviSpacing.sm` no existe (→ `xs`);
-  - `spviAnimateItem()` fuera de una lista;
+  - `ShalevSpacing.sm` no existe (→ `xs`);
+  - `shalevAnimateItem()` fuera de una lista;
   - un parámetro de constructor que tapaba la propiedad `licencia` en `EntornoIntegracion`.
 - Herramientas: `probar_gl.py` con `solicitud --recupera` y `revocadas firmar|verificar`, y la autoprueba ampliada; `vector_0.25.txt`; `docs/GL_SOLICITUD_RECUPERACION_PRUEBA.txt`.
 - Documentación:
@@ -1602,7 +1614,7 @@ Revisión de la paleta (`docs/PROPUESTA_COLOR.md`) y aplicación de H1–H5:
 - Revisión de exportaciones (0.25.0, `tools/exportaciones/`: `Muestras.kt` con el código real, `render.py` que replica PdfWriter/ImagenTabla/Tarjetas, `paginas.py`):
   - Excel dañado (formato `"CUP"` sin escapar en `styles.xml`);
   - columnas cortadas en los PDF de 7–9 columnas;
-  - «SPVI · SPVI · Servicios»;
+  - «Shalev · Shalev · Servicios»;
   - el texto del inventario lleva costos sin avisarlo.
 - **A. Compartir el turno:** `TablasExport.turno()` (Resumen, Arqueo de caja, Caja, Ventas, Movimientos) y `nombreArchivoTurno`; icono Compartir en el detalle del turno; hoja «Compartir turno» con PDF/Excel → enviar o guardar (`TurnosViewModel`, `TurnoDetalleScreen`).
 - **B. Modificar venta a pantalla completa** (`registros/ModificarVenta.kt`): cantidades, quitar, añadir artículos (precio actual; los originales conservan el suyo), método de pago con los datos de la transferencia obligatorios, y motivo. `ModificarVenta` (dominio) acepta líneas nuevas y método.
@@ -1620,22 +1632,22 @@ Revisión de la paleta (`docs/PROPUESTA_COLOR.md`) y aplicación de H1–H5:
   - `EscritoresTest` (styles.xml bien formado, nombres de hoja);
   - `TablasExportTest` (turno completo con arqueo);
   - `TurnoViewModelsTest`, `LicenciaFormTest`, `InicioViewModelTest`, `InventarioLogicTest`;
-  - `Version025AppTest` (Servicios sin «SPVI ·» duplicado).
+  - `Version025AppTest` (Servicios sin «Shalev ·» duplicado).
 - `verificar.sh` (v11–v13): «Todo correcto». 779 tests JVM (core 16, licencia 84, domain 225, data 84, designsystem 24, app 346) + 37 de Room en la JVM. La v12 detectó que el test del Excel esperaba el nombre de hoja antiguo; se ajustó junto con la regla de espacios.
 - Documentación:
-  - README (Novedades de la 0.25.1, permisos en `spviPermisos`), MANUAL_USUARIO, FORMATOS (§2.1, §2.3, §2.4), RELEASE (pruebas 13–16), SECURITY (versión);
+  - README (Novedades de la 0.25.1, permisos en `shalevPermisos`), MANUAL_USUARIO, FORMATOS (§2.1, §2.3, §2.4), RELEASE (pruebas 13–16), SECURITY (versión);
   - nuevos `AGENTS.md`, `docs/OPENCODE_DESKTOP.md` y `.opencode/commands/` (compilar, probar, capturas, release, retoque).
-- Entrega: `SPVI_0.25.1_capturas_y_exportaciones.pdf` (portada, índice enlazado con marcadores, pantallas nº 1–96 con 8 maquetas nuevas de la 0.25.1, exportaciones E1–E22). `tools/capturas/ensamblar.py` lo arma.
+- Entrega: `Shalev_0.25.1_capturas_y_exportaciones.pdf` (portada, índice enlazado con marcadores, pantallas nº 1–96 con 8 maquetas nuevas de la 0.25.1, exportaciones E1–E22). `tools/capturas/ensamblar.py` lo arma.
 - Eliminados por estar sustituidos o ya aplicados: `CAPTURAS_0.25.0.pdf`, `EXPORTACIONES_0.25.0.pdf`, `docs/PLAN_0.25.1.md` (aplicado entero). `docs/PLAN_0.25.md` se conserva porque el código cita sus apartados (§3, §6).
 
 ## Prompt 73 — 0.26.0 (48): PLAN_0.26 (respaldo, botón +, sin texto, fondo asignado, seminegrita, actualizaciones obligatorias)
 
 Plan confirmado: [docs/PLAN_0.26.md](PLAN_0.26.md).
-- **§1 Respaldo:** solo el archivo `.spvi` cifrado (se quita el PDF de configuración).
+- **§1 Respaldo:** solo el archivo `.shalev` cifrado (se quita el PDF de configuración).
 - **§2 Botón +:** abajo a la derecha (`FabPosition.End`) en Inventario, Precios y Servicios.
 - **§3 Sin exportaciones de texto:** se quitan `texto*` y `Compartir.texto`. Quedan la solicitud de licencia, el contacto de Soporte y el pegado/compartido de SMS.
 - **§4 Fondo asignado:** BD v9 (`MIGRACION_8_9`) y campos opcionales del protocolo ([VINCULACION.md](VINCULACION.md) §0.26.0). La principal asigna el fondo de cada turno de una secundaria; sin él, la secundaria no abre. Una secundaria 0.25.x abre como antes y la principal pide «Actualiza la app de X».
-- **§5 Seminegrita:** `SpviTextos.dato`/`datoEn`/`PESO_DATO` para los datos en la UI; seminegrita en el PDF y negrita en Excel para importes, cantidades y fechas (sin códigos de barras ni teléfonos).
+- **§5 Seminegrita:** `ShalevTextos.dato`/`datoEn`/`PESO_DATO` para los datos en la UI; seminegrita en el PDF y negrita en Excel para importes, cantidades y fechas (sin códigos de barras ni teléfonos).
 - **§6 Actualizaciones obligatorias:** aplazables 30 días desde la primera detección; luego `BloqueoActualizacion` en toda la app, con Actualizar, Exportar respaldo y Cerrar turno. Se quitan el interruptor y la versión descartada.
 - **§8 Excel:** cada columna mide lo que su contenido, de 4 a 80 unidades, con ajuste de texto.
 - **Tests:** `Version026Test`, `SeminegritaTest`, migración 8→9, fondo, plazos y anchos.
@@ -1643,14 +1655,14 @@ Plan confirmado: [docs/PLAN_0.26.md](PLAN_0.26.md).
 ## Prompt 74 — 0.26.0 (48): la prueba no se reinicia al reinstalar
 
 Ver [PLAN_ANTIREINSTALACION.md](PLAN_ANTIREINSTALACION.md).
-- **Registro cifrado** (`licencia/prueba/RegistroPrueba.kt`): AES-GCM con clave PBKDF2 a partir de ANDROID_ID. Se guarda en cuatro sitios: imagen PNG en Imágenes/SPVI, `.bin` en Download y en Documents, y copia interna. Gana la fecha más antigua y una copia ilegible se ignora.
+- **Registro cifrado** (`licencia/prueba/RegistroPrueba.kt`): AES-GCM con clave PBKDF2 a partir de ANDROID_ID. Se guarda en cuatro sitios: imagen PNG en Imágenes/Shalev, `.bin` en Download y en Documents, y copia interna. Gana la fecha más antigua y una copia ilegible se ignora.
 - **`LicenseManager`:** usa `RegistroExterno` y `DetectorRetroceso` (`elapsedRealtime` dentro del mismo arranque, combinado con `lastSeen`).
 - **Implementación Android:** `RegistroPruebaAndroid` / `DetectorRelojAndroid` (MediaStore en 10+, `File` en 8–9).
 - **Permisos nuevos**, autorizados solo para esto: `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE` (≤ 32) y `WRITE_EXTERNAL_STORAGE` (≤ 28). El diálogo «Guardar tu periodo de prueba» se muestra una vez, recién instalada.
 - **UI:** `TrialViewModel` + `TrialState` como fachada; la pantalla que bloquea al vencer sigue siendo la puerta de Licencia.
 - **Rechazado por el usuario:** dar la prueba por vencida por colisión de nombre.
 - **Tests:** `RegistroPruebaTest` (14), `EstadoPruebaTest` (3), `TrialViewModelTest` (4).
-- **Verificación (P73 + P74):** `verificar.sh` «Todo correcto». 823 tests JVM (core 16, licencia 98, domain 238, data 92, designsystem 26, app 353) + 38 de Room; los permisos están dentro de la lista ampliada. Se entrega `SPVI_0.26.0_capturas_y_exportaciones.pdf` (127 páginas: nº 1–108, E1–E16) y se borra el de la 0.25.1.
+- **Verificación (P73 + P74):** `verificar.sh` «Todo correcto». 823 tests JVM (core 16, licencia 98, domain 238, data 92, designsystem 26, app 353) + 38 de Room; los permisos están dentro de la lista ampliada. Se entrega `Shalev_0.26.0_capturas_y_exportaciones.pdf` (127 páginas: nº 1–108, E1–E16) y se borra el de la 0.25.1.
 
 ## Limpieza para OpenCode (0.26.0)
 
@@ -1659,8 +1671,8 @@ Se retiraron los documentos de trabajo antiguos: `docs/PLAN_0.25.md`, `docs/DEPU
 ## 0.27.0 · Claves de GL del 05/10/2026
 
 - GL regeneró su par de claves al desinstalarse y reinstalarse ([GL_CONTEXTO_LICENCIAS.md](GL_CONTEXTO_LICENCIAS.md)). `LicenseTrust`: ECDH **sustituida** (`sha256:2a3f:9fce:…:666d`); firma vigente **añadida** (`sha256:58d4:3aac:…:8c4e`) en primer lugar, conservando la del 30/09/2026 (`sha256:8a91:…`) para que las licencias ya emitidas sigan verificando.
-- Las solicitudes hechas con SPVI anterior a la 0.27.0 van cifradas hacia la ECDH vieja: GL no puede abrirlas; el cliente actualiza SPVI y vuelve a pedirla.
-- Las huellas `sha256:4ea0:…` / `sha256:219e:…` que GL da como invalidadas nunca se fijaron en SPVI (SPVI pasó de `7b51`/`8a91` a las nuevas).
+- Las solicitudes hechas con Shalev anterior a la 0.27.0 van cifradas hacia la ECDH vieja: GL no puede abrirlas; el cliente actualiza Shalev y vuelve a pedirla.
+- Las huellas `sha256:4ea0:…` / `sha256:219e:…` que GL da como invalidadas nunca se fijaron en Shalev (Shalev pasó de `7b51`/`8a91` a las nuevas).
 - `tools/licencia/probar_gl.py` usa las claves nuevas (y acepta la firma anterior).
 
 ## 0.27.0 (49) · Pulido de interfaz, acceso con clave, respaldo sin contraseña y clientes fijos
@@ -1669,18 +1681,18 @@ Especificación: [PROMPT_0.27.0.md](PROMPT_0.27.0.md) (T1–T14) más cuatro ped
 
 | Tarea | Qué se hizo |
 |---|---|
-| T1 | `SpviTopBar` = `CenterAlignedTopAppBar` sin logo (`showLogo` eliminado, `marca` para «SPVI» en Inicio); diálogos y hojas sin logo, título centrado |
-| T2 | Fuera `maxLines = 1` en textos de Inicio (turno, accesos, datos), leyendas, selectores, cabeceras de Inventario; `SpviListItem` hasta 3 líneas. Capturas con `LetraGrande` (fontScale 2) de Inicio, ficha, Licencia y arqueo |
-| T3 | `SpviMedalla` + tokens `MEDALLA_*` y `ContrastTest` |
-| T4 | `SpviMotion` FAST 150 / LONG 250, `muelle()`; botón con `animateContentSize(muelle)`; barra inferior con muelle; `profileinstaller` |
+| T1 | `ShalevTopBar` = `CenterAlignedTopAppBar` sin logo (`showLogo` eliminado, `marca` para «Shalev» en Inicio); diálogos y hojas sin logo, título centrado |
+| T2 | Fuera `maxLines = 1` en textos de Inicio (turno, accesos, datos), leyendas, selectores, cabeceras de Inventario; `ShalevListItem` hasta 3 líneas. Capturas con `LetraGrande` (fontScale 2) de Inicio, ficha, Licencia y arqueo |
+| T3 | `ShalevMedalla` + tokens `MEDALLA_*` y `ContrastTest` |
+| T4 | `ShalevMotion` FAST 150 / LONG 250, `muelle()`; botón con `animateContentSize(muelle)`; barra inferior con muelle; `profileinstaller` |
 | T5 | `Deslizar.kt`: regla pura (ruta raíz exacta + sin diálogo, selección, búsqueda ni foco) con `DeslizarTest` |
-| T6 | Placeholder centrado en `SpviTextField` |
-| T7 | `SpviIcons.Pdf`/`Excel`, `iconoFormato()` en todas las hojas de exportar |
+| T6 | Placeholder centrado en `ShalevTextField` |
+| T7 | `ShalevIcons.Pdf`/`Excel`, `iconoFormato()` en todas las hojas de exportar |
 | T8 | Textos llanos (tabla abajo). Ningún `e.message` llega al usuario |
 | T9 | `Vinculacion.puedeVincularseComoSecundaria`; botón oculto en la principal; `PRINCIPAL_NO_SECUNDARIA` en el ViewModel |
 | T10 | `BackupCipher` v4 con indicador; sin contraseña, clave de un secreto interno (10 000 iteraciones); lee v3. Interruptor «Proteger con contraseña» apagado por defecto; Migrar mantiene 4 pasos |
 | T11 | `androidx.biometric` 1.1.0, `MainActivity` → `FragmentActivity`, `AccesoClave.kt` (regla pura de 10 min con `elapsedRealtime`, overlay con `FLAG_SECURE`), paso opcional del recorrido y fila en Ajustes. Preferencia en `AjustesDispositivoRepository` (claves `disp.*`, fuera del respaldo) |
-| T12 | Soporte con iconos (`SpviListItem`), pie nuevo |
+| T12 | Soporte con iconos (`ShalevListItem`), pie nuevo |
 | T13 | `SelectorFoto` (foto primero, Cámara con `TakePicture` + `FileProvider` `cache/fotos/`, Galería con Photo Picker, Quitar). Los Elaborados no tienen foto (como antes). `LADO_MAX` = 1024 px y JPEG 85 ya cumplen «≤ 1080 px» |
 | T14 | Reparto de alertas por filas (regla pura con test) y contenido centrado |
 | N1 | Dona de Inventario: los insumos cuentan en su medida (milésimas → unidades de su medida, sin «u»), números neutros (formato `Cantidad`: `12.5`, punto decimal como en el resto de la app) |
@@ -1693,10 +1705,10 @@ Especificación: [PROMPT_0.27.0.md](PROMPT_0.27.0.md) (T1–T14) más cuatro ped
 
 | Dónde | Antes | Después |
 |---|---|---|
-| Permiso de fotos (prueba) | «SPVI guarda en Imágenes una imagen pequeña y cifrada con la fecha de inicio… para que SPVI la encuentre si reinstalas…» | «Permite el acceso a fotos para que SPVI pueda conservar los datos de tu periodo de prueba.» |
-| Turno sin arqueo | «Sin arqueo (turno anterior a 0.25.0)» | «Sin arqueo (turno de una versión anterior de SPVI)» |
+| Permiso de fotos (prueba) | «Shalev guarda en Imágenes una imagen pequeña y cifrada con la fecha de inicio… para que Shalev la encuentre si reinstalas…» | «Permite el acceso a fotos para que Shalev pueda conservar los datos de tu periodo de prueba.» |
+| Turno sin arqueo | «Sin arqueo (turno anterior a 0.25.0)» | «Sin arqueo (turno de una versión anterior de Shalev)» |
 | Secundaria antigua | «Su app es anterior a la 0.26.0 y escribe su propio fondo: actualízala» | «Su app necesita actualizarse para recibir el fondo que le asignas» |
-| Respaldo antiguo | «…versión de prueba de SPVI anterior a la 0.13.0 y esta versión ya no lo abre.» | «Se creó con una versión muy antigua de SPVI que esta versión ya no abre.» |
+| Respaldo antiguo | «…versión de prueba de Shalev anterior a la 0.13.0 y esta versión ya no lo abre.» | «Se creó con una versión muy antigua de Shalev que esta versión ya no abre.» |
 | Licencia (envío) | «Se abrirá WhatsApp/Mensajes con tus datos y la solicitud cifrada.» | «…con tu solicitud de licencia.» |
 | Manual, paso 4 | Explicación del mecanismo de la imagen y la reinstalación | Solo que el acceso a fotos sirve para conservar los datos de la prueba |
 
@@ -1711,7 +1723,7 @@ Primera vez que el proyecto se compila con Gradle real (JDK 17, SDK 35, Gradle 8
 
 **Ejecutado:**
 - `assembleDebug`;
-- `spviCheck` (tests, lint y permisos);
+- `shalevCheck` (tests, lint y permisos);
 - `assembleRelease` (R8);
 - `recordRoborazziDebug`: 154 capturas × 2 temas;
 - `aapt2` sobre los APK debug y release;
@@ -1725,7 +1737,7 @@ Primera vez que el proyecto se compila con Gradle real (JDK 17, SDK 35, Gradle 8
 | 2 | `BigInteger.longValueExact` es API 31: convertir dinero y cantidades cerraba la app en Android 8–11 | `BigDecimal.movePointRight(n).longValueExact()` en `Money` y `Cantidad`; `ApiMinimaTest` |
 | 3 | Letra al 200 %: las alertas de Inicio partían «inven·tario» y las tarjetas Pago/Precios se cortaban | `alertasPorFila` (ancho mínimo de 96 dp por alerta) y accesos apilados si no caben |
 | 4 | Letra al 200 %: el importe del arqueo salía «12,35 / 0.00 / CUP» | `CajaUi.Fila` con `FlowRow`: el importe baja entero a la línea siguiente |
-| 5 | Subtítulos de lista cortados con «…» (Ajustes, Exportar) | `SpviListItem.subtitleMaxLines` pasa de 1 a 3. En Exportar, «Incluye costos» en vez de «Uso interno (incluye costos)» |
+| 5 | Subtítulos de lista cortados con «…» (Ajustes, Exportar) | `ShalevListItem.subtitleMaxLines` pasa de 1 a 3. En Exportar, «Incluye costos» en vez de «Uso interno (incluye costos)» |
 | 6 | Ajustes: Respaldo decía «y PDF» y Permisos solo hablaba del escáner | «Copia cifrada de todo e importar». «Cámara: se pide solo al escanear o al hacer una foto» |
 | 7 | Apps vinculadas: las opciones Automática/Manual quedaban pegadas | Separación y altura táctil mínima de 48 dp |
 | 8 | Arnés de capturas: la barra superior de la actividad de prueba tapaba la parte de arriba de las capturas (solo en los tests) | `capturar()` la oculta con `LaunchedEffect`. Lint rechazó la primera versión, que usaba `remember` |
@@ -1744,12 +1756,12 @@ Primera vez que el proyecto se compila con Gradle real (JDK 17, SDK 35, Gradle 8
 
 ## 0.28.0 · P80: muelles físicos, Registros sin gestos, licencia apilada y seminegrita en importes/fechas
 
-1. **Animaciones con muelles físicos:** en `SpviMotion`, los deslizamientos de pantalla y de la barra inferior, los giros (flechas, FAB) y el progreso de los gráficos usan `spring()` (rígidez/damping según la pieza) en vez de duraciones fijas; los fundidos y los cambios de color siguen con `tween` porque no tienen desplazamiento.
+1. **Animaciones con muelles físicos:** en `ShalevMotion`, los deslizamientos de pantalla y de la barra inferior, los giros (flechas, FAB) y el progreso de los gráficos usan `spring()` (rígidez/damping según la pieza) en vez de duraciones fijas; los fundidos y los cambios de color siguen con `tween` porque no tienen desplazamiento.
 2. **Registros sin gestos:** eliminados `InterceptorDeslizar`, `LocalInterceptorDeslizar` y `RegistrarDeslizar` (`navigation/Deslizar.kt`); el desplazamiento con el dedo solo cambia de sección (Inicio–Inventario–Servicios–Registros–Ajustes). Las pestañas de Registros se cambian tocándolas (MANUAL_USUARIO.md §navegación actualizado).
-3. **Licencia apilada:** los 4 tipos (Mensual, Semestral, Anual, Perpetua) van en `Column` a ancho completo, uno debajo del otro; el precio de cada chip usa `supportingEsDato` (nuevo parámetro de `SpviChip`).
-4. **Seminegrita en importes y fechas:** `SpviTextos.resaltar(texto, vararg datos)` (marca cada ocurrencia dentro de frases) y `SpviTextos.datoTexto(dato)` (dato solo en huecos `AnnotatedString`), con tests en `SeminegritaTest`; `SpviListItem` acepta `titleResaltado`/`subtitleResaltado`. Aplicado en Registros, TurnoDetalle, ModificarVenta, ClientesFijos, Venta, Caja, Vinculación, Inicio, Inventario, Onboarding y Licencia. Criterio: solo UI persistente (fuera: snackbar, SMS/compartir, accesibilidad, PDF/Excel, lienzos de gráficos, filtros, placeholders, campos editables y conteos); solo importes (`Money`/`Cup`) y fechas (`Dates`).
+3. **Licencia apilada:** los 4 tipos (Mensual, Semestral, Anual, Perpetua) van en `Column` a ancho completo, uno debajo del otro; el precio de cada chip usa `supportingEsDato` (nuevo parámetro de `ShalevChip`).
+4. **Seminegrita en importes y fechas:** `ShalevTextos.resaltar(texto, vararg datos)` (marca cada ocurrencia dentro de frases) y `ShalevTextos.datoTexto(dato)` (dato solo en huecos `AnnotatedString`), con tests en `SeminegritaTest`; `ShalevListItem` acepta `titleResaltado`/`subtitleResaltado`. Aplicado en Registros, TurnoDetalle, ModificarVenta, ClientesFijos, Venta, Caja, Vinculación, Inicio, Inventario, Onboarding y Licencia. Criterio: solo UI persistente (fuera: snackbar, SMS/compartir, accesibilidad, PDF/Excel, lienzos de gráficos, filtros, placeholders, campos editables y conteos); solo importes (`Money`/`Cup`) y fechas (`Dates`).
 
-**Nota:** `spviTests` en Windows deja 1 fallo preexistente y ajeno a esta versión (`EscanerRedTest.almacenSoloBorraDentroDeSuCarpeta`: `uriDe` construye `file://C:\…` y el test espera `file:///`; en Android las rutas empiezan por `/` y funciona). En Linux pasa (850 tests en la 0.27.1).
+**Nota:** `shalevTests` en Windows deja 1 fallo preexistente y ajeno a esta versión (`EscanerRedTest.almacenSoloBorraDentroDeSuCarpeta`: `uriDe` construye `file://C:\…` y el test espera `file:///`; en Android las rutas empiezan por `/` y funciona). En Linux pasa (850 tests en la 0.27.1).
 
 ## 0.28.1 · Animaciones apreciables en el teléfono
 
@@ -1757,7 +1769,7 @@ El dueño reportó que las animaciones seguían imperceptibles con el teléfono 
 1. El teléfono tenía las tres escalas de animación del sistema a `0.0` (se pusieron a `1.0` por `adb`; en MIUI: Ajustes → Accesibilidad → Visión → «Quitar animaciones» apagado, o las tres «Escala de animación» a 1x en Opciones de desarrollador). Con ellas a cero, Compose ejecuta todo al instante y ningún parámetro se ve.
 2. El deslizamiento de ventanas recorría solo 1/10 del ancho y el cambio de pestaña era solo un fundido de 200–250 ms (entre pantallas oscuras no se nota).
 
-**Cambios** (todo en `SpviMotion`, `designsystem/token/Tokens.kt`):
+**Cambios** (todo en `ShalevMotion`, `designsystem/token/Tokens.kt`):
 - Nuevo `muelleEntrada()` (rigidez 350, amortiguación 0,85: blando, con leve asentamiento de ~0,4 s) para las ENTRADAS: navegación adelante/atrás, `enterVertical`, `ventanaEntra` (ventanas emergentes) y aparición de la barra inferior. Las salidas siguen inmediatas con `muelle()`.
 - Navegación con dirección: recorrido 1/10 → 1/4 del ancho.
 - Cambio de pestaña: fundido + zoom sutil 0,96 (`ZOOM_ENTRADA`, sin dirección porque no hay avance ni retroceso).
@@ -1769,9 +1781,9 @@ El dueño reportó que las animaciones seguían imperceptibles con el teléfono 
 
 Generador de base de datos de prueba **solo en debug** que satura la app con un historial coherente de 1 año y medio de ventas, para probar rendimiento, filtros y reportes sin cargar datos a mano.
 
-1. **Arquitectura:** paquete nuevo `cu.spvi.domain.seed` en `:domain` con tres piezas — `CatalogoBodega` (catálogo fijo: 11 insumos, 32 productos con 2 elaborados y receta, 8 servicios con 3 que consumen insumos, 12 clientes fijos con CI válido, 2 tarjetas y 2 teléfonos de pago, vendedores María Fernández y Jorge Pérez por rachas de 2 semanas), `GeneradorSeed` (plan determinista con semilla 2907L: ~470 turnos de 6 días/semana, 6–14 ventas por turno, 22 % servicios, 30 % transferencia solo con cliente, caja semanal, descuadres ocasionales, ~1,5 % de ventas anuladas) y `OrquestadorSeed` (ejecuta el plan contra los repositorios públicos con fechas explícitas de La Habana, 8:00–20:00; fondo 2000 CUP encadenado entre turnos).
+1. **Arquitectura:** paquete nuevo `cu.shalev.domain.seed` en `:domain` con tres piezas — `CatalogoBodega` (catálogo fijo: 11 insumos, 32 productos con 2 elaborados y receta, 8 servicios con 3 que consumen insumos, 12 clientes fijos con CI válido, 2 tarjetas y 2 teléfonos de pago, vendedores María Fernández y Jorge Pérez por rachas de 2 semanas), `GeneradorSeed` (plan determinista con semilla 2907L: ~470 turnos de 6 días/semana, 6–14 ventas por turno, 22 % servicios, 30 % transferencia solo con cliente, caja semanal, descuadres ocasionales, ~1,5 % de ventas anuladas) y `OrquestadorSeed` (ejecuta el plan contra los repositorios públicos con fechas explícitas de La Habana, 8:00–20:00; fondo 2000 CUP encadenado entre turnos).
 2. **UI debug:** fila «Generar datos de prueba» en Ajustes, visible solo con `BuildConfig.DEBUG` (precedente `mostrarCatalogo`), con diálogo de progreso por día (`SeedViewModel` + `DialogoSeed` en `app/.../ajustes/seed/`). Borra todo primero (avisa en el diálogo) y re-completa el onboarding con los datos del catálogo. En release no hay rastro: la fila no existe con `mostrarSeed = false`.
-3. **Decisiones (R1–R6 del ledger):** sin git en el entorno se omiten los commits; generador determinista en `:domain` por repositorios (rechazados DAO directo y respaldo `.spvi`); el plan truncado se reconstruyó desde la spec como autoridad; `clienteClave` como `claveFija`/`EVT:` + base-26 (los nombres solo admiten letras); `numeroTransaccion` con relleno a 6 (el validador exige 6–30); anuladas por día (15 % de días ≈ 1,5 % de ventas, como pide la spec); `EjecutorSeed` como `fun interface` con `operator fun invoke` (el `typealias` de función no genera binding Hilt) más `ioSeed` para tests deterministas.
+3. **Decisiones (R1–R6 del ledger):** sin git en el entorno se omiten los commits; generador determinista en `:domain` por repositorios (rechazados DAO directo y respaldo `.shalev`); el plan truncado se reconstruyó desde la spec como autoridad; `clienteClave` como `claveFija`/`EVT:` + base-26 (los nombres solo admiten letras); `numeroTransaccion` con relleno a 6 (el validador exige 6–30); anuladas por día (15 % de días ≈ 1,5 % de ventas, como pide la spec); `EjecutorSeed` como `fun interface` con `operator fun invoke` (el `typealias` de función no genera binding Hilt) más `ioSeed` para tests deterministas.
 
 **Límites:**
 - Los movimientos de inventario ALTA/AJUSTE/BAJA llevan la fecha actual (`clock.now()` dentro de `ProductoRepositoryImpl.mov()`), no la histórica; el stock final sí queda coherente porque las salidas por venta usan la fecha del turno.
@@ -1802,7 +1814,7 @@ Dos listas Top 3 en el resumen general de Inicio (ventana fija de 30 días, como
 A petición del dueño se elimina el código de barras del producto de todo el proyecto; la cámara queda solo para el QR de vinculación y la foto del producto.
 
 1. **Dominio:** fuera `Producto.codigo`, `InventarioRepository.porCodigo`, `ConsultarCodigo`, `BuscarProductoEnLinea`, `DescargarFoto`, `FuenteProductos`/`ProductoEnLinea`/`CodigoBarras`/`SimbologiaCodigo`/`ResultadoBusquedaEnLinea`, `PoliticaConsultaEnLinea` y `consultasEnLinea` de `Preferencias` (con su `guardar` y el consentimiento de Ajustes y onboarding). La búsqueda del Inventario y los preajustes filtran por nombre/descripción/categoría.
-2. **Datos:** fuera `codigo` de la entidad, el DAO, los mappers, `ProductoDto` y el respaldo (lector tolerante: los respaldos viejos con `codigo`/`consultasEnLinea` se importan igual); fuera `FuentesRed`/`ScannerDtos` y su test (con él desaparece el fallo Windows de `EscanerRedTest`). Migración 10→11 (recrear tabla sin `codigo`, test `Migracion1011Test`); User-Agent `SPVI/0.27 (Android)`.
+2. **Datos:** fuera `codigo` de la entidad, el DAO, los mappers, `ProductoDto` y el respaldo (lector tolerante: los respaldos viejos con `codigo`/`consultasEnLinea` se importan igual); fuera `FuentesRed`/`ScannerDtos` y su test (con él desaparece el fallo Windows de `EscanerRedTest`). Migración 10→11 (recrear tabla sin `codigo`, test `Migracion1011Test`); User-Agent `Shalev/0.27 (Android)`.
 3. **App:** borrado `app/.../escaner/`; nuevo lector mínimo `vinculacion/qr/` (`QrVinculacionScreen` + VM + `CamaraEscaner` solo-QR). Sin botón Escanear en Inicio ni hoja Escanear/Escribir en Inventario (FAB único +); sin campo código en el formulario; sin fila de internet en Ajustes.
 4. **Registros:** la ficha de venta muestra el unitario debajo (`lineasVenta`: «2 × Pan» + «10.00 CUP c/u», test `RegistrosTest`).
 5. Docs actualizados (`README`, `MANUAL_USUARIO` §2, `FORMATOS`, `SECURITY`, Ayuda) y capturas re-grabadas.
@@ -1812,8 +1824,8 @@ A petición del dueño se elimina el código de barras del producto de todo el p
 
 Primera vez que el repositorio se verifica solo: GitHub Actions ejecuta Gradle real en cada push
 (`.github/workflows/ci.yml`, cinco trabajos independientes). Corridas en verde:
-[37656256703](https://github.com/rmdvcd/SPVI/actions/runs/37656256703) y
-[37657849682](https://github.com/rmdvcd/SPVI/actions/runs/37657849682); las cifras coinciden entre corridas.
+[37656256703](https://github.com/rmdvcd/Shalev/actions/runs/37656256703) y
+[37657849682](https://github.com/rmdvcd/Shalev/actions/runs/37657849682); las cifras coinciden entre corridas.
 
 - **825 tests JVM, 0 fallos** — y los 3 archivos de tests instrumentados que no compilaban (`RepositoriosRoomTest`,
   `ConfiguracionInicialInstrumentedTest`, `RespaldoRoomTest`) vuelven a compilar.
@@ -1829,7 +1841,7 @@ Primera vez que el repositorio se verifica solo: GitHub Actions ejecuta Gradle r
 
 ## 0.30.1 — F1 (1/2): trabajo pesado fuera del hilo principal (2026-10-07)
 
-- **T1.1** `@IoDispatcher` se traslada de `cu.spvi.data.di` a `cu.spvi.domain.di` (antes no se podía usar desde
+- **T1.1** `@IoDispatcher` se traslada de `cu.shalev.data.di` a `cu.shalev.domain.di` (antes no se podía usar desde
   los casos de uso). `ObtenerGraficosPeriodo` y `ObtenerResumenGeneral` envuelven todo su cuerpo en
   `withContext(io)`: con el período «Año» ya no cargan, mapean y agregan miles de ventas en el hilo de UI.
 - **T1.2** `flowOn(io)` en las seis cadenas reactivas que transformaban listas completas en el colector
@@ -1847,85 +1859,85 @@ Primera vez que el repositorio se verifica solo: GitHub Actions ejecuta Gradle r
   sigue haciendo `.entre(…).validas()`). Siguiente paso: `@Query` con `GROUP BY` por cubo y rango, manteniendo
   `Estadisticas` como autoridad en los tests y comparando SQL vs memoria.
 - CI: **826 tests JVM, 0 fallos** (+1, el test nuevo del debounce); lint 0/95; R8 limpio; permisos OK; API 26 OK.
-  Corrida verde: [37704972362](https://github.com/rmdvcd/SPVI/actions/runs/37704972362).
+  Corrida verde: [37704972362](https://github.com/rmdvcd/Shalev/actions/runs/37704972362).
 
 ## Cambios solicitados — 2026-10-08 (pendiente de verificación)
 
 - **Avisos y tablas:** el botón de restablecer avisos usa una flecha circular antihoraria; las tablas muestran el icono Compartir para sus acciones de salida. Los filtros de Inventario, Servicios y Registros usan listas desplegables. Las filas marcadas de Inventario, Servicios y la selección de productos de Precios permanecen fijadas antes del buscador y no se duplican en la lista, incluso si una búsqueda o filtro las oculta.
 - **Gráficos:** las etiquetas de hora y mes usan los patrones breves del dispositivo; día/mes conserva el formato configurado.
 - **Transferencia:** no se inventa un campo de importe para Transfermóvil: el total de la venta se ve debajo del QR oficial. Pago electrónico presenta logotipos orientativos solo para prefijos no ambiguos; la asignación, fuentes y advertencias de licencia están en [LOGOS_BANCOS.md](LOGOS_BANCOS.md).
-- **SMS:** captura automática opcional a través de `NotificationListenerService`, solo mientras SPVI espera una transferencia, con habilitación manual de Acceso a notificaciones. No se solicita `READ_SMS`, no se consulta el buzón ni se conserva el cuerpo: al flujo de venta solo llegan el número y el importe reconocidos. Pegar o compartir el SMS sigue disponible.
-- **Actualizaciones:** `gradle.properties` fija `spviGithubRepo=rmdvcd/SPVI`; el build consulta la última Release pública del mismo repositorio (API de GitHub Releases) y descarga desde sus assets. Se puede sobrescribir para un fork. El repositorio es público, pero el 2026-10-08 aún no tenía Releases, así que falta publicar la primera APK firmada.
+- **SMS:** captura automática opcional a través de `NotificationListenerService`, solo mientras Shalev espera una transferencia, con habilitación manual de Acceso a notificaciones. No se solicita `READ_SMS`, no se consulta el buzón ni se conserva el cuerpo: al flujo de venta solo llegan el número y el importe reconocidos. Pegar o compartir el SMS sigue disponible.
+- **Actualizaciones:** `gradle.properties` fija `shalevGithubRepo=rmdvcd/Shalev`; el build consulta la última Release pública del mismo repositorio (API de GitHub Releases) y descarga desde sus assets. Se puede sobrescribir para un fork. El repositorio es público, pero el 2026-10-08 aún no tenía Releases, así que falta publicar la primera APK firmada.
 - **Pruebas añadidas/actualizadas:** formatos locales del gráfico, prefijos bancarios, selección fijada, filtros desplegables y captura SMS condicional. Las imágenes binarias de Roborazzi aún no se regrabaron. Pendiente ejecutar compilación, pruebas y capturas en un entorno con JDK; en esta sesión Gradle no encontró Java.
 
 ## Revisión de entradas y textos — 2026-10-09 (sin ejecutar)
 
-- Los subtítulos simples de `SpviListItem` separan los datos unidos por « · » o saltos de línea en renglones independientes. En Pago electrónico las acciones se apilan para no quitar todo el ancho al número junto al logo.
-- `SpviTextField` rechaza entradas ambiguas en dinero, decimales, enteros y porcentajes conservando el valor anterior; no elimina signos o letras para convertir un valor incorrecto en otro válido. Se admite coma decimal, estados parciales y borrado. El porcentaje queda limitado a 100. Tarjeta/cuenta admite hasta 20 cifras, coherente con el dominio.
+- Los subtítulos simples de `ShalevListItem` separan los datos unidos por « · » o saltos de línea en renglones independientes. En Pago electrónico las acciones se apilan para no quitar todo el ancho al número junto al logo.
+- `ShalevTextField` rechaza entradas ambiguas en dinero, decimales, enteros y porcentajes conservando el valor anterior; no elimina signos o letras para convertir un valor incorrecto en otro válido. Se admite coma decimal, estados parciales y borrado. El porcentaje queda limitado a 100. Tarjeta/cuenta admite hasta 20 cifras, coherente con el dominio.
 - Interpretación del pedido: **venta > costo**. Validación al guardar productos e insumos vendibles, aviso inmediato del precio en el formulario de producto y rechazo de la cotización cuando un descuento (incluso acumulado) deja precio ≤ costo. También compara el costo actual de las recetas. No se reescriben precios históricos ni se elevan automáticamente los precios del usuario.
 - Se conservan las implementaciones del 08/10 para Releases, iconos, combobox, selección fijada, fechas, QR, bancos y captura opcional de notificaciones. No se afirma verificación en dispositivo ni nueva investigación web de bancos en esta revisión.
 - Se añaden casos de regresión para entradas ambiguas, cuentas de 20 cifras, venta igual/inferior al costo y descuentos. **No se compiló, no se ejecutó la app ni se corrieron pruebas**, por petición del usuario. Ver `docs/REVISION_2026-10-09.md` para la entrega a opencode CLI.
 
 ## Inicio, logos, Licencia y actualización — 2026-10-09 (sin compilar)
 
-- **Logos de bancos:** caja única de 96 × 48 dp con esquinas `SpviRadius.sm` y fondo blanco para BPA, BANDEC y BANMET (`MedidasLogoBanco`, `recursoLogoBanco`); BANDEC se recorta a sangre y los otros dos se ajustan con margen. Los PNG no cambian. Se volvió a contrastar el prefijo con fuentes públicas: no hay fuente oficial única, `9225`/`9235` los usan varios bancos y `9226` tiene atribuciones contradictorias; el mapeo no se cambió y se documenta en [LOGOS_BANCOS.md](LOGOS_BANCOS.md).
-- **Inicio:** `SpviAccordionCard` (nuevo en `:designsystem`) y `SpviCard(ajustarAlContenido)`. Los gráficos y los Top 3 posteriores al selector de período son acordeones. Su estado vive en `AcordeonesInicio` con `remember` (no `rememberSaveable`): empiezan cerrados y vuelven a cerrarse al salir de Inicio y volver. «Nueva venta» a la izquierda y turno con interruptor a la derecha (apilados con letra muy grande). Teléfono y cuenta de Pago electrónico en seminegrita con `SpviTextos.resaltar`.
+- **Logos de bancos:** caja única de 96 × 48 dp con esquinas `ShalevRadius.sm` y fondo blanco para BPA, BANDEC y BANMET (`MedidasLogoBanco`, `recursoLogoBanco`); BANDEC se recorta a sangre y los otros dos se ajustan con margen. Los PNG no cambian. Se volvió a contrastar el prefijo con fuentes públicas: no hay fuente oficial única, `9225`/`9235` los usan varios bancos y `9226` tiene atribuciones contradictorias; el mapeo no se cambió y se documenta en [LOGOS_BANCOS.md](LOGOS_BANCOS.md).
+- **Inicio:** `ShalevAccordionCard` (nuevo en `:designsystem`) y `ShalevCard(ajustarAlContenido)`. Los gráficos y los Top 3 posteriores al selector de período son acordeones. Su estado vive en `AcordeonesInicio` con `remember` (no `rememberSaveable`): empiezan cerrados y vuelven a cerrarse al salir de Inicio y volver. «Nueva venta» a la izquierda y turno con interruptor a la derecha (apilados con letra muy grande). Teléfono y cuenta de Pago electrónico en seminegrita con `ShalevTextos.resaltar`.
 - **Licencia:** tarjeta «Precios de la licencia» con los importes de `TipoLicencia` (base y por app secundaria), siempre visible antes del asistente.
-- **Actualizaciones:** `RespaldoPrevio` crea un respaldo `.spvi` sin contraseña antes de instalar y lo restaura al abrir la versión nueva (`GestorActualizacion.alAbrir`); sin respaldo no se instala. Riesgo conocido: lo vendido entre el respaldo y la instalación se pierde al restaurar. Una app que ya estaba instalada antes de esta versión no hace el respaldo al actualizarse a esta, porque el código que lo hace es el nuevo. Los textos visibles de la actualización (y las notas de versión, filtradas con `TextosActualizacion.notasVisibles`) no mencionan repositorio ni alojamiento.
-- **Pruebas:** `RespaldoPrevioTest`, `PreciosLicenciaTest`, casos nuevos en `PagoLogicTest`, un test instrumentado de acordeones y la captura `01j_inicio_acordeones_cerrados`. **No se compiló ni se ejecutó nada** (el entorno no tiene JDK ni Android SDK): `./gradlew spviTests` sigue pendiente.
+- **Actualizaciones:** `RespaldoPrevio` crea un respaldo `.shalev` sin contraseña antes de instalar y lo restaura al abrir la versión nueva (`GestorActualizacion.alAbrir`); sin respaldo no se instala. Riesgo conocido: lo vendido entre el respaldo y la instalación se pierde al restaurar. Una app que ya estaba instalada antes de esta versión no hace el respaldo al actualizarse a esta, porque el código que lo hace es el nuevo. Los textos visibles de la actualización (y las notas de versión, filtradas con `TextosActualizacion.notasVisibles`) no mencionan repositorio ni alojamiento.
+- **Pruebas:** `RespaldoPrevioTest`, `PreciosLicenciaTest`, casos nuevos en `PagoLogicTest`, un test instrumentado de acordeones y la captura `01j_inicio_acordeones_cerrados`. **No se compiló ni se ejecutó nada** (el entorno no tiene JDK ni Android SDK): `./gradlew shalevTests` sigue pendiente.
 
 ## Verificación 2026-10-09 en el PC del dueño (OpenCode, main @ 331a9cd)
 
-- Se compiló (`:app:assembleDebug`), instaló y abrió `cu.spvi.app.debug` en un Redmi 23021RAAEG con Android 15 (API 35): Inicio, Inventario y Pago electrónico abren; la pantalla de Pago electrónico sale en negro en las capturas por `FLAG_SECURE` (regla 5, correcto).
-- `./gradlew spviTests` falló primero con 7 errores en `:domain` y 3 en `:app`, todos por la regla nueva **venta > costo** (revisión 2026-10-09): los fixtures vendían al costo o por debajo. Siguiendo la revisión, se actualizaron los fixtures para esperar rechazo, no la regla.
-- **Seed:** las recetas del catálogo estaban en kg/L donde tocan g/mL (el costo de la receta salía 1000 veces mayor y toda venta de elaborados y servicios con insumos se rechazaba). Se aplicó el arreglo del dueño (`c2d3cf6`, rama `arena/3c116bea-spvi`): recetas en gramos/mL más sus invariantes en `CatalogoBodegaTest` (costo declarado y costo de receta menores que la venta).
+- Se compiló (`:app:assembleDebug`), instaló y abrió `cu.shalev.app.debug` en un Redmi 23021RAAEG con Android 15 (API 35): Inicio, Inventario y Pago electrónico abren; la pantalla de Pago electrónico sale en negro en las capturas por `FLAG_SECURE` (regla 5, correcto).
+- `./gradlew shalevTests` falló primero con 7 errores en `:domain` y 3 en `:app`, todos por la regla nueva **venta > costo** (revisión 2026-10-09): los fixtures vendían al costo o por debajo. Siguiendo la revisión, se actualizaron los fixtures para esperar rechazo, no la regla.
+- **Seed:** las recetas del catálogo estaban en kg/L donde tocan g/mL (el costo de la receta salía 1000 veces mayor y toda venta de elaborados y servicios con insumos se rechazaba). Se aplicó el arreglo del dueño (`c2d3cf6`, rama `arena/3c116bea-shalev`): recetas en gramos/mL más sus invariantes en `CatalogoBodegaTest` (costo declarado y costo de receta menores que la venta).
 - **Fixtures:** `VentaFlujoTest` (Refresco costo 20, Galleta venta 60 / costo 10), `TurnoUseCasesTest` (Pan costo 20), `VentaViewModelTest` y `ModificarVentaTest` (Galletas costo 20); mensaje esperado actualizado en `ProductoFormTest`; caso nuevo `ValidadoresTest.no se vende al costo ni por debajo` (producto 60/59/61 con costo 60, insumo vendible 10/11 con precio 10).
-- Resultado: `./gradlew spviTests` en verde (856 tests JVM, 0 fallos) y `./gradlew spviCheck` en verde (lint 0 errores, 127 avisos; `spviPermisos` OK; APK debug 58,8 MB).
-- En el teléfono: Inicio y listas legibles con fuente normal y al 200 % (sin cortes); selección de Inventario fijada sobre el buscador con sus acciones; ficha de producto centrada con Compartir. Quedan `NO VERIFICADO` (requieren al dueño): dinero tecleado con coma y casos límite en el teléfono, descuentos acumulados en el dispositivo, QR de Transfermóvil con total debajo, SMS bancario real con Acceso a notificaciones, y Release firmada con sus assets (`spviGithubRepo=rmdvcd/SPVI`).
+- Resultado: `./gradlew shalevTests` en verde (856 tests JVM, 0 fallos) y `./gradlew shalevCheck` en verde (lint 0 errores, 127 avisos; `shalevPermisos` OK; APK debug 58,8 MB).
+- En el teléfono: Inicio y listas legibles con fuente normal y al 200 % (sin cortes); selección de Inventario fijada sobre el buscador con sus acciones; ficha de producto centrada con Compartir. Quedan `NO VERIFICADO` (requieren al dueño): dinero tecleado con coma y casos límite en el teléfono, descuentos acumulados en el dispositivo, QR de Transfermóvil con total debajo, SMS bancario real con Acceso a notificaciones, y Release firmada con sus assets (`shalevGithubRepo=rmdvcd/Shalev`).
 
 ## Verificación 2026-10-10 en el PC del dueño (OpenCode, main @ d2f51b4, PR #9)
 
-- **Móvil:** `./gradlew spviTests` en verde (**859 tests JVM, 0 fallos**: core 19, licencia 99, domain 243, data 86, designsystem 33, app 379) y `./gradlew spviCheck` en verde (lint 0 errores, `spviPermisos` OK; APK debug 62,5 MB). Instalado con `install -r` y abierto en el Redmi 23021RAAEG (Android 15): Inicio con acordeones, turno, alertas y Pago electrónico con cuenta enmascarada, todo legible.
+- **Móvil:** `./gradlew shalevTests` en verde (**859 tests JVM, 0 fallos**: core 19, licencia 99, domain 243, data 86, designsystem 33, app 379) y `./gradlew shalevCheck` en verde (lint 0 errores, `shalevPermisos` OK; APK debug 62,5 MB). Instalado con `install -r` y abierto en el Redmi 23021RAAEG (Android 15): Inicio con acordeones, turno, alertas y Pago electrónico con cuenta enmascarada, todo legible.
 - **Paso 3 de la revisión en el teléfono:** Inicio legible con fuente normal. Con fuente al 200 % la etiqueta `Cantidad` de Nueva venta se parte en dos líneas dentro del campo (`Canti/dad`); queda anotado como pendiente de T2 (textos que no se cortan). Fuente restaurada a 1.0. Se encontró un turno abierto con un carrito ajeno (datos del dueño) y se dejó intacto: el diálogo `¿Descartar la venta?` protege la salida con BACK.
-- **Web (`desktop/`):** primera ejecución real de esta ampliación. Entorno `.venv` creado (Python 3.14.7), `requirements.txt` instalado, `unittest discover -s tests`: **84 pruebas OK** sin corregir nada. `build_windows.ps1` generó `dist/SPVI.exe` (29,3 MB, con `SPVI.exe.sha256`) y su `--self-test` interno pasó. El EXE arrancado con `--local` y carpeta temporal sirvió `http://127.0.0.1:8765` con HTTP 200 (acceso `SPVI · Mi negocio`, `Principal · Escritorio`, CSRF presente); la carpeta temporal se borró después. Sin tocar datos reales.
-- Siguen `NO VERIFICADO` (requieren al dueño): dinero con coma y casos límite tecleados en el teléfono, descuentos acumulados y QR real de Transfermóvil, SMS bancario real, Release firmada, LAN Android↔PC con GL real, HTTPS con `spvi.minegocio.cu`, y validación visual en navegador real.
+- **Web (`desktop/`):** primera ejecución real de esta ampliación. Entorno `.venv` creado (Python 3.14.7), `requirements.txt` instalado, `unittest discover -s tests`: **84 pruebas OK** sin corregir nada. `build_windows.ps1` generó `dist/Shalev.exe` (29,3 MB, con `Shalev.exe.sha256`) y su `--self-test` interno pasó. El EXE arrancado con `--local` y carpeta temporal sirvió `http://127.0.0.1:8765` con HTTP 200 (acceso `Shalev · Mi negocio`, `Principal · Escritorio`, CSRF presente); la carpeta temporal se borró después. Sin tocar datos reales.
+- Siguen `NO VERIFICADO` (requieren al dueño): dinero con coma y casos límite tecleados en el teléfono, descuentos acumulados y QR real de Transfermóvil, SMS bancario real, Release firmada, LAN Android↔PC con GL real, HTTPS con `shalev.minegocio.cu`, y validación visual en navegador real.
 
 ## Verificación 2026-10-11 en el PC del dueño (OpenCode, main @ 328cdfa, PR #10, Escritorio 0.31)
 
 - El dueño fusionó la PR #10 después de la sesión anterior (incluyó mis entradas del 2026-10-10 en `desktop/README.md`; las capturas regeneradas quedaron sin commitear). El venv de ayer quedó viejo: el `requirements.txt` nuevo ya trae `tzdata==2026.5`, `pystray` y `six`; bastó `pip install -r requirements.txt`, sin tocar código.
-- **Móvil:** `./gradlew spviTests spviCheck` en verde (**859 tests JVM, 0 fallos**; lint 0 errores, `spviPermisos` OK). APK reinstalado y abierto en el Redmi: Inicio con banner de prueba, Pago electrónico enmascarado, acordeones; Registros con pestañas FlowRow en varias filas (0.30.1), ninguna cortada.
+- **Móvil:** `./gradlew shalevTests shalevCheck` en verde (**859 tests JVM, 0 fallos**; lint 0 errores, `shalevPermisos` OK). APK reinstalado y abierto en el Redmi: Inicio con banner de prueba, Pago electrónico enmascarado, acordeones; Registros con pestañas FlowRow en varias filas (0.30.1), ninguna cortada.
 - **Instrumentados (primera ejecución real):** `:data` 50 tests, 46 OK y **4 fallos conocidos** en `ConfiguracionInicialInstrumentedTest` (migraciones 4/5/6→11 ausentes y versión esperada 9 vs real 11): es la deuda T3.2 ya documentada, no se tocó. `:app` (94 tests UI) **bloqueado por el dispositivo**: el primer test se cuelga (MIUI no trae la actividad al frente; el teléfono es el de uso diario con los datos del dueño, contra D6). Veredicto: UI instrumentada pendiente de emulador o teléfono dedicado.
 - **Roborazzi:** `verify` inicial dio 101 diferencias (referencias del 08/10 + capturas nuevas sin referencia tras los cambios de UI). `record` regeneró `app/capturas` (286 PNG) y `verify --rerun-tasks` pasó en verde. Revisión visual propia: Inicio oscuro y Registros claros correctos y coincidentes con el teléfono; la revisión final de cada captura queda para el dueño.
-- **Web:** `unittest` **103 tests OK (1 omitido)**. `build_windows.ps1` regeneró `dist/SPVI.exe` (30,1 MB, `.sha256` actualizado a mano porque el script no lo reescribió) con `--self-test` pasado.
+- **Web:** `unittest` **103 tests OK (1 omitido)**. `build_windows.ps1` regeneró `dist/Shalev.exe` (30,1 MB, `.sha256` actualizado a mano porque el script no lo reescribió) con `--self-test` pasado.
 - **Aceptación en Chrome real contra el EXE (datos temporales, borrados después):** abrir turno con fondo 1000, crear producto Pan (costo 20, venta 50, 100 u; la categoría es texto libre con sugerencias y frena el Guardar si falta), vender ×1 en efectivo (stock 99), corregir a ×2 con motivo (2 registros, válido 100.00), anular con motivo (válido 0.00, stock de vuelta a 100), doble anulación imposible (la ficha anulada solo muestra Cerrar), exportar inventario a PDF y XLSX válidos (hoja SPVI: Pan, 50, 20, 100, u), Tiempo en línea con uptime, y cierre de turno con **Cuadra** (1000 = 1000).
 - **Observación menor (sin tocar):** la tarjeta de producto sin foto pide `/api/photo/...` y el servidor devuelve 404 que ensucia la consola (3–7 errores). Decisión del dueño: no pedir la foto si no existe, o devolver 204.
-- Siguen `NO VERIFICADO`: instrumentados UI en dispositivo dedicado, SMS bancario real, Release firmada, LAN Android↔PC con GL real, HTTPS `spvi.minegocio.cu`, licencia PC GL real de 16 dígitos, y segunda instancia / recuperación de clave (puntos 6, 9, 10, 17 de VERIFICACION_PC).
+- Siguen `NO VERIFICADO`: instrumentados UI en dispositivo dedicado, SMS bancario real, Release firmada, LAN Android↔PC con GL real, HTTPS `shalev.minegocio.cu`, licencia PC GL real de 16 dígitos, y segunda instancia / recuperación de clave (puntos 6, 9, 10, 17 de VERIFICACION_PC).
 
 ## Cambio 2026-10-11 (dueño): Inicio con flotantes y pestañas horizontales
 
 - **Pestañas de Registros** (de Ventas a Turnos): una sola fila horizontal desplazable (`ScrollableTabRow`), por decisión del dueño; se revierte el FlowRow de varias filas de la 0.30.1. Solo afecta a Registros (el resto usa ≤4 pestañas). `README.md` actualizado.
-- **Inicio:** «Nueva venta» (izquierda) y «Movimiento de caja» (derecha) pasan a botones flotantes (`SpviFab`) en las esquinas inferiores, visibles solo con el turno abierto (y con permiso de vender). El contenedor del turno se ajusta a su contenido, centrado; la lista deja hueco abajo para que los flotantes no tapen la última fila. Se eliminó `AccionesVenta` de la fila del turno.
-- Verificación: `spviTests` verde, `verifyRoborazziDebug` verde (referencias regeneradas; la de Inicio muestra turno centrado y ambos flotantes), APK instalado y abierto en el Redmi (flotantes visibles con turno abierto).
+- **Inicio:** «Nueva venta» (izquierda) y «Movimiento de caja» (derecha) pasan a botones flotantes (`ShalevFab`) en las esquinas inferiores, visibles solo con el turno abierto (y con permiso de vender). El contenedor del turno se ajusta a su contenido, centrado; la lista deja hueco abajo para que los flotantes no tapen la última fila. Se eliminó `AccionesVenta` de la fila del turno.
+- Verificación: `shalevTests` verde, `verifyRoborazziDebug` verde (referencias regeneradas; la de Inicio muestra turno centrado y ambos flotantes), APK instalado y abierto en el Redmi (flotantes visibles con turno abierto).
 
 ## Bug 2026-10-11 (dueño): elegía «Secundaria» y arrancaba como principal
 
 - **Causa:** `VinculacionViewModel.pedirSecundaria()` (y `qrLeido()`) leían `eligioSecundaria.value` y `tipoRepo.tipo.value` de forma síncrona. Al abrirse la vinculación sola justo tras el recorrido inicial, el DataStore aún no había emitido y se leía el inicial (`false`) → «Esta app es la principal del negocio…» aunque se había elegido «Secundaria». La bandera en memoria (`TourPendiente`) sí llegaba; el que fallaba era el dato persistido recién guardado.
-- **Corrección (`app/.../vinculacion/VinculacionViewModel.kt`):** la regla se evalúa con los valores reales (`base.first()`, suspendida); `pedirSecundaria()` espera dentro de una corrutina. Sin cambios de firmas ni de comportamiento visible salvo el bug. `spviTests` verde (859/859), APK reinstalado en el Redmi con los datos intactos.
+- **Corrección (`app/.../vinculacion/VinculacionViewModel.kt`):** la regla se evalúa con los valores reales (`base.first()`, suspendida); `pedirSecundaria()` espera dentro de una corrutina. Sin cambios de firmas ni de comportamiento visible salvo el bug. `shalevTests` verde (859/859), APK reinstalado en el Redmi con los datos intactos.
 - Para probarlo en un teléfono hace falta borrar sus datos (el tipo queda fijado al instalarse): solo con respaldo previo, o mejor en el teléfono del empleado.
 
-## Cambio 2026-10-11 (dueño): respaldo .spvi solo en almacenamiento interno
+## Cambio 2026-10-11 (dueño): respaldo .shalev solo en almacenamiento interno
 
-- **Regla nueva:** exportar e importar el `.spvi` solo hacia y desde el almacenamiento interno; la ubicación la elige el usuario con el gestor de archivos del dispositivo.
-- **Quitado:** botón «Enviar a otra app» (WhatsApp, Telegram, Drive…) y la recepción de `.spvi` compartidos o abiertos desde otras apps (`EventoRespaldo.Compartir`, `RespaldoViewModel.compartir()`, consumo de `Entrada.Archivo`, redirección de MainScaffold, `ArchivosApp.copiarRecibido`, filtros SEND/VIEW de `octet-stream` en el manifiesto y el string `importar_respaldo`). La licencia por texto compartido y el SMS de PAGOxMOVIL no cambian.
+- **Regla nueva:** exportar e importar el `.shalev` solo hacia y desde el almacenamiento interno; la ubicación la elige el usuario con el gestor de archivos del dispositivo.
+- **Quitado:** botón «Enviar a otra app» (WhatsApp, Telegram, Drive…) y la recepción de `.shalev` compartidos o abiertos desde otras apps (`EventoRespaldo.Compartir`, `RespaldoViewModel.compartir()`, consumo de `Entrada.Archivo`, redirección de MainScaffold, `ArchivosApp.copiarRecibido`, filtros SEND/VIEW de `octet-stream` en el manifiesto y el string `importar_respaldo`). La licencia por texto compartido y el SMS de PAGOxMOVIL no cambian.
 - **Queda:** «Guardar en el teléfono» y «Elegir archivo», que abren el gestor del dispositivo enraizado en Descargas internas y limitado a proveedores locales (`EXTRA_INITIAL_URI` + `EXTRA_LOCAL_ONLY`, sin nubes). PDF/Excel/imágenes se siguen enviando como antes.
-- Verificación: `spviTests` 856/856, `spviCheck` verde (`spviPermisos` OK con el manifiesto recortado), instrumentados compilan, `verifyRoborazziDebug` verde (referencias 09* regeneradas), APK instalado. Docs: FORMATOS, SECURITY, UI_UX_IX e historial.
+- Verificación: `shalevTests` 856/856, `shalevCheck` verde (`shalevPermisos` OK con el manifiesto recortado), instrumentados compilan, `verifyRoborazziDebug` verde (referencias 09* regeneradas), APK instalado. Docs: FORMATOS, SECURITY, UI_UX_IX e historial.
 
-## Bug 2026-10-13 (dueño): «Reiniciar SPVI» fallaba con «No module named '_sqlite3'»
+## Bug 2026-10-13 (dueño): «Reiniciar Shalev» fallaba con «No module named '_sqlite3'»
 
-- **Síntoma:** al pulsar Ajustes › «Reiniciar SPVI» en el EXE portable, el proceso nuevo moría con `ModuleNotFoundError: No module named '_sqlite3'` (`launcher.py:172`, vía `app.py` → `backups.py:6`). La app quedaba detenida.
+- **Síntoma:** al pulsar Ajustes › «Reiniciar Shalev» en el EXE portable, el proceso nuevo moría con `ModuleNotFoundError: No module named '_sqlite3'` (`launcher.py:172`, vía `app.py` → `backups.py:6`). La app quedaba detenida.
 - **Causa:** el proceso reiniciado arrancó con la extracción del ejecutable a medio hacer (carpeta temporal `_MEI*` con 28–30 de 810 archivos: estaban los tiempos de ejecución básicos pero faltaba `_sqlite3.pyd`). Los módulos empaquetados dentro del EXE cargan bien, pero las extensiones nativas viven en la carpeta temporal y aún no existían. En la repetición provocada se vio además al extractor detenido en ese punto sin ventana ni CPU (sin registro en Defender). Es una carrera en el arranque, no un paquete roto: el mismo EXE arranca bien cuando la extracción termina (comprobado: autoprueba y servicio correctos con PATH limpio, y 106 pruebas verdes).
 - **Corrección (`desktop/launcher.py`):** al arrancar, el proceso espera (hasta 30 s) a que `_sqlite3.pyd` y `sqlite3.dll` existan en su carpeta temporal antes de importar la aplicación; si se agota el tiempo muestra un aviso en español («ábrelo de nuevo») en lugar del diálogo técnico. Además `relaunch()` termina el proceso viejo con `os._exit(0)` tras lanzar al nuevo (la limpieza ya terminó), para no dejarlo colgado. Prueba nueva `desktop/tests/test_launcher.py` (3 pruebas). EXE reconstruido con `build_windows.ps1` (106 pruebas OK con 1 omitida + autoprueba del ejecutable verde; `.sha256` reescrito a mano porque al script en segundo plano le falló `Get-FileHash`) y app relanzada con los datos intactos (verificado: 810 archivos extraídos y API con estado real).
-- **Uso:** si al reiniciar aparece el aviso en español, ciérralo y abre SPVI de nuevo (o usa Salir y el acceso directo). Si se repite, avisa: el paso siguiente sería compilar en modo carpeta (sin extracción) o excluir la carpeta del antivirus.
+- **Uso:** si al reiniciar aparece el aviso en español, ciérralo y abre Shalev de nuevo (o usa Salir y el acceso directo). Si se repite, avisa: el paso siguiente sería compilar en modo carpeta (sin extracción) o excluir la carpeta del antivirus.
 - **Nota:** cada arranque del EXE deja una carpeta `_MEI*` en `%TEMP%` que solo se borra al cerrarse bien; tras cuelgues o apagados conviene borrar las sobrantes. Se limpiaron 8 pendientes.
 
 ### Principal web independiente — ampliación en desarrollo
@@ -1954,7 +1966,7 @@ Primera vez que el repositorio se verifica solo: GitHub Actions ejecuta Gradle r
   La instantánea no expone otras cuentas ni datos personales del dueño a la secundaria.
 - Sesión TCP anterior conservada hasta prueba criptográfica de la nueva. Diagnóstico sin payloads.
 - Recuperación de clave por consola, invalidación de sesiones y bloqueo de doble instancia.
-- `.spvidesk` v2/`.spvi` con extensión web de fotos; límite del contenedor desktop elevado a 128 MiB.
+- `.shalevdesk` v2/`.shalev` con extensión web de fotos; límite del contenedor desktop elevado a 128 MiB.
   Android no conserva la extensión `webFotos`: no se afirma transferencia de fotos al móvil.
 - Pruebas nuevas y autoprueba de empaquetado ampliadas; guía de OpenCode CLI actualizada.
   **No se ejecutaron pruebas, validadores, compilación, CI ni empaquetado en esta fase.**

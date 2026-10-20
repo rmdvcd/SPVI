@@ -1,4 +1,4 @@
-# Prompt para GL — SPVI 0.23.1: solicitud y licencia cifradas, mensaje con datos + código (solo texto)
+# Prompt para GL — Shalev 0.23.1: solicitud y licencia cifradas, mensaje con datos + código (solo texto)
 
 Pega el bloque siguiente en opencode (escritorio), dentro del proyecto **GL**. Es el único prompt que hay que aplicar:
 sustituye a la versión de la 0.22 y a la versión anterior de este archivo (la de la 0.23.0, que pedía QR).
@@ -8,23 +8,23 @@ Qué cambia en el contrato de SPVI:
 - la ÚNICA respuesta es la licencia corta **cifrada** `SPVI2:`;
 - todo va **solo como texto**, sin QR ni imágenes en ningún sentido.
 
-Las licencias largas ya instaladas siguen valiendo en los teléfonos hasta que venzan, pero SPVI 0.23.x ya no activa
-licencias largas ni `SPVI1:`. Una SPVI anterior a 0.23.0 tampoco sabe activar `SPVI2:` (ver punto 7).
+Las licencias largas ya instaladas siguen valiendo en los teléfonos hasta que venzan, pero Shalev 0.23.x ya no activa
+licencias largas ni `SPVI1:`. Una Shalev anterior a 0.23.0 tampoco sabe activar `SPVI2:` (ver punto 7).
 
 ---
 
 ```text
-Actualiza GL para SPVI 0.23.1. Las claves NO cambian: la misma clave ECDH de GL (la que descifra las solicitudes) y
-la misma clave de firma gl-sign-v1. Todo lo demás de este punto en adelante sustituye al formato de SPVI anterior.
+Actualiza GL para Shalev 0.23.1. Las claves NO cambian: la misma clave ECDH de GL (la que descifra las solicitudes) y
+la misma clave de firma gl-sign-v1. Todo lo demás de este punto en adelante sustituye al formato de Shalev anterior.
 
-0) QUITA lo que haya de versiones anteriores para SPVI (solo si existe en GL):
+0) QUITA lo que haya de versiones anteriores para Shalev (solo si existe en GL):
    - la emisión de la licencia corta firmada "SPVI1:" y el campo "licenciaCorta";
-   - la generación, muestra o envío de códigos QR / imágenes PNG de licencias o solicitudes de SPVI;
-   - la emisión de la licencia LARGA (envelope JSON) para SPVI.
+   - la generación, muestra o envío de códigos QR / imágenes PNG de licencias o solicitudes de Shalev;
+   - la emisión de la licencia LARGA (envelope JSON) para Shalev.
    No toques nada de otras apps que use GL.
 
-1) MENSAJE DE SOLICITUD QUE LLEGA (SPVI → GL), por WhatsApp o SMS, SOLO TEXTO (sin imágenes ni QR):
-      Solicitud de licencia SPVI
+1) MENSAJE DE SOLICITUD QUE LLEGA (Shalev → GL), por WhatsApp o SMS, SOLO TEXTO (sin imágenes ni QR):
+      Solicitud de licencia Shalev
       Nombre: María Pérez González
       Carné de identidad: 85010112345
       Teléfono: +5352345678
@@ -37,11 +37,11 @@ la misma clave de firma gl-sign-v1. Todo lo demás de este punto en adelante sus
    Las líneas de arriba son SOLO para leer: GL usa exclusivamente lo que va cifrado en SPVIR1 (si no coinciden,
    manda el código). El operador pega el mensaje en GL (un cuadro de texto con botón «Pegar»): busca "SPVIR1:" en
    cualquier parte del texto, toma lo que sigue IGNORANDO espacios y saltos de línea (algunas apps parten líneas largas)
-   y para en el primer carácter que no sea A-Z a-z 0-9 - _ . Si no hay "SPVIR1:" → «No es una solicitud de SPVI 0.23».
+   y para en el primer carácter que no sea A-Z a-z 0-9 - _ . Si no hay "SPVIR1:" → «No es una solicitud de Shalev 0.23».
 
 2) DESCIFRAR LA SOLICITUD SPVIR1:
       bytes = Base64url-decode(lo que sigue a "SPVIR1:")  =  epk (33 B) || ct || tag (16 B)
-      epk  = clave pública efímera P-256 de SPVI, punto COMPRIMIDO SEC1 (0x02/0x03 || x de 32 B)
+      epk  = clave pública efímera P-256 de Shalev, punto COMPRIMIDO SEC1 (0x02/0x03 || x de 32 B)
       ikm  = ECDH(clave privada ECDH de GL, epk)                    (32 B, coordenada x)
       okm  = HKDF-SHA256(ikm, salt = epk (33 B), info = UTF-8("SPVI-R1"), 44 B)
       clave AES-256 = okm[0..32), IV = okm[32..44)
@@ -69,7 +69,7 @@ la misma clave de firma gl-sign-v1. Todo lo demás de este punto en adelante sus
           new ECPublicKeySpec(new ECPoint(x, y), paramsDeP256));   // paramsDeP256: de cualquier clave P-256 generada
    (En Python: ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), c).)
 
-3) LICENCIA (GL → SPVI): SOLO la corta cifrada. Texto del código:
+3) LICENCIA (GL → Shalev): SOLO la corta cifrada. Texto del código:
       "SPVI2:" + Base64url SIN relleno de ( epk 33 B || ct 44 B || tag 16 B || firma 64 B )
       = 210 caracteres Base64url tras el prefijo (157 B); 216 contando "SPVI2:"
    Cuerpo en claro (44 B, big-endian):
@@ -94,7 +94,7 @@ la misma clave de firma gl-sign-v1. Todo lo demás de este punto en adelante sus
 
 4) MENSAJE DE RESPUESTA (características + renglón en blanco + código). Texto EXACTO (fechas dd/MM/yyyy en hora de
    Cuba, America/Havana; sin tildes ni ñ para que por SMS no pase a UCS-2):
-      Licencia SPVI
+      Licencia Shalev
       Tipo: Mensual                (Mensual | Semestral | Anual | Perpetua)
       Apps secundarias: 2
       Emitida: 03/10/2026
@@ -102,13 +102,13 @@ la misma clave de firma gl-sign-v1. Todo lo demás de este punto en adelante sus
       ID: 7c9e6679-7425-40de-944b-e07fc1f90ae7
       <renglón en blanco>
       SPVI2:…(210 caracteres tras el prefijo)
-   - Vía WhatsApp: ese texto, tal cual. NO generes QR ni imágenes: el cliente copia el mensaje y lo pega en SPVI
+   - Vía WhatsApp: ese texto, tal cual. NO generes QR ni imágenes: el cliente copia el mensaje y lo pega en Shalev
      (manejar una imagen en el mismo teléfono es difícil para usuarios no avanzados).
    - Vía SMS: el mismo texto (unos 340 caracteres GSM-7 → 3 SMS concatenados; si prefieres 2 SMS, manda solo la línea
-     SPVI2).
+     Shalev2).
    En GL: muestra el mensaje en un cuadro de texto de solo lectura con un botón «Copiar mensaje» (copia el texto
    completo, con el renglón en blanco). Si GL ya abre WhatsApp o SMS con el texto, sigue haciéndolo solo con texto.
-   SPVI no lee las líneas de arriba: todo lo que cuenta va cifrado y firmado en el código.
+   Shalev no lee las líneas de arriba: todo lo que cuenta va cifrado y firmado en el código.
 
 5) RENOVAR SIN PERDER DÍAS (sin cambios respecto a 0.22.0): si la solicitud trae "renueva", existe en TUS registros,
    es del MISMO deviceId, no está revocada ni es perpetua → venceEn = max(ahora, venceEn anterior) + duración
@@ -128,7 +128,7 @@ la misma clave de firma gl-sign-v1. Todo lo demás de este punto en adelante sus
       firma de PRUEBA, escalar d (hex) = 1f2e3d4c5b6a79881f2e3d4c5b6a79881f2e3d4c5b6a79881f2e3d4c5b6a7988
         SPKI (Base64) = MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEvXxzuIsum0ztpiAistqL4TGTpbVu3Cbn33hC4kzQtesGBa2nvag6xqK4DX4xQED6R/8WuDushc7bAURRu3znGg==
       → mensaje válido (la firma ECDSA cambia en cada emisión; verifícala con la SPKI de prueba):
-        Licencia SPVI
+        Licencia Shalev
         Tipo: Mensual
         Apps secundarias: 2
         Emitida: 03/10/2026
@@ -142,20 +142,20 @@ la misma clave de firma gl-sign-v1. Todo lo demás de este punto en adelante sus
    c) Renovación: anterior vence en 5 días → la nueva MENSUAL vence a los 35; vencida hace 3 días → 30 desde ahora;
       "renueva" de otro deviceId o revocada → se ignora y se avisa.
    d) Extracción: la solicitud pegada con el código partido en varias líneas se abre igual; un texto sin "SPVIR1:"
-      o un envelope JSON antiguo dan el aviso del punto 7 o «No es una solicitud de SPVI 0.23».
+      o un envelope JSON antiguo dan el aviso del punto 7 o «No es una solicitud de Shalev 0.23».
    e) El mensaje de respuesta es exactamente el del punto 4 (6 líneas + renglón en blanco + código) y GL no genera
       ningún QR ni imagen.
 
-7) COMPATIBILIDAD: SPVI < 0.23.0 envía la solicitud antigua (envelope JSON v1 con "appName"). Si llega una así, NO la
-   rechaces sin explicar: muestra al operador «SPVI desactualizada: pide al cliente que instale SPVI 0.23.1 o posterior»
-   (esa versión vieja no puede activar SPVI2). No emitas licencias largas para SPVI.
+7) COMPATIBILIDAD: Shalev < 0.23.0 envía la solicitud antigua (envelope JSON v1 con "appName"). Si llega una así, NO la
+   rechaces sin explicar: muestra al operador «Shalev desactualizada: pide al cliente que instale Shalev 0.23.1 o posterior»
+   (esa versión vieja no puede activar Shalev2). No emitas licencias largas para Shalev.
 
 No cambies nada más. Al terminar, resume los archivos tocados y cómo probar.
 ```
 
 ---
 
-## Cómo probar el resultado (SPVI → GL → SPVI)
+## Cómo probar el resultado (Shalev → GL → Shalev)
 
 1. Solicitud de prueba: `docs/GL_SOLICITUD_PRUEBA.txt` (mensaje completo, cifrado hacia la clave ECDH real de GL).
    Es una renovación de la licencia real d53a020b…, MENSUAL con 2 secundarias, 8 000 CUP.
@@ -168,6 +168,6 @@ No cambies nada más. Al terminar, resume los archivos tocados y cómo probar.
    Verifica la firma con la clave real de GL, descifra con la clave del dispositivo de prueba y comprueba huella, tipo,
    secundarias, fechas y que el texto de arriba coincide con lo cifrado.
 4. Comprueba que GL ya no genera QR ni imágenes: la respuesta es solo texto.
-5. Prueba real: SPVI 0.23.1 en un teléfono → Solicitar por WhatsApp → copiar el mensaje recibido y pegarlo en GL →
-   emitir → «Copiar mensaje» → enviarlo por WhatsApp al cliente → en SPVI, copiar el mensaje → Licencia → Pegar →
+5. Prueba real: Shalev 0.23.1 en un teléfono → Solicitar por WhatsApp → copiar el mensaje recibido y pegarlo en GL →
+   emitir → «Copiar mensaje» → enviarlo por WhatsApp al cliente → en Shalev, copiar el mensaje → Licencia → Pegar →
    Activar → «Licencia activada».

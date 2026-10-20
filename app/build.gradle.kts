@@ -16,9 +16,9 @@ plugins {
  *  1. `keystore.properties` en la raíz del proyecto (ignorado por git):
  *       storeFile=/ruta/absoluta/spvi-release.jks
  *       storePassword=…
- *       keyAlias=spvi
+ *       keyAlias=shalev
  *       keyPassword=…
- *  2. Variables de entorno: SPVI_KEYSTORE, SPVI_KEYSTORE_PASSWORD, SPVI_KEY_ALIAS, SPVI_KEY_PASSWORD.
+ *  2. Variables de entorno: Shalev_KEYSTORE, Shalev_KEYSTORE_PASSWORD, Shalev_KEY_ALIAS, Shalev_KEY_PASSWORD.
  * Si falta alguno, `assembleRelease`/`bundleRelease` producen artefactos SIN FIRMAR (no instalables) y se avisa.
  * Ver RELEASE.md.
  */
@@ -29,28 +29,28 @@ val propsFirma = Properties().apply {
 }
 fun datoFirma(clave: String, variable: String): String? =
     propsFirma.getProperty(clave)?.takeIf { it.isNotBlank() } ?: providers.environmentVariable(variable).orNull?.takeIf { it.isNotBlank() }
-val firmaStoreFile = datoFirma("storeFile", "SPVI_KEYSTORE")
-val firmaStorePassword = datoFirma("storePassword", "SPVI_KEYSTORE_PASSWORD")
-val firmaKeyAlias = datoFirma("keyAlias", "SPVI_KEY_ALIAS")
-val firmaKeyPassword = datoFirma("keyPassword", "SPVI_KEY_PASSWORD")
+val firmaStoreFile = datoFirma("storeFile", "Shalev_KEYSTORE")
+val firmaStorePassword = datoFirma("storePassword", "Shalev_KEYSTORE_PASSWORD")
+val firmaKeyAlias = datoFirma("keyAlias", "Shalev_KEY_ALIAS")
+val firmaKeyPassword = datoFirma("keyPassword", "Shalev_KEY_PASSWORD")
 val firmaCompleta = listOf(firmaStoreFile, firmaStorePassword, firmaKeyAlias, firmaKeyPassword).all { it != null }
 
 /** P23: SDK android-all-instrumented de Robolectric (SDK 35), resuelto por Gradle para tests y capturas sin red. */
 val robolectricSdk: Configuration by configurations.creating { isTransitive = false }
 
 android {
-    namespace = "cu.spvi.app"
+    namespace = "cu.shalev.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "cu.spvi.app"
+        applicationId = "cu.shalev.app"
         minSdk = 26
         targetSdk = 35
         versionCode = 51
         versionName = "0.30.0"
-        // Repositorio PÚBLICO de GitHub cuyas Releases sirven APK y revocaciones (por defecto rmdvcd/SPVI).
-        // Se puede sobrescribir con -PspviGithubRepo=owner/repo; vacío desactiva estas consultas.
-        buildConfigField("String", "GITHUB_REPO", "\"${(project.findProperty("spviGithubRepo") as String?).orEmpty()}\"")
+        // Repositorio PÚBLICO de GitHub cuyas Releases sirven APK y revocaciones (por defecto rmdvcd/Shalev).
+        // Se puede sobrescribir con -PshalevGithubRepo=owner/repo; vacío desactiva estas consultas.
+        buildConfigField("String", "GITHUB_REPO", "\"${(project.findProperty("shalevGithubRepo") as String?).orEmpty()}\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -64,7 +64,7 @@ android {
                 // Esquemas de firma: los que AGP elige por defecto para minSdk 26 (v1/JAR no hace falta desde API 24).
             }
         } else {
-            logger.warn("SPVI: firma de release no configurada (keystore.properties o SPVI_*). El release saldrá SIN FIRMAR.")
+            logger.warn("SPVI: firma de release no configurada (keystore.properties o Shalev_*). El release saldrá SIN FIRMAR.")
         }
     }
 
@@ -116,7 +116,7 @@ android {
     }
 
     lint {
-        // P17 U3: los errores nuevos rompen `spviCheck`. Lo heredado queda en el baseline; para regenerarlo:
+        // P17 U3: los errores nuevos rompen `shalevCheck`. Lo heredado queda en el baseline; para regenerarlo:
         // ./gradlew :app:updateLintBaseline (revisar el diff antes de aceptarlo).
         baseline = file("lint-baseline.xml")
         abortOnError = true
@@ -190,9 +190,9 @@ dependencies {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// P23 — Capturas (cu.spvi.app.capturas) y SDK offline para los tests JVM de :app.
+// P23 — Capturas (cu.shalev.app.capturas) y SDK offline para los tests JVM de :app.
 //   ./gradlew :app:recordRoborazziDebug   → app/capturas/{claro,oscuro}/*.png
-// Las capturas se excluyen de `test`, `spviTests` y `spviCheck` (solo corren con tareas Roborazzi).
+// Las capturas se excluyen de `test`, `shalevTests` y `shalevCheck` (solo corren con tareas Roborazzi).
 // Gradle resuelve android-all-instrumented con `robolectricSdk`; todos los tests de :app reciben el directorio
 // local y `robolectric.offline=true`, así el proceso de tests no necesita red (incluye ProcesoActualizarTest).
 // ---------------------------------------------------------------------------------------------------------------

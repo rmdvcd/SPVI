@@ -1,17 +1,17 @@
-// SPVI · muestras de TODAS las exportaciones con el código real de :domain y :data (sin Android).
+// Shalev · muestras de TODAS las exportaciones con el código real de :domain y :data (sin Android).
 // Escribe en <salida>: *.xlsx (XlsxWriter real, fastexcel) y tablas.json
 // (las mismas TablaExport que reciben PdfWriter, ImagenTabla y Tarjetas; tools/exportaciones/render.py las dibuja
 // con las mismas medidas, colores y reglas de truncado).
 // Uso: ver tools/exportaciones/generar.sh
-package cu.spvi.tools.exportaciones
+package cu.shalev.tools.exportaciones
 
-import cu.spvi.app.servicios.ServiciosLogic
-import cu.spvi.core.money.Cup
-import cu.spvi.core.quantity.Cantidad
-import cu.spvi.data.export.XlsxWriter
-import cu.spvi.domain.model.*
-import cu.spvi.domain.service.TablaExport
-import cu.spvi.domain.service.TablasExport
+import cu.shalev.app.servicios.ServiciosLogic
+import cu.shalev.core.money.Cup
+import cu.shalev.core.quantity.Cantidad
+import cu.shalev.data.export.XlsxWriter
+import cu.shalev.domain.model.*
+import cu.shalev.domain.service.TablaExport
+import cu.shalev.domain.service.TablasExport
 import java.io.File
 import java.time.Instant
 import java.time.LocalDate
@@ -128,7 +128,7 @@ fun main(args: Array<String>) {
     // 0.26.0 (P73 §3): sin exportaciones de texto (solo la licencia se envía como texto).
 
     // Datos para el render (PDF / PNG) y para las capturas del Excel.
-    val tarjetas = productos.take(6).map { "{\"nombre\":${js(it.nombreCompleto)},\"categoria\":${js(it.categoria)},\"precio\":${js(cu.spvi.core.money.Money.format(it.precioVenta))},\"inicial\":${js(it.nombre.trim().take(1).uppercase())}}" }
+    val tarjetas = productos.take(6).map { "{\"nombre\":${js(it.nombreCompleto)},\"categoria\":${js(it.categoria)},\"precio\":${js(cu.shalev.core.money.Money.format(it.precioVenta))},\"inicial\":${js(it.nombre.trim().take(1).uppercase())}}" }
     File(out, "tablas.json").writeText(buildString {
         append("{\"docs\":{")
         append(docs.entries.joinToString(",") { (n, ts) -> "${js(n)}:${ts.joinToString(",", "[", "]") { js(it) }}" })

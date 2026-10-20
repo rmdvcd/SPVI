@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "cu.spvi.designsystem"
+    namespace = "cu.shalev.designsystem"
     compileSdk = 35
 
     defaultConfig {

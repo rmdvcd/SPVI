@@ -1,16 +1,16 @@
-# SPVI — Formatos de respaldo y de exportación
+# Shalev — Formatos de respaldo y de exportación
 
-Formatos de archivo que la app Android SPVI escribe y lee (versión declarada **0.30.0**): contenedor `.spvi` v4 (lee v3 y v4) y contenido `RespaldoDto` v4 (importa v3 y v4).
+Formatos de archivo que la app Android Shalev escribe y lee (versión declarada **0.30.0**): contenedor `.shalev` v4 (lee v3 y v4) y contenido `RespaldoDto` v4 (importa v3 y v4).
 
 | Formato | Extensión | Tipo MIME | Cifrado | Se importa |
 |---|---|---|---|---|
-| Respaldo | `.spvi` | `application/octet-stream` | Sí (contraseña) | Sí |
+| Respaldo | `.shalev` | `application/octet-stream` | Sí (contraseña) | Sí |
 | PDF | `.pdf` | `application/pdf` | No | No |
 | Excel | `.xlsx` | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` | No | No |
 | Imagen / Tarjetas | `.png` | `image/png` | No | No |
-| Registro de la prueba (0.26.0) | `.png` / `.bin` | `image/png` / `application/octet-stream` | Sí (AES-GCM) | Solo SPVI |
+| Registro de la prueba (0.26.0) | `.png` / `.bin` | `image/png` / `application/octet-stream` | Sí (AES-GCM) | Solo Shalev |
 
-Nombres de archivo sin datos personales: `SPVI_<qué>_<aaaa-mm-dd>.<ext>`, con la fecha del teléfono.
+Nombres de archivo sin datos personales: `Shalev_<qué>_<aaaa-mm-dd>.<ext>`, con la fecha del teléfono.
 
 ---
 
@@ -34,7 +34,7 @@ binario de los respaldos ni los escritores PDF/XLSX.
   encima de cada PNG. Vacío mantiene el diseño sin encabezado. El texto se ajusta en altura sin recortar.
 - La tabla de transferencias conserva la columna Vendedor; el registro original y su ficha también se conservan.
 
-## 1. Respaldo `.spvi`
+## 1. Respaldo `.shalev`
 
 Implementación: `data/.../respaldo/BackupCipher.kt` (contenedor cifrado), `data/.../dto/RespaldoDto.kt` (contenido) y `data/.../respaldo/RespaldoRepositoryImpl.kt` (lectura y escritura).
 
@@ -55,7 +55,7 @@ Desde la 0.27.0 se escribe la **v4**, que añade un byte indicador (con o sin co
 | 57 | 32 | SHA-256 del cifrado | Suma de control |
 | 89 | largo | Cifrado | `AES-256-GCM( gzip(JSON UTF-8) )` + tag de 16 B |
 
-- **Clave:** `PBKDF2WithHmacSHA256(contraseña, salt, iteraciones, 256 bits)`. **Sin contraseña** (indicador `0`), la «contraseña» es un secreto interno ofuscado de la app: el archivo sigue cifrado y protegido contra alteraciones, pero **cualquiera con SPVI puede abrirlo** (riesgo aceptado, SECURITY.md §4 ter).
+- **Clave:** `PBKDF2WithHmacSHA256(contraseña, salt, iteraciones, 256 bits)`. **Sin contraseña** (indicador `0`), la «contraseña» es un secreto interno ofuscado de la app: el archivo sigue cifrado y protegido contra alteraciones, pero **cualquiera con Shalev puede abrirlo** (riesgo aceptado, SECURITY.md §4 ter).
 - **El indicador** se lee sin contraseña y va dentro del AAD: cambiarlo invalida el tag. Así la app sabe si debe pedir la contraseña al importar.
 - **AAD de GCM:** los **57 primeros bytes** en v4 (56 en v3), es decir, todo salvo la suma de control. Si se cambia la fecha, las iteraciones, el salt, el IV o el largo, el tag deja de ser válido.
 - **El largo y el SHA-256 no aportan seguridad:** cualquiera puede recalcularlos, y la integridad la da GCM. Sirven para saber **sin contraseña** si el archivo llegó **cortado** o **dañado**, y no confundirlo con una contraseña incorrecta.
@@ -114,13 +114,13 @@ El PDF/Excel del turno añade **Conteo de efectivo** (Denominación, Billetes, S
 
 ### 1.3 Exportar
 
-El respaldo es siempre **completo**. Desde la 0.13.0 ya no existe «Solo configuración»: es una desviación de SPVI.txt:132, decidida en P17.
+El respaldo es siempre **completo**. Desde la 0.13.0 ya no existe «Solo configuración»: es una desviación de Shalev.txt:132, decidida en P17.
 
 1. *Reuniendo los datos…*: lectura en una transacción.
 2. *Cifrando con tu contraseña…*: JSON → gzip → AES-GCM. Al terminar, el JSON en claro se sobrescribe con ceros.
 3. *Guardando el archivo…*: va al destino elegido con el gestor de archivos del dispositivo (**Guardar en el teléfono**, enraizado en Descargas internas, solo proveedores locales). Lo hace `ExportadorArchivos`, compartido con el resto de exportaciones.
 
-Nombre: `SPVI_respaldo_<fecha>.spvi`.
+Nombre: `Shalev_respaldo_<fecha>.shalev`.
 
 ### 1.4 Importar
 
@@ -141,20 +141,20 @@ Cualquier error deja los datos como estaban.
 |---|---|
 | Archivo cortado | «El archivo está incompleto» |
 | Archivo alterado | «El archivo está dañado» |
-| No es de SPVI | «El archivo no es un respaldo de SPVI o está dañado» |
+| No es de Shalev | «El archivo no es un respaldo de Shalev o está dañado» |
 | Versión más nueva | «Respaldo de una versión más nueva» |
-| Versión 1 o 2 (anterior a la 0.13.0) | «Se creó con una versión muy antigua de SPVI que esta versión ya no abre.» |
+| Versión 1 o 2 (anterior a la 0.13.0) | «Se creó con una versión muy antigua de Shalev que esta versión ya no abre.» |
 
 Tras importar un respaldo v4 con bloque `licencia` en un teléfono sin licencia instalada, Licencia muestra el ID ya escrito para **Recuperar** (MANUAL §9). Exportar un respaldo pone a cero el recordatorio mensual de Inicio.
 | Contraseña incorrecta | «Contraseña incorrecta» (el diálogo queda abierto para reintentar) |
 
-**Cómo llega el archivo:** «Importar» → «Elegir archivo» abre el gestor de archivos del dispositivo (enraizado en Descargas internas, solo proveedores locales). El `.spvi` no se envía a otras apps ni se recibe de ellas: siempre se piden contraseña y confirmación.
+**Cómo llega el archivo:** «Importar» → «Elegir archivo» abre el gestor de archivos del dispositivo (enraizado en Descargas internas, solo proveedores locales). El `.shalev` no se envía a otras apps ni se recibe de ellas: siempre se piden contraseña y confirmación.
 
 ---
 
 ### 1.5 Respaldo previo a la actualización (0.30.1)
 
-Antes de abrir el instalador, la app escribe un `.spvi` **sin contraseña** con el formato normal en `filesDir/respaldo_actualizacion/previo.spvi`, más `previo.version` (`versionName/versionCode` instalada). Es privado de la app (no se comparte ni se exporta) y se borra al restaurarse o al cancelarse la instalación. Al abrir otra versión, `RespaldoPrevio` lo importa con la misma ruta que «Importar» y vuelve a dejar como estaban `ultimoRespaldo` y la licencia recuperable del estado de la app.
+Antes de abrir el instalador, la app escribe un `.shalev` **sin contraseña** con el formato normal en `filesDir/respaldo_actualizacion/previo.shalev`, más `previo.version` (`versionName/versionCode` instalada). Es privado de la app (no se comparte ni se exporta) y se borra al restaurarse o al cancelarse la instalación. Al abrir otra versión, `RespaldoPrevio` lo importa con la misma ruta que «Importar» y vuelve a dejar como estaban `ultimoRespaldo` y la licencia recuperable del estado de la app.
 
 ## 3. Exportaciones
 
@@ -164,14 +164,14 @@ Todas las tablas salen de una misma fuente neutra, `TablaExport` (título, colum
 
 | Pantalla | Contenido | Formatos | Nombre del archivo |
 |---|---|---|---|
-| Inventario | La selección o, sin selección, lo que se ve (búsqueda y filtro) | PDF, Excel → enviar o guardar | `SPVI_inventario_<fecha>.pdf/.xlsx` |
-| Inventario | Lista de precios para clientes | Imagen PNG → enviar | `SPVI_precios_<fecha>[_n].png` |
-| Inventario | Tarjetas promocionales | PNG → enviar | `SPVI_productos_<n>.png` |
+| Inventario | La selección o, sin selección, lo que se ve (búsqueda y filtro) | PDF, Excel → enviar o guardar | `Shalev_inventario_<fecha>.pdf/.xlsx` |
+| Inventario | Lista de precios para clientes | Imagen PNG → enviar | `Shalev_precios_<fecha>[_n].png` |
+| Inventario | Tarjetas promocionales | PNG → enviar | `Shalev_productos_<n>.png` |
 | Ficha de producto | Ficha completa (uso interno) | PDF → enviar | `Ficha <nombre>.pdf` |
 | Ficha de producto | Tarjeta del producto para clientes | PNG → enviar | — |
-| Servicios | La selección o lo que se ve | PDF, Excel → enviar o guardar | `SPVI_servicios_<fecha>.pdf/.xlsx` |
-| Registros → Ventas, Transferencias, Movimientos | **Exactamente lo que se ve** (pestaña, búsqueda y filtro; el filtro se indica en el título) | PDF, Excel → enviar o guardar | `SPVI_ventas_…`, `SPVI_transferencias_…`, `SPVI_movimientos_<fecha>.pdf/.xlsx` |
-| Registros → Turnos → detalle → Compartir (0.25.1) | El turno completo: resumen, arqueo de caja, caja (entradas/salidas), ventas con estado y movimientos de inventario e insumos | PDF, Excel → enviar o guardar | `SPVI_Turno_<aaaa-MM-dd_HHmm>.pdf/.xlsx` |
+| Servicios | La selección o lo que se ve | PDF, Excel → enviar o guardar | `Shalev_servicios_<fecha>.pdf/.xlsx` |
+| Registros → Ventas, Transferencias, Movimientos | **Exactamente lo que se ve** (pestaña, búsqueda y filtro; el filtro se indica en el título) | PDF, Excel → enviar o guardar | `Shalev_ventas_…`, `Shalev_transferencias_…`, `Shalev_movimientos_<fecha>.pdf/.xlsx` |
+| Registros → Turnos → detalle → Compartir (0.25.1) | El turno completo: resumen, arqueo de caja, caja (entradas/salidas), ventas con estado y movimientos de inventario e insumos | PDF, Excel → enviar o guardar | `Shalev_Turno_<aaaa-MM-dd_HHmm>.pdf/.xlsx` |
 
 «Guardar» usa el selector del sistema (SAF: almacenamiento, Drive, OneDrive…). «Enviar» crea el archivo en `cacheDir/compartir` y abre el menú Compartir mediante FileProvider. Imagen y Tarjetas solo se envían, porque pueden ser varios archivos.
 
@@ -202,7 +202,7 @@ Formatos de celda: importes «1,450.00 CUP»; fechas con hora `dd/MM/aaaa HH:mm`
 - Una o varias tablas por documento; paginación automática con la **cabecera repetida** en cada página.
 - Anchos (0.25.1): las columnas compactas (fechas, importes, CI, Sí/No) reciben su ancho natural y el resto del espacio se reparte entre las de texto libre; solo el texto largo que aun así no cabe se corta con «…». Los números e importes van **alineados a la derecha**.
 - 0.26.0 (§5): las columnas de importes, cantidades y fechas, y la columna «Valor» de las tablas Dato/Valor, van en **seminegrita** (Roboto 600; en Android 8 negrita) y se miden así para no cortarse. Los teléfonos (8 o más cifras seguidas) no se destacan.
-- Escala de grises de alto contraste. Pie de página «SPVI · página N».
+- Escala de grises de alto contraste. Pie de página «Shalev · página N».
 
 ### 3.4 Excel (`.xlsx`)
 
@@ -217,12 +217,12 @@ Formatos de celda: importes «1,450.00 CUP»; fechas con hora `dd/MM/aaaa HH:mm`
 | | Lista de precios (Imagen) | Tarjetas promocionales |
 |---|---|---|
 | Para | Clientes: **sin costo ni existencias** | Clientes: **sin costo ni existencias** |
-| Contenido | Título, tabla Categoría / Producto / Precio, pie «SPVI» | Foto (o la inicial si no tiene), nombre, categoría y precio de venta |
+| Contenido | Título, tabla Categoría / Producto / Precio, pie «Shalev» | Foto (o la inicial si no tiene), nombre, categoría y precio de venta |
 | Tamaño | 1080 px de ancho, **25 filas** por imagen; si hay más, varias imágenes numeradas | 1080 px de ancho, **6 tarjetas** por imagen (una imagen con un solo producto lo muestra en una tarjeta grande) |
 
 ### 3.6 Texto
 
-Desde la 0.26.0 SPVI no exporta texto: Registros, Inventario, Servicios y las fichas usan PDF y Excel (e Imagen/Tarjetas en Inventario). Solo la **solicitud de licencia** (y el contacto de Soporte) se envían como mensaje; ver [docs/LICENCIA_0.23.md](docs/LICENCIA_0.23.md).
+Desde la 0.26.0 Shalev no exporta texto: Registros, Inventario, Servicios y las fichas usan PDF y Excel (e Imagen/Tarjetas en Inventario). Solo la **solicitud de licencia** (y el contacto de Soporte) se envían como mensaje; ver [docs/LICENCIA_0.23.md](docs/LICENCIA_0.23.md).
 
 ### 3.7 Registro de la prueba (0.26.0)
 
@@ -231,7 +231,7 @@ Para que el periodo de prueba no vuelva a empezar al desinstalar y reinstalar, l
 | Copia | Ruta | Quién la puede leer tras reinstalar |
 |---|---|---|
 | Interna | `filesDir/.sys_<huella>.bin` | Nadie (se borra al desinstalar) |
-| Imágenes | `Pictures/SPVI/sys_<huella>.png` (PNG de 48 × 48 con el registro en un fragmento privado `spVi`) | SPVI con el permiso de fotos (`READ_MEDIA_IMAGES` en 13+, `READ_EXTERNAL_STORAGE` en 10–12; `WRITE_EXTERNAL_STORAGE` en 8–9) |
+| Imágenes | `Pictures/Shalev/sys_<huella>.png` (PNG de 48 × 48 con el registro en un fragmento privado `spVi`) | Shalev con el permiso de fotos (`READ_MEDIA_IMAGES` en 13+, `READ_EXTERNAL_STORAGE` en 10–12; `WRITE_EXTERNAL_STORAGE` en 8–9) |
 | Download / Documents | `.sys_<huella>.bin` | Solo en Android 8–9 (en 10+ Android no deja a una instalación nueva leer las de la anterior) |
 
 - Contenido: JSON `{"firstInstall": <ms>, "trialDays": 7, "version": 1, "lastSeen": <ms>}` (`lastSeen` es opcional: última fecha vista, para detectar un reloj atrasado también tras reinstalar).

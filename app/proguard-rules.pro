@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# SPVI — reglas R8 (release). Hilt, Compose, Navigation, DataStore y
+# Shalev — reglas R8 (release). Hilt, Compose, Navigation, DataStore y
 # kotlinx.serialization traen sus propias consumer rules; aquí solo lo propio.
 # ---------------------------------------------------------------------------
 
@@ -14,21 +14,21 @@
 
 # Contrato GL (JSON firmado): los nombres de campo SON el contrato. Se conservan los
 # serializadores generados y los miembros de las clases @Serializable de licencia.
--keep,includedescriptorclasses class cu.spvi.licencia.contract.**$$serializer { *; }
--keepclassmembers class cu.spvi.licencia.contract.** {
+-keep,includedescriptorclasses class cu.shalev.licencia.contract.**$$serializer { *; }
+-keepclassmembers class cu.shalev.licencia.contract.** {
     *** Companion;
     kotlinx.serialization.KSerializer serializer(...);
 }
 
 # 0.26.0 (P74): registro de la prueba (JSON {"firstInstall","trialDays","version"}): los nombres son el formato.
--keep,includedescriptorclasses class cu.spvi.licencia.prueba.**$$serializer { *; }
--keepclassmembers class cu.spvi.licencia.prueba.RegistroPrueba {
+-keep,includedescriptorclasses class cu.shalev.licencia.prueba.**$$serializer { *; }
+-keepclassmembers class cu.shalev.licencia.prueba.RegistroPrueba {
     *** Companion;
     kotlinx.serialization.KSerializer serializer(...);
 }
 
 # Rutas type-safe de Navigation (objetos @Serializable).
--keepclassmembers class cu.spvi.app.navigation.Route$* {
+-keepclassmembers class cu.shalev.app.navigation.Route$* {
     *** INSTANCE;
     kotlinx.serialization.KSerializer serializer(...);
 }

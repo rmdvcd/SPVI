@@ -16,10 +16,10 @@ Prompt 64. Sustituye el formato de la 0.22.0 (documento ya eliminado; ver HISTOR
 
 ## 2. Mensajes
 
-Solicitud (SPVI → GL), `MensajesLicencia.solicitud`:
+Solicitud (Shalev → GL), `MensajesLicencia.solicitud`:
 
 ```
-Solicitud de licencia SPVI
+Solicitud de licencia Shalev
 Nombre: María Pérez González
 Carné de identidad: 85010112345
 Teléfono: +5352345678
@@ -31,10 +31,10 @@ Renueva: d53a020b-4062-4825-8219-024f997173f8
 SPVIR1:Az6UNtjK…
 ```
 
-Licencia (GL → SPVI), `MensajesLicencia.licencia` (referencia para GL):
+Licencia (GL → Shalev), `MensajesLicencia.licencia` (referencia para GL):
 
 ```
-Licencia SPVI
+Licencia Shalev
 Tipo: Mensual
 Apps secundarias: 2
 Emitida: 03/10/2026
@@ -44,14 +44,14 @@ ID: 7c9e6679-7425-40de-944b-e07fc1f90ae7
 SPVI2:A8Ntuq3A…(216 caracteres)
 ```
 
-Las líneas de arriba son **solo para leer**. SPVI y GL usan únicamente el código: si alguien edita el texto, no cambia nada.
+Las líneas de arriba son **solo para leer**. Shalev y GL usan únicamente el código: si alguien edita el texto, no cambia nada.
 
 ## 3. Criptografía
 
-| | Solicitud `SPVIR1` | Licencia `SPVI2` |
+| | Solicitud `SPVIR1` | Licencia `Shalev2` |
 |---|---|---|
 | Binario | `epk 33 ‖ ct ‖ tag 16` | `epk 33 ‖ ct 44 ‖ tag 16 ‖ firma 64` = 157 B |
-| Clave | ECDH(efímera de SPVI, ECDH de GL) | ECDH(efímera de GL, clave del teléfono) |
+| Clave | ECDH(efímera de Shalev, ECDH de GL) | ECDH(efímera de GL, clave del teléfono) |
 | HKDF-SHA256 | salt = epk, info `SPVI-R1`, 44 B → clave ‖ IV | salt = epk, info `SPVI-L2`, 44 B → clave ‖ IV |
 | AES-256-GCM, AAD | `"SPVI-R1|"` ‖ epk | `"SPVI-L2|"` ‖ epk |
 | Contenido | JSON `RequestPayload` v2 (`devicePub` = punto comprimido) | cuerpo 44 B: formato 2, id, huella, tipo, estado, secundarias, fechas |
@@ -75,7 +75,7 @@ WhatsApp: `wa.me/5351815604?text=…` con el mensaje. SMS: `smsto:+5351815604` c
 
 - Una licencia **larga** ya instalada se sigue re-verificando con su criptografía (firma de GL + descifrado) hasta que venza (`laLicenciaLargaYaNoSeActivaPeroLaInstaladaSigue`, `GoldenVectorTest.verifyRealLicense`).
 - `SPVI1:` nunca la emitió GL. Si alguien la tuviera instalada, pasaría a prueba o a bloqueo, según los días de prueba que le queden.
-- SPVI < 0.23.0 no activa `SPVI2:`. GL debe avisar al operador si llega una solicitud antigua (envelope JSON).
+- Shalev < 0.23.0 no activa `SPVI2:`. GL debe avisar al operador si llega una solicitud antigua (envelope JSON).
 
 ## 6. Pruebas
 
@@ -97,5 +97,5 @@ WhatsApp: `wa.me/5351815604?text=…` con el mensaje. SMS: `smsto:+5351815604` c
 ## 7. Suposiciones
 
 - **S1.** Por SMS, la respuesta completa ocupa unos 340 caracteres GSM-7 (3 SMS concatenados). Si GL envía solo la línea `SPVI2:`, son 216 (2 SMS). Las dos formas se activan.
-- **S2.** (0.23.1) Sin QR: si la app de mensajes parte el código en líneas, SPVI lo une al pegar.
+- **S2.** (0.23.1) Sin QR: si la app de mensajes parte el código en líneas, Shalev lo une al pegar.
 - **S3.** Fechas del mensaje de la licencia: hora de Cuba (America/Havana). El vencimiento real es el instante cifrado.

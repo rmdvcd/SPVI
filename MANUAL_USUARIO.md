@@ -1,4 +1,4 @@
-# SPVI — Guía de cambios Android en desarrollo
+# Shalev — Guía de cambios Android en desarrollo
 
 ## Mejoras Android en curso (versión aún no actualizada en el código)
 
@@ -11,6 +11,11 @@
 - **Registros:** todas las listas (ventas, transferencias, movimientos, turnos y clientes fijos) se
   pueden **marcar con la casilla redonda**, igual que en Inventario. Con algo marcado aparece la barra de
   selección: cuántos elementos son, seleccionar todo y quitar la selección. Exportar usa solo lo marcado.
+- **Filtro de Registros:** en **Movimientos** la ventana solo pide el **período**: no hay campos de
+  importe ni aviso, porque un movimiento no tiene importe. En ventas, transferencias y servicios siguen
+  el mínimo, el máximo y el vendedor.
+- **Filtro de Inventario:** el combo **Estado** ofrece **Todos, Stock bajo, Stock crítico, Próximos a
+  caducar y Sin existencia**. Después van **Tipo** (artículos, elaborados, insumos) y **Categoría**.
 - **Clientes fijos:** al abrir la ficha de un cliente, **Editar** y **Quitar de clientes fijos** están
   centrados en el pie de la ventana. **Editar** abre una ventana para corregir el **nombre**, el **carné**
   y el **teléfono**; si el carné ya es de otro cliente no se guarda y te lo avisa, y sus compras anteriores
@@ -23,8 +28,8 @@
 - **Licencia:** se quitó el botón de llave del final; el asistente avanza con *Paso siguiente*.
 - **Actualizar** (antes «Actualizaciones»): al tocarlo sale un cuadro con una **barra de progreso
   circular** y al terminar dice *Actualizado*, *Estas al día* o *Sin conexión*.
-- **Ayuda:** el manual está organizado por **secciones** (Empezar, Vender y cobrar, Inventario, Registros,
-  Tus datos y tu licencia), cada tema con su **icono** y, donde hace falta, un **esquema** dibujado.
+- **Ayuda:** el manual está organizado por **secciones** (Empezar, Vender y cobrar, Inventario, Tus datos
+  y tu licencia, Empleados y Ayuda), cada tema con su **icono** y, donde hace falta, un **esquema** dibujado.
 - **Soporte:** las filas están centradas, en el orden **Icono, Descripción, Texto**.
 - **Primera apertura:** la app muestra una ventana con el **checklist de permisos** (cámara,
   aviso de turno y fotos, cada uno con su para qué); *Continuar* abre el cuadro del sistema y
@@ -50,7 +55,7 @@ Inicio se abre siempre por arriba: no recuerda por dónde ibas la última vez.
 
 ## Cerrar turno: efectivo e inventario
 
-1. En Inicio toca cerrar el turno. Cuenta los **billetes por denominación**: 1, 3, 5, 10, 20, 50, 100, 200, 500, 1000, **5000 y 20000 CUP**. Escribe cuántos tienes de cada uno; un campo vacío equivale a cero. Añade las monedas u otro efectivo aparte. SPVI suma el contado y muestra si sobra o falta respecto al esperado. Con los billetes a la vista hay que contar **al menos uno**; si prefieres escribir solo el total (o cero), pulsa **Omitir el conteo de billetes** en la esquina inferior derecha y desde ahí puedes volver a contar con **Contar billetes por denominación**.
+1. En Inicio toca cerrar el turno. Cuenta los **billetes por denominación**: 1, 3, 5, 10, 20, 50, 100, 200, 500, 1000, **5000 y 20000 CUP**. Escribe cuántos tienes de cada uno; un campo vacío equivale a cero. Añade las monedas u otro efectivo aparte. Shalev suma el contado y muestra si sobra o falta respecto al esperado. Con los billetes a la vista hay que contar **al menos uno**; si prefieres escribir solo el total (o cero), pulsa **Omitir el conteo de billetes** en la esquina inferior derecha y desde ahí puedes volver a contar con **Contar billetes por denominación**.
 2. Continúa al **conteo de inventario**. Cuenta todos los productos físicos y los insumos; escribe **0** cuando no quede nada. Los productos usan unidades enteras y los insumos admiten hasta tres decimales (punto o coma). Los elaborados no se cuentan como stock: se cuentan sus insumos. Si no vas a contar el inventario ahora, pulsa **Omitir el conteo de inventario** (esquina inferior derecha): el turno se cierra **sin ajustar existencias** y el conteo queda anotado con el motivo «Conteo de inventario omitido».
 3. Revisa esperado, contado y diferencia. Si hay diferencias, explica el **motivo** (3–160 caracteres) y confirma. En la principal, se registran los ajustes y se cierra el turno juntos; si falla una comprobación, no se aplican ajustes parciales.
 4. En una **app de empleado**, confirmar **solo envía el conteo**. El encargado lo revisa en **Apps vinculadas → empleado** y aprueba o rechaza. Solo la principal modifica el inventario del negocio. Incluso si el encargado pidió el cierre, un conteo nuevo de inventario requiere su aprobación.

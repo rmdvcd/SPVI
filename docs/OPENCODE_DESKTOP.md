@@ -1,6 +1,6 @@
-# Compilar y verificar SPVI Android con OpenCode Desktop
+# Compilar y verificar Shalev Android con OpenCode Desktop
 
-Esta guía usa OpenCode Desktop como **herramienta de desarrollo**; no describe una aplicación de escritorio de SPVI. El producto de este repositorio es Android nativo. El estado medido de cada verificación está en [VERIFICACION.md](VERIFICACION.md); lo pendiente, en [../Pendiente.md](../Pendiente.md).
+Esta guía usa OpenCode Desktop como **herramienta de desarrollo**; no describe una aplicación de escritorio de Shalev. El producto de este repositorio es Android nativo. El estado medido de cada verificación está en [VERIFICACION.md](VERIFICACION.md); lo pendiente, en [../Pendiente.md](../Pendiente.md).
 
 ## 1. Preparar el entorno
 
@@ -15,7 +15,7 @@ El wrapper descarga Gradle 8.11.1. La primera compilación resuelve las dependen
 
 ## 2. Cargar el proyecto
 
-1. Abre la carpeta raíz `SPVI` en OpenCode Desktop.
+1. Abre la carpeta raíz `Shalev` en OpenCode Desktop.
 2. Lee `AGENTS.md`, `Contexto.md`, `Pendiente.md` y `Pruebas.md` antes de cambiar código.
 3. Usa `docs/VERIFICACION.md` como fuente del resultado de CI más reciente. No repitas cifras de una versión antigua como si fueran actuales.
 4. No ejecutes una inicialización que reescriba `AGENTS.md`; conserva las reglas y la arquitectura Android.
@@ -24,23 +24,23 @@ El wrapper descarga Gradle 8.11.1. La primera compilación resuelve las dependen
 
 ```bash
 ./gradlew --version
-./gradlew spviTests
-./gradlew spviCheck
+./gradlew shalevTests
+./gradlew shalevCheck
 ```
 
-`spviTests` ejecuta las pruebas JVM; `spviCheck` añade lint, `assembleDebug` y comprobación de permisos. En `:app`, la configuración prepara el artefacto `android-all-instrumented` requerido por Robolectric mediante Gradle y ejecuta los tests offline. Si Robolectric intenta resolverlo por internet o no encuentra el SDK local, registra el error y revisa `app/build.gradle.kts` y `docs/VERIFICACION.md`; no desactives la restricción de red de los tests.
+`shalevTests` ejecuta las pruebas JVM; `shalevCheck` añade lint, `assembleDebug` y comprobación de permisos. En `:app`, la configuración prepara el artefacto `android-all-instrumented` requerido por Robolectric mediante Gradle y ejecuta los tests offline. Si Robolectric intenta resolverlo por internet o no encuentra el SDK local, registra el error y revisa `app/build.gradle.kts` y `docs/VERIFICACION.md`; no desactives la restricción de red de los tests.
 
 Para un test concreto:
 
 ```bash
-./gradlew :domain:test --tests "cu.spvi.domain.EstadoPruebaTest"
+./gradlew :domain:test --tests "cu.shalev.domain.EstadoPruebaTest"
 ```
 
 ## 4. Capturas e instrumentados
 
 ```bash
 ./gradlew :app:recordRoborazziDebug  # capturas de UI claro/oscuro; ver CAPTURAS.md
-./gradlew spviInstrumentedTests      # requiere emulador o teléfono API 26+
+./gradlew shalevInstrumentedTests      # requiere emulador o teléfono API 26+
 ```
 
 Revisa las capturas antes de aceptar cualquier cambio visual. Los instrumentados requieren dispositivo; no los declares ejecutados si solo compilaron.

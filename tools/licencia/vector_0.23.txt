@@ -7,7 +7,7 @@ ct||tag (determinista con esa efímera): 0adcdd15829c196616a17a75442d35f75cec162
 clave de firma de PRUEBA (d, hex): 1f2e3d4c5b6a79881f2e3d4c5b6a79881f2e3d4c5b6a79881f2e3d4c5b6a7988
 clave de firma de PRUEBA (SPKI): MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEvXxzuIsum0ztpiAistqL4TGTpbVu3Cbn33hC4kzQtesGBa2nvag6xqK4DX4xQED6R/8WuDushc7bAURRu3znGg==
 
-Licencia SPVI
+Licencia Shalev
 Tipo: Mensual
 Apps secundarias: 2
 Emitida: 03/10/2026

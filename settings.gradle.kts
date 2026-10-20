@@ -20,7 +20,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "SPVI"
+rootProject.name = "Shalev"
 
 // Capas (dependencias solo hacia abajo):
 //   app → designsystem, data, domain

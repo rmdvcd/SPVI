@@ -1,32 +1,32 @@
-# SPVI — Cliente de licencias (contrato GL v1 aplicado)
+# Shalev — Cliente de licencias (contrato GL v1 aplicado)
 
-Cómo cumple la app Android SPVI el contrato v1 del emisor offline **GL** (`CONTEXTO_LICENCIAS.md`). Describe la activación compacta `SPVI2:`, la verificación de licencias heredadas envelope v1 ya instaladas y las mitigaciones actuales. Las decisiones históricas retiradas se resumen aquí junto al comportamiento vigente.
+Cómo cumple la app Android Shalev el contrato v1 del emisor offline **GL** (`CONTEXTO_LICENCIAS.md`). Describe la activación compacta `SPVI2:`, la verificación de licencias heredadas envelope v1 ya instaladas y las mitigaciones actuales. Las decisiones históricas retiradas se resumen aquí junto al comportamiento vigente.
 
 > **Este documento trata de la licencia de uso de la app**, no de la licencia del código fuente.
 
-**Regla rectora:** SPVI se adapta al contrato v1 **sin cambiarlo** (`v = 1`, mismos algoritmos, AAD, info de HKDF y campos) y no reutiliza nada del almacenamiento de GL.
+**Regla rectora:** Shalev se adapta al contrato v1 **sin cambiarlo** (`v = 1`, mismos algoritmos, AAD, info de HKDF y campos) y no reutiliza nada del almacenamiento de GL.
 
 ## 1. Piezas
 
 | Pieza | Módulo / archivo | Función |
 |---|---|---|
-| Constantes del contrato | `:licencia` `contract/GlContract.kt` | `VERSION = 1`, `ALG = "ECIES-P256-AES256GCM-v1"`, `KID = "gl-sign-v1"`, `gl-req-v1`, `gl-lic-v1`, IV 12, tag 16, AES 32; `APP_NAME = "SPVI"`, `DEVICE_ID_PREFIX = "SPVI:"` |
+| Constantes del contrato | `:licencia` `contract/GlContract.kt` | `VERSION = 1`, `ALG = "ECIES-P256-AES256GCM-v1"`, `KID = "gl-sign-v1"`, `gl-req-v1`, `gl-lic-v1`, IV 12, tag 16, AES 32; `APP_NAME = "Shalev"`, `DEVICE_ID_PREFIX = "SPVI:"` |
 | Modelos | `contract/GlModels.kt` | `Envelope` (8 campos), `RequestPayload`, `LicensePayload`, `TipoLicencia` (con precio), `EstadoLicencia`, `Via` |
-| Criptografía | `crypto/Crypto.kt`, `crypto/GlCodec.kt`, `contract/SolicitudCifrada.kt`, `contract/LicenciaCorta.kt` | P-256 (punto comprimido), ECDH, HKDF-SHA256, AES-256-GCM, ECDSA; solicitud `SPVIR1`, licencia `SPVI2`, `GlLicenseOpener` (solo para la larga ya instalada) |
+| Criptografía | `crypto/Crypto.kt`, `crypto/GlCodec.kt`, `contract/SolicitudCifrada.kt`, `contract/LicenciaCorta.kt` | P-256 (punto comprimido), ECDH, HKDF-SHA256, AES-256-GCM, ECDSA; solicitud `SPVIR1`, licencia `Shalev2`, `GlLicenseOpener` (solo para la larga ya instalada) |
 | Claves de GL | `LicenseTrust.kt` | Claves públicas (firma y ECDH) fijadas en el build con su huella |
 | Reglas | `LicenseValidator.kt`, `LicenseState.kt` | Validación semántica, estados y texto del banner |
 | Orquestación | `LicenseManager.kt` | Evaluar, construir la solicitud y activar |
 | Clave del dispositivo | `:data` `security/AndroidDeviceKey.kt` | Par P-256 persistente |
-| Persistencia | `:data` `licencia/DataStoreLicenseStore.kt`, `DeviceIdProvider.kt` | DataStore cifrado propio de SPVI |
+| Persistencia | `:data` `licencia/DataStoreLicenseStore.kt`, `DeviceIdProvider.kt` | DataStore cifrado propio de Shalev |
 | UI | `:app` `licencia/`, `bloqueo/BloqueoGate.kt`, `root/RootViewModel.kt` | Panel, bloqueo y re-evaluación |
 | Clave maestra y sub-tokens | `licencia/.../ModoDesarrollo.kt`, `contract/CodigoLicencia.kt`, `contract/EnvelopeV1.kt`, `secondary/SubToken.kt` | Modo depuración de la clave maestra, código de 16 caracteres, envelope v1 (AAD canónica y heredada) y permiso firmado de las secundarias |
 | Sub-tokens en la app | `:data` `licencia/FirmanteLicenciaAndroid.kt`, `licencia/VerificadorPermisoSecundaria.kt`, `sync/{Protocolo,ClienteSync,ServidorSync}.kt` | Clave de firma de la principal, anotación del `deviceId` de cada secundaria y comprobación del permiso recibido |
 
-## 2. Solicitud (SPVI → GL) — 0.23.0
+## 2. Solicitud (Shalev → GL) — 0.23.0
 
 ### Payload (`RequestPayload`, `v = 2`)
 
-| Campo | Valor en SPVI |
+| Campo | Valor en Shalev |
 |---|---|
 | `v` | `2` (`GlContract.SOLICITUD_VERSION`) |
 | `nombre`, `apellidos` | Del Perfil (dos campos separados, misma regla que GL: letras Unicode, 2–80) |
@@ -44,10 +44,10 @@ Cómo cumple la app Android SPVI el contrato v1 del emisor offline **GL** (`CONT
 Si el Perfil está vacío, el panel pide los datos y los guarda en el Perfil al solicitar.
 
 **Frescura y límites que GL aplica al emitir (PR #3 de GL, 2026-10-14, commit `005288d`; análisis en
-`docs/ANALISIS_GL_2026-10-15.md`):** la emisión SPVI2 exige `solicitadaEn` con ≤ 72 h de antigüedad y
+`docs/ANALISIS_GL_2026-10-15.md`):** la emisión Shalev2 exige `solicitadaEn` con ≤ 72 h de antigüedad y
 ≤ 2 h de adelanto contra el reloj del emisor (comparación exacta; antes el flujo corto no lo aplicaba),
 nonce de 16–128 caracteres, `devicePub` de exactamente 33 B (44 en Base64url), `renueva` con formato
-`[A-Za-z0-9._:-]{1,64}` y solicitud ≤ 12 288 B. SPVI ya generaba todo eso; lo nuevo es el aviso
+`[A-Za-z0-9._:-]{1,64}` y solicitud ≤ 12 288 B. Shalev ya generaba todo eso; lo nuevo es el aviso
 `Vale 72 horas…` en la parte legible del mensaje Android. `Validators.nombre` ya es un subconjunto
 estricto de la regla de GL. El nonce **no** se consume en GL: la misma solicitud puede
 reemitirse dentro de la ventana si el operador vuelve a confirmar el pago.
@@ -60,7 +60,7 @@ reemitirse dentro de la ventana si el operador vuelve a confirmar el pago.
 4. Mensaje = datos legibles (nombre, carné, teléfono, tipo, secundarias, precio y, si aplica, «Renueva») + renglón en blanco + código. `LicenseManager.buildRequest` devuelve `SolicitudGenerada(texto, codigo)`.
 5. **Solo texto** (0.23.1): WhatsApp (`https://wa.me/5351815604?text=…`) o SMS (`smsto:+5351815604`, `sms_body`). El usuario solo pulsa Enviar. Sin permisos.
 
-## 3. Activación (GL → SPVI) — licencia corta cifrada `SPVI2:`
+## 3. Activación (GL → Shalev) — licencia corta cifrada `SPVI2:`
 
 El usuario pega el mensaje de GL (o solo el código) en *Activar licencia* (desde la 0.23.1 no hay QR). Especificación completa en `LicenciaCorta.kt` y `docs/GL_PROMPT_0.23.md`; resumen en `docs/LICENCIA_0.23.md`.
 
@@ -113,7 +113,7 @@ Nunca se indica qué comprobación falló.
 
 Origen: pestaña **Claves** de GL → «Copiar ambas claves» ([docs/GL_CONTEXTO_LICENCIAS.md](docs/GL_CONTEXTO_LICENCIAS.md)). GL regeneró el par dos veces el 15/10/2026 (antes, el 05/10/2026).
 
-`LicenseTrustTest` comprueba que cada clave fijada se lee como P-256 y coincide con su huella, y que la rotación conserva la firma anterior y sustituye la ECDH. Cambiar la ECDH no afecta a la licencia ya instalada. Pero una solicitud hecha con un SPVI anterior a la 0.27.0 va cifrada hacia la ECDH vieja y **GL ya no puede abrirla**: el cliente tiene que actualizar SPVI y volver a pedirla.
+`LicenseTrustTest` comprueba que cada clave fijada se lee como P-256 y coincide con su huella, y que la rotación conserva la firma anterior y sustituye la ECDH. Cambiar la ECDH no afecta a la licencia ya instalada. Pero una solicitud hecha con un Shalev anterior a la 0.27.0 va cifrada hacia la ECDH vieja y **GL ya no puede abrirla**: el cliente tiene que actualizar Shalev y volver a pedirla.
 
 ## 6. Almacenamiento
 
@@ -131,7 +131,7 @@ Un valor ilegible (Keystore borrado) cuenta como ausente: el teléfono queda en 
 ## 7. Cambio de teléfono (antes «Migrar a otro teléfono», O5; retirado)
 
 El asistente de 4 pasos con paso de datos por QR entre los dos teléfonos se retiró: para cambiar de teléfono,
-exporta el respaldo `.spvi` en el viejo, impórtalo en el nuevo y pide la **recuperación** de la licencia con el
+exporta el respaldo `.shalev` en el viejo, impórtalo en el nuevo y pide la **recuperación** de la licencia con el
 «ID de la licencia anterior» (el respaldo v4 ya lo trae escrito). GL revoca la anterior y la publica en
 `revocadas.json`; el teléfono viejo la aplica, borra sus datos y se bloquea en «Licencia transferida».
 
@@ -154,7 +154,7 @@ La tabla registra decisiones de versiones anteriores; **no** describe el payload
 | Licencia corta + QR, `licenciaCorta` (0.22.0, L-b/L-c) | No (forma adicional; la larga sigue igual) | **Sí:** GL la emite si la solicitud trae `licenciaCorta` (sustituida en la 0.23; ver `docs/GL_PROMPT_0.25.md`) |
 | Renovación sin perder días, `renueva` (0.22.0, L-e) | No (campo extra al final) | **Sí:** GL calcula `venceEn = max(ahora, venceEn anterior) + duración` con SUS registros |
 | `licenseId` fuera del envelope (N1) | No | Resuelto: GL lo pone en la línea «ID:» (solo afecta a la larga ya instalada) |
-| **Solicitud `SPVIR1` + licencia corta cifrada `SPVI2` únicas, mensaje «datos + renglón + código», solo texto (0.23.0; QR quitado en la 0.23.1)** | **Sí:** solicitud `v = 2` y la larga deja de activarse; las claves de GL no cambian | **Sí:** `docs/GL_PROMPT_0.23.md` |
+| **Solicitud `SPVIR1` + licencia corta cifrada `Shalev2` únicas, mensaje «datos + renglón + código», solo texto (0.23.0; QR quitado en la 0.23.1)** | **Sí:** solicitud `v = 2` y la larga deja de activarse; las claves de GL no cambian | **Sí:** `docs/GL_PROMPT_0.23.md` |
 
 ## 9. Pruebas
 
@@ -162,7 +162,7 @@ La tabla registra decisiones de versiones anteriores; **no** describe el payload
 |---|---|
 | `LicenseTrustTest` | Claves fijadas: P-256, huellas, firma ≠ cifrado |
 | `GoldenVectorTest` | `printRequest` genera una solicitud real para GL; `verifyRealLicense`: la larga real de GL ya no se activa, pero instalada sigue valiendo |
-| `LicenciaCortaTest` | Licencia `SPVI2`: formato, extracción, punto comprimido, rechazos, clon, renovación, vector de Python |
+| `LicenciaCortaTest` | Licencia `Shalev2`: formato, extracción, punto comprimido, rechazos, clon, renovación, vector de Python |
 | `LicenseFlowTest`, `RuntimeVerificationTest`, `BannerTest`, `CasosBordeLicenciaTest` | Flujo completo con un GL simulado (`FakeGl`), formato de la solicitud, estados, reloj, bytes alterados, perpetua, marca de transferencia |
 | `MasterKeyTest` | Clave maestra `GLMK-PERM-MAXS-9999`: perpetua con 10 secundarias en depuración; **nunca** en release; una licencia auténtica manda sobre ella |
 | `CodigoLicenciaTest` | Código de 16 caracteres `[0-9A-Z]` en 4 grupos: normalización, formato y rechazo de lo que no es del contrato |
@@ -171,7 +171,7 @@ La tabla registra decisiones de versiones anteriores; **no** describe el payload
 | `LicenciaInstrumentedTest` (`:data`) | Keystore real y DataStore cifrado |
 | `LicenciaUiTest`, `FlujoLicenciaTest` (`:app`) | Panel y bloqueo → activar → Inicio |
 
-Prueba de extremo a extremo con la app GL real: generar una solicitud en SPVI, emitir la respuesta en GL, pegarla en Licencia → Activar y comprobar el estado. El documento detallado `PRUEBA_COMPATIBILIDAD_GL.md` se retiró en la 0.18.0.
+Prueba de extremo a extremo con la app GL real: generar una solicitud en Shalev, emitir la respuesta en GL, pegarla en Licencia → Activar y comprobar el estado. El documento detallado `PRUEBA_COMPATIBILIDAD_GL.md` se retiró en la 0.18.0.
 
 ## 10. Clave maestra de desarrollo — solo en builds de depuración
 
@@ -181,7 +181,7 @@ builds de depuración:
 
 | App | Qué la habilita |
 |---|---|
-| Android | `SpviApplication.onCreate` → `ModoDesarrollo.esDebug = BuildConfig.DEBUG`. En release es `false` y una licencia instalada con la maestra se descarta al evaluar |
+| Android | `ShalevApplication.onCreate` → `ModoDesarrollo.esDebug = BuildConfig.DEBUG`. En release es `false` y una licencia instalada con la maestra se descarta al evaluar |
 
 El valor por defecto es `false` (**fail-closed**): si nadie lo activa —o si un día se olvida hacerlo— la maestra no
 funciona. El código se acepta con o sin guiones y no dice nada al usuario si no vale (`CodigoLicencia.esMaestra`;

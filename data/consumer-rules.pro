@@ -5,7 +5,7 @@
 -dontwarn java.awt.**
 -dontwarn org.dhatim.fastexcel.**
 # kotlinx.serialization: los serializers generados se resuelven por el plugin; conservar companions de DTOs.
--keepclassmembers @kotlinx.serialization.Serializable class cu.spvi.data.dto.** {
+-keepclassmembers @kotlinx.serialization.Serializable class cu.shalev.data.dto.** {
     *** Companion;
     kotlinx.serialization.KSerializer serializer(...);
 }

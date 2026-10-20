@@ -84,7 +84,7 @@ Verificación de solicitud en GL: firma de la efímera **o** de la clave de firm
 | `nonce` | 16–128 Base64-url-ish | |
 | `devicePub` | SPKI P-256 PEM/Base64 o `null` | opcional |
 
-En el flujo v1 (otras apps), `secundarias` se ignora salvo que aplique a esa app; ausente o `null` significa «no indicado». `-1`, `11` o un valor no entero se rechazan con `InvalidSecundarias`. **SPVI ya no usa este flujo**: una solicitud v1 con `appName == "SPVI"` o `deviceId` con prefijo `SPVI:` se rechaza con «SPVI desactualizada: pide al cliente que instale SPVI 0.23.1 o posterior». Ver «SPVI 0.23.1» abajo.
+En el flujo v1 (otras apps), `secundarias` se ignora salvo que aplique a esa app; ausente o `null` significa «no indicado». `-1`, `11` o un valor no entero se rechazan con `InvalidSecundarias`. **Shalev ya no usa este flujo**: una solicitud v1 con `appName == "Shalev"` o `deviceId` con prefijo `SPVI:` se rechaza con «Shalev desactualizada: pide al cliente que instale Shalev 0.23.1 o posterior». Ver «Shalev 0.23.1» abajo.
 
 Si `devicePub` es null, GL cifra la licencia hacia **su propio** ECDH: el cliente **no** puede descifrar en exclusivo. Un cliente compatible **debe enviar `devicePub`**.
 
@@ -103,20 +103,20 @@ Las dos claves (cifrado y firma) salen de la pestaña **Claves** de la propia ap
 
 Campos de la solicitud más: `id` (UUID), `emitidaEn`, `venceEn` (`null` si perpetua), `estado` (`ACTIVA`|`VENCIDA`|`REVOCADA`|`PERPETUA`), `secundarias` (solo cuando corresponde; se omite su clave si es `null`), `nonce` nuevo. `precioCobrado` existe solo en memoria/registro de GL y **no** viaja en el JSON firmado.
 
-## SPVI 0.23.1 (sustituye todo lo anterior de SPVI)
+## Shalev 0.23.1 (sustituye todo lo anterior de Shalev)
 
-SPVI 0.23.1 no usa envelopes JSON ni códigos QR: solicitud `SPVIR1` y licencia corta `SPVI2`, solo texto. Las claves de GL no cambian (la misma ECDH que descifra y la misma firma `gl-sign-v1`).
+Shalev 0.23.1 no usa envelopes JSON ni códigos QR: solicitud `SPVIR1` y licencia corta `Shalev2`, solo texto. Las claves de GL no cambian (la misma ECDH que descifra y la misma firma `gl-sign-v1`).
 
-**Solicitud (SPVI → GL).** El operador pega el mensaje en el Generador (cuadro de texto + botón «Pegar»). GL busca `SPVIR1:` en cualquier parte del texto, toma lo que sigue ignorando espacios y saltos de línea y para en el primer carácter fuera de `A-Z a-z 0-9 - _`. Sin marcador → «No es una solicitud de SPVI 0.23.» El descifrado: Base64url → `epk (33 B) || ct || tag (16 B)`, `epk` punto P-256 comprimido SEC1; `ikm = ECDH(privada ECDH de GL, epk)`; `okm = HKDF-SHA256(ikm, salt = epk, info = "SPVI-R1", 44 B)` → AES-256 = `okm[0..32)`, IV = `okm[32..44)`; `plano = AES-256-GCM-decrypt(clave, IV, AAD = "SPVI-R1|" || epk, ct || tag)`. Fallo GCM → «solicitud dañada o no es para GL». El plano es JSON `v: 2` (`nombre`, `apellidos`, `ci`, `via`, `telefono`, `deviceId` con prefijo `SPVI:`, `tipo`, `solicitadaEn`, `nonce`, `devicePub` de 33 B comprimidos, `secundarias` 0–10 obligatorio, `renueva` opcional). Sin `appName`: la app es el prefijo del `deviceId`. GL muestra al operador los datos **descifrados** y calcula el precio con la misma tabla (6 000/30 000/50 000/90 000 + 1 000/5 000/9 000/17 000 CUP por secundaria).
+**Solicitud (Shalev → GL).** El operador pega el mensaje en el Generador (cuadro de texto + botón «Pegar»). GL busca `SPVIR1:` en cualquier parte del texto, toma lo que sigue ignorando espacios y saltos de línea y para en el primer carácter fuera de `A-Z a-z 0-9 - _`. Sin marcador → «No es una solicitud de Shalev 0.23.» El descifrado: Base64url → `epk (33 B) || ct || tag (16 B)`, `epk` punto P-256 comprimido SEC1; `ikm = ECDH(privada ECDH de GL, epk)`; `okm = HKDF-SHA256(ikm, salt = epk, info = "SPVI-R1", 44 B)` → AES-256 = `okm[0..32)`, IV = `okm[32..44)`; `plano = AES-256-GCM-decrypt(clave, IV, AAD = "SPVI-R1|" || epk, ct || tag)`. Fallo GCM → «solicitud dañada o no es para GL». El plano es JSON `v: 2` (`nombre`, `apellidos`, `ci`, `via`, `telefono`, `deviceId` con prefijo `SPVI:`, `tipo`, `solicitadaEn`, `nonce`, `devicePub` de 33 B comprimidos, `secundarias` 0–10 obligatorio, `renueva` opcional). Sin `appName`: la app es el prefijo del `deviceId`. GL muestra al operador los datos **descifrados** y calcula el precio con la misma tabla (6 000/30 000/50 000/90 000 + 1 000/5 000/9 000/17 000 CUP por secundaria).
 
-**Licencia (GL → SPVI).** Solo la corta: `"SPVI2:" + Base64url(epk 33 B || ct 44 B || tag 16 B || firma 64 B)` = 157 B → **210 caracteres**. Cuerpo en claro de 44 B big-endian: `0x02`, `licenseId` (16 B), huella (primeros 16 B de `SHA-256("SPVI-L2|" + deviceId + "|" || devicePub33)`), tipo (0–3), estado (0–3), secundarias, emitidaEn y venceEn en segundos Unix (`0` = perpetua). Cifrado con efímera P-256 fresca hacia `devicePub` (HKDF info `"SPVI-L2"`, AAD `"SPVI-L2|" || epk`), firma ECDSA cruda r‖s sobre `"SPVI-L2|" || epk || ct || tag`. Se guarda en la tabla `licenses` con `version = 2`, `appName = "SPVI"` y `codigoCorto` (el código completo); el `.glreg` las incluye y al importar revalida la firma.
+**Licencia (GL → Shalev).** Solo la corta: `"SPVI2:" + Base64url(epk 33 B || ct 44 B || tag 16 B || firma 64 B)` = 157 B → **210 caracteres**. Cuerpo en claro de 44 B big-endian: `0x02`, `licenseId` (16 B), huella (primeros 16 B de `SHA-256("SPVI-L2|" + deviceId + "|" || devicePub33)`), tipo (0–3), estado (0–3), secundarias, emitidaEn y venceEn en segundos Unix (`0` = perpetua). Cifrado con efímera P-256 fresca hacia `devicePub` (HKDF info `"SPVI-L2"`, AAD `"SPVI-L2|" || epk`), firma ECDSA cruda r‖s sobre `"SPVI-L2|" || epk || ct || tag`. Se guarda en la tabla `licenses` con `version = 2`, `appName = "Shalev"` y `codigoCorto` (el código completo); el `.glreg` las incluye y al importar revalida la firma.
 
 **Renovación.** Si la solicitud trae `renueva` y ese `id` existe en el registro con el mismo `deviceId`, sin revocar y no perpetua → `vence = max(ahora, vence anterior) + duración` (30/180/365 días), `emitida = ahora`. Si no, se ignora y se avisa al operador. Nunca se usan fechas del cliente.
 
 **Respuesta exacta** (fechas `dd/MM/yyyy` en `America/Havana`, sin tildes ni ñ; 6 líneas + renglón en blanco + código):
 
 ```text
-Licencia SPVI
+Licencia Shalev
 Tipo: Mensual
 Apps secundarias: 2
 Emitida: 03/10/2026
@@ -126,7 +126,7 @@ ID: 7c9e6679-7425-40de-944b-e07fc1f90ae7
 SPVI2:…(210 caracteres)
 ```
 
-`Vence: nunca` si es perpetua. Por WhatsApp va el texto tal cual (sin QR ni imágenes); por SMS el mismo texto o solo la línea `SPVI2`. En GL el mensaje se muestra en un cuadro de solo lectura con botón «Copiar mensaje».
+`Vence: nunca` si es perpetua. Por WhatsApp va el texto tal cual (sin QR ni imágenes); por SMS el mismo texto o solo la línea `Shalev2`. En GL el mensaje se muestra en un cuadro de solo lectura con botón «Copiar mensaje».
 
 **`appName` es obligatorio** en la solicitud (`^[\p{L}0-9 ._'-]{2,80}$`). Sin ese campo, GL rechaza el envelope con `InvalidPayload`. Se copia tal cual a la licencia.
 
@@ -146,9 +146,9 @@ ID: <uuid>
 {"v":1,"alg":"ECIES-P256-AES256GCM-v1",...}
 ```
 
-Sin secundarias, la primera línea es, por ejemplo, `Licencia MiApp MENSUAL · 6 000 CUP`. El canal no es confidencial. (SPVI 0.23.1 usa el formato de respuesta de su propia sección, no este.)
+Sin secundarias, la primera línea es, por ejemplo, `Licencia MiApp MENSUAL · 6 000 CUP`. El canal no es confidencial. (Shalev 0.23.1 usa el formato de respuesta de su propia sección, no este.)
 
-Precios en CUP (SPVI y resto de apps con secundarias): `MENSUAL` 6 000 + 1 000 por secundaria; `SEMESTRAL` 30 000 + 5 000; `ANUAL` 50 000 + 9 000; `PERPETUA` 90 000 + 17 000. El precio queda congelado al emitir.
+Precios en CUP (Shalev y resto de apps con secundarias): `MENSUAL` 6 000 + 1 000 por secundaria; `SEMESTRAL` 30 000 + 5 000; `ANUAL` 50 000 + 9 000; `PERPETUA` 90 000 + 17 000. El precio queda congelado al emitir.
 
 ## `.glreg`
 

@@ -4,7 +4,7 @@ Estado: **implementado en la versión 0.26.0**; se conserva como registro de la 
 
 ## Respuestas ya dadas
 
-- Respaldo: queda solo el archivo `.spvi` cifrado actual. Se quita el «Documento PDF».
+- Respaldo: queda solo el archivo `.shalev` cifrado actual. Se quita el «Documento PDF».
 - Fondo de caja: la principal asigna el fondo **de cada turno** de cada secundaria.
 - Actualización obligatoria: al vencer el mes se bloquea **toda la app**, pero solo si de verdad hay una actualización.
 - Seminegrita: en las pantallas **y** en los PDF y Excel.
@@ -13,7 +13,7 @@ Estado: **implementado en la versión 0.26.0**; se conserva como registro de la 
 
 ## 1. Respaldo: una sola forma de exportar
 
-- Ajustes → Respaldo deja solo «Exportar respaldo (.spvi, con contraseña)» e «Importar».
+- Ajustes → Respaldo deja solo «Exportar respaldo (.shalev, con contraseña)» e «Importar».
 - Se elimina la tarjeta «Documento PDF» (perfil y preajustes):
   - textos `PDF_*` de `RespaldoLogic.kt`;
   - la acción del ViewModel;
@@ -86,9 +86,9 @@ Estado: **implementado en la versión 0.26.0**; se conserva como registro de la 
 ## 5. Seminegrita en precios, importes, fechas y datos importantes
 
 **Pantallas:**
-- `:designsystem` define un estilo único `SpviTextos.dato` (`FontWeight.SemiBold`, 600) para no repetir estilos sueltos.
+- `:designsystem` define un estilo único `ShalevTextos.dato` (`FontWeight.SemiBold`, 600) para no repetir estilos sueltos.
 - Se aplica en:
-  - el valor de `SpviListItem`;
+  - el valor de `ShalevListItem`;
   - los valores de las fichas (`Fila`/clave-valor);
   - los totales;
   - el arqueo (esperado, contado, diferencia);

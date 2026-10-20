@@ -16,7 +16,7 @@ Que una imagen sea visible o descargable desde una página pública **no signifi
 
 La fuente oficial de [ETECSA sobre Transfermóvil](https://www.etecsa.cu/es/transfermovil) confirma la participación de BPA, BANDEC y Banco Metropolitano en la plataforma, pero no publica una tabla de BIN que permita atribuir cada tarjeta a un banco. Las asignaciones de abajo son deliberadamente conservadoras y **solo sirven para elegir un logotipo sugerido**:
 
-| Prefijo de tarjeta | Logo sugerido en SPVI | Base y nivel de confianza |
+| Prefijo de tarjeta | Logo sugerido en Shalev | Base y nivel de confianza |
 |---|---|---|
 | `9205` | BPA | Un comentario publicado en el sitio del [Banco Central de Cuba](https://www.bc.gob.cu/noticia/canales-de-atencion-a-la-poblacion/925) identifica un ejemplo de tarjeta BPA con ese prefijo. Es un ejemplo, no un registro oficial de BIN completo. |
 | `9225` | BANDEC | Atribuido a BANDEC por una [fuente comercial](https://veltropay.es/bancos); las fuentes oficiales consultadas no ofrecen una tabla vigente que confirme esa asignación de forma exhaustiva. |
@@ -30,7 +30,7 @@ En Pago electrónico se muestra un aviso de que el logo se estima por el prefijo
 
 ## Presentación (0.30.1)
 
-- Los tres logos se muestran en una **caja de 96 × 48 dp** (`MedidasLogoBanco`), con esquinas redondeadas del token `SpviRadius.sm` y fondo blanco, para que BPA, BANDEC y BANMET ocupen exactamente el mismo espacio en la lista y en la hoja de edición. Los PNG no se modificaron.
+- Los tres logos se muestran en una **caja de 96 × 48 dp** (`MedidasLogoBanco`), con esquinas redondeadas del token `ShalevRadius.sm` y fondo blanco, para que BPA, BANDEC y BANMET ocupen exactamente el mismo espacio en la lista y en la hoja de edición. Los PNG no se modificaron.
 - BANDEC (rojo a sangre, sin margen propio) se recorta para llenar la caja (`ContentScale.Crop`); BPA (transparente) y BANMET (fondo blanco y formato muy alargado) se ajustan completos (`ContentScale.Fit`) con 6 dp de margen, sin deformarse.
 - El recurso de cada tarjeta lo decide `recursoLogoBanco(banco)`, que parte del mismo `bancoPorTarjeta` (primeros 4 dígitos) que el resto de la pantalla; no hay una segunda tabla.
 

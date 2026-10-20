@@ -11,7 +11,7 @@ keystore.properties
 *.keystore
 
 # Contexto para OpenCode (17 MB): no se sube al repositorio
-SPVI_*_capturas_y_exportaciones.pdf
+Shalev_*_capturas_y_exportaciones.pdf
 
 # Entornos y cachés locales para las herramientas Python
 __pycache__/

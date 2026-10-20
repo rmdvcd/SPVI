@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =====================================================================================================================
-# SPVI — verificación SIN Gradle ni Android SDK (Linux x86-64, Python 3, curl, unzip; ~1,5 GB de disco, 2 GB de RAM).
+# Shalev — verificación SIN Gradle ni Android SDK (Linux x86-64, Python 3, curl, unzip; ~1,5 GB de disco, 2 GB de RAM).
 #
 # NO sustituye a `./gradlew` (no hay AGP, aapt2, lint, R8 ni APK). Sirve cuando no hay Android Studio a mano.
 # Hace lo siguiente:
@@ -80,17 +80,17 @@ rm -f "$TC"/lib/{room,hilt}/*symbol-processing-api* "$TC"/lib/pruebas/*nativerun
 PRUEBAS=$(ls "$TC"/lib/pruebas/*.jar | tr '\n' ':')
 
 # R / BuildConfig mínimos (AGP los genera; aquí solo hacen falta para compilar).
-mkdir -p "$TC/stub/src/cu/spvi/app" "$TC/stub/src/cu/spvi/designsystem" "$TC/stub/rt/android/os"
+mkdir -p "$TC/stub/src/cu/shalev/app" "$TC/stub/src/cu/shalev/designsystem" "$TC/stub/rt/android/os"
 VN=$(sed -n 's/.*versionName *= *"\([^"]*\)".*/\1/p' "$ROOT/app/build.gradle.kts" | head -1)
 VC=$(sed -n 's/.*versionCode *= *\([0-9]*\).*/\1/p' "$ROOT/app/build.gradle.kts" | head -1)
-cat > "$TC/stub/src/cu/spvi/app/R.java" <<'J'
-package cu.spvi.app; public final class R { public static final class drawable { public static final int ic_stat_spvi = 0x7f010002; } }
+cat > "$TC/stub/src/cu/shalev/app/R.java" <<'J'
+package cu.shalev.app; public final class R { public static final class drawable { public static final int ic_stat_shalev = 0x7f010002; } }
 J
-cat > "$TC/stub/src/cu/spvi/app/BuildConfig.java" <<J
-package cu.spvi.app; public final class BuildConfig { public static final boolean DEBUG = false; public static final int VERSION_CODE = ${VC:-1}; public static final String VERSION_NAME = "${VN:-0}"; public static final String APPLICATION_ID = "cu.spvi.app"; public static final String GITHUB_REPO = ""; }
+cat > "$TC/stub/src/cu/shalev/app/BuildConfig.java" <<J
+package cu.shalev.app; public final class BuildConfig { public static final boolean DEBUG = false; public static final int VERSION_CODE = ${VC:-1}; public static final String VERSION_NAME = "${VN:-0}"; public static final String APPLICATION_ID = "cu.shalev.app"; public static final String GITHUB_REPO = ""; }
 J
-cat > "$TC/stub/src/cu/spvi/designsystem/R.java" <<'J'
-package cu.spvi.designsystem; public final class R { public static final class drawable { public static final int spvi_logo = 0x7f010001; } public static final class font { public static final int orbitron = 0x7f020001; } }
+cat > "$TC/stub/src/cu/shalev/designsystem/R.java" <<'J'
+package cu.shalev.designsystem; public final class R { public static final class drawable { public static final int shalev_logo = 0x7f010001; } public static final class font { public static final int orbitron = 0x7f020001; } }
 J
 # Solo para EJECUTAR tests JVM: android.os.Build/SystemProperties sin código nativo (Gradle usa un android.jar con stubs).
 cat > "$TC/stub/rt/android/os/SystemProperties.java" <<'J'
@@ -163,8 +163,8 @@ SCH="$OUT/schemas"; mkdir -p "$SCH"
 PK="plugin:com.google.devtools.ksp.symbol-processing"
 ksp room "$TC/lib/room" "$BASE" "-P $PK:apoption=room.schemaLocation=$SCH -P $PK:apoption=room.generateKotlin=true -P $PK:apoption=room.incremental=false" "$S/data/src/main/kotlin"
 kc "$OUT/data" "$BASE" "$S/data/src/main/kotlin" "$OUT/ksp-room/kotlin"
-VER=$(sed -n 's/.*const val VERSION *= *\([0-9]*\).*/\1/p' "$S/data/src/main/kotlin/cu/spvi/data/db/SpviDatabase.kt" | head -1)
-NUEVO="$SCH/cu.spvi.data.db.SpviDatabase/$VER.json"; VIEJO="$S/data/schemas/cu.spvi.data.db.SpviDatabase/$VER.json"
+VER=$(sed -n 's/.*const val VERSION *= *\([0-9]*\).*/\1/p' "$S/data/src/main/kotlin/cu/shalev/data/db/ShalevDatabase.kt" | head -1)
+NUEVO="$SCH/cu.shalev.data.db.ShalevDatabase/$VER.json"; VIEJO="$S/data/schemas/cu.shalev.data.db.ShalevDatabase/$VER.json"
 [ -f "$NUEVO" ] || falla "Room no exportó $VER.json"
 if [ -f "$VIEJO" ]; then cmp -s "$NUEVO" "$VIEJO" && echo "Esquema $VER.json sin cambios." || { echo "AVISO: las entidades no coinciden con $VER.json versionado (¿falta subir la versión?). Nuevo: $NUEVO"; }
 else mkdir -p "$(dirname "$VIEJO")"; cp "$NUEVO" "$VIEJO"; echo "Exportado $VIEJO"; fi
@@ -178,13 +178,13 @@ COMPOSE=1 kc "$OUT/designsystem" "$UI:$TC/stub/cls" "$S/designsystem/src/main/ko
 APPCP="$UI:$OUT/data:$OUT/designsystem:$TC/stub/cls"
 COMPOSE=1 kc "$OUT/app" "$APPCP" "$S/app/src/main/kotlin"
 ksp hilt-app "$TC/lib/hilt" "$OUT/hilt-data:$APPCP" "$HO" "$S/app/src/main/kotlin"
-ls "$OUT"/ksp-hilt-app/java/cu/spvi/app/DaggerSpviApplication_HiltComponents_SingletonC.java >/dev/null 2>&1 || falla "Hilt no generó el componente"
+ls "$OUT"/ksp-hilt-app/java/cu/shalev/app/DaggerShalevApplication_HiltComponents_SingletonC.java >/dev/null 2>&1 || falla "Hilt no generó el componente"
 mkdir -p "$OUT/hilt-app"; javac -nowarn -proc:none -cp "$OUT/app:$OUT/hilt-data:$APPCP:$STD" -d "$OUT/hilt-app" $(find "$OUT/ksp-hilt-app/java" -name '*.java') || falla "javac Hilt (app)"
 echo "Grafo de Hilt completo y compilado."
 
 # --------------------------------------------------------------------------------------------- 5. migración
 paso "5. Última migración == esquema exportado"
-python3 - "$NUEVO" "$S/data/src/main/kotlin/cu/spvi/data/db/SpviDatabase.kt" "$VER" <<'PY'
+python3 - "$NUEVO" "$S/data/src/main/kotlin/cu/shalev/data/db/ShalevDatabase.kt" "$VER" <<'PY'
 import json, sqlite3, re, sys
 esq, src, ver = sys.argv[1], open(sys.argv[2]).read(), int(sys.argv[3])
 ents = {e["tableName"]: e for e in json.load(open(esq))["database"]["entities"]}
@@ -239,7 +239,7 @@ TESTS=$(find "$S/app/src/test/kotlin" -name '*.kt' -not -path '*/capturas/*')
 COMPOSE=1 EXTRA="-Xfriend-paths=$OUT/app" kc "$OUT/app-test" "$APPCP:$OUT/app" $TESTS "$S/app/src/sharedTest/kotlin"
 echo "app:"; pruebas "$OUT/app-test" "$APPCP:$OUT/app" "$S/app/src/test/kotlin"
 paso "7. Compilación de capturas Roborazzi y tests instrumentados"
-COMPOSE=1 EXTRA="-Xfriend-paths=$OUT/app" kc "$OUT/capturas" "$APPCP:$OUT/app:$OUT/app-test:$PRUEBAS" "$S/app/src/test/kotlin/cu/spvi/app/capturas"
+COMPOSE=1 EXTRA="-Xfriend-paths=$OUT/app" kc "$OUT/capturas" "$APPCP:$OUT/app:$OUT/app-test:$PRUEBAS" "$S/app/src/test/kotlin/cu/shalev/app/capturas"
 COMPOSE=1 EXTRA="-Xfriend-paths=$OUT/app" kc "$OUT/app-at" "$APPCP:$OUT/app:$PRUEBAS" "$S/app/src/androidTest/kotlin" "$S/app/src/sharedTest/kotlin"
 EXTRA="-Xfriend-paths=$OUT/data" kc "$OUT/data-at" "$OUT/data:$BASE:$PRUEBAS" "$S/data/src/androidTest/kotlin"
 
@@ -266,11 +266,11 @@ print(" ".join(sorted(out)))
 PY
 )
 echo "Clases: $(echo $ROOMCLS | wc -w) de data/src/androidTest + MigracionesJvmTest"
-R=$(java -Xmx700m -Dspvi.esquemas="$S/data/schemas/cu.spvi.data.db.SpviDatabase" -Djava.io.tmpdir="$JR" \
-  -cp "$TC/stub/rtcls:$JR/cls:$JDBC$JR/test:$OUT/data-at:$OUT/data:$BASE:$PRUEBAS$STD" org.junit.runner.JUnitCore $ROOMCLS cu.spvi.verificacion.room.MigracionesJvmTest 2>&1 | grep -vE '^\s+at ' || true)
+R=$(java -Xmx700m -Dshalev.esquemas="$S/data/schemas/cu.shalev.data.db.ShalevDatabase" -Djava.io.tmpdir="$JR" \
+  -cp "$TC/stub/rtcls:$JR/cls:$JDBC$JR/test:$OUT/data-at:$OUT/data:$BASE:$PRUEBAS$STD" org.junit.runner.JUnitCore $ROOMCLS cu.shalev.verificacion.room.MigracionesJvmTest 2>&1 | grep -vE '^\s+at ' || true)
 echo "$R" | grep -E '^OK \(|^Tests run' || true
 echo "$R" | grep -q '^OK (' || { echo "$R" | grep -E '^[0-9]+\) ' -A2 | head -40; falla "Room en la JVM"; }
-paso "9. Permisos del manifiesto de :app dentro de la lista autorizada (spviPermisos)"
+paso "9. Permisos del manifiesto de :app dentro de la lista autorizada (shalevPermisos)"
 python3 - "$S" <<'PY' || falla "permisos"
 import re, sys
 s = sys.argv[1]

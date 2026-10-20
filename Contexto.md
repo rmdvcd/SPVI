@@ -1,4 +1,4 @@
-# Contexto de SPVI para la IA de OpenCode
+# Contexto de Shalev para la IA de OpenCode
 
 Este documento resume el proyecto mantenido en este repositorio: la app Android nativa. Las reglas obligatorias están en `AGENTS.md`; lo pendiente está en `Pendiente.md`, y el orden de pruebas, en `Pruebas.md`. El estado medido de las verificaciones está en `docs/VERIFICACION.md`. Los documentos de versiones anteriores se conservan como referencia histórica.
 
@@ -6,17 +6,17 @@ Este documento resume el proyecto mantenido en este repositorio: la app Android 
 
 ---
 
-## 1. Qué es SPVI
+## 1. Qué es Shalev
 
-SPVI (Sistema de Punto de Venta e Inventario) es una app Android nativa para pequeños negocios de Cuba.
+Shalev (Sistema de Punto de Venta e Inventario) es una app Android nativa para pequeños negocios de Cuba.
 
 | | |
 |---|---|
 | Versión | **0.30.0** (`versionCode 51`) |
-| Paquete | `cu.spvi.app` (debug: `cu.spvi.app.debug`) |
+| Paquete | `cu.shalev.app` (debug: `cu.shalev.app.debug`) |
 | SDK | minSdk 26 · targetSdk 35 · compileSdk 35 |
 | Base de datos | Room **v12** cifrada con SQLCipher |
-| Respaldo | `.spvi` v4 cifrado, contraseña opcional (lee también v3); `RespaldoDto` v4 (importa también v3) |
+| Respaldo | `.shalev` v4 cifrado, contraseña opcional (lee también v3); `RespaldoDto` v4 (importa también v3) |
 | Protocolo de la red local | `VERSION_PROTOCOLO = 1` (los campos nuevos son opcionales) |
 | Licencias | Offline, emitidas por la app GL del desarrollador (contrato GL v1) |
 
@@ -35,7 +35,7 @@ SPVI (Sistema de Punto de Venta e Inventario) es una app Android nativa para peq
 | **Servicios** | Tipo libre, importe, foto y descripción. Pueden gastar insumos y tienen su pestaña en Registros |
 | **Registros** | Ventas, Servicios, Transferencias, Movimientos, **Clientes** (0.27.0) y Turnos, ordenados por fecha, con filtros. **Anular o modificar** una venta: solo la principal y solo con el turno abierto |
 | **Ajustes** | Perfil (nombre, apellidos y carné), Licencia, **Acceso con clave** (0.27.0, opcional: huella o PIN del teléfono al abrir y tras ≥ 10 min fuera), Pago electrónico (teléfonos y tarjetas), Precios, Avisos, Permisos, Respaldo, Actualizar, Ayuda y Soporte |
-| **Apps vinculadas** | Una app **principal** (dueño) y hasta 10 **secundarias** (empleados) en la misma wifi, sin internet ni servidor. Cada empleado tiene sus permisos. La secundaria no crea secundarias y **una principal nunca pasa a secundaria** (0.27.0): el tipo se elige en el recorrido inicial; para cambiarlo hay que exportar el respaldo y borrar los datos de SPVI. Una secundaria activa el acceso con clave solo desde Ajustes |
+| **Apps vinculadas** | Una app **principal** (dueño) y hasta 10 **secundarias** (empleados) en la misma wifi, sin internet ni servidor. Cada empleado tiene sus permisos. La secundaria no crea secundarias y **una principal nunca pasa a secundaria** (0.27.0): el tipo se elige en el recorrido inicial; para cambiarlo hay que exportar el respaldo y borrar los datos de Shalev. Una secundaria activa el acceso con clave solo desde Ajustes |
 
 ### Exportaciones (desde la 0.26.0, sin texto)
 
@@ -60,13 +60,13 @@ Formato exacto de cada archivo: `FORMATOS.md`.
 | `:licencia` | Cliente de licencias GL (`LicenseManager`, formatos `SPVIR1:`/`SPVI2:`, revocaciones) y `prueba/RegistroPrueba.kt` | core |
 | `:domain` | Modelos, interfaces de repositorio, casos de uso, `TablasExport` | core, licencia |
 | `:data` | Room, SQLCipher, DataStore cifrado, respaldo, sincronización LAN (`ServidorSync`, `ClienteSync`), exportadores (`PdfWriter`, `DisenoPdf`, `EscritoresJvm`/XlsxWriter), implementaciones de repositorios | domain |
-| `:designsystem` | Tema, componentes `Spvi*`, `SpviIcons`, `SpviSpacing`, `SpviTextos` | — |
+| `:designsystem` | Tema, componentes `Shalev*`, `ShalevIcons`, `ShalevSpacing`, `ShalevTextos` | — |
 | `:app` | Pantallas Compose, ViewModels Hilt, navegación type-safe y `root/` (puertas de licencia, bloqueo y onboarding) | todos |
 
 **Reglas de diseño:**
 - Clean Architecture: nada de lógica de negocio en las pantallas. Reutiliza los repositorios y casos de uso que ya existen.
-- UI solo con componentes `Spvi*` y tokens, sin estilos sueltos ni `fontWeight` a mano.
-- `SpviSpacing`: xs=8, md=16, lg=24, xl=32. **No existe `sm`**.
+- UI solo con componentes `Shalev*` y tokens, sin estilos sueltos ni `fontWeight` a mano.
+- `ShalevSpacing`: xs=8, md=16, lg=24, xl=32. **No existe `sm`**.
 
 ---
 
@@ -91,7 +91,7 @@ Formato exacto de cada archivo: `FORMATOS.md`.
 
 - **Dónde se guarda:** la fecha de inicio de la prueba va cifrada (AES-GCM, clave PBKDF2 a partir de ANDROID_ID) en 4 copias:
   - `filesDir`;
-  - `Pictures/SPVI/sys_<huella>.png`: la vía principal en Android 10+, se lee tras reinstalar con el permiso de fotos;
+  - `Pictures/Shalev/sys_<huella>.png`: la vía principal en Android 10+, se lee tras reinstalar con el permiso de fotos;
   - `.sys_<huella>.bin` en Download y en Documents: tras reinstalar solo se leen en Android 8–9.
 - **Qué fecha vale:** gana el inicio más antiguo y la última fecha vista (`lastSeen`) más reciente. Una copia ilegible se ignora (**nunca bloquea**).
 - **Reloj:** `DetectorRelojAndroid` usa `elapsedRealtime` dentro del mismo arranque, además de la comprobación de `lastSeen`.
@@ -116,7 +116,7 @@ Formato exacto de cada archivo: `FORMATOS.md`.
 
 ### Actualizaciones (GitHub)
 
-- **Consulta:** una vez por semana, al abrir la app, la principal mira la última Release pública de `GITHUB_REPO` (`-PspviGithubRepo=usuario/repo`; vacío = no consulta nada).
+- **Consulta:** una vez por semana, al abrir la app, la principal mira la última Release pública de `GITHUB_REPO` (`-PshalevGithubRepo=usuario/repo`; vacío = no consulta nada).
 - **Descarga:** se comprueba el SHA-256 y se instala con `REQUEST_INSTALL_PACKAGES`.
 - **Obligatorias (0.26.0):** toda versión nueva es obligatoria 30 días después de que el teléfono la detecte.
   - Al vencer, `BloqueoActualizacion` bloquea toda la app. Solo deja Actualizar, Exportar respaldo y Cerrar turno.
@@ -125,20 +125,20 @@ Formato exacto de cada archivo: `FORMATOS.md`.
 
 ### Respaldo y cambio de teléfono
 
-- **Respaldo:** solo el archivo `.spvi`, siempre cifrado; la contraseña es opcional pero viene activada por defecto desde la corrección S-01 (10/2026). Sin ella, cualquiera que obtenga el archivo puede abrirlo con SPVI. Lleva los clientes fijos (sin PDF). Un recordatorio mensual, solo en la principal.
+- **Respaldo:** solo el archivo `.shalev`, siempre cifrado; la contraseña es opcional pero viene activada por defecto desde la corrección S-01 (10/2026). Sin ella, cualquiera que obtenga el archivo puede abrirlo con Shalev. Lleva los clientes fijos (sin PDF). Un recordatorio mensual, solo en la principal.
 - **Cambiar de teléfono:** exporta el respaldo en el viejo, impórtalo en el nuevo y pide la **recuperación** de la licencia (Ajustes → Licencia, con el «ID de la licencia anterior»). El teléfono viejo queda en la lista de revocadas y se desinstala solo.
 
 ---
 
 ## 4. Reglas del dueño que no se negocian (resumen; la lista completa está en `AGENTS.md`)
 
-1. **Permisos.** Solo estos; `spviPermisos` falla con cualquier otro:
+1. **Permisos.** Solo estos; `shalevPermisos` falla con cualquier otro:
    - `CAMERA`, `INTERNET` y `POST_NOTIFICATIONS`;
    - `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE` y `CHANGE_NETWORK_STATE`;
    - `REQUEST_INSTALL_PACKAGES` y `REQUEST_DELETE_PACKAGES`;
    - `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE` (maxSdk 32) y `WRITE_EXTERNAL_STORAGE` (maxSdk 28), solo para el registro de la prueba;
    - `USE_BIOMETRIC` y `USE_FINGERPRINT` (0.27.0), solo para el acceso con clave.
-2. **Internet** solo para la red local y GitHub Releases (`rmdvcd/SPVI`, actualizaciones y revocaciones); no se requieren claves de API.
+2. **Internet** solo para la red local y GitHub Releases (`rmdvcd/Shalev`, actualizaciones y revocaciones); no se requieren claves de API.
 3. **Cámara y SMS.** No se vende sin turno abierto. La cámara solo mientras se usa. No se pide `READ_SMS` ni se consulta el buzón; la captura opcional usa Acceso a notificaciones, que el usuario habilita manualmente, y solo procesa un SMS nuevo reconocible mientras una transferencia espera el pago. El portapapeles solo se lee al tocar «Pegar SMS»; compartir el mensaje sigue disponible.
 4. **UI:**
    - Material 3 claro y oscuro, con contraste WCAG AA (`ContrastTest`).
@@ -148,7 +148,7 @@ Formato exacto de cada archivo: `FORMATOS.md`.
    - Tipografía: bodyMedium 14 y bodySmall 13. Sin «Deshacer».
 5. **Datos sensibles:** nada en los logs ni en la vista de Recientes.
 6. **Documentación sin funciones inventadas.** Si cambias el comportamiento, actualiza README, MANUAL_USUARIO y FORMATOS, y añade una entrada en `docs/HISTORIAL_DESARROLLO.md`.
-7. **Tests:** sin red. Todo lo que añadas debe compilar y pasar `./gradlew spviTests`.
+7. **Tests:** sin red. Todo lo que añadas debe compilar y pasar `./gradlew shalevTests`.
 8. **Firma:** siempre el mismo keystore. El `deviceId` de la licencia depende de la firma.
 9. **Cambios mínimos.** No refactorices lo que funciona. Ante una ambigüedad, elige la opción más segura y simple, y documéntala.
 
@@ -167,14 +167,14 @@ Siguen pendientes la comprobación en un teléfono real, las capturas Roborazzi 
 ## 6. Comandos
 
 ```bash
-./gradlew spviTests                 # todos los tests JVM (sin dispositivo ni red)
+./gradlew shalevTests                 # todos los tests JVM (sin dispositivo ni red)
 ./gradlew :app:assembleDebug        # APK debug → app/build/outputs/apk/debug/
-./gradlew spviCheck                 # spviTests + lintDebug + assembleDebug + spviPermisos
+./gradlew shalevCheck                 # shalevTests + lintDebug + assembleDebug + shalevPermisos
 ./gradlew :app:installDebug         # instalar en el teléfono conectado
-./gradlew spviInstrumentedTests     # tests de Room en el teléfono o emulador
+./gradlew shalevInstrumentedTests     # tests de Room en el teléfono o emulador
 ./gradlew :app:recordRoborazziDebug # capturas reales claro/oscuro
-./gradlew spviRelease               # AAB + APK firmados (requiere keystore.properties)
-./gradlew :domain:test --tests "cu.spvi.domain.EstadoPruebaTest"   # un solo test
+./gradlew shalevRelease               # AAB + APK firmados (requiere keystore.properties)
+./gradlew :domain:test --tests "cu.shalev.domain.EstadoPruebaTest"   # un solo test
 ```
 
 
@@ -189,7 +189,7 @@ Siguen pendientes la comprobación en un teléfono real, las capturas Roborazzi 
 **Kotlin**
 - Una entrada de `enum` no puede usar una `const` de su propio companion.
 - No se puede leer `CompositionLocal.current` dentro del DSL de `LazyColumn`.
-- `spviAnimateItem()` solo funciona en `LazyItemScope`.
+- `shalevAnimateItem()` solo funciona en `LazyItemScope`.
 - No hay smart cast de propiedades de otro módulo: copia el valor a un `val` local.
 - No uses `fun interface` con métodos `suspend`: usa una interface normal.
 
@@ -235,4 +235,4 @@ Siguen pendientes la comprobación en un teléfono real, las capturas Roborazzi 
 
 ## Alcance del repositorio (2026-10-15)
 
-El producto mantenido aquí es la app Android nativa. Se retiraron `desktop/` (web-escritorio) y `flutter_app/` (iOS/Flutter), junto con sus dependencias, pruebas y workflows. La sincronización Android principal/secundaria, el formato `.spvi` y el cliente de licencias GL siguen activos. Las menciones a las plataformas retiradas en `docs/HISTORIAL_DESARROLLO.md` y las auditorías fechadas son contexto histórico, no instrucciones para el código actual.
+El producto mantenido aquí es la app Android nativa. Se retiraron `desktop/` (web-escritorio) y `flutter_app/` (iOS/Flutter), junto con sus dependencias, pruebas y workflows. La sincronización Android principal/secundaria, el formato `.shalev` y el cliente de licencias GL siguen activos. Las menciones a las plataformas retiradas en `docs/HISTORIAL_DESARROLLO.md` y las auditorías fechadas son contexto histórico, no instrucciones para el código actual.

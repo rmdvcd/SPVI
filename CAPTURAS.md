@@ -1,14 +1,14 @@
 # Capturas de pantalla (claro y oscuro)
 
-Capturas **reales** de la interfaz de SPVI generadas en la JVM con **Robolectric 4.14.1 + Roborazzi 1.38.0**: sin emulador, sin teléfono y sin red. Cada caso pinta un `*Content` sin estado (los mismos que usan los tests instrumentados) con datos de ejemplo y guarda dos imágenes con el mismo nombre, una en tema claro y otra en oscuro.
+Capturas **reales** de la interfaz de Shalev generadas en la JVM con **Robolectric 4.14.1 + Roborazzi 1.38.0**: sin emulador, sin teléfono y sin red. Cada caso pinta un `*Content` sin estado (los mismos que usan los tests instrumentados) con datos de ejemplo y guarda dos imágenes con el mismo nombre, una en tema claro y otra en oscuro.
 
 | | |
 |---|---|
-| Código | `app/src/test/kotlin/cu/spvi/app/capturas/` (6 clases + `Capturas.kt`) |
+| Código | `app/src/test/kotlin/cu/shalev/app/capturas/` (6 clases + `Capturas.kt`) |
 | Casos | 153 → **306 PNG** (P24: +2, pestañas Ventas e Inventario del detalle del turno; P26: −3, sin diálogo Producir ni su snackbar; P28: −2, sin la ventana de Pago electrónico de Inicio, 06a y 06b) |
 | Salida | `app/capturas/claro/ID.png` y `app/capturas/oscuro/ID.png` |
 | Pantalla de referencia | 360 × 800 dp a xhdpi (720 × 1600 px). Formularios y pantallas largas: 360 × 1600 dp |
-| Tema | `SpviTheme(darkTheme = false/true)`; se cambia sin recrear la actividad |
+| Tema | `ShalevTheme(darkTheme = false/true)`; se cambia sin recrear la actividad |
 
 ## 1. Generarlas
 
@@ -18,10 +18,10 @@ Desde la raíz del proyecto:
 ./gradlew :app:recordRoborazziDebug
 ```
 
-- Android Studio: panel **Gradle → SPVI → app → Tasks → roborazzi → recordRoborazziDebug**.
+- Android Studio: panel **Gradle → Shalev → app → Tasks → roborazzi → recordRoborazziDebug**.
 - Las imágenes quedan en `app/capturas/{claro,oscuro}/`. Informe HTML: `app/build/reports/roborazzi/index.html`.
-- Solo una clase: `./gradlew :app:recordRoborazziDebug --tests "cu.spvi.app.capturas.VentaCapturas"`.
-- Solo un caso: `--tests "cu.spvi.app.capturas.VentaCapturas.qr"`.
+- Solo una clase: `./gradlew :app:recordRoborazziDebug --tests "cu.shalev.app.capturas.VentaCapturas"`.
+- Solo un caso: `--tests "cu.shalev.app.capturas.VentaCapturas.qr"`.
 
 La **primera** ejecución descarga con Gradle las dependencias de test (Robolectric, Roborazzi y el Android 15 preinstrumentado de Robolectric, ~150 MB). Después todo funciona sin conexión.
 
@@ -42,8 +42,8 @@ Con las imágenes ya grabadas, para detectar cambios visuales:
 | `testImplementation`: robolectric, roborazzi, roborazzi-compose, ui-test-junit4, androidx.test.ext.junit | `app/build.gradle.kts` | Solo tests: **no entran en el APK** (restricción P18 «sin dependencias nuevas sin justificar»: son de test y la justificación es esta tarea). |
 | `unitTests.isIncludeAndroidResources = true` | `app/build.gradle.kts` | Proporciona a Robolectric los recursos Android que necesitan las capturas y los tests JVM de `:app`; no entra en el APK. |
 | Configuración `robolectricSdk` + tarea `prepararRobolectricSdk` | `app/build.gradle.kts` | Gradle resuelve `android-all-instrumented:15-robolectric-12650502-i7` (SDK 35), lo copia a `app/build/robolectric-sdk` y configura ese directorio con `robolectric.offline=true` para todos los tests JVM de `:app`. La descarga ocurre durante la resolución de Gradle, no desde el proceso de tests; se mantiene la regla de **tests sin red**. |
-| Exclusión `**/capturas/**` | `app/build.gradle.kts` | En `test`, `testDebugUnitTest`, `spviTests` y `spviCheck` las capturas **no se ejecutan** (son lentas y no validan lógica). Solo corren cuando el nombre de la tarea pedida contiene «Roborazzi». |
-| `@Config(application = Application::class)` | cada clase | No arranca `SpviApplication` (Hilt, SQLCipher, Keystore): las pantallas se pintan sin datos reales ni claves. |
+| Exclusión `**/capturas/**` | `app/build.gradle.kts` | En `test`, `testDebugUnitTest`, `shalevTests` y `shalevCheck` las capturas **no se ejecutan** (son lentas y no validan lógica). Solo corren cuando el nombre de la tarea pedida contiene «Roborazzi». |
+| `@Config(application = Application::class)` | cada clase | No arranca `ShalevApplication` (Hilt, SQLCipher, Keystore): las pantallas se pintan sin datos reales ni claves. |
 | `captureScreenRoboImage` | `Capturas.kt` | Captura toda la pantalla, así los diálogos y hojas (que viven en su propia ventana) también salen. |
 
 ## 3. Qué se captura
@@ -82,7 +82,7 @@ Se usa un `CompositionLocalProvider(LocalDensity)` en vez de `@Config(fontScale)
 
 Límites del arnés:
 - **Ventanas `Dialog`:** `LetraGrande` no llega a ellas, porque el `Dialog` crea su propia ventana con la densidad del sistema. Por eso `02z_inventario_ficha_letra_200` sale al 100 %. Los diálogos con letra grande solo se pueden comprobar en un teléfono (Ajustes → Pantalla → Tamaño de fuente al máximo).
-- **Barra superior de la actividad de prueba:** la actividad de prueba hereda `Theme.SPVI.Splash`, que en Robolectric muestra una barra. `capturar()` la oculta para que no tape la parte de arriba de las capturas. En la app no aparece, porque `installSplashScreen()` pasa a `Theme.SPVI`.
+- **Barra superior de la actividad de prueba:** la actividad de prueba hereda `Theme.Shalev.Splash`, que en Robolectric muestra una barra. `capturar()` la oculta para que no tape la parte de arriba de las capturas. En la app no aparece, porque `installSplashScreen()` pasa a `Theme.Shalev`.
 
 ## 4. Límites conocidos
 
@@ -94,7 +94,7 @@ Límites del arnés:
 
 ## Maquetas PDF (P44)
 
-`tools/capturas/` genera las maquetas HTML de Apps vinculadas (0.19.x) con los iconos de `SpviIcons.kt` (`iconos.json`), los colores de `ColorTokens.kt`, el logo y la fuente de marca del módulo `designsystem`, y los textos de `VinculacionLogic`, `BloqueoSecundaria`, `AjustesScreen` y `PlanAviso`. Son maquetas, no capturas: si cambian esos textos o la disposición, hay que actualizar `generar.py` a mano.
+`tools/capturas/` genera las maquetas HTML de Apps vinculadas (0.19.x) con los iconos de `ShalevIcons.kt` (`iconos.json`), los colores de `ColorTokens.kt`, el logo y la fuente de marca del módulo `designsystem`, y los textos de `VinculacionLogic`, `BloqueoSecundaria`, `AjustesScreen` y `PlanAviso`. Son maquetas, no capturas: si cambian esos textos o la disposición, hay que actualizar `generar.py` a mano.
 
 Las herramientas Python auxiliares comparten `tools/requirements.txt` (qrcode, PyMuPDF, Pillow y cryptography); usa Python 3.10 o posterior.
 
@@ -105,4 +105,4 @@ python3 tools/capturas/generar.py /tmp/caps 25         # 13 páginas, numeradas 
 node tools/capturas/render.js /tmp/caps                # pNN.pdf (842.88 × 595.92 pt)
 ```
 
-La portada está en `tools/capturas/portada.html`. La entrega actual es `SPVI_0.26.0_capturas_y_exportaciones.pdf` (127 páginas), en la raíz del proyecto (excluido de git): portada, **índice enlazado** (y marcadores del PDF), pantallas nº 1–108 y exportaciones E1–E16 (0.26.0: sin textos). Nº 1–24 son de la 0.18.4 (paleta anterior); nº 25–67, de la 0.19 a la 0.23.1 (apps vinculadas, cierre pedido, recorrido inicial, escáner, licencia por texto); nº 68–69, Descripción (0.24.0); nº 70–88, 0.25.0 (arqueo, anular, respaldo, actualizaciones, recuperación); nº 89–96, 0.25.1 (compartir turno, modificar venta completa, recuperación con licencia vencida, «Ahora no» en el conteo, destinatario de cada exportación). Nº 97–108, 0.26.0 (respaldo solo .spvi, «+» en la esquina, seminegrita, fondo asignado por el encargado, actualización obligatoria y permiso de fotos para que la prueba no se reinicie al reinstalar). Las exportaciones salen de `tools/exportaciones/generar.sh` (TablasExport y XlsxWriter reales; el PDF y los PNG replican PdfWriter/DisenoPdf, ImagenTabla y Tarjetas) y `paginas.py`; el PDF se arma con `tools/capturas/ensamblar.py`. El QR de la página de vinculación lleva un texto de ejemplo y no vincula nada.
+La portada está en `tools/capturas/portada.html`. La entrega actual es `Shalev_0.26.0_capturas_y_exportaciones.pdf` (127 páginas), en la raíz del proyecto (excluido de git): portada, **índice enlazado** (y marcadores del PDF), pantallas nº 1–108 y exportaciones E1–E16 (0.26.0: sin textos). Nº 1–24 son de la 0.18.4 (paleta anterior); nº 25–67, de la 0.19 a la 0.23.1 (apps vinculadas, cierre pedido, recorrido inicial, escáner, licencia por texto); nº 68–69, Descripción (0.24.0); nº 70–88, 0.25.0 (arqueo, anular, respaldo, actualizaciones, recuperación); nº 89–96, 0.25.1 (compartir turno, modificar venta completa, recuperación con licencia vencida, «Ahora no» en el conteo, destinatario de cada exportación). Nº 97–108, 0.26.0 (respaldo solo .shalev, «+» en la esquina, seminegrita, fondo asignado por el encargado, actualización obligatoria y permiso de fotos para que la prueba no se reinicie al reinstalar). Las exportaciones salen de `tools/exportaciones/generar.sh` (TablasExport y XlsxWriter reales; el PDF y los PNG replican PdfWriter/DisenoPdf, ImagenTabla y Tarjetas) y `paginas.py`; el PDF se arma con `tools/capturas/ensamblar.py`. El QR de la página de vinculación lleva un texto de ejemplo y no vincula nada.

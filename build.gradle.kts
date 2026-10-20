@@ -34,8 +34,8 @@ subprojects {
     }
 }
 
-/** `./gradlew spviTests` — todos los tests JVM (sin emulador ni red). */
-tasks.register("spviTests") {
+/** `./gradlew shalevTests` — todos los tests JVM (sin emulador ni red). */
+tasks.register("shalevTests") {
     group = "verification"
     description = "Tests unitarios JVM de todos los módulos (sin dispositivo, sin red)."
     dependsOn(
@@ -44,8 +44,8 @@ tasks.register("spviTests") {
     )
 }
 
-/** `./gradlew spviInstrumentedTests` — tests instrumentados (emulador o teléfono conectado; tampoco usan red). */
-tasks.register("spviInstrumentedTests") {
+/** `./gradlew shalevInstrumentedTests` — tests instrumentados (emulador o teléfono conectado; tampoco usan red). */
+tasks.register("shalevInstrumentedTests") {
     group = "verification"
     description = "Tests instrumentados: Room en memoria, Keystore, UI Compose y flujos de integración."
     dependsOn(":data:connectedDebugAndroidTest", ":app:connectedDebugAndroidTest")
@@ -56,7 +56,7 @@ tasks.register("spviInstrumentedTests") {
 // ---------------------------------------------------------------------------------------------------------------
 
 /**
- * Control del manifiesto FUSIONADO (el de la app más el de todas las librerías): SPVI solo pide los permisos de la lista `permitidos`.
+ * Control del manifiesto FUSIONADO (el de la app más el de todas las librerías): Shalev solo pide los permisos de la lista `permitidos`.
  * Si una dependencia nueva añade otro permiso, falla aquí con el nombre del permiso. Así se puede quitar con
  * `tools:node="remove"`, como ya se hace con ACCESS_NETWORK_STATE de ML Kit.
  */
@@ -76,8 +76,8 @@ abstract class VerificarPermisos : DefaultTask() {
         val pedidos = archivos.flatMap { f -> patron.findAll(f.readText()).map { it.groupValues[1] }.toList() }.toSortedSet()
         // androidx.core (targetSdk ≥ 33) declara un permiso PROPIO de nivel signature,
         // `<applicationId>.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, para los receivers dinámicos no exportados.
-        // No lo concede el usuario ni da acceso a nada fuera de la app: se admite solo con el prefijo de SPVI y ese sufijo exacto.
-        val sobran = pedidos.filterNot { it.startsWith("cu.spvi.app.") && it.endsWith(".DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION") }.toSet() - permitidos.get()
+        // No lo concede el usuario ni da acceso a nada fuera de la app: se admite solo con el prefijo de Shalev y ese sufijo exacto.
+        val sobran = pedidos.filterNot { it.startsWith("cu.shalev.app.") && it.endsWith(".DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION") }.toSet() - permitidos.get()
         if (sobran.isNotEmpty()) {
             throw GradleException("Permisos no permitidos en el manifiesto fusionado: ${sobran.joinToString()}. Solo se permiten: ${permitidos.get().joinToString()}")
         }
@@ -85,7 +85,7 @@ abstract class VerificarPermisos : DefaultTask() {
     }
 }
 
-val spviPermisos = tasks.register<VerificarPermisos>("spviPermisos") {
+val shalevPermisos = tasks.register<VerificarPermisos>("shalevPermisos") {
     group = "verification"
     description = "Falla si el APK pide algún permiso fuera de la lista autorizada (CAMERA, INTERNET, POST_NOTIFICATIONS y los del servicio de sincronización)."
     // P19: debug y release (release puede fusionar distinto: sin ui-test-manifest y con R8).
@@ -109,20 +109,20 @@ val spviPermisos = tasks.register<VerificarPermisos>("spviPermisos") {
     ))
 }
 
-/** `./gradlew spviCheck` — tests JVM + lint (con baseline) + APK debug + control de permisos. */
-tasks.register("spviCheck") {
+/** `./gradlew shalevCheck` — tests JVM + lint (con baseline) + APK debug + control de permisos. */
+tasks.register("shalevCheck") {
     group = "verification"
-    description = "Todo lo que debe pasar antes de entregar: spviTests, lintDebug, assembleDebug y spviPermisos."
-    dependsOn("spviTests", ":app:lintDebug", ":app:assembleDebug", spviPermisos)
+    description = "Todo lo que debe pasar antes de entregar: shalevTests, lintDebug, assembleDebug y shalevPermisos."
+    dependsOn("shalevTests", ":app:lintDebug", ":app:assembleDebug", shalevPermisos)
 }
 
 /**
- * P19 — `./gradlew spviRelease`: comprobaciones (spviCheck) + AAB y APK de release minificados (R8) y firmados.
+ * P19 — `./gradlew shalevRelease`: comprobaciones (shalevCheck) + AAB y APK de release minificados (R8) y firmados.
  * Salidas: app/build/outputs/bundle/release/app-release.aab y app/build/outputs/apk/release/app-release.apk.
  * Sin firma configurada salen como *-unsigned (ver RELEASE.md).
  */
-tasks.register("spviRelease") {
+tasks.register("shalevRelease") {
     group = "build"
-    description = "spviCheck + bundleRelease + assembleRelease."
-    dependsOn("spviCheck", ":app:bundleRelease", ":app:assembleRelease")
+    description = "shalevCheck + bundleRelease + assembleRelease."
+    dependsOn("shalevCheck", ":app:bundleRelease", ":app:assembleRelease")
 }

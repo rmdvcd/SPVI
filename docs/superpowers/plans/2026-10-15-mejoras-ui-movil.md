@@ -4,19 +4,19 @@
 
 **Goal:** Aplicar las mejoras de UI detectadas en las capturas del móvil: resúmenes en los acordeones de Inicio, selección bajo demanda en listas, y secciones agrupadas en Ajustes.
 
-**Architecture:** Cambios solo en pantallas Compose (`:app`) y lógica de presentación existente; cero cambios en casos de uso, repositorios o base de datos. Reutilizar componentes `Spvi*` y datos que los ViewModels ya exponen.
+**Architecture:** Cambios solo en pantallas Compose (`:app`) y lógica de presentación existente; cero cambios en casos de uso, repositorios o base de datos. Reutilizar componentes `Shalev*` y datos que los ViewModels ya exponen.
 
-**Tech Stack:** Kotlin, Compose Material 3, Hilt, Room. Tests JVM con `./gradlew spviTests`.
+**Tech Stack:** Kotlin, Compose Material 3, Hilt, Room. Tests JVM con `./gradlew shalevTests`.
 
 **Spec:** Revisión de UI del 2026-10-15 (capturas en `C:\Users\666\AppData\Local\Temp\opencode\shots\and_*.png`).
 
 ## Global Constraints
 
-- UI solo con componentes `Spvi*` de `:designsystem`; `SpviSpacing` solo `xs/md/lg/xl` (NO existe `sm`).
+- UI solo con componentes `Shalev*` de `:designsystem`; `ShalevSpacing` solo `xs/md/lg/xl` (NO existe `sm`).
 - Nada de lógica de negocio en pantallas; reutilizar casos de uso/repos.
 - Constructores `@Inject` sin parámetros por defecto; si cambia un constructor de ViewModel, actualizar `TurnoViewModelsTest`, `PerfilTest`, `EntornoIntegracion.kt`.
 - No inventar funciones: si cambia comportamiento, actualizar `MANUAL_USUARIO.md` si aplica + entrada en `docs/HISTORIAL_DESARROLLO.md`.
-- Tests sin red. Todo debe compilar y pasar `spviTests`.
+- Tests sin red. Todo debe compilar y pasar `shalevTests`.
 - Compilar con JDK 17 (`C:\Program Files\ojdkbuild\java-17-openjdk-17.0.3.0.6-1`) y `ANDROID_HOME=$env:LOCALAPPDATA\Android\Sdk`. Versiones fijadas en `gradle/libs.versions.toml` (kotlin 2.0.21, hilt 2.52, navigation 2.8.5, coroutines 1.9.0): NO subir dependencias.
 - No tocar permisos, `FLAG_SECURE`, ni decisiones del dueño (pestañas desplazables de Registros con >4 tabs: se queda como está).
 
@@ -33,15 +33,15 @@
 ### Task 1: Resumen de una línea en acordeones de Inicio
 
 **Files:**
-- Modify: `app/src/main/kotlin/cu/spvi/app/inicio/InicioScreen.kt` (cabecera de `CardGrafico` ≈L835, `top/topPersonas` ≈L788/L811)
-- Test: `app/src/test/kotlin/cu/spvi/app/inicio/InicioLogicTest.kt` (formato del resumen, si la lógica vive ahí; si el resumen se compone en la pantalla con `Cup.*`, el test es de `InicioLogic` donde aplique)
+- Modify: `app/src/main/kotlin/cu/shalev/app/inicio/InicioScreen.kt` (cabecera de `CardGrafico` ≈L835, `top/topPersonas` ≈L788/L811)
+- Test: `app/src/test/kotlin/cu/shalev/app/inicio/InicioLogicTest.kt` (formato del resumen, si la lógica vive ahí; si el resumen se compone en la pantalla con `Cup.*`, el test es de `InicioLogic` donde aplique)
 
 **Interfaces:**
-- Consumes: `state.graficos: EstadoCarga<GraficosPeriodo>` (`totalVentas, ganancia`), `state.resumen: EstadoCarga<ResumenGeneral>` (`top3: List<TopItem(nombre,unidades,ingresos,ganancia)>`); formato con `Cup.enPesos()` (`InicioLogic.kt:232`); `SpviAccordionCard(title, ...)` (mirar su firma: añadir `subtitle` o componer cabecera existente)
+- Consumes: `state.graficos: EstadoCarga<GraficosPeriodo>` (`totalVentas, ganancia`), `state.resumen: EstadoCarga<ResumenGeneral>` (`top3: List<TopItem(nombre,unidades,ingresos,ganancia)>`); formato con `Cup.enPesos()` (`InicioLogic.kt:232`); `ShalevAccordionCard(title, ...)` (mirar su firma: añadir `subtitle` o componer cabecera existente)
 - Produces: cada acordeón muestra bajo el título una línea (Ventas→total, Ganancia→ganancia+margen, Inventario→nº alertas o existencias, Métodos→principal, Más vendido→`valorTop()`/`subtituloTop()` existentes `InicioLogic.kt:319-331`); secundaria sin cambios (respeta el gate de L415)
 
 - [ ] **Step 1: Test de formato**: añadir casos en `InicioLogicTest.kt` para la función que componga el resumen (o la existente `valorTop/subtituloTop` si se reutiliza) con valores del seed (p. ej. total `51,770.00 CUP`).
-- [ ] **Step 2: Correrlo y verlo fallar**: `./gradlew :app:testDebugUnitTest --tests "cu.spvi.app.inicio.InicioLogicTest"`. Expected: FAIL.
+- [ ] **Step 2: Correrlo y verlo fallar**: `./gradlew :app:testDebugUnitTest --tests "cu.shalev.app.inicio.InicioLogicTest"`. Expected: FAIL.
 - [ ] **Step 3: Implementar** el `subtitle` en `CardGrafico`/`top` usando `state.graficos/resumen` (solo lectura, sin tocar VM).
 - [ ] **Step 4: Correr tests** del paquete inicio. Expected: PASS.
 - [ ] **Step 5: Commit** (`feat(movil): resumen en acordeones de Inicio`).
@@ -67,11 +67,11 @@
 ### Task 3: Agrupar Ajustes con cabeceras
 
 **Files:**
-- Modify: `app/src/main/kotlin/cu/spvi/app/ajustes/AjustesScreen.kt` (`AjustesContent` L150-226, `Entry`/`SpviListItem` L267-289)
-- Test: `app/src/test/kotlin/cu/spvi/app/ajustes/AjustesTextosTest.kt` (verificar que existan los títulos de sección si el test cubre textos)
+- Modify: `app/src/main/kotlin/cu/shalev/app/ajustes/AjustesScreen.kt` (`AjustesContent` L150-226, `Entry`/`ShalevListItem` L267-289)
+- Test: `app/src/test/kotlin/cu/shalev/app/ajustes/AjustesTextosTest.kt` (verificar que existan los títulos de sección si el test cubre textos)
 
 **Interfaces:**
-- Consumes: `SpviListItem` existente para filas; secciones: Cuenta (Perfil, Acceso con clave), Negocio (Licencia, Apps vinculadas, Pago electrónico, Precios, Avisos), Datos (Respaldo, Migrar), Sistema (Permisos, Actualizar, Completar configuración), Ayuda (Ayuda, Soporte) + Debug (las 2 debug al final). Orden actual de filas NO cambia, solo se intercalan cabeceras (usar `stickyHeader` o item de cabecera del designsystem si existe; si no, `Text` con estilo de sección existente).
+- Consumes: `ShalevListItem` existente para filas; secciones: Cuenta (Perfil, Acceso con clave), Negocio (Licencia, Apps vinculadas, Pago electrónico, Precios, Avisos), Datos (Respaldo, Migrar), Sistema (Permisos, Actualizar, Completar configuración), Ayuda (Ayuda, Soporte) + Debug (las 2 debug al final). Orden actual de filas NO cambia, solo se intercalan cabeceras (usar `stickyHeader` o item de cabecera del designsystem si existe; si no, `Text` con estilo de sección existente).
 - Produces: misma lista con cabeceras de sección; secundaria sigue ocultando lo principal-only
 
 - [ ] **Step 1: Implementar** cabeceras intercalando items en el `LazyColumn` (sin reordenar filas ni cambiar condiciones `if (principal)`/`DEBUG`).
@@ -82,8 +82,8 @@
 
 **Files:** ninguno (solo verificación)
 
-- [ ] **Step 1: FAB al final de lista**: con la app instalada, desplazar Inventario hasta el final y capturar: la última fila queda sobre `fabClearance=88.dp` (`InventarioScreen.kt:375`, `ServiciosScreen.kt:351`). Si se confirma, sin cambios; si tapa, subir `bottom` usando `SpviSpacing`/`SpviSize` existentes.
-- [ ] **Step 2: Contraste**: correr `./gradlew :designsystem:testDebugUnitTest --tests "*ContrastTest*"` (los tokens ya verifican AA: `SpviSecondaryText` al 65%, banner Aviso `D_ON_SECONDARY_CONTAINER 0xFFFFDCC2`). Expected: PASS, sin cambios.
+- [ ] **Step 1: FAB al final de lista**: con la app instalada, desplazar Inventario hasta el final y capturar: la última fila queda sobre `fabClearance=88.dp` (`InventarioScreen.kt:375`, `ServiciosScreen.kt:351`). Si se confirma, sin cambios; si tapa, subir `bottom` usando `ShalevSpacing`/`ShalevSize` existentes.
+- [ ] **Step 2: Contraste**: correr `./gradlew :designsystem:testDebugUnitTest --tests "*ContrastTest*"` (los tokens ya verifican AA: `ShalevSecondaryText` al 65%, banner Aviso `D_ON_SECONDARY_CONTAINER 0xFFFFDCC2`). Expected: PASS, sin cambios.
 - [ ] **Step 3: Héroes con turno abierto**: inspección en `InicioScreen.kt:421-438` confirma «Nueva venta»+«Movimiento» solo con turno abierto y `permisos.vender`; no existe «Escanear» en Inicio (cámara solo en uso). Sin cambios.
 
 ### Task 5: Cierre (docs + verificación final)
@@ -92,6 +92,6 @@
 - Modify: `docs/HISTORIAL_DESARROLLO.md` (nueva entrada arriba); `MANUAL_USUARIO.md` solo si el modo selección cambia pasos descritos
 
 - [ ] **Step 1: Entrada** resumiendo Tasks 1-3, fecha 2026-10-15.
-- [ ] **Step 2: Suite completa**: `./gradlew spviTests` (JDK 17, con `ANDROID_HOME` fijado). Expected: PASS.
+- [ ] **Step 2: Suite completa**: `./gradlew shalevTests` (JDK 17, con `ANDROID_HOME` fijado). Expected: PASS.
 - [ ] **Step 3: APK debug + captura** de Inicio/Inventario/Ajustes para confirmar visual.
 - [ ] **Step 4: Commit** final.

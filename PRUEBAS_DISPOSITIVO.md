@@ -1,6 +1,6 @@
 # Pruebas en dispositivo (USB)
 
-Guía para probar SPVI en un teléfono real por USB: instalación, tests instrumentados, flujos manuales
+Guía para probar Shalev en un teléfono real por USB: instalación, tests instrumentados, flujos manuales
 guiados, checklist de cierre y solución de problemas. La verificación automática (tests JVM, lint, R8,
 permisos, API mínima) vive en el CI; esto cubre lo que el CI no puede tocar: hardware, red local real,
 cámara, biometría y dos teléfonos hablando entre sí.
@@ -17,7 +17,7 @@ cámara, biometría y dos teléfonos hablando entre sí.
 
 ```bash
 adb devices          # debe listar el equipo como «device», no «unauthorized»
-adb shell getprop ro.build.version.sdk   # API del teléfono (SPVI pide 26+)
+adb shell getprop ro.build.version.sdk   # API del teléfono (Shalev pide 26+)
 ```
 
 ## 2. Instalar una build
@@ -26,7 +26,7 @@ adb shell getprop ro.build.version.sdk   # API del teléfono (SPVI pide 26+)
 # Debug (la que se usa a diario; convive con la de producción por el sufijo .debug)
 ./gradlew :app:installDebug
 
-# Release sin firmar NO se instala encima de una firmada (y viceversa): si el teléfono ya tiene SPVI
+# Release sin firmar NO se instala encima de una firmada (y viceversa): si el teléfono ya tiene Shalev
 # de producción, usa la debug o desinstala primero (se pierden los datos locales del debug, no los de prod).
 adb install -r app/build/outputs/apk/release/app-arm64-v8a-release.apk   # si existe build con splits
 ```
@@ -45,7 +45,7 @@ contra el teléfono conectado:
 ./gradlew :data:connectedDebugAndroidTest :app:connectedDebugAndroidTest
 
 # Una clase o un test concreto
-./gradlew :app:connectedDebugAndroidTest --tests "cu.spvi.app.SincronizacionRoomTest"
+./gradlew :app:connectedDebugAndroidTest --tests "cu.shalev.app.SincronizacionRoomTest"
 ./gradlew :app:connectedDebugAndroidTest --tests "*.VentaRoomTest.registraYAnula"
 
 # Informe legible
@@ -53,9 +53,9 @@ contra el teléfono conectado:
 #   data/build/reports/androidTests/connected/index.html
 ```
 
-Antes de entregar: `connectedDebugAndroidTest` en verde Y `spviTests` en verde. Si un instrumentado
+Antes de entregar: `connectedDebugAndroidTest` en verde Y `shalevTests` en verde. Si un instrumentado
 falla solo en el teléfono y no en el emulador, sospecha primero de hora/zona horaria del equipo y de
-permisos concedidos a mano en corridas anteriores (`adb shell pm clear cu.spvi.app.debug` lo deja limpio).
+permisos concedidos a mano en corridas anteriores (`adb shell pm clear cu.shalev.app.debug` lo deja limpio).
 
 ## 4. Pruebas manuales guiadas (por flujo)
 
@@ -88,7 +88,7 @@ actividad real de Android y hardware):
 
 ## 5. Checklist de cierre (antes de una release)
 
-- [ ] `spviTests`, `:app:lintDebug`, `:app:assembleRelease` y `spviPermisos` en verde (o CI en verde).
+- [ ] `shalevTests`, `:app:lintDebug`, `:app:assembleRelease` y `shalevPermisos` en verde (o CI en verde).
 - [ ] Instrumentados ejecutados (teléfono o trabajo `instrumentados` del CI) sin fallos nuevos.
 - [ ] Flujo 1–3 (acceso, efectivo, transferencia) recorridos en el teléfono.
 - [ ] Flujo 6 (respaldo con contraseña) recorrido: es la red de seguridad del negocio.
@@ -105,7 +105,7 @@ actividad real de Android y hardware):
 | --- | --- | --- |
 | `adb devices` dice `unauthorized` | No se aceptó la huella en el teléfono | Desconectar, borrar autorizaciones en Opciones de desarrollador y reconectar |
 | `INSTALL_FAILED_UPDATE_INCOMPATIBLE` | Firma distinta (debug ↔ release) | Instalar la misma variante o desinstalar la otra (se pierden sus datos locales) |
-| `INSTALL_FAILED_OLDER_SDK` | Teléfono con API < 26 | SPVI no se instala por debajo de Android 8; no es un fallo |
+| `INSTALL_FAILED_OLDER_SDK` | Teléfono con API < 26 | Shalev no se instala por debajo de Android 8; no es un fallo |
 | Los instrumentados no encuentran el equipo | Emulador apagado y USB sin autorizar | `adb devices` debe listar 1 equipo antes de lanzar Gradle |
 | La secundaria no ve a la principal | wifis distintas, aislamiento de clientes del router o VPN activa | Misma red, sin VPN; probar con la zona wifi del emisor |
 | El QR de migración «no vale» | La clave del QR es de un solo uso y caduca con la sesión | Generar un QR nuevo desde el emisor y reintentar |

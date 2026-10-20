@@ -1,20 +1,20 @@
-# SPVI — Plan de correcciones propuesto (archivo histórico)
+# Shalev — Plan de correcciones propuesto (archivo histórico)
 
 > **Instantánea del 2026-10-07:** sus fases y resultados no representan el estado actual. Consulta `Pendiente.md` y `docs/VERIFICACION.md` para el estado vigente.
 >
 > Estado en aquella instantánea: **F0 ejecutada y en verde** (2026-10-07). Corrida del CI:
-> [37656256703](https://github.com/rmdvcd/SPVI/actions/runs/37656256703) — 5/5 trabajos, con el detalle en
+> [37656256703](https://github.com/rmdvcd/Shalev/actions/runs/37656256703) — 5/5 trabajos, con el detalle en
 > [docs/VERIFICACION.md](docs/VERIFICACION.md). Fases F1–F3 y F6 pendientes de empezar.
 >
-> Lo empujado a `arena/3c116bea-spvi`: `8c48aa3` (auditoría) → `f480e50`/`531cab3` (CI, tests rotos, versión
+> Lo empujado a `arena/3c116bea-shalev`: `8c48aa3` (auditoría) → `f480e50`/`531cab3` (CI, tests rotos, versión
 > 0.30.0, VERIFICACION.md). Sin PR abierto todavía.
 
 ---
 
 ## 0. El hallazgo que cambia la prioridad (nuevo, y grave)
 
-El remoto `https://github.com/rmdvcd/SPVI` es un **repositorio público** y contiene el código completo, incluido
-`data/src/main/kotlin/cu/spvi/data/respaldo/BackupCipher.kt` con sus constantes:
+El remoto `https://github.com/rmdvcd/Shalev` es un **repositorio público** y contiene el código completo, incluido
+`data/src/main/kotlin/cu/shalev/data/respaldo/BackupCipher.kt` con sus constantes:
 
 ```kotlin
 private val MASCARA = intArrayOf(0x5A, 0x13, 0x7C, 0x29, 0x44, 0x61, 0x0E, 0x38)
@@ -22,9 +22,9 @@ private val SECRETO = intArrayOf(0x09, 0x43, 0x2A, 0x60, ...)
 const val ITERACIONES_SIN_CONTRASENA = 10_000
 ```
 
-Consecuencia directa: **el respaldo `.spvi` «sin contraseña» ya no protege de nada frente a nadie**. Lo que
-`SECURITY.md` describe como *«riesgo aceptado: cualquiera con SPVI (o que extraiga el secreto del APK) puede
-abrir ese archivo»* es hoy una afirmación optimista: **no hace falta el APK, ni SPVI, ni ingeniería inversa; el
+Consecuencia directa: **el respaldo `.shalev` «sin contraseña» ya no protege de nada frente a nadie**. Lo que
+`SECURITY.md` describe como *«riesgo aceptado: cualquiera con Shalev (o que extraiga el secreto del APK) puede
+abrir ese archivo»* es hoy una afirmación optimista: **no hace falta el APK, ni Shalev, ni ingeniería inversa; el
 secreto está publicado.** Cualquiera con el archivo (WhatsApp reenviado, Drive compartido, tarjeta SD) y veinte
 líneas de Python lee ventas, clientes con carné y teléfono, y el ID de la licencia. Y está **activado por
 defecto** (la casilla «Proteger con contraseña» viene apagada).
@@ -39,7 +39,7 @@ Lo bueno, y lo digo claro para que no cunda el pánico:
   emitir una licencia válida ni firmar una lista de revocadas. Un APK reempaquetado seguiría sin poder
   actualizarse (Android exige la misma firma).
 - Los vectores de `tools/licencia/vector_*.txt` usan datos sintéticos (`CI 00000000000`, «Prueba Compatibilidad
-  Spvi»), no datos reales.
+  Shalev»), no datos reales.
 
 **Traducción a prioridades: la corrección del respaldo sin contraseña sube del puesto 5 al puesto 2**, solo por
 detrás de tener una verificación real. Mientras se decide, el riesgo está vivo y es de datos personales de
@@ -56,8 +56,8 @@ cerrar esa brecha, y la elección cambia el calendario:
 
 | Opción | Cómo | Ventaja | Coste / riesgo |
 |---|---|---|---|
-| **A. CI en GitHub Actions** (recomendada) | Añado `.github/workflows/ci.yml` al repo (el README **ya dice** que existe y no existe), empujo a `arena/3c116bea-spvi` y leo los registros con `gh run view --log` | Repositorio **público** → minutos gratis e ilimitados; yo itero solo (push → log → arreglo → push) sin molestarte; queda para siempre como red de seguridad | El token que tengo autenticado puede **no** tener permiso para subir archivos de `.github/workflows/` (GitHub lo exige aparte). Si falla, ese único archivo lo creas tú desde la web (1 minuto) y el resto sigue igual |
-| **B. Tú ejecutas y me pegas el log** | `./gradlew spviCheck` en tu equipo con Android Studio | Cero dependencias de mi entorno | Fricción en cada iteración; el bucle de corrección pasa por ti |
+| **A. CI en GitHub Actions** (recomendada) | Añado `.github/workflows/ci.yml` al repo (el README **ya dice** que existe y no existe), empujo a `arena/3c116bea-shalev` y leo los registros con `gh run view --log` | Repositorio **público** → minutos gratis e ilimitados; yo itero solo (push → log → arreglo → push) sin molestarte; queda para siempre como red de seguridad | El token que tengo autenticado puede **no** tener permiso para subir archivos de `.github/workflows/` (GitHub lo exige aparte). Si falla, ese único archivo lo creas tú desde la web (1 minuto) y el resto sigue igual |
+| **B. Tú ejecutas y me pegas el log** | `./gradlew shalevCheck` en tu equipo con Android Studio | Cero dependencias de mi entorno | Fricción en cada iteración; el bucle de corrección pasa por ti |
 | **C. Me habilitas red** | Abrir `dl.google.com`, `repo1.maven.org` y `api.adoptium.net` | `tools/verificacion/verificar.sh` compila los 6 módulos y corre los tests JVM aquí (~15–25 min por pasada) | No cubre lint, R8 ni APK; sigue sin sustituir a A |
 
 **Recomendación: A, y C si es fácil (A cubre todo, C da iteración rápida en los tests JVM).**
@@ -70,11 +70,11 @@ cerrar esa brecha, y la elección cambia el calendario:
 2. **Nada avanza sin CI verde.** Si un paso no se puede verificar, se marca `NO VERIFICADO` y no se cierra.
 3. **No se toca** lo que el proyecto declaró intocable: lista de permisos, claves de GL fijadas, ausencia de
    telemetría, protocolo de sincronización **v1** (compatibilidad con secundarias 0.24–0.27 ya instaladas),
-   DTO de respaldo v4 y archivo `.spvi` v4 (se sigue leyendo lo anterior).
+   DTO de respaldo v4 y archivo `.shalev` v4 (se sigue leyendo lo anterior).
 4. **Cambio de esquema = v12 + `Migration(11, 12)` + `12.json` + test de migración.** Sin excepciones.
 5. **El README solo puede afirmar lo que un comando reproducible demuestre**, y la afirmación debe citar el
    comando y la fecha. Esto se convierte en una comprobación automática (T3.6).
-6. Yo trabajo **siempre** en `arena/3c116bea-spvi` (esta sesión está fijada a esa rama): los PR salen de ahí,
+6. Yo trabajo **siempre** en `arena/3c116bea-shalev` (esta sesión está fijada a esa rama): los PR salen de ahí,
    uno detrás de otro. Si un PR no está fusionado cuando empiezo el siguiente, el segundo PR incluirá los
    commits del primero (apilado) y lo avisaré.
 
@@ -99,15 +99,15 @@ Esfuerzos en **días de trabajo**; entre paréntesis, quién verifica en el tel�
 
 | ID | Tarea | Dónde | Hecho cuando |
 |---|---|---|---|
-| T0.1 | Workflow de CI: JDK 17 Temurin + SDK 35 + caché de Gradle; trabajos separados: `tests` (`spviTests` + compilar los instrumentados de `:data` y `:app`), `lint` (`:app:lintDebug`), `release` (`:app:assembleRelease` sin firmar + comprobar que `app/build/outputs/mapping/release/missing_rules.txt` está **vacío** = «R8 sin clases ausentes»), `permisos` (`spviPermisos`), `api-min` (`tools/verificacion/api_minima.py`), `docs` (T3.6 cuando exista) | Los 5 trabajos en verde sobre `arena/3c116bea-spvi` |
+| T0.1 | Workflow de CI: JDK 17 Temurin + SDK 35 + caché de Gradle; trabajos separados: `tests` (`shalevTests` + compilar los instrumentados de `:data` y `:app`), `lint` (`:app:lintDebug`), `release` (`:app:assembleRelease` sin firmar + comprobar que `app/build/outputs/mapping/release/missing_rules.txt` está **vacío** = «R8 sin clases ausentes»), `permisos` (`shalevPermisos`), `api-min` (`tools/verificacion/api_minima.py`), `docs` (T3.6 cuando exista) | Los 5 trabajos en verde sobre `arena/3c116bea-shalev` |
 | T0.2 | **Arreglar los 3 archivos de test que no compilan** (D2): `RepositoriosRoomTest` (quitar `codigo`/`porCodigo`), `ConfiguracionInicialInstrumentedTest` y `RespaldoRoomTest` (quitar `ConsentimientoRed`/`guardarConsultasEnLinea`/`consultasEnLinea`) | `data/src/androidTest` | `:data:compileDebugAndroidTestKotlin` pasa |
-| T0.3 | Arreglar lo que destape la primera corrida: Room/KSP, Hilt, **lint** (regenerar `lint-baseline.xml` **una vez**, revisando el diff: se corrigen los *errores* — `NewApi`, `WrongThread` y similares — y se basilinan solo los avisos estilísticos), reglas R8 que falten para `kotlinx.serialization`, `api_minima.py` | varios | `spviCheck` verde |
+| T0.3 | Arreglar lo que destape la primera corrida: Room/KSP, Hilt, **lint** (regenerar `lint-baseline.xml` **una vez**, revisando el diff: se corrigen los *errores* — `NewApi`, `WrongThread` y similares — y se basilinan solo los avisos estilísticos), reglas R8 que falten para `kotlinx.serialization`, `api_minima.py` | varios | `shalevCheck` verde |
 | T0.4 | Congelar la versión: decidir si esto se publica como **0.30.0** (lo que el código ya contiene) y subir `versionCode` 50 → 51, o revertir el trabajo no publicado | `app/build.gradle.kts` | `versionName` y README coinciden con el binario |
 | T0.5 | `docs/VERIFICACION.md`: estado real, comando, salida y fecha de cada comprobación (la única fuente de verdad), y corregir la contradicción README ↔ `AGENTS.md` | 3 archivos | Un solo relato verificable |
 | T0.6 | *(tú)* Instalar el APK debug y el release firmado en un teléfono y abrirlo; probar dos teléfonos (principal + secundaria) vendiendo | teléfono | Primera evidencia de que la app **existe** fuera del compilador |
 
 **Riesgo y contingencia:** tras meses sin ejecutarse, la primera corrida puede destapar más de lo previsto.
-Reservo 1–2 días extra. Si `spviTests` falla en masa por algo estructural (p. ej. Kotlin 2.0.21 + AGP 8.7.3
+Reservo 1–2 días extra. Si `shalevTests` falla en masa por algo estructural (p. ej. Kotlin 2.0.21 + AGP 8.7.3
 vs. la versión de Compose), lo arreglo antes de tocar nada de lógica.
 
 ### F1 · Rendimiento: sacar el trabajo del hilo principal — **2–3 días**
@@ -203,14 +203,14 @@ invertir minutos en T0.6 y T2.2 (probarlos en los teléfonos).
 - **No** tocar la lista de permisos ni el modelo de licencias offline.
 - **No** reorganizar módulos, paquetes ni nombres: coste alto, beneficio nulo ahora.
 - **No** añadir telemetría, analítica ni «crash reporting»: rompería la promesa central del producto.
-- **No** publicar la corrección de seguridad del respaldo mezclada con otra cosa: si un `.spvi` sin contraseña
+- **No** publicar la corrección de seguridad del respaldo mezclada con otra cosa: si un `.shalev` sin contraseña
   se ha compartido alguna vez, hay que avisar a quien lo tenga.
 
 ---
 
 ## 6. Decisiones que necesito de ti antes de empezar
 
-1. **CI en GitHub Actions** (repo público, minutos gratis): ¿lo añado yo y empujo a `arena/3c116bea-spvi`, o no
+1. **CI en GitHub Actions** (repo público, minutos gratis): ¿lo añado yo y empujo a `arena/3c116bea-shalev`, o no
    se toca el remoto y verificas tú?
 2. **Versión**: el código ya contiene 0.28–0.30 (sin el escáner). ¿El próximo release es **0.30.0** con lo que
    hay dentro, o se revierte lo no publicado y se sigue desde 0.27.1?

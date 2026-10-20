@@ -1,6 +1,6 @@
 # Apps Principal y Secundaria (0.19.0)
 
-Desde la 0.19.0, cada instalación de SPVI es una **app principal** o una **app secundaria**. Se configura en **Ajustes → Apps vinculadas** (sección Sistema, justo debajo de Licencia).
+Desde la 0.19.0, cada instalación de Shalev es una **app principal** o una **app secundaria**. Se configura en **Ajustes → Apps vinculadas** (sección Sistema, justo debajo de Licencia).
 
 | | Principal | Secundaria |
 |---|---|---|
@@ -49,7 +49,7 @@ data/db/dao/SyncDaos.kt               SyncDao (empleados, pendientes, aplicar po
 data/sync/Protocolo.kt                Mensajes (kotlinx.serialization), Instantanea, Lote, Accion, CodigoQr
 data/sync/CanalCifrado.kt             CriptoSync (ECDH/HKDF/HMAC), Tramas, CanalCifrado (AES-GCM), Saludos
 data/sync/ConfigSync.kt               Tipo y datos de la secundaria (DataStore cifrado con el Keystore)
-data/sync/RedLocal.kt                 IPv4 privadas + NSD (_spvi._tcp)
+data/sync/RedLocal.kt                 IPv4 privadas + NSD (_shalev._tcp)
 data/sync/AlmacenSync.kt              Leer/escribir la BD para sincronizar (siempre en db.tx)
 data/sync/ServidorSync.kt             Servidor TCP de la principal (puerto 47811…47820)
 data/sync/EjecutorComandos.kt         Acciones remotas con los repositorios de siempre + permiso
@@ -144,16 +144,16 @@ app/common/PermisosLocales.kt         LocalPermisosApp (oculta botones según pe
 
 **Resuelta en 0.19.2 (opción A autorizada):**
 
-- ~~La principal solo atendía con SPVI abierta~~: `ServicioSync` (app/notificacion) es un servicio en primer plano de tipo `connectedDevice`. Mantiene vivo el proceso, y con él `ServidorSync`, cuando:
+- ~~La principal solo atendía con Shalev abierta~~: `ServicioSync` (app/notificacion) es un servicio en primer plano de tipo `connectedDevice`. Mantiene vivo el proceso, y con él `ServidorSync`, cuando:
   - la app es **principal** con al menos una secundaria vinculada;
-  - y SPVI está a la vista **o** hay algún turno abierto (el suyo o el de una secundaria ya recibido).
+  - y Shalev está a la vista **o** hay algún turno abierto (el suyo o el de una secundaria ya recibido).
 - Sin turnos y fuera de la app se detiene, así que no gasta batería de noche. Las reglas están en `PlanAviso` y se prueban en `PlanAvisoTest`.
 - **Una sola notificación:** es la del turno (ID 29, canal «Turno»):
   - «Turno abierto desde las 9:30 · 2 apps conectadas»;
   - «1 app conectada»;
   - «Esperando a tus apps vinculadas».
-- Con el servicio activo, la notificación se ve también con SPVI abierta, porque Android lo exige.
-- **Permisos** (normales, sin diálogo): `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE` y `CHANGE_NETWORK_STATE`. Este último es requisito de Android 14 para el tipo `connectedDevice`; SPVI no cambia ninguna red. Están añadidos a la lista de `spviPermisos` y la comprobación del script.
+- Con el servicio activo, la notificación se ve también con Shalev abierta, porque Android lo exige.
+- **Permisos** (normales, sin diálogo): `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE` y `CHANGE_NETWORK_STATE`. Este último es requisito de Android 14 para el tipo `connectedDevice`; Shalev no cambia ninguna red. Están añadidos a la lista de `shalevPermisos` y la comprobación del script.
 
 **La principal es un punto de venta completo (0.19.3):**
 
@@ -165,10 +165,10 @@ app/common/PermisosLocales.kt         LocalPermisosApp (oculta botones según pe
 
 - **Sin probar entre dos teléfonos reales.** Hay que hacer a mano PRUEBAS_DISPOSITIVO §4.10, pasos 1–14.
 - **Arranque del servicio:**
-  - Android 12+ no deja arrancarlo con la app en segundo plano. Si la condición se cumple estando fuera (p. ej. una secundaria abre turno mientras la principal está minimizada), arranca la próxima vez que se abra SPVI. Mientras tanto, el servidor funciona si el proceso sigue vivo.
-  - Sin `RECEIVE_BOOT_COMPLETED`, tras reiniciar el teléfono hay que abrir SPVI una vez.
+  - Android 12+ no deja arrancarlo con la app en segundo plano. Si la condición se cumple estando fuera (p. ej. una secundaria abre turno mientras la principal está minimizada), arranca la próxima vez que se abra Shalev. Mientras tanto, el servidor funciona si el proceso sigue vivo.
+  - Sin `RECEIVE_BOOT_COMPLETED`, tras reiniciar el teléfono hay que abrir Shalev una vez.
   - `START_NOT_STICKY`: si Android lo mata, no se reinicia solo.
-- **Sin `WAKE_LOCK`:** con la pantalla apagada, algunos fabricantes duermen el wifi o la CPU pese al servicio. Si pasa, el usuario puede quitar SPVI del «ahorro de batería» en los ajustes del teléfono. Pedirlo desde la app exigiría `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, que no está autorizado.
+- **Sin `WAKE_LOCK`:** con la pantalla apagada, algunos fabricantes duermen el wifi o la CPU pese al servicio. Si pasa, el usuario puede quitar Shalev del «ahorro de batería» en los ajustes del teléfono. Pedirlo desde la app exigiría `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, que no está autorizado.
 
 ## 0.20.0 — Integración con el resto de la app (P42–P45)
 

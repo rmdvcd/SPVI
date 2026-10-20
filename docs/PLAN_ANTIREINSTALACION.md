@@ -31,7 +31,7 @@ Hueco real: `trialStart` vive solo en filesDir → al desinstalar se borra y la 
 
 - **Dónde se guarda** (formato en [FORMATOS.md §3.7](../FORMATOS.md)):
   - `filesDir/.sys_<huella>.bin` (copia interna);
-  - `Pictures/SPVI/sys_<huella>.png`: imagen de 48 × 48 con el registro en un fragmento PNG privado. Es la vía principal en Android 10+: una app reinstalada **sí** puede leer sus imágenes antiguas con el permiso de fotos;
+  - `Pictures/Shalev/sys_<huella>.png`: imagen de 48 × 48 con el registro en un fragmento PNG privado. Es la vía principal en Android 10+: una app reinstalada **sí** puede leer sus imágenes antiguas con el permiso de fotos;
   - `.sys_<huella>.bin` en Download y Documents (MediaStore en 10+, `File` en 8–9). Solo se pueden leer tras reinstalar en Android 8–9.
 - **Cifrado:** `RegistroPrueba` (JSON `firstInstall`, `trialDays`, `version`, `lastSeen` opcional) → AES/GCM/NoPadding, IV de 12 bytes, etiqueta de 128 bits, blob = IV‖ct; clave PBKDF2WithHmacSHA256 (ANDROID_ID + sal fija ofuscada, 10 000 iteraciones, 256 bits). Cadenas y nombres ofuscados (`Ofuscado`).
 - **Al evaluar la licencia** (`LicenseManager.evaluate()`, en `Dispatchers.IO`):
@@ -46,7 +46,7 @@ Hueco real: `trialStart` vive solo en filesDir → al desinstalar se borra y la 
 ## 4. Decisiones del usuario (P74)
 
 1. **No** se usa la colisión de nombre para dar la prueba por vencida.
-2. Funcionar en todas las versiones de Android → «ambos»: imagen en Imágenes/SPVI **y** copias `.bin` en Download/Documents **y** copia interna. Se aceptan los permisos de fotos/almacenamiento solo para esto.
+2. Funcionar en todas las versiones de Android → «ambos»: imagen en Imágenes/Shalev **y** copias `.bin` en Download/Documents **y** copia interna. Se aceptan los permisos de fotos/almacenamiento solo para esto.
 3. Una copia que no descifra **no bloquea**: se ignora.
 4. `elapsedRealtime` se combina con la detección de reloj que ya existía.
 5. Sin respuesta sobre minSdk/target → se mantiene 26/35.

@@ -1,6 +1,6 @@
-# Especificación del contrato SPVI ⇄ GL (referencia oficial, 0.24.0+)
+# Especificación del contrato Shalev ⇄ GL (referencia oficial, 0.24.0+)
 
-Texto aportado por el usuario en el Prompt 70 y comprobado contra el código de SPVI y el vector dorado
+Texto aportado por el usuario en el Prompt 70 y comprobado contra el código de Shalev y el vector dorado
 (`tools/licencia/vector_0.23.txt`, reproducido byte a byte por una implementación independiente en Python).
 Única corrección respecto al original: el punto 2a (fin del código `SPVI2:`), marcado con **[corregido]**.
 Las ampliaciones de la 0.25.0 (recuperación y lista de revocaciones) están en `docs/GL_PROMPT_0.25.md`.
@@ -8,7 +8,7 @@ Las mitigaciones del sistema de licencias de GL (clave maestra solo en builds de
 secundarias y AAD canónica del envelope v1) están en `LICENSE_CLIENT.md` §10–§11.
 
 ```
-Contexto. SPVI es la app cliente; GL es el emisor offline en otro teléfono.
+Contexto. Shalev es la app cliente; GL es el emisor offline en otro teléfono.
 Las claves de GL NO cambian: la misma clave pública ECDH P-256 de GL (hacia
 la que cifras las solicitudes) y la misma clave pública de firma gl-sign-v1
 (con la que verificas las licencias). Ambas están fijadas (pinned) en el
@@ -45,7 +45,7 @@ Primitivas (implementa exactamente así en tu lenguaje).
   y = rhs^((p+1)/4) mod p; exige y² mod p == rhs; si la paridad de y no
   coincide con el prefijo (0x03 = impar), y = p - y.
 
-1) SOLICITUD (SPVI → GL). Cada solicitud genera un par efímero P-256 NUEVO
+1) SOLICITUD (Shalev → GL). Cada solicitud genera un par efímero P-256 NUEVO
 (el dispositivo tiene su par estable devicePriv/devicePub).
   a) JSON UTF-8 del plano ("renueva" SOLO si es renovación):
      {"v":2,"nombre":"…","apellidos":"…","ci":"…","via":"WHATSAPP"|"SMS",
@@ -63,7 +63,7 @@ Primitivas (implementa exactamente así en tu lenguaje).
   c) Código = "SPVIR1:" + Base64url-sin-relleno(epk || ct || tag).
      Al leerlo, GL ignora espacios y saltos de línea dentro del código.
   d) Mensaje de texto EXACTO:
-     Solicitud de licencia SPVI
+     Solicitud de licencia Shalev
      Nombre: <nombre y apellidos>
      Carné de identidad: <ci>
      Teléfono: <telefono>
@@ -76,7 +76,7 @@ Primitivas (implementa exactamente así en tu lenguaje).
      Precios CUP: MENSUAL 6000+1000N, SEMESTRAL 30000+5000N,
      ANUAL 50000+9000N, PERPETUA 90000+17000N.
 
-2) LICENCIA (GL → SPVI).
+2) LICENCIA (GL → Shalev).
   a) [corregido] Localiza "SPVI2:" y toma los 210 PRIMEROS caracteres de
      [A-Za-z0-9-_] que siguen, IGNORANDO espacios y saltos de línea; si antes
      de reunir 210 aparece otro carácter, o el texto se acaba, ese "SPVI2:" no
@@ -101,7 +101,7 @@ Primitivas (implementa exactamente así en tu lenguaje).
      Valida rangos, formato 0x02, venceEn == 0 solo si PERPETUA y
      venceEn == 0 o mayor que emitidaEn.
   g) Mensaje de respuesta EXACTO (dd/MM/yyyy en America/Havana, sin tildes):
-     Licencia SPVI
+     Licencia Shalev
      Tipo: Mensual
      Apps secundarias: 2
      Emitida: 03/10/2026

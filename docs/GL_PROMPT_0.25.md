@@ -1,4 +1,4 @@
-# Prompt para GL — SPVI 0.25.0: recuperación automática de licencias y lista pública de revocadas
+# Prompt para GL — Shalev 0.25.0: recuperación automática de licencias y lista pública de revocadas
 
 Pega el bloque siguiente en opencode (escritorio), dentro del proyecto **GL**. Se aplica **encima** de
 `GL_PROMPT_0.23.md` (que sigue vigente: solicitud `SPVIR1:`, respuesta `SPVI2:`, solo texto). No cambia ningún formato
@@ -6,17 +6,17 @@ existente; solo añade:
 - un campo opcional `recupera` en la solicitud;
 - la publicación de un archivo firmado `revocadas.json` en GitHub.
 
-Una GL sin este cambio sigue atendiendo las solicitudes normales de SPVI 0.25.0. Las de recuperación las trataría como
+Una GL sin este cambio sigue atendiendo las solicitudes normales de Shalev 0.25.0. Las de recuperación las trataría como
 una solicitud nueva (de pago), así que conviene aplicarlo antes de repartir la 0.25.0.
 
 ---
 
 ```text
-Actualiza GL para SPVI 0.25.0. Las claves NO cambian (misma clave ECDH y misma clave de firma gl-sign-v1). Todo lo de
+Actualiza GL para Shalev 0.25.0. Las claves NO cambian (misma clave ECDH y misma clave de firma gl-sign-v1). Todo lo de
 GL_PROMPT_0.23 sigue igual; esto se AÑADE.
 
-1) SOLICITUD DE RECUPERACIÓN (SPVI → GL), solo texto, por WhatsApp o SMS:
-      Recuperar licencia SPVI
+1) SOLICITUD DE RECUPERACIÓN (Shalev → GL), solo texto, por WhatsApp o SMS:
+      Recuperar licencia Shalev
       Nombre: María Pérez González
       Carné de identidad: 85010112345
       Teléfono: +5352345678
@@ -39,12 +39,12 @@ GL_PROMPT_0.23 sigue igual; esto se AÑADE.
       coincide con el titular de la licencia»;
    e) el deviceId del payload es DISTINTO del de la licencia anterior → si es el mismo: «Es el mismo teléfono: no hace
       falta recuperar (pegue la licencia que ya tiene)».
-   Sin límite de recuperaciones por titular (decisión del dueño de SPVI). Cada una queda en el historial.
+   Sin límite de recuperaciones por titular (decisión del dueño de Shalev). Cada una queda en el historial.
 
 3) SI TODO CUADRA, en una sola acción:
    a) REVOCA la licencia anterior en el historial (estado REVOCADA, fecha, motivo «Recuperada en <deviceId nuevo>»,
       id de la nueva);
-   b) EMITE la nueva licencia SPVI2 (formato de GL_PROMPT_0.23, sin cambios) para el deviceId/devicePub nuevos con:
+   b) EMITE la nueva licencia Shalev2 (formato de GL_PROMPT_0.23, sin cambios) para el deviceId/devicePub nuevos con:
       - el MISMO tipo;
       - el MISMO venceEn que la anterior (perpetua → perpetua);
       - las MISMAS secundarias;
@@ -56,15 +56,15 @@ GL_PROMPT_0.23 sigue igual; esto se AÑADE.
    d) abre WhatsApp (wa.me/<teléfono del cliente>?text=…) o SMS con la respuesta lista. El operador solo pulsa Enviar.
 
 4) LISTA PÚBLICA DE REVOCADAS («revocadas.json»):
-   - Contenido: TODAS las licencias SPVI revocadas (por recuperación o a mano), sin datos personales:
+   - Contenido: TODAS las licencias Shalev revocadas (por recuperación o a mano), sin datos personales:
         datos = {"v":1,"emitidaEn":<segundos Unix UTC>,"revocadas":["<32 hex>", …]}
         cada entrada = hex minúsculas de los primeros 16 bytes de SHA-256(UTF-8("SPVI-REV|" + licenseId en minúsculas))
    - Firma: ECDSA P-256 / SHA-256 con la clave gl-sign-v1 sobre los bytes UTF-8 de  "SPVI-REV1|" + datos , donde datos
      es EXACTAMENTE el texto JSON que se guarda en el archivo (no se canonicaliza). Firma en crudo r‖s (64 bytes),
      Base64url sin relleno.
    - Archivo: {"datos":"<datos como TEXTO JSON escapado>","firma":"<Base64url r‖s>"}   (UTF-8, máximo 512 KB)
-   - Dónde: recurso «revocadas.json» de la Release con etiqueta «revocaciones» del repositorio público de SPVI en
-     GitHub. La URL fija que consulta SPVI es:
+   - Dónde: recurso «revocadas.json» de la Release con etiqueta «revocaciones» del repositorio público de Shalev en
+     GitHub. La URL fija que consulta Shalev es:
         https://github.com/<usuario>/<repositorio>/releases/download/revocaciones/revocadas.json
    - Cómo: API de GitHub con un token de acceso (fine-grained, permiso «Contents: read and write» SOLO sobre ese
      repositorio) guardado en la configuración de GL, nunca en el código ni en los registros:
@@ -98,7 +98,7 @@ GL_PROMPT_0.23 sigue igual; esto se AÑADE.
    python3 tools/licencia/probar_gl.py revocadas verificar ARCHIVO_DE_GL --id 7c9e6679-7425-40de-944b-e07fc1f90ae7
    ```
    `verificar` acepta la clave real de GL y la de prueba. Con un archivo bueno imprime «✓ lista válida» y «✓ incluye».
-   El test `RecuperacionTest.listaFirmadaPorElScriptDeGlSeAcepta` comprueba que SPVI (Kotlin) acepta lo que firma el
+   El test `RecuperacionTest.listaFirmadaPorElScriptDeGlSeAcepta` comprueba que Shalev (Kotlin) acepta lo que firma el
    script (Python).
 2. **Solicitud de recuperación.** `docs/GL_SOLICITUD_RECUPERACION_PRUEBA.txt` pide recuperar la licencia real
    `d53a020b…` con el CI `00000000000`:
@@ -111,9 +111,9 @@ GL_PROMPT_0.23 sigue igual; esto se AÑADE.
    tipo, secundarias y vencimiento que la anterior).
 3. **Publicación.** Tras emitir, abre la URL `…/releases/download/revocaciones/revocadas.json` en el navegador: debe
    descargarse el archivo y contener la huella de la licencia anterior.
-4. **Prueba real** (dos teléfonos con SPVI 0.25.0 compilada con `-PspviGithubRepo=usuario/repositorio`):
+4. **Prueba real** (dos teléfonos con Shalev 0.25.0 compilada con `-PshalevGithubRepo=usuario/repositorio`):
    - teléfono A con licencia → Respaldo → Exportar;
    - teléfono B → importar el respaldo → Licencia → «Recuperar» → enviar por WhatsApp;
-   - GL → pegar → Enviar → en B, compartir el mensaje con SPVI → «Licencia activada»;
+   - GL → pegar → Enviar → en B, compartir el mensaje con Shalev → «Licencia activada»;
    - en A: Ajustes → «Buscar actualizaciones» (o esperar a la consulta semanal) → «Licencia transferida», datos
-     borrados y diálogo «¿Desinstalar SPVI?».
+     borrados y diálogo «¿Desinstalar Shalev?».
