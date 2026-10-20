@@ -1,5 +1,13 @@
 # SPVI - Historial de desarrollo
 
+## 2026-10-19 - Se retira el escáner OCR de inventario (0.31.0)
+
+Por decisión del dueño, el escáner OCR de inventario se elimina del proyecto. Se borran `EscanerInventarioLogic.kt`, `EscanerInventarioViewModel.kt`, `EscanerInventarioScreen.kt` y sus dos pruebas JVM (`EscanerInventarioLogicTest`, `EscanerInventarioViewModelTest`), la ruta `Route.EscanerInventario`, su `composable` en `MainScaffold`, el icono **Escanear** de la barra de Inventario, `TextosInventario.ESCANEAR` y los 42 textos `scan_*`. También sale `com.google.mlkit:text-recognition` (versión `mlkitText` y entrada `mlkit-text` del catálogo): el APK deja de llevar el modelo OCR y sus bibliotecas. Se conservan el lector QR de vinculación (`barcode-scanning`), la cámara para fotos de productos y servicios, y el permiso `CAMERA`.
+
+Se retiran `docs/ESCANEO_OCR.md` y `docs/OPENCODE_ESCANEO_OCR.md`; las entradas anteriores de este historial que los enlazan son históricas. PP-Layout/ONNX nunca llegó a implementarse y sale del alcance.
+
+**Pruebas.** `spviTests`: **898 casos JVM en verde** (19 `:core` + 114 `:licencia` + 250 `:domain` + 91 `:data` + 34 `:designsystem` + 390 `:app`); son **24 menos** que los 922 anteriores: los 25 tests del escáner retirados menos 1 prueba de limpieza que se había añadido antes de retirarlo. `spviCheck`: **OK** (la primera pasada falló al empaquetar por `Java heap space` con `-Xmx3072m`; con `-Xmx4g` terminó en verde). `verifyRoborazziDebug`: **527 capturas en verde** tras regenerar las **30 doradas** de Inventario (15 × claro/oscuro) que llevaban el icono; ningún otro PNG cambia. En el teléfono 4bc9f8f3 (Android 15, API 35), APK debug instalado: la barra de Inventario muestra solo **Filtrar** y **Exportar**, sin **Escanear**, y la lista sigue operativa.
+
 ## 2026-10-19 - El seed de prueba con fotos de verdad, sin red y con licencia redistribuible (0.31.0)
 
 «Generar datos de prueba» creaba la bodega con los nombres del catálogo, pero todos los artículos salían **sin foto**. Ahora el seed copia al almacén de fotos del teléfono las imágenes de los 30 productos (los 2 Elaborados no admiten foto por diseño) y los 8 servicios, sin usar la red en tiempo de ejecución: las imágenes **viajan dentro del APK de depuración**.

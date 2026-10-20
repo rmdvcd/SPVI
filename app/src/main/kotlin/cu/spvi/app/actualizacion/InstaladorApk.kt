@@ -56,10 +56,6 @@ class InstaladorApk @Inject constructor(@ApplicationContext private val context:
     fun intentPermiso(): Intent =
         Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
-    /** Diálogo del sistema para desinstalar SPVI (licencia transferida). Nunca se desinstala en silencio. */
-    fun intentDesinstalar(): Intent =
-        Intent(Intent.ACTION_DELETE, Uri.parse("package:${context.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-
     /** null = se puede instalar. */
     fun comprobar(apk: File): RechazoApk? {
         val pm = context.packageManager

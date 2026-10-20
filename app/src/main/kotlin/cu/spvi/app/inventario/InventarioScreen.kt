@@ -161,7 +161,6 @@ fun InventarioScreen(
     InventarioContent(
         state = state,
         snackbar = snackbar,
-        onNavigate = onNavigate,
         acciones = AccionesInventario(
             onAyuda = { onNavigate(Route.Ayuda) },
             onBuscar = viewModel::buscar, onFiltro = viewModel::aplicarFiltro, onQuitarFiltros = viewModel::quitarFiltros,
@@ -183,8 +182,6 @@ fun InventarioContent(
     state: InventarioUiState,
     acciones: AccionesInventario,
     snackbar: SnackbarHostState = remember { SnackbarHostState() },
-    /** Escanear (OCR) navega: el `Content` no conoce la navegación, la recibe del llamador. */
-    onNavigate: (Route) -> Unit = {},
 ) {
     val venta = state.modoVenta
     Scaffold(
@@ -193,10 +190,6 @@ fun InventarioContent(
                 SpviTopBar(title = SeleccionVenta.titulo(venta), onBack = acciones.onAtras, actions = { BotonFiltro(state, acciones) })
             } else SpviTopBar(title = TextosInventario.TITULO, actions = {
                 BotonFiltro(state, acciones)
-                if (LocalPermisosApp.current.editarInventario) SpviIconAction(
-                    SpviIcons.Escanear, TextosInventario.ESCANEAR, onClick = { onNavigate(Route.EscanerInventario) },
-                    modifier = Modifier.testTag("inventario.escanear"),
-                )
                 if (LocalPermisosApp.current.exportar) SpviIconAction(
                     SpviIcons.Compartir, TextosInventario.EXPORTAR, onClick = { acciones.onHoja(HojaInventario.EXPORTAR) },
                     enabled = state.items.isNotEmpty() || state.seleccion.isNotEmpty(), modifier = Modifier.testTag(InventarioTags.EXPORTAR),

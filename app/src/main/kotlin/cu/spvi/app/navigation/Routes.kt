@@ -17,7 +17,6 @@ sealed interface Route {
      * [cu.spvi.app.inicio.AlertaPendiente] (0.31.0).
      */
     @Serializable data class Inventario(val venta: String? = null, val seleccion: String? = null) : Route
-    @Serializable data object EscanerInventario : Route
     /**
      * P29: Servicios (sustituye a Elaboración). [venta] = true → modo «elegir qué vender» de una venta de servicios
      * (checkbox + Continuar); [seleccion] = ids ya elegidos (CSV).

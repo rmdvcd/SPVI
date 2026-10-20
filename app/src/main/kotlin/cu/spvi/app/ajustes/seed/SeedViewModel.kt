@@ -4,10 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cu.spvi.core.result.AppError
 import cu.spvi.core.result.AppResult
+import cu.spvi.domain.di.IoDispatcher
 import cu.spvi.domain.seed.OrquestadorSeed
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,7 +18,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SeedViewModel @Inject constructor(
     private val orquestador: OrquestadorSeed,
-    private val io: CoroutineDispatcher = Dispatchers.IO,
+    @IoDispatcher private val io: CoroutineDispatcher,
 ) : ViewModel() {
     sealed interface Estado {
         data object Idle : Estado

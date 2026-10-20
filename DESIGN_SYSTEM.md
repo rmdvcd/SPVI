@@ -48,7 +48,7 @@ designsystem/src/main/kotlin/cu/spvi/designsystem/
 
 **Un significado por color (0.21.1):**
 - `secondaryContainer` (naranja claro) = **solo avisos** (`BannerTone.Aviso`).
-- `tertiaryContainer` (petróleo claro) = acciones secundarias: `IconActionStyle.Tonal` (✕ Cancelar, Escanear, − / +) y los mini botones del menú +.
+- `tertiaryContainer` (petróleo claro) = acciones secundarias: `IconActionStyle.Tonal` (✕ Cancelar, − / +) y los mini botones del menú +.
 - `primary` = acción principal, chip elegido e indicador de la barra inferior. `error` = destructivo y «Sin existencia».
 
 **Colores extendidos** (`SpviTheme.colors`):
@@ -245,10 +245,10 @@ Para ver el catálogo completo hay dos opciones:
 
 | Ley | Cómo se aplica |
 |---|---|
-| **Fitts** | Acciones principales abajo y grandes: botón flotante para crear, abajo a la derecha (Inventario, Servicios, **Precios**; 0.26.0), `SpviBarraAcciones` fija en los formularios, botones de 48dp. «Nueva venta» centrada en Inicio y Escanear a su derecha. |
+| **Fitts** | Acciones principales abajo y grandes: botón flotante para crear, abajo a la derecha (Inventario, Servicios, **Precios**; 0.26.0), `SpviBarraAcciones` fija en los formularios, botones de 48dp. «Nueva venta» centrada en Inicio. |
 | **Hick** | Menos opciones a la vista: un solo botón flotante por pestaña, sin acciones repetidas en los estados vacíos, filas con un solo dato, Período en combobox. |
 | **Jakob** | Patrones de Android: crear = botón flotante, orden Cancelar → Confirmar, pestañas para varias tablas, selector de fecha del sistema. |
-| **Proximidad** | Cada botón junto a lo que afecta (pegar SMS con su explicación, Escanear de nuevo junto a Guardar); acciones del diálogo agrupadas y centradas. |
+| **Proximidad** | Cada botón junto a lo que afecta (pegar SMS con su explicación, las acciones de la ficha junto a sus datos); acciones del diálogo agrupadas y centradas. |
 | **Von Restorff** | «Nueva venta» es el único botón relleno de la tarjeta del turno (P25: también solo icono); la confirmación de cada diálogo va rellena y el resto sin fondo. |
 
 - **Botones:** solo icono, sin excepciones desde P25. El texto queda como descripción para TalkBack y tooltip.

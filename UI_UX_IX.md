@@ -33,7 +33,7 @@ Módulo `:designsystem`. **Regla única: ninguna pantalla define colores, tamañ
 | **5 destinos en la barra inferior**, solo iconos con resaltado invertido | Requisito de SPVI.txt. El nombre sale en el tooltip y en TalkBack |
 | **Nada bloquea salvo la licencia** | El asistente se puede omitir paso a paso o entero; lo pendiente se retoma en *Ajustes → Completar configuración* |
 | **Valores recomendados** si se omiten los avisos: 5 (bajo) / 1 (crítico) | El usuario no tiene que entender los umbrales para empezar |
-| **Permisos en contexto:** cámara al tocar Escanear, con explicación previa; internet con consentimiento propio (*Preguntar / Permitidas / Nunca*) | Pedir solo cuando se entiende para qué; siempre hay alternativa manual |
+| **Permisos en contexto:** cámara al hacer una foto o escanear un QR, con explicación previa; internet con consentimiento propio (*Preguntar / Permitidas / Nunca*) | Pedir solo cuando se entiende para qué; siempre hay alternativa manual |
 | **Sin turno no se vende**, con bloqueo explicado y botón «Abrir turno» | Las cuentas del turno cuadran; abrir siempre es una acción explícita |
 | **Venta en pasos cortos:** carrito → comprobante (efectivo) o QR → datos del cliente (transferencia). La venta se registra solo al confirmar | Se puede cancelar sin dejar rastro |
 | **Un Elaborado se vende directamente desde sus insumos** (0.16.0): sin paso de producción ni existencias propias; se muestra «Alcanza para N» | El vendedor no prepara nada antes en la app; ve de un vistazo cuántos puede vender |

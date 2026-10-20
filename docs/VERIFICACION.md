@@ -2,6 +2,18 @@
 
 > **Fuente única de verdad** del estado de verificación: solo se considera medido lo anotado aquí. Última actualización: **2026-10-19**. El repositorio mantiene la app Android nativa; Flutter/iOS y la web de escritorio se retiraron.
 
+## OCR de inventario retirado (2026-10-19, 0.31.0)
+
+Por decisión del dueño se eliminó el escáner OCR de inventario: no quedan código, ruta, textos ni dependencia de reconocimiento de texto.
+
+- Se borraron `EscanerInventarioLogic.kt`, `EscanerInventarioViewModel.kt`, `EscanerInventarioScreen.kt`, sus dos pruebas JVM, la ruta `Route.EscanerInventario`, su `composable` y el icono **Escanear** de la barra de Inventario; también `TextosInventario.ESCANEAR` y los 42 textos `scan_*`.
+- Salió `com.google.mlkit:text-recognition` 16.0.1 del catálogo (`mlkitText`/`mlkit-text`) y de `:app`. Se conservan `barcode-scanning` para el QR de vinculación, la cámara de fotos y el permiso `CAMERA`; `spviPermisos` sigue en verde.
+- Se retiraron `docs/ESCANEO_OCR.md` y `docs/OPENCODE_ESCANEO_OCR.md`; las menciones de las entradas anteriores de este archivo y de `HISTORIAL_DESARROLLO.md` son históricas. PP-Layout/ONNX nunca se implementó.
+- `./gradlew spviTests` (2026-10-19): **898 casos JVM en verde** (19 `:core` + 114 `:licencia` + 250 `:domain` + 91 `:data` + 34 `:designsystem` + 390 `:app`). Son 24 menos que los 922 anteriores: 25 tests del escáner retirados menos 1 prueba de limpieza añadida antes.
+- `./gradlew spviCheck` (2026-10-19): **OK** (tests JVM + `lintDebug` + `assembleDebug` + `spviPermisos`). La primera pasada falló al empaquetar por `Java heap space` con `-Xmx3072m`; repetida con `-Xmx4g`, verde.
+- `./gradlew :app:recordRoborazziDebug --tests ...InventarioCapturas` y `./gradlew :app:verifyRoborazziDebug` (2026-10-19): **527 capturas en verde**. Cambiaron las **30 doradas** de Inventario (15 × claro/oscuro) al quitar el icono; ningún otro PNG cambia.
+- Teléfono 4bc9f8f3 (Android 15, API 35), APK debug instalado: la barra de Inventario muestra solo **Filtrar** y **Exportar**, sin **Escanear**; la lista sigue operativa. No se probó una ruta antigua guardada en el back stack.
+
 ## Fotos del seed «Bodega cubana»: 38 imágenes dentro del APK debug (2026-10-19, 0.31.0)
 
 «Generar datos de prueba» deja de sembrar sin foto: los 30 productos (los 2 Elaborados no admiten foto) y los 8 servicios llevan una foto real, copiada del propio APK, sin red en tiempo de ejecución.

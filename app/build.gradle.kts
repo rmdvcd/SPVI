@@ -159,9 +159,6 @@ dependencies {
     implementation(libs.camerax.lifecycle)
     implementation(libs.camerax.view)
     implementation(libs.mlkit.barcode)
-    // OCR local, sin descarga dinámica del modelo.
-    implementation(libs.mlkit.text)
-    implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.coil.compose)
     implementation(libs.zxing.core)          // QR de cobro (solo generación, sin cámara ni red)
     implementation(libs.hilt.android)

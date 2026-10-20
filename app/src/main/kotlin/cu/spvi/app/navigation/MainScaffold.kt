@@ -44,7 +44,6 @@ import cu.spvi.app.inicio.AlertaPendiente
 import cu.spvi.app.inicio.InicioScreen
 import cu.spvi.app.inicio.TipoVenta
 import cu.spvi.app.inventario.InventarioScreen
-import cu.spvi.app.inventario.EscanerInventarioScreen
 import cu.spvi.app.inventario.InventarioViewModel
 import cu.spvi.app.inventario.SeleccionVenta
 import cu.spvi.app.licencia.LicenciaScreen
@@ -191,16 +190,6 @@ fun MainScaffold(snapshot: Licencia) {
                         nav.popBackStack()
                     },
                     onBack = { nav.popBackStack() },
-                )
-            }
-            composable<Route.EscanerInventario> {
-                EscanerInventarioScreen(
-                    onBack = { nav.popBackStack() },
-                    onGuardado = { msg ->
-                        val volvio = nav.popBackStack<Route.Inventario>(inclusive = false)
-                        if (!volvio) nav.navigate(Route.Inventario()) { popUpTo<Route.EscanerInventario> { inclusive = true } }
-                        nav.currentBackStackEntry?.savedStateHandle?.set(KEY_PRODUCTO_GUARDADO, msg)
-                    },
                 )
             }
             composable<Route.ProductoForm> {
