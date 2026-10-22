@@ -108,12 +108,12 @@ Nunca se indica qué comprobación falló.
 
 | Clave | Política |
 |---|---|
-| Firma (`kid = gl-sign-v1`) | **Solo fijada en el build**, como lista (`LicenseTrust.SIGN_KEYS`) para poder rotarla. Vigente (15/10/2026, 2.ª rotación) `sha256:e693:6c20:…:0a6e`; se conservan `sha256:d9c4:d821:…:998e` (15/10/2026, 1.ª rotación), `sha256:58d4:3aac:…:8c4e` (05/10/2026) y `sha256:8a91:bcfb:…:6888` (30/09/2026) solo para que las licencias ya emitidas con ellas sigan verificando |
-| ECDH | **Solo fijada en el build** (`LicenseTrust.ECDH_KEY`). Vigente (15/10/2026, 2.ª rotación) `sha256:eb52:2ee8:…:fea1`; sustituye a `sha256:1d7f:515c:…:39b1` (15/10/2026, 1.ª rotación) y a `sha256:2a3f:9fce:…:666d` (05/10/2026). Desde la 0.13.0 no se puede pegar desde la app: la pantalla *Clave del emisor* se eliminó en P17. Rotarla exige un build nuevo |
+| Firma (`kid = gl-sign-v1`) | **Solo fijada en el build**, como lista (`LicenseTrust.SIGN_KEYS`). La primera es la del bundle público versionado en el repositorio GL (`gl-public-keys.txt`, snapshot 05/10/2026), `sha256:58d4:3aac:…:8c4e`; se aceptan también `sha256:e693:6c20:…:0a6e` y `sha256:d9c4:d821:…:998e` (claves observadas en GL el 15/10/2026), más `sha256:8a91:bcfb:…:6888` (30/09/2026) para verificar licencias emitidas con ellas |
+| ECDH | **Solo fijada en el build** (`LicenseTrust.ECDH_KEY`) a la clave del bundle GL (`gl-public-keys.txt`, snapshot 05/10/2026), `sha256:2a3f:9fce:…:666d`. La solicitud solo puede abrirse con la privada correspondiente en la instalación GL emisora. |
 
-Origen: pestaña **Claves** de GL → «Copiar ambas claves» ([docs/GL_CONTEXTO_LICENCIAS.md](docs/GL_CONTEXTO_LICENCIAS.md)). GL regeneró el par dos veces el 15/10/2026 (antes, el 05/10/2026).
+**Importante:** GL genera sus pares localmente en el Keystore; el archivo versionado de GL es un snapshot, no una garantía sobre todas las instalaciones. Si el GL emisor tiene otras claves, hay que comparar con su pestaña **Claves**: agregar su firma a `SIGN_KEYS` y fijar su ECDH requiere un build nuevo. Tras cambiar ECDH, las solicitudes pendientes cifradas para la clave anterior deben generarse de nuevo. Las licencias ya instaladas se re-verifican con las firmas históricas conservadas.
 
-`LicenseTrustTest` comprueba que cada clave fijada se lee como P-256 y coincide con su huella, y que la rotación conserva la firma anterior y sustituye la ECDH. Cambiar la ECDH no afecta a la licencia ya instalada. Pero una solicitud hecha con un Shalev anterior a la 0.27.0 va cifrada hacia la ECDH vieja y **GL ya no puede abrirla**: el cliente tiene que actualizar Shalev y volver a pedirla.
+`LicenseTrustTest` comprueba las huellas del bundle GL, que las claves parsean como P-256 y que las cuatro firmas de GL conocidas siguen aceptándose.
 
 ## 6. Almacenamiento
 
