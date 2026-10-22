@@ -1,5 +1,24 @@
 # Shalev - Historial de desarrollo
 
+## 2026-10-22 - Activación de licencias arreglada: claves de GL vigentes fijadas en el build
+
+**Síntoma.** Ninguna licencia se podía activar. En el emisor, al pegar la solicitud de Shalev, GL contestaba **«solicitud dañada o no es para GL»**: la clave con la que Shalev cifraba (`LicenseTrust.ECDH_KEY`) no era la de la instalación GL del teléfono, así que el emisor no podía descifrarla. Sin solicitud aceptada no hay licencia que activar.
+
+**Causa.** Las claves de GL se generan en el **Android Keystore de cada instalación** y no son del producto. La ECDH fijada en el build era la del bundle `gl-public-keys.txt` (snapshot 05/10/2026, `sha256:2a3f:…:666d`), pero el teléfono `4bc9f8f3` tiene hoy **GL 1.2.0 (`dev.gl.license`), instalado el 20/10/2026**, con un par nuevo. El cliente ya había seguido dos rotaciones de *firma* (15/10 y 30/09) pero no la de *cifrado*, que es la que rompe la solicitud.
+
+**Arreglo.** Se leyó la pestaña **Claves** del GL instalado (árbol UI con `uiautomator`; la ventana sale en negro por `FLAG_SECURE`) y se recalcularon las huellas SHA-256 desde el Base64 antes de fijarlas:
+
+| | Antes (fijada) | Ahora (GL 1.2.0, 22/10/2026) |
+|---|---|---|
+| ECDH | `sha256:2a3f:…:666d` | `sha256:fb3a:f7fc:…:078d` |
+| Firma | `sha256:58d4:…:8c4e` (primera) | `sha256:113f:a5f6:…:4b1c` (primera) |
+
+`LicenseTrust.ECDH_KEY` se **sustituye** (solo sirve para cifrar solicitudes nuevas; las pendientes con la clave vieja hay que regenerarlas) y la firma nueva se **añade al principio** de `SIGN_KEYS`, conservando `58d4…`, `e693…`, `d9c4…` y `8a91…` para las licencias ya emitidas. `LicenseTrustTest` comprueba las cinco huellas en orden y que la ECDH coincide con la fijada.
+
+**Aviso para el próximo build.** La ECDH solo es válida mientras no se borren los datos de GL ni se reinstale (`pm clear`). Si eso pasa, el par cambia y hay que repetir este trabajo: leer la pestaña Claves, recalcular huellas, sustituir `ECDH_KEY`, añadir la firma y publicar build.
+
+**Pruebas.** `:licencia:test` en verde (`LicenseTrustTest`, `GoldenVectorTest` con la licencia larga real del 03/10, que sigue verificando con la firma histórica). Se comprobó el ciclo completo en el teléfono: solicitud nueva → GL la descifra → emite `SPVI2:` → Shalev la activa.
+
 ## 2026-10-21 - Auditoría de interfaz (ui-ux-pro-max): teclado, icono de continuar y ventanas (0.32.0)
 
 Se auditó la interfaz completa (`:designsystem` + 20 pantallas + las 274 capturas) con la base de reglas de `ui-ux-pro-max`. El informe con la evidencia (`archivo:línea` y mediciones) queda en [`docs/AUDITORIA_UI_2026-10-21.md`](AUDITORIA_UI_2026-10-21.md). La app sale bien parada: sin colores ni tamaños sueltos, una sola familia de iconos, estados de carga/vacío/error en todas las listas, contraste verificado por test en claro y oscuro, diálogos centrados y gráficos sin rejilla. Se aplicaron los hallazgos que eran defectos reales.

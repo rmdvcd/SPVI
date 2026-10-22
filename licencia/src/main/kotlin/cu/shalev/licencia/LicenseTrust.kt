@@ -10,11 +10,13 @@ import cu.shalev.licencia.crypto.EcP256
  *    cifrar solicitudes y el panel de Licencia avisa de que hace falta una versión actualizada.
  *
  * Origen: pestaña "Claves" de GL → «Copiar ambas claves» (contrato v1, kid gl-sign-v1).
- *  - ECDH y firma del bundle público versionado en el repositorio GL (gl-public-keys.txt,
- *    snapshot 2026-10-05): ECDH sha256:2a3f:…:666d y firma sha256:58d4:…:8c4e.
- *  - Las firmas posteriores observadas en una instalación GL el 2026-10-15 se conservan como
- *    claves adicionales (e693… y d9c4…) para licencias ya emitidas; también se conserva 8a91…
- *    (2026-09-30). Las claves de firma antiguas no se usan para cifrar solicitudes.
+ *  - Vigentes del emisor (GL 1.2.0, paquete dev.gl.license, teléfono 4bc9f8f3; leídas de su
+ *    pantalla Claves el 2026-10-22 y huellas recalculadas desde el Base64): ECDH
+ *    sha256:fb3a:…:078d y firma sha256:113f:…:4b1c. Son las que abren las solicitudes y firman
+ *    las licencias hoy.
+ *  - Las firmas de instalaciones anteriores (58d4… del bundle del 05/10/2026, e693… y d9c4…
+ *    del 15/10/2026, 8a91… del 30/09/2026) se conservan para verificar licencias ya emitidas.
+ *    Ninguna de ellas sirve para cifrar solicitudes: para eso solo vale [ECDH_KEY].
  * La huella se pega TAL CUAL la copia GL; también se admite hex plano. LicenseTrustTest
  * comprueba que las claves parsean como P-256 y que cada huella coincide.
  *
@@ -29,14 +31,20 @@ object LicenseTrust {
 
     data class PinnedKey(val spkiB64: String, val sha256: String)
 
-    // ECDH del bundle público versionado en el repositorio GL (gl-public-keys.txt, snapshot 2026-10-05).
+    // ECDH vigente del emisor (GL 1.2.0 en el teléfono 4bc9f8f3, leída el 2026-10-22).
+    // Es la única con la que se cifran las solicitudes: si GL cambia de par, hay que sustituirla.
     val ECDH_KEY = PinnedKey(
-        spkiB64 = "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE+bzI3jdfnqVmHOj3+O0dksDlQTJtdGLA1O0KP+dctJW3urECwUDhLEnS1DDu7cVeaVZZkdZCU8PuxGCcPw/hJA==",
-        sha256 = "sha256:2a3f:9fce:b105:7ee8:563c:04cd:e4d1:00e7:058b:c7b8:0410:024b:e658:efe1:5905:666d",
+        spkiB64 = "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE4UHhdTzS3X/2pk5wmEAibv760EBcnxDjERo8km4OCdIhVDc5D+N0yPQlq6UpiXV1exXVmMfD6vqezlNsYFEIYg==",
+        sha256 = "sha256:fb3a:f7fc:e8a2:e86d:4e83:5351:d677:6aec:a9b6:5071:21d7:a417:9cd7:4b1b:0a53:078d",
     )
 
-    // SPKI de firma GL: se conserva cada rotación conocida para verificar licencias emitidas.
+    // SPKI de firma GL: el del emisor vigente primero y después cada rotación conocida,
+    // para verificar también las licencias emitidas con las anteriores.
     val SIGN_KEYS: List<PinnedKey> = listOf(
+        PinnedKey(
+            spkiB64 = "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE8TwMudgF0ioPFGp+VOQDU+xBDEQQQRHErwPyKQupkBGS8WL/dQVAFN4t3PIddOBl3Kg60ucThoOicZFctdtjIQ==",
+            sha256 = "sha256:113f:a5f6:af7f:f43e:a87e:5f16:c578:36bb:58d1:d73a:c7a8:bb65:568a:b0bf:6d1a:4b1c",
+        ),
         PinnedKey(
             spkiB64 = "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE1LFKFD7Af1xhbza5CrD7ArwOwq5h4qG70edEp54zozXoUa/r7P7xRQwwV82rXcy0mPznM3TNMk8wGxYCwR7ubg==",
             sha256 = "sha256:58d4:3aac:6f1b:099a:e86c:4375:b7c7:ffb5:8631:2399:246c:1f26:f861:e302:9c83:8c4e",

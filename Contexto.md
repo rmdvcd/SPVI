@@ -84,7 +84,7 @@ Formato exacto de cada archivo: `FORMATOS.md`.
   - base 6000 / 30000 / 50000 / 90000 (mensual, semestral, anual, perpetua);
   - más 1000 / 5000 / 9000 / 17000 por cada secundaria, de 0 a 10;
   - la prueba cubre 5 secundarias.
-- **Claves de GL:** `LicenseTrust` se alinea con el bundle versionado del repo GL (snapshot 05/10/2026: ECDH `sha256:2a3f:9fce:…:666d`, firma `sha256:58d4:3aac:…:8c4e`) y conserva también las otras tres firmas conocidas. Una instalación GL con claves locales diferentes requiere verificar sus huellas; detalle en `LICENSE_CLIENT.md` §5.
+- **Claves de GL:** `LicenseTrust` fija la ECDH `sha256:fb3a:f7fc:…:078d` y la firma `sha256:113f:a5f6:…:4b1c` del emisor vigente (GL 1.2.0 del teléfono `4bc9f8f3`, leídas el 22/10/2026) y conserva las cuatro firmas históricas. Una instalación GL con claves locales diferentes requiere verificar sus huellas; detalle en `LICENSE_CLIENT.md` §5.
 - **Contrato:** `LICENSE_CLIENT.md`, `docs/GL_ESPECIFICACION.md` y `docs/GL_PROMPT_0.25.md`. **No copies el almacenamiento de GL ni expongas detalles internos.**
 
 ### Prueba que no se reinicia al reinstalar (0.26.0, P74)
