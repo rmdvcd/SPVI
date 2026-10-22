@@ -4,7 +4,7 @@ App Android nativa para pequeños negocios: vender en turnos, controlar inventar
 
 | | |
 |---|---|
-| Versión | **0.32.0** (`versionCode 52`) |
+| Versión | **1.0** (`versionCode 53`) |
 | Paquete | `cu.shalev.app` (debug: `cu.shalev.app.debug`) |
 | minSdk / targetSdk / compileSdk | 26 / 35 / 35 |
 | Base de datos | Room **v13** en desarrollo (migración 12→13; exportación del esquema pendiente de compilación), cifrada con SQLCipher (respaldo `RespaldoDto` v4; archivo `.shalev` v4) |
@@ -34,7 +34,7 @@ Este repositorio mantiene la aplicación **Android nativa**. La app Flutter/iOS 
 
 La rama contiene mejoras recientes en Inicio, Inventario, Registros, Actualizar y Licencia. El detalle para usuarios está en [MANUAL_USUARIO.md](MANUAL_USUARIO.md), los cambios técnicos en [docs/HISTORIAL_DESARROLLO.md](docs/HISTORIAL_DESARROLLO.md) y el estado medido de las pruebas en [docs/VERIFICACION.md](docs/VERIFICACION.md).
 
-La versión publicada es la **0.32.0 (`versionCode 52`)**: la primera versión pública de Shalev. El detalle de lo que trae está en la sección «Novedades de la 0.32.0» y en [docs/HISTORIAL_DESARROLLO.md](docs/HISTORIAL_DESARROLLO.md).
+La versión publicada es la **1.0 (`versionCode 53`)**: la primera versión pública de Shalev (Release `v1.0` de GitHub, 22/10/2026). El número interno de trabajo era `0.32.0` (`versionCode 52`); el detalle de lo que trae está en la sección «Novedades de la 0.32.0» y en [docs/HISTORIAL_DESARROLLO.md](docs/HISTORIAL_DESARROLLO.md).
 
 ## Descripción
 

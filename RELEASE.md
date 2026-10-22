@@ -1,6 +1,6 @@
 # Shalev — Release firmado (APK y AAB)
 
-Cómo generar la versión que se entrega a los clientes. Describe la versión **0.32.0** (`versionCode 52`), la primera versión pública. Todo se hace en el ordenador del desarrollador con Android Studio (JDK 17 y SDK 35). El repositorio **no contiene** keystore ni contraseñas.
+Cómo generar la versión que se entrega a los clientes. Describe la versión **1.0** (`versionCode 53`), la primera versión pública (Release `v1.0`, 22/10/2026); el número interno de trabajo era `0.32.0` (`versionCode 52`). Todo se hace en el ordenador del desarrollador con Android Studio (JDK 17 y SDK 35). El repositorio **no contiene** keystore ni contraseñas.
 
 > **Regla de oro:** firma **siempre con el mismo keystore**. En Android 8+ el `ANDROID_ID` depende de la clave de firma, y el `deviceId` de la licencia GL es `SPVI:` + `ANDROID_ID`. Si cambias de clave:
 > - todas las licencias emitidas dejan de valer;

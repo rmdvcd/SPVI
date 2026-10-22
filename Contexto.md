@@ -12,7 +12,7 @@ Shalev (Sistema de Punto de Venta e Inventario) es una app Android nativa para p
 
 | | |
 |---|---|
-| Versión | **0.32.0** (`versionCode 52`) |
+| Versión | **1.0** (`versionCode 53`) |
 | Paquete | `cu.shalev.app` (debug: `cu.shalev.app.debug`) |
 | SDK | minSdk 26 · targetSdk 35 · compileSdk 35 |
 | Base de datos | Room **v12** cifrada con SQLCipher |

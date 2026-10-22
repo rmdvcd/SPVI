@@ -1,5 +1,17 @@
 # Shalev - Historial de desarrollo
 
+## 2026-10-22 - Primera versión pública: Release v1.0 en GitHub
+
+Se publicó la **Release `v1.0`** del repositorio `rmdvcd/Shalev` con el APK universal y su `.sha256`: la primera versión pública de la app. Se firmó con el **mismo keystore** de los builds anteriores (certificado `SHA-256 139d3da9…1738`), sin generar ni cambiar ninguna clave: cambiar la firma anula las licencias emitidas (el `deviceId` es `SPVI:` + `ANDROID_ID`, y el `ANDROID_ID` depende de la firma) y obliga a desinstalar.
+
+**(1) El número de versión sube a 1.0.** La app se declaraba `0.32.0` (`versionCode 52`), pero el actualizador compara la etiqueta de la Release (`tag_name` sin la «v») con la versión instalada (`Actualizaciones.esMasNueva`) y `ActualizacionObligatoria` **bloquea la app 30 días después** de ver una versión más nueva y no instalada. Con una Release `v1.0` y un APK que siguiera diciendo `0.32.0`, quien instalara la v1.0 seguiría viendo «1.0» como pendiente y acabaría con la app bloqueada sin actualización que lo resolviera. Por eso `versionName` pasa a `1.0` y `versionCode` a `53`: el APK publicado es de verdad la 1.0.
+
+**(2) Los recursos de la Release importan.** El actualizador toma el **primer** recurso que empieza por «Shalev» y acaba en `.apk`, y exige huella: usa el `digest` SHA-256 que da la API o, si falta, el recurso `<apk>.sha256`. Por eso la Release lleva **un solo** APK, `Shalev-1.0.apk` (universal: arm64-v8a, armeabi-v7a y x86_64; 47,7 MB), más `Shalev-1.0.apk.sha256`. Publicar también los APK por ABI con el mismo prefijo volvería ambigua la elección.
+
+**(3) Firma de release.** `keystore.properties` (local, fuera de git) apunta a `~/.android/gl-release.jks`, alias `gl`, el mismo con el que se firmaron los APK de release anteriores del equipo; `apksigner` confirma el mismo certificado. No se generó ni se sustituyó ninguna clave.
+
+**Pruebas.** `shalevRelease` en verde: `shalevCheck` (tests JVM, lint con baseline, APK debug y control de permisos) + AAB + APK firmado. El daemon de Gradle que estaba en marcha traía 1 GiB de heap y R8 lo agotó; se reinició con 4 GiB (`-Dorg.gradle.jvmargs=-Xmx4096m`) sin tocar `gradle.properties`.
+
 ## 2026-10-22 - Activación de licencias arreglada: claves de GL vigentes fijadas en el build
 
 **Síntoma.** Ninguna licencia se podía activar. En el emisor, al pegar la solicitud de Shalev, GL contestaba **«solicitud dañada o no es para GL»**: la clave con la que Shalev cifraba (`LicenseTrust.ECDH_KEY`) no era la de la instalación GL del teléfono, así que el emisor no podía descifrarla. Sin solicitud aceptada no hay licencia que activar.
