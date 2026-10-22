@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Solo builds de depuración: la pantalla del sembrador de datos de demostración. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <activity
+            android:name=".seed.SeedActivity"
+            android:exported="true"
+            android:label="Sembrador (debug)" />
+    </application>
+</manifest>

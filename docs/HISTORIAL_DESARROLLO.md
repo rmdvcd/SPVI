@@ -1,5 +1,21 @@
 # Shalev - Historial de desarrollo
 
+## 2026-10-22 - Sembrador de datos de demostración (solo depuración) y material de promoción
+
+Se añadió un **sembrador de datos de demostración** para poblar la app instalada en un teléfono sin tocar el APK de release: `data/src/debug/.../seed/Sembrador.kt` (lógica) y `app/src/debug/.../seed/SeedActivity.kt` (pantalla que lo dispara). Se ejecuta con `adb shell am start -n cu.shalev.app.debug/cu.shalev.app.seed.SeedActivity` y está declarado en el manifiesto **de debug**, así que el release sigue sin llevarlo (D-05 de la auditoría de la 0.32.0). El sembrador vacía los datos operativos y de configuración (y la tabla `empleado`, que no viaja en los respaldos) antes de cargar, de modo que se puede repetir.
+
+Carga **18 meses** de operación (abr-2025 → oct-2026): **886 turnos**, **2 382 ventas** por efectivo y transferencia con sus líneas, transacciones bancarias, movimientos de inventario y de caja; **54 artículos** de inventario —36 productos y 4 elaborados con receta, más **14 insumos**—, **20 servicios** (algunos consumen insumos), 6 clientes fijos, 2 preajustes de precio y **8 apps secundarias** «vinculadas» con sus permisos, teléfono y `device`.
+
+Las existencias se calculan a partir del consumo planificado, así que ningún artículo queda en negativo y los elaborados conservan «Alcanza para N». Los insumos usan el nombre del enum de `UnidadMedida` (`GRAMO`, `MILILITRO`, `UNIDAD`): guardar el símbolo hacía que las recetas se mostraran en «u».
+
+Las 60 fotos de artículos y servicios son imágenes reales de Wikipedia/Wikimedia Commons (`tools/seed_demo/seed_fotos`, créditos en `tools/seed_demo/CREDITOS.md`), descargadas con `tools/seed_demo/fotos_wikipedia.py` y empujadas a `files/fotos` por `run-as`; el sembrador solo escribe la URI si el archivo existe.
+
+Con la app sembrada se tomaron capturas reales del teléfono `4bc9f8f3` (claro y oscuro) y se montaron dos collages en **`promocion/`** (`collage_feed_1080x1350.png` y `collage_historia_1080x1920.png`) con `tools/seed_demo/collage.py`. El detalle está en `promocion/README.md`.
+
+También se abrió turno en el teléfono y se registró una venta de cinco artículos para capturar la pantalla **Nueva venta** (carrito con cantidades y total) y el **Comprobante de pago**; la lista de más vendidos y los totales del Inicio se actualizaron con esa venta.
+
+Con las capturas definitivas se preparó el paquete de **Google Play** en `play_store/`: icono 512×512, gráfico destacado 1024×500, ocho capturas 1080×1920 (9:16, recortadas de las de 2400) y `ficha.md` con nombre, descripción corta y completa y novedades. Lo genera `tools/seed_demo/play_store.py`. `play_store/README.md` anota lo que falta para publicar: el AAB firmado con la misma clave (`app/build/outputs/bundle/release/app-release.aab`), la política de privacidad y los formularios de la consola.
+
 ## 2026-10-22 - Primera versión pública: Release v1.0 en GitHub
 
 Se publicó la **Release `v1.0`** del repositorio `rmdvcd/Shalev` con el APK universal y su `.sha256`: la primera versión pública de la app. Se firmó con el **mismo keystore** de los builds anteriores (certificado `SHA-256 139d3da9…1738`), sin generar ni cambiar ninguna clave: cambiar la firma anula las licencias emitidas (el `deviceId` es `SPVI:` + `ANDROID_ID`, y el `ANDROID_ID` depende de la firma) y obliga a desinstalar.
