@@ -41,12 +41,12 @@ class TurnoRepositoryImpl @Inject constructor(private val db: ShalevDatabase) : 
 
     override suspend fun prepararConteo() = db.tx {
         val t = turnos.activo() ?: abortar(AppError.TurnoCerrado)
-        t.id to db.instantaneaConteo()
+        t.id to db.instantaneaConteo(t.id)
     }
 
     override suspend fun guardarConteo(turnoId: Long, conteo: ConteoCierre): AppResult<Unit> = db.tx {
         val t = turnos.activo()?.takeIf { it.id == turnoId } ?: abortar(AppError.TurnoCerrado)
-        db.comprobarConteo(conteo)
+        db.comprobarConteo(conteo, turnoId, compararFecha = true)
         // El dispositivo que declara no puede autorizar su propia conciliación remota.
         val limpio = conteo.copy(aprobadoPor = null, aprobadoEn = null)
         db.syncDao().actualizarTurno(t.copy(conteoCierreJson = limpio.aJson(), contadoCent = limpio.efectivo.centavos, sincronizado = false))

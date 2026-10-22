@@ -50,6 +50,10 @@ interface ProductoDao {
     suspend fun todos(): List<ProductoEntity>
 
     @Insert suspend fun insertarTodos(ps: List<ProductoEntity>)
+
+    /** 0.32.0: la foto que la secundaria se descargó (no cambia `actualizadoEn`: la foto no es una existencia). */
+    @Query("UPDATE producto SET fotoUri = :uri WHERE id = :id")
+    suspend fun actualizarFoto(id: Long, uri: String): Int
 }
 
 @Dao
@@ -172,6 +176,10 @@ interface ServicioDao {
     @Insert suspend fun insertar(s: ServicioEntity): Long
     @Update suspend fun actualizar(s: ServicioEntity)
     @Insert suspend fun insertarTodos(xs: List<ServicioEntity>)
+
+    /** 0.32.0: la foto que la secundaria se descargó (no cambia `actualizadoEn`). */
+    @Query("UPDATE servicio SET fotoUri = :uri WHERE id = :id")
+    suspend fun actualizarFoto(id: Long, uri: String): Int
 
     @Query("UPDATE servicio SET eliminado = 1, actualizadoEn = :ahora WHERE id = :id AND eliminado = 0")
     suspend fun marcarEliminado(id: Long, ahora: Long): Int

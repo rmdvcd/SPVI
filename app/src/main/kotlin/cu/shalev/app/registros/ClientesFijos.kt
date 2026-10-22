@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,6 +34,7 @@ import cu.shalev.app.venta.FormCliente
 import cu.shalev.core.money.Money
 import cu.shalev.core.time.Dates
 import cu.shalev.designsystem.component.ShalevBottomSheet
+import cu.shalev.designsystem.component.ShalevCheckbox
 import cu.shalev.designsystem.component.ShalevDialog
 import cu.shalev.designsystem.component.ShalevEmptyState
 import cu.shalev.designsystem.component.ShalevIconAction
@@ -233,7 +233,7 @@ fun ClientesFijosTab(state: ClientesUiState, acciones: AccionesClientes, zona: Z
                             subtitleResaltado = ShalevTextos.resaltar(TextosClientes.resumen(c), Money.format(c.total)),
                             indicatorColor = null,
                             leading = {
-                                Checkbox(
+                                ShalevCheckbox(
                                     checked = c.ci in marcados,
                                     onCheckedChange = { marcados = if (c.ci in marcados) marcados - c.ci else marcados + c.ci },
                                     modifier = Modifier.testTag(ClientesTags.check(c.ci))

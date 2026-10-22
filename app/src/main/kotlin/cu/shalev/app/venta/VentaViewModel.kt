@@ -232,7 +232,6 @@ class VentaViewModel @Inject constructor(
             when {
                 r is AppResult.Ok -> emitir(EventoVenta.Mensaje(TextosTurno.TURNO_ABIERTO))
                 r is AppResult.Err && r.error == AppError.TurnoYaAbierto -> Unit // otro lo abrió: el flujo ya lo refleja
-                r is AppResult.Err && (r.error as? AppError.Validacion)?.campo == "fondo" -> emitir(EventoVenta.Mensaje(cu.shalev.app.caja.TextosCaja.FONDO_FALTA))
                 else -> emitir(EventoVenta.Mensaje(TextosTurno.ERROR_ABRIR))
             }
         }

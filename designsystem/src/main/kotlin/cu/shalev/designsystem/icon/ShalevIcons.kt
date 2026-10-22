@@ -71,7 +71,6 @@ object ShalevIcons {
     val Fecha: ImageVector get() = MaterialSolido.CalendarMonth
     val Desplegar: ImageVector get() = MaterialSolido.ArrowDropDown // P25: combobox
     val AgregarALista: ImageVector get() = MaterialSolido.PlaylistAdd
-    val Reiniciar: ImageVector get() = MaterialSolido.RestartAlt
     val Restablecer: ImageVector get() = MaterialSolido.Replay
     val Lista: ImageVector get() = MaterialSolido.ListAlt
     val Enviar: ImageVector get() = MaterialSolido.Send

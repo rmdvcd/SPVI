@@ -46,8 +46,8 @@ android {
         applicationId = "cu.shalev.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 51
-        versionName = "0.30.0"
+        versionCode = 52
+        versionName = "0.32.0"
         // Repositorio PÚBLICO de GitHub cuyas Releases sirven APK y revocaciones (por defecto rmdvcd/Shalev).
         // Se puede sobrescribir con -PshalevGithubRepo=owner/repo; vacío desactiva estas consultas.
         buildConfigField("String", "GITHUB_REPO", "\"${(project.findProperty("shalevGithubRepo") as String?).orEmpty()}\"")

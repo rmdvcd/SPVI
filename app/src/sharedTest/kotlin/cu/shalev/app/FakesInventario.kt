@@ -22,8 +22,6 @@ class FakeFotos : FotoRepository {
     var fallarImportar = false
     override suspend fun importar(origen: String): AppResult<String> =
         if (fallarImportar) AppResult.Err(AppError.FormatoInvalido("foto")) else AppResult.Ok("file:///fotos/importada.jpg")
-    override suspend fun importarIncluida(nombre: String): AppResult<String> =
-        AppResult.Ok("file:///incluidas/$nombre.jpg")
     override suspend fun eliminar(uri: String) = Unit
     override suspend fun limpiarHuerfanas(enUso: Set<String>) = Unit
 }
@@ -68,7 +66,6 @@ class FakeTabla(private val archivos: FakeArchivos) : cu.shalev.app.common.Image
 class FakeExportador : ExportadorDocumentos {
     val llamadas = mutableListOf<Pair<List<TablaExport>, FormatoExport>>()
     var fallar = false
-    override val formatos = setOf(FormatoExport.PDF, FormatoExport.XLSX)
     override suspend fun exportar(tablas: List<TablaExport>, formato: FormatoExport, destino: OutputStream): AppResult<Unit> {
         if (fallar) return AppResult.Err(AppError.Almacenamiento)
         llamadas += tablas to formato

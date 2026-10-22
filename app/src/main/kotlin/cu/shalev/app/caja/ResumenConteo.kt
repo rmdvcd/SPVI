@@ -22,7 +22,7 @@ fun ResumenConteo(conteo: ConteoCierre) {
         }
         Text("Otro efectivo: ${Money.format(conteo.otroEfectivo)}", style = MaterialTheme.typography.bodyMedium)
         TablasExport.filasConteo(conteo).forEach { fila ->
-            Text("${fila[0]} (${fila[1]}): esperado ${fila[2]}, contado ${fila[3]}, diferencia ${fila[4]}", style = MaterialTheme.typography.bodyMedium)
+            Text("${fila[1]} (${fila[2]}): esperado ${fila[3]}, contado ${fila[4]}, diferencia ${fila[5]}", style = MaterialTheme.typography.bodyMedium)
         }
         Text(if (conteo.aprobadoEn == null) "Pendiente de aprobación de inventario" else "Inventario aprobado por ${conteo.aprobadoPor}", style = MaterialTheme.typography.bodyMedium)
         if (conteo.motivo.isNotBlank()) Text("Motivo: ${conteo.motivo}", style = MaterialTheme.typography.bodyMedium)

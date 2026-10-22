@@ -66,11 +66,6 @@ class VinculacionViewModelTest {
         override suspend fun aprobarCierre(empleadoId: Long): AppResult<Unit> { llamadas += "aprobar:$empleadoId"; return cierre }
         override suspend fun rechazarCierre(empleadoId: Long): AppResult<Unit> { llamadas += "rechazar:$empleadoId"; return cierre }
         override suspend fun quitarEmpleado(empleadoId: Long): AppResult<Unit> { llamadas += "quitar:$empleadoId"; return AppResult.Ok(Unit) }
-        override suspend fun asignarFondo(empleadoId: Long, fondo: cu.shalev.core.money.Cup): AppResult<Unit> {
-            llamadas += "fondo:$empleadoId:${fondo.centavos}"; return AppResult.Ok(Unit)
-        }
-        var sugerido: cu.shalev.core.money.Cup? = null
-        override suspend fun fondoSugerido(empleadoId: Long): cu.shalev.core.money.Cup? = sugerido
 
         fun codigo(id: Long, nombre: String) = CodigoVinculacion("negocio-1", "Bodega", listOf("192.168.1.5"), 47_000, id, nombre,
             ByteArray(16) { it.toByte() }, T0.plusSeconds(600))
@@ -181,37 +176,12 @@ class VinculacionViewModelTest {
         assertEquals(listOf("cierre:7", "aprobar:7", "rechazar:7"), principal.llamadas)
     }
 
-    /** 0.26.0 (P73 §4): «Asignar fondo» propone lo último contado (o el ya asignado) y avisa según la conexión. */
-    @Test fun asignarFondoProponeElUltimoContadoYLoEnvia() = runTest {
-        val m = mensajes()
-        val vinculado = luis.copy(vinculadoEn = T0, ultimaSincronizacion = T0, versionCode = Vinculacion.VERSION_FONDO_ASIGNADO, aperturaSolicitadaEn = T0)
-        principal.empleados.value = listOf(vinculado)
-        principal.sugerido = cu.shalev.core.money.Cup.ofPesos(1200)
-        vm.editar(vinculado); vm.asignarFondo()
-        val a = vm.state.value.asignarFondo!!
-        assertNull(vm.state.value.form)
-        assertEquals(cu.shalev.core.money.Cup.ofPesos(1200), a.sugerido)
-        vm.confirmarFondo(cu.shalev.core.money.Cup.ofPesos(1000))
-        assertNull(vm.state.value.asignarFondo)
-        assertEquals(listOf("fondo:7:100000"), principal.llamadas)
-        assertEquals(VinculacionLogic.fondoEnviado("Luis", false), m.last())
-        // Con un fondo ya asignado se propone ese (se puede cambiar antes de que lo use).
-        principal.empleados.value = listOf(vinculado.copy(fondoAsignado = cu.shalev.core.money.Cup.ofPesos(500)))
-        vm.editar(vinculado); vm.asignarFondo()
-        assertEquals(cu.shalev.core.money.Cup.ofPesos(500), vm.state.value.asignarFondo!!.sugerido)
-        vm.cancelarFondo()
-        assertNull(vm.state.value.asignarFondo)
-    }
-
-    @Test fun laFichaMuestraElEstadoDelFondo() {
-        val v = luis.copy(vinculadoEn = T0, ultimaSincronizacion = T0, versionCode = Vinculacion.VERSION_FONDO_ASIGNADO)
-        assertNull(VinculacionLogic.fondoEmpleado(luis))                          // sin vincular
-        assertEquals(VinculacionLogic.SIN_FONDO, VinculacionLogic.fondoEmpleado(v))
-        assertEquals(VinculacionLogic.PIDE_APERTURA, VinculacionLogic.fondoEmpleado(v.copy(aperturaSolicitadaEn = T0)))
-        assertEquals(VinculacionLogic.fondoAsignado(cu.shalev.core.money.Cup.ZERO), VinculacionLogic.fondoEmpleado(v.copy(fondoAsignado = cu.shalev.core.money.Cup.ZERO)))
-        assertNull(VinculacionLogic.fondoEmpleado(v.copy(turnoAbiertoDesde = T0)))  // con turno abierto no aplica
-        assertEquals(VinculacionLogic.APP_DESACTUALIZADA, VinculacionLogic.fondoEmpleado(v.copy(versionCode = 47)))
-        assertTrue(VinculacionLogic.subtituloEmpleado(v.copy(aperturaSolicitadaEn = T0), false, T0).contains(VinculacionLogic.PIDE_APERTURA))
+    /** 0.32.0: el fondo lo escribe quien abre el turno; la principal ya no lo asigna. */
+    @Test fun laFichaNoMuestraFondoAsignado() {
+        val v = luis.copy(vinculadoEn = T0, ultimaSincronizacion = T0)
+        val subtitulo = VinculacionLogic.subtituloEmpleado(v, false, T0)
+        assertTrue(subtitulo.contains("Última vez"))
+        assertFalse(subtitulo.contains("fondo", ignoreCase = true))
     }
 
     @Test fun pasarASecundariaPideUnTelefonoValidoAntesDeEscanear() = runTest {

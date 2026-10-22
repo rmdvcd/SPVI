@@ -5,7 +5,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import cu.shalev.designsystem.component.FiltroEntrada
 import cu.shalev.designsystem.component.IconActionStyle
+import cu.shalev.designsystem.component.ShalevCheckbox
 import cu.shalev.designsystem.component.ShalevIconAction
+import cu.shalev.designsystem.component.ShalevLinearProgress
 import cu.shalev.designsystem.component.ShalevComboBox
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,7 +20,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -63,18 +64,12 @@ import cu.shalev.designsystem.icon.ShalevIcons
 import cu.shalev.designsystem.token.ShalevSize
 import cu.shalev.designsystem.token.ShalevSpacing
 import cu.shalev.domain.model.EstadoConexion
-import cu.shalev.domain.model.ModoSincronizacion
 import cu.shalev.domain.model.PermisoEmpleado
 import cu.shalev.domain.model.TipoApp
 import cu.shalev.domain.model.Vinculacion
 import java.time.Instant
 
 object VinculacionTags {
-    /** 0.26.0 (P73 §4). */
-    const val FONDO = "vinculacion.fondo"
-    const val ASIGNAR_FONDO = "vinculacion.asignar_fondo"
-    const val FONDO_IMPORTE = "vinculacion.fondo_importe"
-    const val CONFIRMAR_FONDO = "vinculacion.confirmar_fondo"
     const val AGREGAR = "vinculacion.agregar"
     const val SECUNDARIA = "vinculacion.secundaria"
     const val SINCRONIZAR = "vinculacion.sincronizar"
@@ -87,6 +82,10 @@ object VinculacionTags {
     const val TELEFONO = "vinculacion.telefono"
     const val APROBAR_CIERRE = "vinculacion.aprobar_cierre"
     const val RECHAZAR_CIERRE = "vinculacion.rechazar_cierre"
+    /** 0.32.0: barra de avance de la sincronización. */
+    const val PROGRESO = "vinculacion.progreso"
+    /** 0.32.0: aviso de cambios del catálogo pendientes de recibir. */
+    const val CAMBIOS = "vinculacion.cambios"
     fun empleado(id: Long) = "vinculacion.empleado.$id"
 }
 
@@ -129,10 +128,8 @@ fun VinculacionScreen(
         onRechazarCierre = viewModel::rechazarCierre, onTelefonoSecundaria = viewModel::telefonoSecundaria,
         onPedirSecundaria = viewModel::pedirSecundaria, onCancelarSecundaria = viewModel::cancelarSecundaria,
         onConfirmarSecundaria = viewModel::confirmarSecundaria, onSincronizar = viewModel::sincronizar,
-        onModo = viewModel::modo, onPedirDesvincular = viewModel::pedirDesvincular,
+        onPedirDesvincular = viewModel::pedirDesvincular,
         onCancelarDesvincular = viewModel::cancelarDesvincular, onConfirmarDesvincular = viewModel::confirmarDesvincular,
-        onAsignarFondo = viewModel::asignarFondo, onCancelarFondo = viewModel::cancelarFondo,
-        onConfirmarFondo = viewModel::confirmarFondo,
     )
 }
 
@@ -164,13 +161,9 @@ fun VinculacionContent(
     onCancelarSecundaria: () -> Unit = {},
     onConfirmarSecundaria: () -> Unit = {},
     onSincronizar: () -> Unit = {},
-    onModo: (ModoSincronizacion) -> Unit = {},
     onPedirDesvincular: () -> Unit = {},
     onCancelarDesvincular: () -> Unit = {},
     onConfirmarDesvincular: () -> Unit = {},
-    onAsignarFondo: () -> Unit = {},
-    onCancelarFondo: () -> Unit = {},
-    onConfirmarFondo: (Cup) -> Unit = {},
 ) {
     val esPrincipal = s.tipo == TipoApp.PRINCIPAL
     Scaffold(
@@ -186,14 +179,14 @@ fun VinculacionContent(
             Modifier.fillMaxSize().padding(padding),
             verticalArrangement = Arrangement.spacedBy(ShalevSpacing.xs),
         ) {
-            if (esPrincipal) principal(s, onEditar, onPedirSecundaria) else secundaria(s, onSincronizar, onModo, onPedirDesvincular)
+            if (esPrincipal) principal(s, onEditar, onPedirSecundaria) else secundaria(s, onSincronizar, onPedirDesvincular)
         }
     }
 
     s.form?.let { f ->
         FormDialog(
             f, s, onCerrarForm, onGuardarForm, onNombre, onPermiso, onTarjeta, onNuevoCodigo, onPedirQuitar,
-            onPedirCierre, onRechazarCierre, onAprobarCierre, onAsignarFondo,
+            onPedirCierre, onRechazarCierre, onAprobarCierre,
         )
     }
     s.qr?.let { q ->
@@ -228,7 +221,6 @@ fun VinculacionContent(
             destructive = true,
         )
     }
-    s.asignarFondo?.let { a -> DialogoAsignarFondo(a, s.trabajando, onCancelarFondo, onConfirmarFondo) }
     s.cerrarTurno?.let { e ->
         ShalevDialog(
             title = "¿Pedir el cierre del turno de ${e.nombre}?",
@@ -316,21 +308,37 @@ private fun androidx.compose.foundation.lazy.LazyListScope.principal(
         val ahora = Instant.now()
         items(s.empleados, key = { it.id }) { e ->
             val conectada = e.id in s.principal.conectadas
-            ShalevListItem(
-                title = e.nombre,
-                // 0.28.0: las horas y fechas («Turno abierto desde las 09:30», «Última vez: …») van en seminegrita.
-                subtitleResaltado = ShalevTextos.resaltar(
-                    VinculacionLogic.subtituloEmpleado(e, conectada, ahora),
-                    VinculacionLogic.turnoEmpleado(e, conectada).orEmpty(),
-                    VinculacionLogic.estadoEmpleado(e, conectada, ahora),
-                ),
-                subtitleMaxLines = 2,
-                indicatorColor = null,
-                leading = { Icon(ShalevIcons.Vinculacion, contentDescription = null) },
-                trailing = { Icon(ShalevIcons.Abrir, contentDescription = null) },
-                onClick = { onEditar(e) },
-                modifier = Modifier.testTag(VinculacionTags.empleado(e.id)),
-            )
+            // 0.32.0: cada app vinculada muestra su propia barra de avance mientras sincroniza.
+            val progreso = s.principal.progresos[e.id]
+            Column(Modifier.fillMaxWidth()) {
+                ShalevListItem(
+                    title = e.nombre,
+                    // 0.28.0: las horas y fechas («Turno abierto desde las 09:30», «Última vez: …») van en seminegrita.
+                    subtitleResaltado = ShalevTextos.resaltar(
+                        VinculacionLogic.subtituloEmpleado(e, conectada, ahora),
+                        VinculacionLogic.turnoEmpleado(e, conectada).orEmpty(),
+                        VinculacionLogic.estadoEmpleado(e, conectada, ahora),
+                    ),
+                    subtitleMaxLines = 2,
+                    indicatorColor = null,
+                    leading = { Icon(ShalevIcons.Movil, contentDescription = null) },
+                    trailing = { Icon(ShalevIcons.Abrir, contentDescription = null) },
+                    onClick = { onEditar(e) },
+                    modifier = Modifier.testTag(VinculacionTags.empleado(e.id)),
+                )
+                progreso?.let { p ->
+                    Column(
+                        Modifier.fillMaxWidth().padding(horizontal = ShalevSpacing.md).padding(bottom = ShalevSpacing.xs),
+                        verticalArrangement = Arrangement.spacedBy(ShalevSpacing.xs),
+                    ) {
+                        ShalevLinearProgress(progress = if (p.conTotal) p.fraccion else null)
+                        Text(
+                            VinculacionLogic.progreso(p), style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.testTag(VinculacionTags.PROGRESO),
+                        )
+                    }
+                }
+            }
         }
     }
     // 0.21.0 (C5) / 0.27.0 (T9): una principal nunca pasa a secundaria; solo la app que eligió «Secundaria» al
@@ -348,7 +356,6 @@ private fun androidx.compose.foundation.lazy.LazyListScope.principal(
 private fun androidx.compose.foundation.lazy.LazyListScope.secundaria(
     s: VinculacionUi,
     onSincronizar: () -> Unit,
-    onModo: (ModoSincronizacion) -> Unit,
     onPedirDesvincular: () -> Unit,
 ) {
     val sec = s.secundaria
@@ -387,21 +394,25 @@ private fun androidx.compose.foundation.lazy.LazyListScope.secundaria(
         }
     }
     item {
-        ShalevCard(Modifier.padding(horizontal = ShalevSpacing.md), title = "Sincronización") {
-            // 0.27.0 (capturas): separación entre opciones y altura táctil mínima de 48 dp.
-            Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(ShalevSpacing.xs)) {
-                ModoSincronizacion.entries.forEach { m ->
-                    Row(
-                        Modifier.fillMaxWidth().heightIn(min = ShalevSize.touchTarget).selectable(selected = sec.modo == m, role = Role.RadioButton, onClick = { onModo(m) }),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(ShalevSpacing.xs),
-                    ) {
-                        RadioButton(selected = sec.modo == m, onClick = null)
-                        Column {
-                            Text(m.etiqueta, style = MaterialTheme.typography.bodyLarge)
-                            Text(m.detalle, style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
+        // 0.32.0: aviso de que el dueño cambió el catálogo (la app ya no sincroniza sola).
+        if (sec.cambiosPendientes) {
+            ShalevStatusBanner(
+                text = VinculacionLogic.CAMBIOS_PENDIENTES,
+                tone = BannerTone.Aviso,
+                modifier = Modifier.padding(horizontal = ShalevSpacing.md).testTag(VinculacionTags.CAMBIOS),
+            )
+        }
+    }
+    item {
+        // 0.32.0: barra de avance de la sincronización en curso.
+        sec.progreso?.let { p ->
+            ShalevCard(Modifier.padding(horizontal = ShalevSpacing.md), title = "Sincronizando") {
+                Column(verticalArrangement = Arrangement.spacedBy(ShalevSpacing.xs)) {
+                    ShalevLinearProgress(progress = if (p.conTotal) p.fraccion else null)
+                    Text(
+                        VinculacionLogic.progreso(p), style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.testTag(VinculacionTags.PROGRESO),
+                    )
                 }
             }
         }
@@ -439,7 +450,6 @@ private fun FormDialog(
     onPedirCierre: () -> Unit,
     onRechazarCierre: () -> Unit,
     onAprobarCierre: () -> Unit,
-    onAsignarFondo: () -> Unit,
 ) {
     val nueva = f.id == 0L
     val trabajando = s.trabajando
@@ -505,27 +515,6 @@ private fun FormDialog(
                     )
                 } }
                 empleado?.conteoCierre?.let { cu.shalev.app.caja.ResumenConteo(it) }
-                // 0.26.0 (P73 §4): fondo del próximo turno (sin él, su app no abre turno).
-                empleado?.let { e -> VinculacionLogic.fondoEmpleado(e)?.let { texto ->
-                    ShalevListItem(
-                        title = VinculacionLogic.FONDO_PROXIMO,
-                        // 0.28.0: el importe («1 250.00 CUP · se usa al abrir el turno») va en seminegrita.
-                        subtitleResaltado = ShalevTextos.resaltar(
-                            texto, e.fondoAsignado?.let { Money.format(it) }.orEmpty(),
-                        ),
-                        subtitleMaxLines = 2,
-                        indicatorColor = null,
-                        leading = { Icon(ShalevIcons.Efectivo, contentDescription = null) },
-                        trailing = if (e.appDesactualizada) null else ({
-                            ShalevIconAction(
-                                ShalevIcons.Editar, VinculacionLogic.ASIGNAR_FONDO, onClick = onAsignarFondo, enabled = !trabajando,
-                                style = if (e.pideApertura) IconActionStyle.Filled else IconActionStyle.Tonal,
-                                modifier = Modifier.testTag(VinculacionTags.ASIGNAR_FONDO),
-                            )
-                        }),
-                        modifier = Modifier.testTag(VinculacionTags.FONDO),
-                    )
-                } }
                 Text("Permisos", style = MaterialTheme.typography.titleSmall)
                 PermisoEmpleado.entries.forEach { p ->
                     val activo = p in f.permisos
@@ -534,7 +523,7 @@ private fun FormDialog(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(ShalevSpacing.xs),
                     ) {
-                        Checkbox(checked = activo, onCheckedChange = null)
+                        ShalevCheckbox(checked = activo, onCheckedChange = null)
                         Column {
                             Text(p.etiqueta, style = MaterialTheme.typography.bodyLarge)
                             Text(p.detalle, style = MaterialTheme.typography.bodySmall)
@@ -581,33 +570,3 @@ private fun FormDialog(
     )
 }
 
-/** 0.26.0 (P73 §4): «Asignar fondo» del próximo turno de una secundaria (puede ser 0; propone lo último contado). */
-@Composable
-private fun DialogoAsignarFondo(
-    a: AsignacionFondo,
-    trabajando: Boolean,
-    onCancelarFondo: () -> Unit = {},
-    onConfirmarFondo: (Cup) -> Unit = {},
-) {
-    var texto by rememberSaveable(a.empleado.id) { mutableStateOf(cu.shalev.app.caja.CajaForm.textoInicial(a.sugerido)) }
-    val valor = cu.shalev.app.caja.CajaForm.importe(texto)
-    ShalevDialog(
-        title = "${VinculacionLogic.ASIGNAR_FONDO}: ${a.empleado.nombre}",
-        text = VinculacionLogic.ASIGNAR_FONDO_TEXTO,
-        onDismiss = onCancelarFondo,
-        onConfirm = { valor?.let(onConfirmarFondo) },
-        confirmDescription = VinculacionLogic.ASIGNAR_FONDO,
-        confirmEnabled = valor != null && !trabajando,
-        confirmLoading = trabajando,
-        confirmTag = VinculacionTags.CONFIRMAR_FONDO,
-    ) {
-        ShalevTextField(
-            value = texto, onValueChange = { texto = it.take(16) }, label = "${cu.shalev.app.caja.TextosCaja.FONDO} *",
-            supportingText = if (a.sugerido != null) cu.shalev.app.caja.TextosCaja.FONDO_SUGERIDO else null,
-            isError = texto.isNotBlank() && valor == null, errorText = cu.shalev.app.caja.TextosCaja.IMPORTE_INVALIDO,
-            filtro = FiltroEntrada.DINERO,
-            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
-            modifier = Modifier.fillMaxWidth().testTag(VinculacionTags.FONDO_IMPORTE),
-        )
-    }
-}

@@ -1,6 +1,7 @@
 package cu.shalev.app.registros
 
 import androidx.compose.foundation.layout.size
+import cu.shalev.designsystem.component.ShalevCheckbox
 import cu.shalev.designsystem.token.ShalevSize
 import androidx.compose.material3.Icon
 import cu.shalev.app.common.LocalPermisosApp
@@ -22,7 +23,6 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
@@ -47,6 +47,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cu.shalev.app.common.BarraSeleccion
 import cu.shalev.app.common.CampoFecha
 import cu.shalev.app.common.Compartir
 import cu.shalev.app.common.SecureWindow
@@ -147,7 +148,7 @@ fun RegistrosScreen(
         viewModel.eventos.collect { e ->
             when (e) {
                 is EventoRegistros.CompartirArchivo ->
-                    if (!Compartir.archivos(context, listOf(e.archivo), e.mime, e.asunto)) snackbar.showSnackbar(TextosRegistros.ERROR_COMPARTIR)
+                    if (!Compartir.archivos(context, listOf(e.archivo), e.mime, e.asunto)) snackbar.showSnackbar(Compartir.SIN_APLICACION)
                 is EventoRegistros.GuardarComo -> (if (e.mime == FormatoExport.XLSX.mime) guardarXlsx else guardarPdf).launch(e.nombre)
                 is EventoRegistros.Mensaje -> snackbar.showSnackbar(e.texto)
             }
@@ -308,7 +309,13 @@ private fun Tabla(state: RegistrosUiState, tipo: TipoRegistro, acciones: Accione
     Column(Modifier.fillMaxSize()) {
         Buscador(state, tipo, acciones)
         // 0.31.0 (P3): con casillas marcadas, cuántas son y qué se puede hacer con ellas.
-        if (state.seleccion.isNotEmpty()) BarraSeleccion(state, tipo, acciones)
+        if (state.seleccion.isNotEmpty()) BarraSeleccion(
+            texto = TextosRegistros.seleccionados(tipo, state.seleccion.size), todosMarcados = state.todosSeleccionados,
+            onLimpiar = acciones.onLimpiarSeleccion, onMarcarTodo = acciones.onSeleccionarTodo,
+            onExportar = acciones.onAbrirExportar,
+            tag = RegistrosTags.SELECCION, tagMarcarTodo = RegistrosTags.SELECCIONAR_TODO,
+            tagExportar = RegistrosTags.EXPORTAR_SELECCION,
+        )
         cu.shalev.designsystem.component.BloquearGestos(state.seleccion.isNotEmpty()) // 0.31.0 (P3)
         Box(Modifier.weight(1f)) {
             when (val v = state.vista) {
@@ -384,7 +391,7 @@ private fun Lista(datos: VistaRegistro, state: RegistrosUiState, acciones: Accio
 /** 0.31.0 (P3): casilla de selección al principio de cada fila, igual que en Inventario. */
 @Composable
 private fun CasillaRegistro(marcado: Boolean, id: Long, nombre: String, onAlternar: (Long) -> Unit) {
-    Checkbox(
+    ShalevCheckbox(
         checked = marcado, onCheckedChange = { onAlternar(id) },
         modifier = Modifier.testTag(RegistrosTags.check(id)).semantics { contentDescription = "Seleccionar $nombre" },
     )
@@ -419,34 +426,6 @@ private fun LazyListScope.movimientos(xs: List<ItemMovimiento>, marcados: Set<Lo
             leading = { CasillaRegistro(i.movimiento.id in marcados, i.movimiento.id, tituloFila(i, zona), acciones.onAlternar) },
             onClick = { acciones.onAbrirMovimiento(i.movimiento.id) },
             modifier = shalevAnimateItem().testTag(RegistrosTags.movimiento(i.movimiento.id)).semantics { stateDescription = estado },
-        )
-    }
-}
-
-/**
- * 0.31.0 (P3): barra de selección de Registros. Muestra cuántas filas hay marcadas y deja quitarlas, marcarlas
- * todas y —donde se puede— exportar solo lo marcado. El reparto es el de Inventario.
- */
-@Composable
-private fun BarraSeleccion(state: RegistrosUiState, tipo: TipoRegistro, acciones: AccionesRegistros) {
-    val n = state.seleccion.size
-    Row(
-        Modifier.fillMaxWidth().padding(horizontal = ShalevSpacing.xs).testTag(RegistrosTags.SELECCION),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        ShalevIconAction(ShalevIcons.Cancelar, "Quitar selección", onClick = acciones.onLimpiarSeleccion)
-        Text(
-            TextosRegistros.seleccionados(tipo, n), style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.weight(1f),
-        )
-        ShalevIconAction(
-            ShalevIcons.Confirmar, if (state.todosSeleccionados) "Desmarcar todo" else "Marcar todo",
-            onClick = acciones.onSeleccionarTodo, selected = state.todosSeleccionados,
-            modifier = Modifier.testTag(RegistrosTags.SELECCIONAR_TODO),
-        )
-        if (LocalPermisosApp.current.exportar) ShalevIconAction(
-            ShalevIcons.Exportar, "Exportar selección", onClick = acciones.onAbrirExportar,
-            modifier = Modifier.testTag(RegistrosTags.EXPORTAR_SELECCION),
         )
     }
 }
@@ -494,7 +473,7 @@ private fun ListaTurnos(turnos: List<Turno>, onTurno: (Long) -> Unit, zona: Zone
                     indicatorColor = if (t.abierto) MaterialTheme.colorScheme.primary else null,
                     selected = t.abierto,
                     leading = {
-                        Checkbox(
+                        ShalevCheckbox(
                             checked = t.id in marcados,
                             onCheckedChange = { marcados = if (t.id in marcados) marcados - t.id else marcados + t.id },
                             modifier = Modifier.testTag(RegistrosTags.check(t.id))

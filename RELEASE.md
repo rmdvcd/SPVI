@@ -1,6 +1,6 @@
 # Shalev — Release firmado (APK y AAB)
 
-Cómo generar la versión que se entrega a los clientes. Describe la versión **0.27.1** (`versionCode 50`). Todo se hace en el ordenador del desarrollador con Android Studio (JDK 17 y SDK 35). El repositorio **no contiene** keystore ni contraseñas.
+Cómo generar la versión que se entrega a los clientes. Describe la versión **0.32.0** (`versionCode 52`), la primera versión pública. Todo se hace en el ordenador del desarrollador con Android Studio (JDK 17 y SDK 35). El repositorio **no contiene** keystore ni contraseñas.
 
 > **Regla de oro:** firma **siempre con el mismo keystore**. En Android 8+ el `ANDROID_ID` depende de la clave de firma, y el `deviceId` de la licencia GL es `SPVI:` + `ANDROID_ID`. Si cambias de clave:
 > - todas las licencias emitidas dejan de valer;
@@ -22,6 +22,18 @@ keytool -genkeypair -v \
   ```bash
   keytool -list -v -keystore spvi-release.jks -alias shalev | grep SHA256
   ```
+
+> **Clave vigente desde la 0.32.0** (la primera versión pública, creada el 2026-10-21; la 0.30.0/51 nunca se publicó):
+>
+> | | |
+> |---|---|
+> | Fichero | `C:\Users\666\.android\shalev-release.jks` (fuera del repositorio) |
+> | Alias | `shalev` |
+> | Clave | RSA 4096, PKCS12, válida hasta el **2054-03-08** |
+> | Huella SHA-256 | `4F:3B:5F:24:15:E7:03:16:27:8A:7C:0D:93:A3:45:2A:88:79:02:68:8E:C7:E0:B8:00:9D:1F:D8:69:AD:E8:37` |
+> | Credenciales | `C:\Users\666\.android\shalev-release.properties` y `keystore.properties` en la raíz (ignorado por git) |
+>
+> **Copia el `.jks` y su contraseña a dos sitios fuera del ordenador** (memoria USB cifrada y un gestor de contraseñas). Sin ellos no se puede volver a publicar una actualización: cambiar la firma anula las licencias ya emitidas y obliga a desinstalar la app (y con ella, sus datos).
 
 ## 2. Configurar la firma en Gradle
 

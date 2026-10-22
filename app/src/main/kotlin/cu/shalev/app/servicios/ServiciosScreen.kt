@@ -1,6 +1,7 @@
 package cu.shalev.app.servicios
 
 import androidx.compose.foundation.layout.size
+import cu.shalev.designsystem.component.ShalevCheckbox
 import cu.shalev.domain.model.nombreCompleto
 import cu.shalev.app.common.LocalPermisosApp
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -14,19 +15,15 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,7 +37,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -49,15 +45,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import cu.shalev.app.common.BarraContinuarVenta
+import cu.shalev.app.common.BarraSeleccion
+import cu.shalev.app.common.BotonFiltro
 import cu.shalev.app.common.Compartir
-import cu.shalev.app.common.descripcionFiltro
 import cu.shalev.app.inicio.EstadoCarga
 import cu.shalev.app.inventario.FormatoSalida
 import cu.shalev.app.navigation.Route
 import cu.shalev.designsystem.component.FiltroEntrada
 import cu.shalev.designsystem.component.CardTone
 import cu.shalev.designsystem.component.IconActionStyle
-import cu.shalev.designsystem.component.ShalevBadge
 import cu.shalev.designsystem.component.ShalevBottomSheet
 import cu.shalev.designsystem.component.ShalevCard
 import cu.shalev.designsystem.component.ShalevChip
@@ -78,7 +75,6 @@ import cu.shalev.designsystem.component.ShalevTopBar
 import cu.shalev.designsystem.component.shalevAnimateItem
 import cu.shalev.designsystem.icon.ShalevIcons
 import cu.shalev.designsystem.ilustracion.ShalevIlustracion
-import cu.shalev.designsystem.token.ShalevElevation
 import cu.shalev.designsystem.token.ShalevRadius
 import cu.shalev.designsystem.token.ShalevSize
 import cu.shalev.designsystem.token.ShalevSpacing
@@ -134,9 +130,9 @@ fun ServiciosScreen(
         viewModel.eventos.collect { e ->
             when (e) {
                 is EventoServicios.Compartir ->
-                    if (!Compartir.archivos(context, listOf(e.archivo), e.mime, e.asunto)) snackbar.showSnackbar(TextosServicios.ERROR_COMPARTIR)
+                    if (!Compartir.archivos(context, listOf(e.archivo), e.mime, e.asunto)) snackbar.showSnackbar(Compartir.SIN_APLICACION)
                 is EventoServicios.CompartirImagenes ->
-                    if (!Compartir.archivos(context, e.archivos, "image/png", TextosServicios.TITULO)) snackbar.showSnackbar(TextosServicios.ERROR_COMPARTIR)
+                    if (!Compartir.archivos(context, e.archivos, "image/png", TextosServicios.TITULO)) snackbar.showSnackbar(Compartir.SIN_APLICACION)
                 is EventoServicios.GuardarComo -> (if (e.mime == FormatoExport.XLSX.mime) guardarXlsx else guardarPdf).launch(e.nombre)
                 is EventoServicios.Navegar -> onNavigate(e.route)
                 is EventoServicios.Mensaje -> snackbar.showSnackbar(e.texto)
@@ -171,16 +167,24 @@ fun ServiciosContent(
     Scaffold(
         topBar = {
             if (venta) {
-                ShalevTopBar(title = TextosServicios.ELIGE, onBack = acciones.onAtras, actions = { BotonFiltro(state, acciones) })
+                ShalevTopBar(title = TextosServicios.ELIGE, onBack = acciones.onAtras, actions = {
+                    BotonFiltro(state.filtro.activos, TextosServicios.FILTRAR, onClick = { acciones.onHoja(HojaServicios.FILTRO) }, modifier = Modifier.testTag(ServiciosTags.FILTRO), enabled = state.tipos.isNotEmpty() || state.filtro.activos > 0)
+                })
             } else ShalevTopBar(title = TextosServicios.TITULO, actions = {
-                BotonFiltro(state, acciones)
+                BotonFiltro(state.filtro.activos, TextosServicios.FILTRAR, onClick = { acciones.onHoja(HojaServicios.FILTRO) }, modifier = Modifier.testTag(ServiciosTags.FILTRO), enabled = state.tipos.isNotEmpty() || state.filtro.activos > 0)
                 if (LocalPermisosApp.current.exportar) ShalevIconAction(
                     ShalevIcons.Compartir, TextosServicios.EXPORTAR, onClick = { acciones.onHoja(HojaServicios.EXPORTAR) },
                     enabled = state.items.isNotEmpty() || state.seleccion.isNotEmpty(), modifier = Modifier.testTag(ServiciosTags.EXPORTAR),
                 )
             })
         },
-        bottomBar = { if (venta) BarraContinuarVenta(state, acciones) },
+        bottomBar = {
+            if (venta) BarraContinuarVenta(
+                texto = TextosServicios.elegidos(state.seleccion.size), haySeleccion = state.seleccion.isNotEmpty(),
+                onLimpiar = acciones.onLimpiarSeleccion, onContinuar = acciones.onContinuarVenta,
+                tagContinuar = ServiciosTags.CONTINUAR,
+            )
+        },
         // 0.26.0 (P73): el «+» va en la esquina inferior (estándar M3); la lista deja ShalevSize.fabClearance abajo
         // para que la última fila (importes a la derecha) no quede tapada.
         floatingActionButtonPosition = FabPosition.End,
@@ -195,7 +199,13 @@ fun ServiciosContent(
             if (state.trabajando) ShalevLinearProgress(Modifier.fillMaxWidth())
             ElementosFijados(state, acciones)
             Buscador(state, acciones)
-            if (!venta && state.seleccion.isNotEmpty()) BarraSeleccion(state, acciones)
+            if (!venta && state.seleccion.isNotEmpty()) BarraSeleccion(
+                texto = TextosServicios.seleccionados(state.seleccion.size), todosMarcados = state.todosVisiblesSeleccionados,
+                onLimpiar = acciones.onLimpiarSeleccion, onMarcarTodo = acciones.onSeleccionarTodo,
+                onExportar = { acciones.onHoja(HojaServicios.EXPORTAR) }, onEliminar = acciones.onEliminarSeleccion,
+                tag = ServiciosTags.SELECCION, tagMarcarTodo = ServiciosTags.SELECCIONAR_TODO,
+                tagEliminar = ServiciosTags.ELIMINAR_SELECCION,
+            )
             cu.shalev.designsystem.component.BloquearGestos(state.seleccion.isNotEmpty()) // 0.27.0 (T5)
             Box(Modifier.weight(1f)) {
                 when (val v = state.vista) {
@@ -249,21 +259,6 @@ fun ServiciosContent(
 }
 
 @Composable
-private fun BotonFiltro(state: ServiciosUiState, acciones: AccionesServicios) {
-    val activos = state.filtro.activos
-    BadgedBox(badge = {
-        if (activos > 0) ShalevBadge(activos, Modifier.clearAndSetSemantics { })
-    }) {
-        ShalevIconAction(
-            ShalevIcons.Filtrar, descripcionFiltro(TextosServicios.FILTRAR, activos),
-            onClick = { acciones.onHoja(HojaServicios.FILTRO) },
-            selected = activos > 0, enabled = state.tipos.isNotEmpty() || activos > 0,
-            modifier = Modifier.testTag(ServiciosTags.FILTRO),
-        )
-    }
-}
-
-@Composable
 private fun Buscador(state: ServiciosUiState, acciones: AccionesServicios) {
     Column(Modifier.padding(horizontal = ShalevSpacing.md), verticalArrangement = Arrangement.spacedBy(ShalevSpacing.xs)) {
         ShalevTextField(
@@ -278,46 +273,6 @@ private fun Buscador(state: ServiciosUiState, acciones: AccionesServicios) {
                 ShalevChip(label = r, selected = true, onClick = acciones.onQuitarFiltros, icon = ShalevIcons.Limpiar, supportingLabel = "Quitar filtro")
             }
         }
-    }
-}
-
-@Composable
-private fun BarraContinuarVenta(state: ServiciosUiState, acciones: AccionesServicios) {
-    Surface(tonalElevation = ShalevElevation.tonalBar) {
-        Row(
-            Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = ShalevSpacing.md, vertical = ShalevSpacing.xs),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(ShalevSpacing.md, Alignment.CenterHorizontally),
-        ) {
-            if (state.seleccion.isNotEmpty()) ShalevIconAction(ShalevIcons.Cancelar, "Quitar selección", onClick = acciones.onLimpiarSeleccion)
-            Text(TextosServicios.elegidos(state.seleccion.size), style = MaterialTheme.typography.titleSmall)
-            ShalevPrimaryButton(
-                text = "Continuar", icon = ShalevIcons.Siguiente, onClick = acciones.onContinuarVenta,
-                enabled = state.seleccion.isNotEmpty(), modifier = Modifier.testTag(ServiciosTags.CONTINUAR),
-            )
-        }
-    }
-}
-
-@Composable
-private fun BarraSeleccion(state: ServiciosUiState, acciones: AccionesServicios) {
-    Row(
-        Modifier.fillMaxWidth().padding(horizontal = ShalevSpacing.xs).testTag(ServiciosTags.SELECCION),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        ShalevIconAction(ShalevIcons.Cancelar, "Quitar selección", onClick = acciones.onLimpiarSeleccion)
-        Text(TextosServicios.seleccionados(state.seleccion.size), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-        ShalevIconAction(
-            ShalevIcons.Confirmar, if (state.todosVisiblesSeleccionados) "Desmarcar todo" else "Marcar todo",
-            onClick = acciones.onSeleccionarTodo, selected = state.todosVisiblesSeleccionados,
-            modifier = Modifier.testTag(ServiciosTags.SELECCIONAR_TODO),
-        )
-        val permisos = LocalPermisosApp.current
-        if (permisos.exportar) ShalevIconAction(ShalevIcons.Exportar, "Exportar selección", onClick = { acciones.onHoja(HojaServicios.EXPORTAR) })
-        if (permisos.editarInventario) ShalevIconAction(
-            ShalevIcons.Eliminar, "Eliminar selección", onClick = acciones.onEliminarSeleccion,
-            modifier = Modifier.testTag(ServiciosTags.ELIMINAR_SELECCION),
-        )
     }
 }
 
@@ -379,7 +334,7 @@ private fun Fila(s: ServicioDisponible, marcado: Boolean, acciones: AccionesServ
         selected = marcado,
         leading = {
             cu.shalev.app.common.ConMiniatura(s.servicio.fotoUri) { // 0.21.0 (C11)
-                Checkbox(
+                ShalevCheckbox(
                     checked = marcado,
                     onCheckedChange = { acciones.onAlternar(id) },
                     modifier = Modifier.testTag(ServiciosTags.check(id)).semantics { contentDescription = "Seleccionar ${s.servicio.nombreCompleto}" },

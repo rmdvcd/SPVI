@@ -65,21 +65,27 @@ class TurnoRepositoryInstrumentedTest {
         val p = ok(productos.crear(Producto(categoria = "Bebidas", nombre = "Refresco", precioCosto = Cup(60), precioVenta = Cup(100), cantidad = 10, creadoEn = ahora), null))
         val i = ok(insumos.crear(Insumo(nombre = "Harina", precio = Cup(10), cantidad = Cantidad(2500), creadoEn = ahora)))
         val t = ok(turnos.abrir(ahora, "Ana", Cup.ZERO))
+        // 0.32.0: el conteo es PARCIAL: solo entran los artículos que cambiaron durante el turno (los que se movieron).
+        ok(productos.ajustarStock(p, -2, "Venta")) // producto 10 -> 8
+        ok(insumos.ajustarStock(i, Cantidad(-500), "Consumo")) // insumo 2500 -> 2000
         val snapshot = ok(turnos.prepararConteo())
+        assertEquals(setOf(TipoEntidad.PRODUCTO, TipoEntidad.INSUMO), snapshot.second.map { it.entidad }.toSet())
         val conteo = cu.shalev.domain.model.ConteoCierre(mapOf(5000 to 1L, 20000 to 1L), inventario = snapshot.second.map {
-            it.copy(contado = if (it.entidad == TipoEntidad.PRODUCTO) 8L else 2250L)
+            it.copy(contado = if (it.entidad == TipoEntidad.PRODUCTO) 6L else 2250L)
         }, motivo = "Conteo físico confirmado")
         ok(turnos.guardarConteo(t.id, conteo))
-        assertEquals(10L, productos.obtener(p)!!.cantidad) // declarar NO ajusta
-        assertEquals(2500L, insumos.obtener(i)!!.cantidad.milesimas)
+        assertEquals(8L, productos.obtener(p)!!.cantidad) // declarar NO ajusta
+        assertEquals(2000L, insumos.obtener(i)!!.cantidad.milesimas)
         val cerrado = ok(turnos.cerrar(ahora.plusSeconds(60), "Dueño", conteo.efectivo))
-        assertEquals(8L, productos.obtener(p)!!.cantidad)
+        assertEquals(6L, productos.obtener(p)!!.cantidad) // la diferencia se aplica sobre el valor actual
         assertEquals(2250L, insumos.obtener(i)!!.cantidad.milesimas)
         assertEquals("Dueño", cerrado.conteoCierre!!.aprobadoPor)
-        assertEquals(2, turnos.movimientosDe(t.id).size)
-        assertTrue(turnos.movimientosDe(t.id).all { it.hechoPor == "Dueño" && it.nota!!.contains("Conteo físico confirmado") })
+        // Los movimientos de conciliación son los que llevan la nota del conteo (los del turno, los del movimiento de stock).
+        val conciliacion = turnos.movimientosDe(t.id).filter { it.nota.orEmpty().contains("Conteo físico confirmado") }
+        assertEquals(2, conciliacion.size)
+        assertTrue(conciliacion.all { it.hechoPor == "Dueño" })
         assertTrue(turnos.cerrar(ahora, "Dueño", conteo.efectivo) is AppResult.Err)
-        assertEquals(8L, productos.obtener(p)!!.cantidad) // no se repite
+        assertEquals(6L, productos.obtener(p)!!.cantidad) // no se repite
     }
 
     @Test fun stockCambiadoDespuesDeContarImpideCerrarYNoHaceAjustesParciales() = runBlocking {

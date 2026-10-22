@@ -43,7 +43,7 @@ import cu.shalev.designsystem.token.ShalevSpacing
 
 /**
  * Gráficos de Inicio dibujados con Canvas (sin librería): SIN rejilla, solo una línea base sutil, y animación
- * de entrada de 300 ms que se aplica en la fase de dibujo (no recompone). Cada gráfico expone una
+ * de entrada con muelle (sin rebote) que se aplica en la fase de dibujo (no recompone). Cada gráfico expone una
  * [contentDescription] con el resumen para TalkBack; las donas llevan leyenda con nombre y porcentaje, así
  * que el color nunca es el único portador de información.
  */

@@ -1,5 +1,6 @@
 package cu.shalev.app.perfil
 
+import cu.shalev.designsystem.component.ShalevCheckbox
 import cu.shalev.designsystem.component.ShalevSecondaryText
 import cu.shalev.designsystem.component.ShalevListItem
 import androidx.compose.foundation.layout.consumeWindowInsets

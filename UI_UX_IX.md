@@ -21,7 +21,6 @@ Módulo `:designsystem`. **Regla única: ninguna pantalla define colores, tamañ
 | Movimiento | 200 / 250 / 300 ms, `FastOutSlowInEasing`. Fundido entre las 5 pestañas; al abrir un detalle la pantalla entra desde la derecha (1/10 + fundido) y al volver, al revés. Filas de listas con `shalevAnimateItem()`; gráfico de área que crece desde abajo sin recalcular el trazo (`drawWithCache`) |
 | Iconos | Siempre rellenos y con nombre de negocio (`ShalevIcons.Venta`…). Las pantallas no importan `Icons.*` |
 | Componentes | Botones (primario, secundario, de texto, solo icono), campo de texto con borrado y acción del teclado (`imeAction`), card, fila de lista con indicador de color, chip, **pestañas** (`ShalevTabs`), **cabecera de asistente** (`ShalevStepper`), **banner de estado** (`ShalevStatusBanner`: Info / Aviso / Crítico), contador de alerta, snackbar con vibración breve, diálogo con logo, hoja inferior con pie fijo y protección de cambios, FAB simple y expandible, progreso, barra inferior, barra superior, estado vacío con Ayuda y gráficos de barras, dona y área. Vibración: `ShalevHaptics` (sin permiso VIBRATE) |
-| Catálogo | `ShalevCatalog.kt` (Previews claro y oscuro) y, en debug, **Ajustes → Design system** |
 | Verificación | `ContrastTest` falla el build si un par de colores baja del mínimo AA |
 
 ## 2. Decisiones
@@ -52,7 +51,7 @@ Módulo `:designsystem`. **Regla única: ninguna pantalla define colores, tamañ
 
 | Patrón | Dónde |
 |---|---|
-| **Seleccionar ≠ abrir:** casilla para seleccionar, toque en la fila para ver la ficha | Inventario, Insumos, selección de venta |
+| **Seleccionar ≠ abrir:** casilla para seleccionar, toque en la fila para ver la ficha. **0.32.0:** la casilla es propia (`ShalevCheckbox`, 16 dp de cuadro) y más pequeña que la de Material 3 | Inventario, Insumos, selección de venta |
 | **Barra de selección** «N seleccionados» con Marcar todo, Exportar, Eliminar y Quitar selección; la selección sobrevive a búsquedas y filtros | Inventario, Insumos |
 | **Buscador sin tildes ni mayúsculas** («cafe» encuentra «Café») | Inventario, Insumos, Registros |
 | **Filtro en hoja inferior** con distintivo del número de filtros y chip «Quitar filtro» | Inventario, Insumos, Registros |

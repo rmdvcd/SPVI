@@ -14,6 +14,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cu.shalev.core.money.Cup
 import cu.shalev.designsystem.component.ShalevDialog
+import cu.shalev.designsystem.component.ShalevTab
+import cu.shalev.designsystem.component.ShalevTabs
 import cu.shalev.designsystem.component.ShalevTextButton
 import cu.shalev.designsystem.component.ShalevTextField
 import cu.shalev.designsystem.icon.ShalevIcons
@@ -57,6 +59,10 @@ fun DialogoCierreCompleto(
         return ConteoForm.cantidad(t, l.entidad)
     }
     val completo = ls != null && ls.indices.all { cantidad(it) != null }
+    // 0.32.0: el conteo se separa por categoría y solo incluye lo que cambió en el turno.
+    val porCategoria = ls?.withIndex()?.groupBy { it.value.categoria }?.entries?.toList() ?: emptyList()
+    var categoria by rememberSaveable(ls) { mutableIntStateOf(0) }
+    val catSel = categoria.coerceIn(0, (porCategoria.size - 1).coerceAtLeast(0))
     // 0.31.0: «Omitir» cierra sin ajustar existencias: se guarda el conteo con lo esperado (sin diferencias) y el
     // motivo lo deja dicho en la revisión, la ficha del turno y los exportados.
     val inventario = when {
@@ -75,7 +81,7 @@ fun DialogoCierreCompleto(
     }
     ShalevDialog(
         title = if (paso == 1) "Conteo de inventario" else "Revisar cierre",
-        text = if (paso == 1) "Cuenta las existencias físicas. Los elaborados se concilian mediante sus insumos."
+        text = if (paso == 1) "Cuenta solo lo que cambió durante el turno, por categoría. Los elaborados se concilian mediante sus insumos."
             else "Revisa las diferencias. Solo la principal ajustará las existencias al cerrar o aprobar la solicitud.",
         onDismiss = { if (!guardando) onDismiss() },
         onConfirm = { if (paso == 1) paso = 2 else viewModel.guardar(conteo) { onConfirmar(conteo.efectivo) } },
@@ -90,18 +96,26 @@ fun DialogoCierreCompleto(
                 ShalevTextButton("Volver a cargar inventario", onClick = { paso = 1; viewModel.cargar() }, icon = ShalevIcons.Listo)
             }
             if (ls == null) Text("Cargando inventario…", style = MaterialTheme.typography.bodyMedium)
-            else if (paso == 1) ls.forEachIndexed { i, l ->
-                ShalevTextField(
-                    value = cantidades.getOrNull(i).orEmpty(),
-                    onValueChange = { nuevo -> if (nuevo.length <= 16 && nuevo.all { it.isDigit() || it == '.' || it == ',' }) {
-                        omitido = false
-                        cantidades = cantidades.toMutableList().also { valores -> if (i < valores.size) valores[i] = nuevo }
-                    } },
-                    label = "${l.nombre} (${l.unidad})",
-                    supportingText = "Esperado: ${ConteoForm.formato(l.esperado, l.entidad)} ${l.unidad}",
-                    keyboardOptions = KeyboardOptions(keyboardType = if (l.entidad == TipoEntidad.PRODUCTO) KeyboardType.Number else KeyboardType.Decimal),
-                    modifier = Modifier.fillMaxWidth(),
-                )
+            else if (paso == 1) {
+                if (porCategoria.isEmpty()) {
+                    Text("Durante este turno no cambió ningún artículo: no hay nada que contar.", style = MaterialTheme.typography.bodyMedium)
+                } else {
+                    // 0.32.0: una pestaña por categoría.
+                    ShalevTabs(porCategoria.map { ShalevTab(it.key) }, catSel, { categoria = it })
+                    porCategoria.getOrNull(catSel)?.value?.forEach { (i, l) ->
+                        ShalevTextField(
+                            value = cantidades.getOrNull(i).orEmpty(),
+                            onValueChange = { nuevo -> if (nuevo.length <= 16 && nuevo.all { it.isDigit() || it == '.' || it == ',' }) {
+                                omitido = false
+                                cantidades = cantidades.toMutableList().also { valores -> if (i < valores.size) valores[i] = nuevo }
+                            } },
+                            label = "${l.nombre} (${l.unidad})",
+                            supportingText = "Esperado: ${ConteoForm.formato(l.esperado, l.entidad)} ${l.unidad}",
+                            keyboardOptions = KeyboardOptions(keyboardType = if (l.entidad == TipoEntidad.PRODUCTO) KeyboardType.Number else KeyboardType.Decimal),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
             } else {
                 Text("Efectivo contado: ${cu.shalev.core.money.Money.format(conteo.efectivo)}", style = MaterialTheme.typography.bodyMedium)
                 if (omitido) Text("Conteo de inventario omitido: se cierra sin ajustar existencias.", style = MaterialTheme.typography.bodyMedium)

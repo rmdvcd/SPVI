@@ -62,7 +62,6 @@ sealed interface Route {
     @Serializable data object Respaldo : Route
     @Serializable data object Ayuda : Route
     @Serializable data object Soporte : Route
-    @Serializable data object Catalogo : Route
 }
 
 /** Los 5 destinos de la barra inferior, en el orden de Shalev.txt. */

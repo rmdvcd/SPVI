@@ -85,16 +85,6 @@ object TextosInicio {
     const val SOLICITUD_ENVIADA = "Solicitud de cierre guardada. Se envía al encargado al sincronizar."
     /** 0.21.0 (C6): en la principal, empleados que piden cerrar su turno. */
     fun solicitudesCierre(n: Int) = if (n == 1) "Un empleado pide cerrar su turno" else "$n empleados piden cerrar su turno"
-    /** 0.26.0 (P73 §4): se resuelve con «Asignar fondo» en Apps vinculadas. */
-    fun aperturas(nombres: List<String>) = when (nombres.size) {
-        1 -> "${nombres[0]} pide abrir turno: asígnale el fondo"
-        else -> "${nombres.size} empleados piden abrir turno: asígnales el fondo"
-    }
-    /** 0.26.0: apps 0.25.x (siguen escribiendo su propio fondo). */
-    fun desactualizadas(nombres: List<String>) = when (nombres.size) {
-        1 -> "Actualiza la app de ${nombres[0]}"
-        else -> "Actualiza las apps de ${nombres.dropLast(1).joinToString(", ")} y ${nombres.last()}"
-    }
     const val PAGO_SIN_CONFIGURAR = "Sin configurar"
 }
 

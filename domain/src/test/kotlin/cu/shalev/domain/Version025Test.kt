@@ -13,7 +13,6 @@ import cu.shalev.domain.model.InfoActualizacion
 import cu.shalev.domain.model.InfoApp
 import cu.shalev.domain.model.Licencia
 import cu.shalev.domain.model.MetodoPago
-import cu.shalev.domain.model.ModoSincronizacion
 import cu.shalev.domain.model.MovimientoInventario
 import cu.shalev.domain.model.RecordatorioRespaldo
 import cu.shalev.domain.model.ResumenTurno
@@ -307,10 +306,8 @@ class Version025Test {
         override suspend fun vincular(contenidoQr: String, telefono: String): AppResult<Unit> = AppResult.Ok(Unit)
         override suspend fun solicitarCierre(contado: Cup): AppResult<Unit> = AppResult.Ok(Unit)
         override suspend fun sincronizarAhora(): AppResult<Unit> = AppResult.Ok(Unit)
-        override suspend fun cambiarModo(modo: ModoSincronizacion) = Unit
         override suspend fun desvincular(): AppResult<Unit> = AppResult.Ok(Unit)
         override suspend fun descartarAvisoCierre() = Unit
-        override suspend fun pedirFondo(): AppResult<Unit> = AppResult.Ok(Unit)
     }
 
     private class EstadoMem : EstadoAppRepository {

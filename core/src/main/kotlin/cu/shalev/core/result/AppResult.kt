@@ -65,11 +65,7 @@ sealed interface AppResult<out T> {
     data class Err(val error: AppError) : AppResult<Nothing>
 }
 
-val AppResult<*>.isOk: Boolean get() = this is AppResult.Ok
-
 fun <T> AppResult<T>.getOrNull(): T? = (this as? AppResult.Ok)?.value
-
-fun <T> AppResult<T>.errorOrNull(): AppError? = (this as? AppResult.Err)?.error
 
 inline fun <T, R> AppResult<T>.map(f: (T) -> R): AppResult<R> = when (this) {
     is AppResult.Ok -> AppResult.Ok(f(value))
@@ -89,7 +85,6 @@ fun List<AppError.Validacion>.toResult(): AppResult<Unit> =
     firstOrNull()?.let { AppResult.Err(it) } ?: AppResult.Ok(Unit)
 
 fun <T> T.ok(): AppResult<T> = AppResult.Ok(this)
-fun AppError.err(): AppResult<Nothing> = AppResult.Err(this)
 
 /** Envuelve código que puede lanzar, traduciendo a [AppError]. Nunca se traga la cancelación. */
 inline fun <T> appCatching(onError: (Throwable) -> AppError = { AppError.Desconocido(it) }, block: () -> T): AppResult<T> =

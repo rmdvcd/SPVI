@@ -27,7 +27,6 @@ object TextosRegistros {
     const val SIN_RESULTADOS_DETALLE = "Prueba otra búsqueda o quita los filtros."
     const val QUITAR_FILTROS = "Quitar filtros"
     const val ERROR_CARGA = "No se pudo cargar el registro."
-    const val ERROR_COMPARTIR = "No hay ninguna app para compartir en este teléfono."
     const val VENTA_NO_DISPONIBLE = "No se encontró la venta de esta transferencia."
     const val VER_VENTA = "Ver la venta"
     const val FECHAS_INVERTIDAS = "La fecha «Desde» no puede ser posterior a «Hasta»."

@@ -65,18 +65,6 @@ interface SyncDao {
     @Query("UPDATE empleado SET telefono = :telefono WHERE id = :id AND activo = 1")
     suspend fun cambiarTelefono(id: Long, telefono: String?)
 
-    /** 0.26.0 (§4): el dueño asigna el fondo del próximo turno de esa app (resuelve la petición del empleado). */
-    @Query("UPDATE empleado SET fondoAsignadoCent = :cent, fondoAsignadoEn = :en, aperturaSolicitadaEn = NULL WHERE id = :id AND activo = 1")
-    suspend fun asignarFondo(id: Long, cent: Long, en: Long): Int
-
-    /** 0.26.0: la secundaria abrió su turno con el fondo [en]: se gasta (el siguiente turno necesita otro). */
-    @Query("UPDATE empleado SET fondoAsignadoCent = NULL, fondoAsignadoEn = NULL WHERE id = :id AND fondoAsignadoEn = :en")
-    suspend fun fondoGastado(id: Long, en: Long)
-
-    /** 0.26.0: petición «Pedir fondo» del empleado (o NULL cuando ya no la mantiene). */
-    @Query("UPDATE empleado SET aperturaSolicitadaEn = :valor WHERE id = :id")
-    suspend fun marcarAperturaSolicitada(id: Long, valor: Long?)
-
     @Query("UPDATE empleado SET versionCode = :code WHERE id = :id")
     suspend fun cambiarVersion(id: Long, code: Int?)
 

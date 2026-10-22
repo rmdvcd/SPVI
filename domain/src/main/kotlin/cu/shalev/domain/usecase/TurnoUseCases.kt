@@ -56,14 +56,8 @@ class AbrirTurno @Inject constructor(
         if (repo.activo() != null) return AppResult.Err(AppError.TurnoYaAbierto)
         val previa = puerta.antesDeAbrir()
         if (previa is AppResult.Err) return previa
-        // 0.26.0 (P73 §4): en una secundaria el fondo lo asigna el dueño (el que escriba el empleado no cuenta).
-        val obligado = when (val r = puerta.fondoObligado()) {
-            is AppResult.Err -> return r
-            is AppResult.Ok -> r.value
-        }
-        val abierto = repo.abrir(clock.now(), usuario(), obligado ?: fondo)
-        if (abierto is AppResult.Ok && obligado != null) puerta.fondoUsado()
-        return abierto
+        // 0.32.0: el fondo lo escribe quien abre el turno, también en una app secundaria.
+        return repo.abrir(clock.now(), usuario(), fondo)
     }
 }
 

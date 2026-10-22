@@ -13,9 +13,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -94,7 +91,6 @@ object AjustesTags {
     const val SOPORTE = "ajustes.soporte"
     const val VINCULACION = "ajustes.vinculacion"
     const val ACTUALIZACIONES = "ajustes.actualizaciones"
-    const val SEED = "ajustes.seed"
 }
 
 /** Ajustes: configuración pendiente, Perfil, Licencia, Pago electrónico, Precios, avisos, consultas, permisos, Respaldo, Ayuda y Soporte. */
@@ -121,8 +117,6 @@ fun AjustesScreen(onNavigate: (Route) -> Unit, viewModel: AjustesViewModel = hil
         state = state,
         onNavigate = onNavigate,
         onPermisos = { abrirAjustesDeLaApp(context) },
-        mostrarCatalogo = BuildConfig.DEBUG,
-        mostrarSeed = BuildConfig.DEBUG,
         actualizacion = actualizacion,
         onBuscarAhora = actVm::buscarAhora,
         onActualizarAhora = actVm::actualizarAhora,
@@ -136,8 +130,6 @@ fun AjustesContent(
     state: AjustesUiState,
     onNavigate: (Route) -> Unit,
     onPermisos: () -> Unit,
-    mostrarCatalogo: Boolean = false,
-    mostrarSeed: Boolean = false,
     actualizacion: cu.shalev.app.actualizacion.EstadoActualizacion = cu.shalev.app.actualizacion.EstadoActualizacion(),
     onBuscarAhora: () -> Unit = {},
     /** 0.31.0 (P5): «Actualizar» (cuadro con barra circular) y cerrar ese cuadro. */
@@ -147,7 +139,6 @@ fun AjustesContent(
     accesoClave: Boolean = false,
     onAccesoClave: (Boolean) -> Unit = {},
 ) {
-    var dialogoSeed by rememberSaveable { mutableStateOf(false) }
     // 0.31.0 (P5): el cuadro de «Actualizar» lo abre el propio proceso (barra circular + resultado).
     val dialogoActualizaciones = actualizacion.proceso != null
     Scaffold(
@@ -170,7 +161,7 @@ fun AjustesContent(
             item {
                 Entry(
                     VinculacionLogic.TITULO, VinculacionLogic.subtituloAjustes(state.permisos.tipo, state.secundarias, state.nombreNegocio),
-                    ShalevIcons.Vinculacion, modifier = Modifier.testTag(AjustesTags.VINCULACION),
+                    ShalevIcons.Movil, modifier = Modifier.testTag(AjustesTags.VINCULACION),
                 ) { onNavigate(Route.Vinculacion) }
             }
             if (principal) item {
@@ -204,17 +195,6 @@ fun AjustesContent(
             }
             item { Entry("Ayuda", "Manual breve de uso", ShalevIcons.Ayuda, modifier = Modifier.testTag(AjustesTags.AYUDA)) { onNavigate(Route.Ayuda) } }
             item { Entry("Soporte", "Datos de contacto del desarrollador", ShalevIcons.Soporte, modifier = Modifier.testTag(AjustesTags.SOPORTE)) { onNavigate(Route.Soporte) } }
-            if (mostrarCatalogo) {
-                item { Entry("Design system", "Catálogo de componentes (solo debug)", ShalevIcons.Ayuda) { onNavigate(Route.Catalogo) } }
-            }
-            if (mostrarSeed) {
-                item {
-                    Entry(
-                        "Generar datos de prueba", "Borra todo y genera la bodega de prueba (solo debug)", ShalevIcons.Reiniciar,
-                        modifier = Modifier.testTag(AjustesTags.SEED),
-                    ) { dialogoSeed = true }
-                }
-            }
         }
     }
     if (dialogoActualizaciones) {
@@ -249,10 +229,6 @@ fun AjustesContent(
                 }
             },
         )
-    }
-    if (dialogoSeed && mostrarSeed) {
-        val seedVm: cu.shalev.app.ajustes.seed.SeedViewModel = hiltViewModel()
-        cu.shalev.app.ajustes.seed.DialogoSeed(seedVm) { dialogoSeed = false }
     }
 }
 

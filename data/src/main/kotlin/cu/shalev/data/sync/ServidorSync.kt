@@ -10,7 +10,9 @@ import cu.shalev.core.time.Clock
 import cu.shalev.data.db.ShalevDatabase
 import cu.shalev.data.db.entity.EmpleadoEntity
 import cu.shalev.domain.model.EstadoPrincipal
+import cu.shalev.domain.model.FaseSync
 import cu.shalev.domain.model.LicenciaPrincipal
+import cu.shalev.domain.model.ProgresoSync
 import cu.shalev.domain.repository.LicenciaRepository
 import cu.shalev.domain.repository.PerfilRepository
 import cu.shalev.domain.usecase.UsuarioActual
@@ -32,12 +34,18 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -67,10 +75,23 @@ class ServidorSync @Inject constructor(
     private val clock: Clock,
     /** 0.25.0: APK de actualización que se reparte a las secundarias. */
     private val apk: ApkLocal,
+    /** 0.32.0: fotos del catálogo que se reparten a las secundarias. */
+    private val fotos: cu.shalev.data.foto.FotosLocal,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val _estado = MutableStateFlow(EstadoPrincipal())
-    val estado: StateFlow<EstadoPrincipal> = _estado.asStateFlow()
+
+    /** 0.32.0: avance de la sincronización de cada app conectada (id de empleado → avance). */
+    private val _progresos = MutableStateFlow<Map<Long, ProgresoSync>>(emptyMap())
+
+    /** 0.32.0: aviso de que una app terminó de sincronizar (id de empleado). */
+    private val _sincronizadas = MutableSharedFlow<Long>(extraBufferCapacity = 8)
+    val sincronizadas: SharedFlow<Long> = _sincronizadas.asSharedFlow()
+
+    /** El estado que ve la app: lo que escucha el servidor + el avance de cada app conectada. */
+    val estado: StateFlow<EstadoPrincipal> =
+        combine(_estado, _progresos) { e, p -> e.copy(progresos = p) }
+            .stateIn(scope, SharingStarted.Eagerly, EstadoPrincipal())
 
     private val sesiones = ConcurrentHashMap<Long, Sesion>()
     /** Auditoría 2026-10-14 (S-04): tope de conexiones simultáneas (el escritorio ya limita; Android no). */
@@ -82,7 +103,8 @@ class ServidorSync @Inject constructor(
 
     private class Sesion(val empleadoId: Long, val socket: Socket, val canal: CanalCifrado) {
         val escritura = Mutex()
-        suspend fun enviar(m: Mensaje) = escritura.withLock { withContext(Dispatchers.IO) { canal.enviar(m) } }
+        suspend fun enviar(m: Mensaje, progreso: ((Long, Long) -> Unit)? = null) =
+            escritura.withLock { withContext(Dispatchers.IO) { canal.enviar(m, progreso) } }
         fun cerrar() { runCatching { socket.close() }; canal.borrarClaves() }
     }
 
@@ -145,6 +167,18 @@ class ServidorSync @Inject constructor(
 
     /** Algo cambió (catálogo, permisos, licencia): las secundarias conectadas sincronizan. */
     fun avisar() { avisos.trySend(Unit) }
+
+    /**
+     * 0.32.0: anota el avance de la sincronización de una app. Solo se publica cuando cambia el porcentaje (o la
+     * fase): la barra no se repinta en cada trozo de 64 KB.
+     */
+    private fun progreso(empleadoId: Long, fase: FaseSync, actual: Long, total: Long) {
+        _progresos.update { m ->
+            val antes = m[empleadoId]
+            if (antes != null && antes.fase == fase && total > 0 && antes.actual * 100 / total == actual * 100 / total) m
+            else m + (empleadoId to ProgresoSync(actual, total, fase))
+        }
+    }
 
     /** El dueño quitó esta secundaria: si está conectada se le dice ahora; si no, al volver a conectar. */
     fun expulsar(empleadoId: Long) {
@@ -254,27 +288,37 @@ class ServidorSync @Inject constructor(
             // Auditoría 2026-10-14 (S-03): la sesión NO se registra (ni desplaza a la legítima, ni anota el
             // `deviceId`) hasta recibir el PRIMER mensaje cifrado: hasta ahí, el saludo solo prueba conocer
             // identificadores, no poseer la clave del empleado. El escritorio ya lo hacía así.
-            var pendiente: Mensaje? = withContext(Dispatchers.IO) { canal.recibir() }
+            var pendiente: Mensaje? = withContext(Dispatchers.IO) {
+                canal.recibir { hecho, total -> progreso(e.id, FaseSync.RECIBIENDO, hecho, total) }
+            }
             // 0.31.0 (mitigación 7): el saludo repite el `deviceId` de la secundaria (p. ej. tras reinstalar la
             // principal desde un respaldo, que no guarda los `deviceId`); ya autenticada, se anota el válido.
             if (h.device != null) anotarDevice(e.id, h.device)
             sesiones.put(e.id, s)?.cerrar() // la misma app reconectando: se queda la conexión nueva
             _estado.update { it.copy(conectadas = it.conectadas + e.id) }
             while (true) {
-                val m = pendiente ?: withContext(Dispatchers.IO) { canal.recibir() }
+                val m = pendiente ?: withContext(Dispatchers.IO) {
+                    canal.recibir { hecho, total -> progreso(e.id, FaseSync.RECIBIENDO, hecho, total) }
+                }
                 pendiente = null
                 val actual = db.syncDao().empleado(e.id)
                 if (actual == null || !actual.activo) { runCatching { s.enviar(Quitada) }; break }
                 when (m) {
-                    is Sincronizar -> s.enviar(responder(actual, m) ?: break)
+                    is Sincronizar -> {
+                        val ok = responder(actual, m) ?: break
+                        s.enviar(ok) { hecho, total -> progreso(e.id, FaseSync.ENVIANDO, hecho, total) }
+                        _sincronizadas.tryEmit(e.id)
+                    }
                     is Comando -> s.enviar(ejecutor.resultado(m, actual))
                     is Ping -> s.enviar(Pong(m.id))
                     is PedirApk -> s.enviar(withContext(Dispatchers.IO) { apk.bloque(m.id, m.sha256, m.desde) })
+                    is PedirFoto -> s.enviar(fotos.bloque(m.id, m.nombre, m.desde))
                     else -> Unit
                 }
             }
         } finally {
             s.cerrar()
+            _progresos.update { it - e.id }
             if (sesiones.remove(e.id, s)) _estado.update { it.copy(conectadas = it.conectadas - e.id) }
         }
     }
@@ -291,8 +335,9 @@ class ServidorSync @Inject constructor(
         // 0.21.0 (C2): teléfono del empleado (solo si es válido y cambió).
         m.telefono?.trim()?.takeIf { it != e.telefono && cu.shalev.domain.model.Vinculacion.telefonoValido(it) }
             ?.let { db.syncDao().cambiarTelefono(e.id, it) }
+        // 0.25.0: versión de la app del empleado (para saber si tiene el APK nuevo).
+        if (m.versionCode != e.versionCode) db.syncDao().cambiarVersion(e.id, m.versionCode)
         val rechazado = solicitudCierre(e, m.solicitaCierre)
-        val fondo = fondoDe(e, m)
         val lic = conPermiso(
             licencia.snapshot.value?.estado ?: cu.shalev.licencia.LicenseState.TrialExpired, e,
         )
@@ -306,7 +351,6 @@ class ServidorSync @Inject constructor(
             conteoAprobado = db.turnoDao().activoDeEmpleado(e.id)?.conteoCierreJson?.conteoDeJson()?.takeIf { it.aprobadoEn != null }?.toDto(),
             conteoTurnoUuid = db.turnoDao().activoDeEmpleado(e.id)?.uuid,
             cambiosVentas = cambios, apk = runCatching { apk.ofrecerA(m.versionCode) }.getOrNull(),
-            asignaFondos = true, fondo = fondo,
         )
     }
 
@@ -334,28 +378,6 @@ class ServidorSync @Inject constructor(
         if (limpio.isEmpty() || !cu.shalev.core.validation.Validators.deviceId(limpio)) return
         if (db.syncDao().empleado(empleadoId)?.device == limpio) return
         db.syncDao().cambiarDevice(empleadoId, limpio)
-    }
-
-    /**
-     * 0.26.0 (P73 §4): el fondo de caja de cada turno de una secundaria lo asigna el dueño. Gasta el fondo con el que la
-     * secundaria abrió su turno ([Sincronizar.fondoUsado]), anota o retira su petición «Pedir fondo» y guarda su
-     * versionCode (para avisar «actualiza la app» a las 0.25.x, que siguen escribiendo su propio fondo). Devuelve el
-     * fondo asignado y sin usar.
-     */
-    private suspend fun fondoDe(e: EmpleadoEntity, m: Sincronizar): FondoAsignado? {
-        val dao = db.syncDao()
-        if (m.versionCode != e.versionCode) dao.cambiarVersion(e.id, m.versionCode)
-        m.fondoUsado?.let { dao.fondoGastado(e.id, it) }
-        var x = dao.empleado(e.id) ?: return null
-        val conTurno = db.turnoDao().activoDeEmpleado(e.id) != null
-        if (m.pideFondo && x.fondoAsignadoCent == null && !conTurno) {
-            if (x.aperturaSolicitadaEn == null) dao.marcarAperturaSolicitada(e.id, clock.now().toEpochMilli())
-        } else if (x.aperturaSolicitadaEn != null) {
-            dao.marcarAperturaSolicitada(e.id, null)
-        }
-        x = dao.empleado(e.id) ?: return null
-        val cent = x.fondoAsignadoCent ?: return null
-        return FondoAsignado(cent, x.fondoAsignadoEn ?: return null)
     }
 
     /**

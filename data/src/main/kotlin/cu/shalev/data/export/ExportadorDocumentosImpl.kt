@@ -18,8 +18,6 @@ class ExportadorDocumentosImpl @Inject constructor(
     @IoDispatcher private val io: CoroutineDispatcher,
 ) : ExportadorDocumentos {
 
-    override val formatos: Set<FormatoExport> = FormatoExport.entries.toSet()
-
     override suspend fun exportar(tablas: List<TablaExport>, formato: FormatoExport, destino: OutputStream): AppResult<Unit> =
         withContext(io) {
             appCatching(onError = { if (it is java.io.IOException) AppError.Almacenamiento else AppError.Desconocido(it) }) {

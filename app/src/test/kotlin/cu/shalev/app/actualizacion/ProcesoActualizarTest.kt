@@ -137,9 +137,7 @@ class ProcesoActualizarTest {
         override val estado = MutableStateFlow(EstadoSecundaria())
         override suspend fun vincular(contenidoQr: String, telefono: String): AppResult<Unit> = AppResult.Err(AppError.Red.SinConexion)
         override suspend fun solicitarCierre(contado: cu.shalev.core.money.Cup): AppResult<Unit> = AppResult.Err(AppError.Red.SinConexion)
-        override suspend fun pedirFondo(): AppResult<Unit> = AppResult.Err(AppError.Red.SinConexion)
         override suspend fun sincronizarAhora(): AppResult<Unit> = AppResult.Err(AppError.Red.SinConexion)
-        override suspend fun cambiarModo(modo: cu.shalev.domain.model.ModoSincronizacion) = Unit
         override suspend fun desvincular(): AppResult<Unit> = AppResult.Err(AppError.Red.SinConexion)
         override suspend fun descartarAvisoCierre() = Unit
     }

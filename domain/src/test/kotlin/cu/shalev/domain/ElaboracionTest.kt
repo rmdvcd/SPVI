@@ -130,7 +130,6 @@ class ElaboracionTest {
     @Test fun `exportar la seleccion reutiliza ExportarInsumos`() = runBlocking {
         val tablas = mutableListOf<TablaExport>()
         val exportador = object : ExportadorDocumentos {
-            override val formatos = setOf(FormatoExport.PDF)
             override suspend fun exportar(tablas2: List<TablaExport>, formato: FormatoExport, destino: OutputStream): AppResult<Unit> {
                 tablas += tablas2; return AppResult.Ok(Unit)
             }

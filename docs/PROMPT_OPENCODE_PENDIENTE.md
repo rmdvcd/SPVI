@@ -120,7 +120,7 @@ Verifica cada punto con un test o una captura. Si no hay, `NO VERIFICADO`.
 
 **2.10 T1.5 · Rendimiento, referencia en emulador (D6).**
 1. En Android Studio (Device Manager), arranca un AVD con API 35. Comprueba con `adb devices -l` que aparece como `device`.
-2. Mide `ObtenerResumenGeneral` con el `GeneradorSeed` de 18 meses, que ya usa `app/src/androidTest/kotlin/cu/shalev/app/integracion/RendimientoInicioTest.kt`: `.\gradlew.bat :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=cu.shalev.app.integracion.RendimientoInicioTest" --no-configuration-cache`.
+2. Mide `ObtenerResumenGeneral` con 18 meses de datos, que ya usa `app/src/androidTest/kotlin/cu/shalev/app/integracion/RendimientoInicioTest.kt` (el generador de datos de prueba se retiró; el test genera su propio histórico): `.\gradlew.bat :app:connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=cu.shalev.app.integracion.RendimientoInicioTest" --no-configuration-cache`.
 3. Anota el tiempo con el código actual (después de T1.4). Si puedes, repite la medición con `origin/main` en el mismo emulador («antes»); si no, escribe «antes: NO VERIFICADO».
 4. En `docs/VERIFICACION.md` anota el modelo del emulador, la API, la RAM, los tiempos, el umbral del test y esta frase: «referencia en emulador: T1.5 sigue abierto hasta medir en un teléfono de gama baja».
 

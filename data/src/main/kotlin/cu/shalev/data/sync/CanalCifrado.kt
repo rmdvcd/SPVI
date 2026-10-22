@@ -79,18 +79,35 @@ object CriptoSync {
 object Tramas {
     const val MAX_TRAMA = 16 * 1024 * 1024
 
-    fun escribir(out: OutputStream, datos: ByteArray) {
+    /** 0.32.0: tamaño del trozo al escribir/leer (para poder informar del avance). */
+    private const val TROZO = 64 * 1024
+
+    fun escribir(out: OutputStream, datos: ByteArray, progreso: ((Long, Long) -> Unit)? = null) {
         val d = DataOutputStream(out)
         d.writeInt(datos.size)
-        d.write(datos)
+        var hecho = 0
+        while (hecho < datos.size) {
+            val n = minOf(TROZO, datos.size - hecho)
+            d.write(datos, hecho, n)
+            hecho += n
+            progreso?.invoke(hecho.toLong(), datos.size.toLong())
+        }
         d.flush()
     }
 
-    fun leer(input: InputStream): ByteArray {
+    fun leer(input: InputStream, progreso: ((Long, Long) -> Unit)? = null): ByteArray {
         val d = DataInputStream(input)
         val n = try { d.readInt() } catch (e: EOFException) { throw e }
         if (n < 0 || n > MAX_TRAMA) throw ProtocoloException("trama de $n bytes")
-        return ByteArray(n).also { d.readFully(it) }
+        val buf = ByteArray(n)
+        var hecho = 0
+        while (hecho < n) {
+            val leido = d.read(buf, hecho, n - hecho)
+            if (leido < 0) throw ProtocoloException("trama incompleta")
+            hecho += leido
+            progreso?.invoke(hecho.toLong(), n.toLong())
+        }
+        return buf
     }
 
     fun gzip(b: ByteArray): ByteArray = ByteArrayOutputStream().also { bos -> GZIPOutputStream(bos).use { it.write(b) } }.toByteArray()
@@ -115,15 +132,15 @@ class CanalCifrado(
     private var secEnvio = 0L
     private var secRecepcion = 0L
 
-    fun enviar(m: Mensaje) {
+    fun enviar(m: Mensaje, progreso: ((Long, Long) -> Unit)? = null) {
         val plano = Tramas.gzip(SyncJson.encodeToString(Mensaje.serializer(), m).toByteArray(Charsets.UTF_8))
         val iv = CriptoSync.aleatorio(IV)
         val ct = AesGcm.encrypt(claveEnvio, iv, aad(etiquetaEnvio, secEnvio++), plano)
-        Tramas.escribir(output, iv + ct)
+        Tramas.escribir(output, iv + ct, progreso)
     }
 
-    fun recibir(): Mensaje {
-        val trama = Tramas.leer(input)
+    fun recibir(progreso: ((Long, Long) -> Unit)? = null): Mensaje {
+        val trama = Tramas.leer(input, progreso)
         if (trama.size < IV + 16) throw ProtocoloException("trama corta")
         val plano = try {
             AesGcm.decrypt(claveRecepcion, trama.copyOfRange(0, IV), aad(etiquetaRecepcion, secRecepcion++), trama.copyOfRange(IV, trama.size))

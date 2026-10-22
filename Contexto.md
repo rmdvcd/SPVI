@@ -12,7 +12,7 @@ Shalev (Sistema de Punto de Venta e Inventario) es una app Android nativa para p
 
 | | |
 |---|---|
-| Versión | **0.30.0** (`versionCode 51`) |
+| Versión | **0.32.0** (`versionCode 52`) |
 | Paquete | `cu.shalev.app` (debug: `cu.shalev.app.debug`) |
 | SDK | minSdk 26 · targetSdk 35 · compileSdk 35 |
 | Base de datos | Room **v12** cifrada con SQLCipher |
@@ -108,8 +108,10 @@ Formato exacto de cada archivo: `FORMATOS.md`.
 - **Vinculación:** con un QR. La principal ofrece un servicio en primer plano (`connectedDevice`) que va en la misma notificación del turno abierto. La notificación no muestra importes y no se restaura tras reiniciar el teléfono.
 - **Licencia:** la de la principal cubre a las secundarias. Si no está activa, la secundaria muestra `BloqueoSecundaria`.
 - **Cierre de turno:** el empleado solo **solicita** el cierre y el dueño lo aprueba. Nunca se cierra solo ni durante una venta.
-- **Fondo de caja (0.26.0):** lo **asigna la principal** para cada turno de una secundaria. Sin fondo asignado, la secundaria no puede abrir turno: toca «Pedir fondo».
-  - Una secundaria 0.25.x abre turno como antes, y la principal muestra «Actualiza la app de X».
+- **Sincronización (0.32.0):** **manual**: el empleado toca «Sincronizar ahora»; además se sincroniza al abrir turno y al pedir el cierre. La secundaria **mantiene la conexión abierta** con la principal (ping de 30 s), así el dueño ve si está conectada: hay una **barra de avance** en la notificación y una por app en «Apps vinculadas», y avisos con **sonido propio** al conectar, desconectar y terminar de sincronizar. Si el dueño cambia el catálogo, la app del empleado avisa («Sincroniza para recibirlo»).
+- **Fotos:** las fotos de productos y servicios **viajan** a la secundaria (lista en la instantánea + bytes por bloques de 256 KB, con SHA-256).
+- **Fondo de caja (0.32.0):** lo escribe **quien abre el turno**, también en una secundaria. La principal ya no lo asigna ni lo pide (se invirtió la regla de 0.26.0 P73 §4).
+- **Conteo de inventario (0.32.0):** **parcial** (solo lo que cambió en el turno) y **por categorías** (pestañas). En la principal, la diferencia se aplica sobre el valor actual.
 - **Sin conexión:** la secundaria sigue vendiendo, pero necesita sincronizar para abrir un turno nuevo.
 - **Actualizaciones:** la principal reparte el APK a las secundarias por la red local.
 - **Detalle:** `docs/VINCULACION.md`.

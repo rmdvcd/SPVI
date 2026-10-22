@@ -334,9 +334,7 @@ class InicioViewModel @Inject constructor(
             AppError.TurnoYaAbierto -> "Ya hay un turno abierto."
             AppError.TurnoCerrado -> "El turno ya estaba cerrado."
             AppError.LicenciaBloqueada -> "La licencia no permite esta acción."
-            // 0.26.0 (P73 §4): secundaria sin el fondo que asigna el encargado.
-            else -> if ((e as? AppError.Validacion)?.campo == "fondo") cu.shalev.app.caja.TextosCaja.FONDO_FALTA
-            else mensajeSync(e) ?: "No se pudo completar la acción. Inténtalo de nuevo."
+            else -> mensajeSync(e) ?: "No se pudo completar la acción. Inténtalo de nuevo."
         }
     }
 }

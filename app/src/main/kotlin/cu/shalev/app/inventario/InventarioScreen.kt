@@ -1,5 +1,6 @@
 package cu.shalev.app.inventario
 
+import cu.shalev.designsystem.component.ShalevCheckbox
 import cu.shalev.domain.model.nombreCompleto
 import cu.shalev.app.common.LocalPermisosApp
 import cu.shalev.domain.model.IdArticulo
@@ -16,7 +17,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,14 +24,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,7 +44,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -56,15 +52,16 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import cu.shalev.app.common.BarraContinuarVenta
+import cu.shalev.app.common.BarraSeleccion
+import cu.shalev.app.common.BotonFiltro
 import cu.shalev.app.common.Compartir
-import cu.shalev.app.common.descripcionFiltro
 import cu.shalev.app.inicio.EstadoCarga
 import cu.shalev.app.navigation.Route
 import cu.shalev.core.money.Money
 import cu.shalev.designsystem.component.FiltroEntrada
 import cu.shalev.designsystem.component.CardTone
 import cu.shalev.designsystem.component.IconActionStyle
-import cu.shalev.designsystem.component.ShalevBadge
 import cu.shalev.designsystem.component.ShalevBottomSheet
 import cu.shalev.designsystem.component.ShalevCard
 import cu.shalev.designsystem.component.ShalevChip
@@ -86,7 +83,6 @@ import cu.shalev.designsystem.component.ShalevTopBar
 import cu.shalev.designsystem.component.shalevAnimateItem
 import cu.shalev.designsystem.icon.ShalevIcons
 import cu.shalev.designsystem.ilustracion.ShalevIlustracion
-import cu.shalev.designsystem.token.ShalevElevation
 import cu.shalev.designsystem.token.ShalevRadius
 import cu.shalev.designsystem.token.ShalevSize
 import cu.shalev.designsystem.token.ShalevSpacing
@@ -152,7 +148,7 @@ fun InventarioScreen(
         viewModel.eventos.collect { e ->
             when (e) {
                 is EventoInventario.Compartir ->
-                    if (!Compartir.archivos(context, e.archivos, e.mime, e.asunto)) snackbar.showSnackbar(TextosInventario.ERROR_COMPARTIR)
+                    if (!Compartir.archivos(context, e.archivos, e.mime, e.asunto)) snackbar.showSnackbar(Compartir.SIN_APLICACION)
                 is EventoInventario.GuardarComo -> (if (e.mime == FormatoExport.XLSX.mime) guardarXlsx else guardarPdf).launch(e.nombre)
                 is EventoInventario.Navegar -> onNavigate(e.route)
                 is EventoInventario.Mensaje -> snackbar.showSnackbar(e.texto)
@@ -189,16 +185,24 @@ fun InventarioContent(
     Scaffold(
         topBar = {
             if (venta != null) {
-                ShalevTopBar(title = SeleccionVenta.titulo(venta), onBack = acciones.onAtras, actions = { BotonFiltro(state, acciones) })
+                ShalevTopBar(title = SeleccionVenta.titulo(venta), onBack = acciones.onAtras, actions = {
+                    BotonFiltro(state.filtro.activos, TextosInventario.FILTRAR, onClick = { acciones.onHoja(HojaInventario.FILTRO) }, modifier = Modifier.testTag(InventarioTags.FILTRO))
+                })
             } else ShalevTopBar(title = TextosInventario.TITULO, actions = {
-                BotonFiltro(state, acciones)
+                BotonFiltro(state.filtro.activos, TextosInventario.FILTRAR, onClick = { acciones.onHoja(HojaInventario.FILTRO) }, modifier = Modifier.testTag(InventarioTags.FILTRO))
                 if (LocalPermisosApp.current.exportar) ShalevIconAction(
                     ShalevIcons.Compartir, TextosInventario.EXPORTAR, onClick = { acciones.onHoja(HojaInventario.EXPORTAR) },
                     enabled = state.items.isNotEmpty() || state.seleccion.isNotEmpty(), modifier = Modifier.testTag(InventarioTags.EXPORTAR),
                 )
             })
         },
-        bottomBar = { if (venta != null) BarraContinuarVenta(state, acciones) },
+        bottomBar = {
+            if (venta != null) BarraContinuarVenta(
+                texto = SeleccionVenta.continuar(state.seleccion.size), haySeleccion = state.seleccion.isNotEmpty(),
+                onLimpiar = acciones.onLimpiarSeleccion, onContinuar = acciones.onContinuarVenta,
+                tagContinuar = InventarioTags.CONTINUAR_VENTA,
+            )
+        },
         // 0.26.0 (P73): el «+» va en la esquina inferior (estándar M3); la lista deja ShalevSize.fabClearance abajo
         // para que la última fila (importes a la derecha) no quede tapada.
         floatingActionButtonPosition = FabPosition.End,
@@ -216,7 +220,13 @@ fun InventarioContent(
             if (state.trabajando) ShalevLinearProgress(Modifier.fillMaxWidth())
             ElementosFijados(state, acciones)
             Buscador(state, acciones)
-            if (venta == null && state.seleccion.isNotEmpty()) BarraSeleccion(state, acciones)
+            if (venta == null && state.seleccion.isNotEmpty()) BarraSeleccion(
+                texto = TextosInventario.seleccionados(state.seleccion.size), todosMarcados = state.todosVisiblesSeleccionados,
+                onLimpiar = acciones.onLimpiarSeleccion, onMarcarTodo = acciones.onSeleccionarTodo,
+                onExportar = { acciones.onHoja(HojaInventario.EXPORTAR) }, onEliminar = acciones.onEliminarSeleccion,
+                tag = InventarioTags.SELECCION, tagMarcarTodo = InventarioTags.SELECCIONAR_TODO,
+                tagEliminar = InventarioTags.ELIMINAR_SELECCION,
+            )
             cu.shalev.designsystem.component.BloquearGestos(state.seleccion.isNotEmpty()) // 0.27.0 (T5)
             Box(Modifier.weight(1f)) {
                 when (val v = state.vista) {
@@ -293,61 +303,6 @@ private fun Buscador(state: InventarioUiState, acciones: AccionesInventario) {
 }
 
 @Composable
-private fun BotonFiltro(state: InventarioUiState, acciones: AccionesInventario) {
-    val activos = state.filtro.activos
-    BadgedBox(badge = {
-        if (activos > 0) ShalevBadge(activos, Modifier.clearAndSetSemantics { })
-    }) {
-        ShalevIconAction(
-            ShalevIcons.Filtrar, descripcionFiltro(TextosInventario.FILTRAR, activos),
-            onClick = { acciones.onHoja(HojaInventario.FILTRO) },
-            selected = activos > 0, modifier = Modifier.testTag(InventarioTags.FILTRO),
-        )
-    }
-}
-
-/** Modo venta: nº marcado + Continuar (ventana de cantidades y método de pago). */
-@Composable
-private fun BarraContinuarVenta(state: InventarioUiState, acciones: AccionesInventario) {
-    Surface(tonalElevation = ShalevElevation.tonalBar) {
-        Row(
-            Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = ShalevSpacing.md, vertical = ShalevSpacing.xs),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(ShalevSpacing.md, Alignment.CenterHorizontally), // P28: grupo centrado
-        ) {
-            if (state.seleccion.isNotEmpty()) ShalevIconAction(ShalevIcons.Cancelar, "Quitar selección", onClick = acciones.onLimpiarSeleccion)
-            Text(SeleccionVenta.continuar(state.seleccion.size), style = MaterialTheme.typography.titleSmall)
-            ShalevPrimaryButton(
-                text = "Continuar", icon = ShalevIcons.Siguiente, onClick = acciones.onContinuarVenta,
-                enabled = state.seleccion.isNotEmpty(), modifier = Modifier.testTag(InventarioTags.CONTINUAR_VENTA),
-            )
-        }
-    }
-}
-
-@Composable
-private fun BarraSeleccion(state: InventarioUiState, acciones: AccionesInventario) {
-    Row(
-        Modifier.fillMaxWidth().padding(horizontal = ShalevSpacing.xs).testTag(InventarioTags.SELECCION),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        ShalevIconAction(ShalevIcons.Cancelar, "Quitar selección", onClick = acciones.onLimpiarSeleccion)
-        Text(TextosInventario.seleccionados(state.seleccion.size), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-        ShalevIconAction(
-            ShalevIcons.Confirmar, if (state.todosVisiblesSeleccionados) "Desmarcar todo" else "Marcar todo",
-            onClick = acciones.onSeleccionarTodo, selected = state.todosVisiblesSeleccionados,
-            modifier = Modifier.testTag(InventarioTags.SELECCIONAR_TODO),
-        )
-        val permisos = LocalPermisosApp.current
-        if (permisos.exportar) ShalevIconAction(ShalevIcons.Exportar, "Exportar selección", onClick = { acciones.onHoja(HojaInventario.EXPORTAR) })
-        if (permisos.editarInventario) ShalevIconAction(
-            ShalevIcons.Eliminar, "Eliminar selección", onClick = acciones.onEliminarSeleccion,
-            modifier = Modifier.testTag(InventarioTags.ELIMINAR_SELECCION),
-        )
-    }
-}
-
-@Composable
 private fun ElementosFijados(state: InventarioUiState, acciones: AccionesInventario) {
     val fijados = state.elementosFijados
     if (fijados.isEmpty()) return
@@ -419,7 +374,7 @@ private fun Fila(i: ItemInventario, marcado: Boolean, acciones: AccionesInventar
                 .background(colorDe(tonoDe(i))),
         )
         cu.shalev.app.common.ConMiniatura(i.producto.fotoUri) { // 0.21.0 (C11)
-            Checkbox(
+            ShalevCheckbox(
                 checked = marcado,
                 onCheckedChange = { acciones.onAlternar(i.producto.id) },
                 modifier = Modifier.testTag(InventarioTags.check(i.producto.id))

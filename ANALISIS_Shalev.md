@@ -248,10 +248,12 @@ más en el canal de licencias: con root, `Frida` o un APK reempaquetado, la veri
 - `ObtenerResumenGeneral` recorre en el mismo hilo todas las ventas de 30 días para el Top 3, los métodos de
   pago, los servicios, los empleados y los clientes, más todo el inventario activo.
 
-Con el propio generador de datos de prueba del proyecto (548 días, ~470 turnos, miles de ventas) y el período
-«Año» esto no es teoría: es *jank* de cientos de milisegundos o segundos en un gama baja, que es exactamente el
-público objetivo declarado. *Arreglo:* `flowOn(io)` en la cadena, `withContext(io)` alrededor de los casos de
-uso, y agregación en SQL (`GROUP BY` por cubo) para los gráficos.
+Con un histórico de datos de prueba de 548 días (~470 turnos, miles de ventas) y el período «Año» esto no es
+teoría: es *jank* de cientos de milisegundos o segundos en un gama baja, que es exactamente el público objetivo
+declarado. (El generador de datos de prueba del proyecto —la función «Generar datos de prueba» de Ajustes— se
+retiró y aún no se ha repuesto uno equivalente; hoy el test instrumentado de rendimiento genera su propio
+histórico.) *Arreglo:* `flowOn(io)` en la cadena, `withContext(io)` alrededor de los casos de uso, y agregación
+en SQL (`GROUP BY` por cubo) para los gráficos.
 
 **D11 — 🟠 `MediaStore` consultado en cada vuelta a primer plano.**
 `LicenseManager.evaluate()` llama a `registroExterno.sincronizar(...)` **en cada evaluación**, y `evaluate()`
@@ -390,7 +392,7 @@ por disciplina, no por una comprobación automática.
 | 9 | 🟠 | Adaptatividad mínima real: `WindowSizeClass` (lista+detalle en ≥ 600 dp), recursos por tamaño, diálogos por contenido. | `:designsystem`, `:app` | 3–5 días |
 | 10 | 🟠 | Decidir el mercado: si se quiere vender a MIPYMES, multi-moneda (CUP/MLC/USD + tasa) y descuentos/impuestos dejan de ser opcionales. | `core/money`, `domain`, esquema | 1–2 semanas |
 | 11 | 🟡 | Extraer los textos a recursos (`strings.xml`) con `Textos*` como envoltorio: sin i18n, al menos sin recompilar por un texto. | `:app` (653 constantes) | 1 semana |
-| 12 | 🟡 | Medir antes de optimizar más: macrobenchmark de arranque, batería con la principal sirviendo, y un mapa de calor de la pantalla de Inicio con el *seed* de 18 meses cargado. | nuevo módulo `:benchmark` | 3 días |
+| 12 | 🟡 | Medir antes de optimizar más: macrobenchmark de arranque, batería con la principal sirviendo, y un mapa de calor de la pantalla de Inicio con 18 meses de datos cargados. | nuevo módulo `:benchmark` | 3 días |
 
 ## 5. Cómo verificar todo esto en 30 minutos (para el dueño)
 

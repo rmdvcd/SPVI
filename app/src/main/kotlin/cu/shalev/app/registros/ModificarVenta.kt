@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -357,7 +358,9 @@ class AccionesModificar(
 @Composable
 fun ModificarVentaContent(s: ModificarVentaUiState, a: AccionesModificar) {
     Scaffold(
-        modifier = Modifier.testTag(ModificarTags.PANTALLA),
+        // 0.32.0 (A11): con el teclado abierto (datos del cliente, motivo) la lista se encoge y los campos
+        // quedan por encima del teclado; edge-to-edge no redimensiona la ventana por sí solo.
+        modifier = Modifier.testTag(ModificarTags.PANTALLA).imePadding(),
         topBar = {
             ShalevTopBar(title = TextosAnulacion.MODIFICAR, onBack = a.onCerrar, actions = {
                 ShalevIconAction(

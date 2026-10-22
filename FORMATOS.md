@@ -103,7 +103,7 @@ Room v13 añade únicamente `turno.conteoCierreJson TEXT NULL` (migración 12→
 
 En el protocolo LAN v1, el conteo viaja con el DTO del turno. La respuesta añade los campos opcionales `conteoAprobado` y `conteoTurnoUuid`: la secundaria solo acepta la aprobación si coincide el turno y la declaración completa. La principal ignora cualquier autorización que declare la propia secundaria y conserva la que ya otorgó ante reenvíos. Las dos apps deben estar actualizadas para el nuevo flujo.
 
-El PDF/Excel del turno añade **Conteo de efectivo** (Denominación, Billetes, Subtotal; otro efectivo y total) y **Conciliación de inventario** (Nombre, Unidad, Esperado, Contado, Diferencia; motivo y quién aprobó). Las cantidades fraccionarias se presentan en la unidad del insumo. Los ajustes son movimientos AJUSTE asociados al turno, con motivo y autor, y ya viajan en el respaldo ordinario.
+El PDF/Excel del turno añade **Conteo de efectivo** (Denominación, Billetes, Subtotal; otro efectivo y total) y **Conciliación de inventario** (Categoría, Nombre, Unidad, Esperado, Contado, Diferencia; motivo y quién aprobó). Las cantidades fraccionarias se presentan en la unidad del insumo. Los ajustes son movimientos AJUSTE asociados al turno, con motivo y autor, y ya viajan en el respaldo ordinario. Desde la 0.32.0 el conteo es **parcial** (solo los artículos que cambiaron en el turno) y cada línea lleva su **categoría** (campo opcional `categoria` de la línea del DTO: vacío en los conteos anteriores).
 
 **No van en el respaldo:**
 - **la licencia** (cada teléfono necesita la suya; desde la v4 sí van su ID, tipo, secundarias, vencimiento y CI, para recuperarla);

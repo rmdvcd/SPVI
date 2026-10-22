@@ -106,6 +106,8 @@ Sobre B9, el matiz importante: `docs/VERIFICACION.md` **no miente**, está **hel
 8. **Ruido versionado:** `app/capturas/` con 21 MB de PNG que ya no compara nadie, `.kotlin/sessions/…salive` (un archivo vacío del daemon) y `app/lint-baseline.xml` entregado vacío.
 9. **Sin historial utilizable:** 445 archivos, 59 mil líneas, cero tags. El `HISTORIAL_DESARROLLO.md` de 168 KB es tu `git log` y a la vez no es navegable.
 
+**Nota (2026-10-21):** la pantalla «Design system» (`ShalevCatalog`, el único `@Preview` del proyecto) y la función «Generar datos de prueba» (`OrquestadorSeed`, `GeneradorSeed`, `CatalogoBodega` y su diálogo de Ajustes) **ya no existen**: se borraron por completo de `:app` y `:domain`, así que nada de eso viaja ya en el APK de release. Todas las referencias de este informe a `OrquestadorSeed.kt`, a `SeedViewModel.kt` o a los `@Preview` son históricas.
+
 ---
 
 ## 5. UI — 7/10

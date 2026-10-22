@@ -2,7 +2,12 @@ package cu.shalev.domain.model
 
 import cu.shalev.core.money.Cup
 
-/** Conteo físico: productos en unidades e insumos en milésimas. No incluye elaborados virtuales. */
+/**
+ * Conteo físico: productos en unidades e insumos en milésimas. No incluye elaborados virtuales.
+ *
+ * 0.32.0: el conteo es **parcial**: solo se cuentan los artículos que cambiaron durante el turno (los que el
+ * empleado movió). [categoria] los agrupa en la pantalla («Alimentos», «Bebidas», «Insumos»…).
+ */
 data class LineaConteo(
     val entidad: TipoEntidad,
     val id: Long,
@@ -11,6 +16,7 @@ data class LineaConteo(
     val esperado: Long,
     val contado: Long,
     val actualizadoEn: Long,
+    val categoria: String = "",
 ) {
     val diferencia: Long get() = Math.subtractExact(contado, esperado)
 }

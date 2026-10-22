@@ -1,5 +1,6 @@
 package cu.shalev.app.precios
 
+import cu.shalev.designsystem.component.ShalevCheckbox
 import cu.shalev.designsystem.theme.ShalevTextos
 import cu.shalev.domain.model.nombreCompleto
 import androidx.compose.ui.text.style.TextAlign
@@ -19,7 +20,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Scaffold
@@ -323,7 +323,7 @@ private fun ProductoPreajuste(producto: Producto, elegido: Boolean, acciones: Ac
         title = producto.nombreCompleto,
         value = Money.format(producto.precioVenta),
         indicatorColor = null,
-        leading = { Checkbox(checked = elegido, onCheckedChange = null) },
+        leading = { ShalevCheckbox(checked = elegido, onCheckedChange = null) },
         modifier = Modifier.testTag(PreciosTags.producto(producto.id))
             .toggleable(value = elegido, role = Role.Checkbox, onValueChange = { acciones.onProducto(producto.id) }),
     )

@@ -3,7 +3,6 @@ package cu.shalev.data.sync
 import cu.shalev.core.util.aHex
 import cu.shalev.data.local.SecureDataStore
 import cu.shalev.domain.model.LicenciaPrincipal
-import cu.shalev.domain.model.ModoSincronizacion
 import cu.shalev.domain.model.PermisoEmpleado
 import cu.shalev.domain.model.TipoApp
 import cu.shalev.licencia.contract.TipoLicencia
@@ -30,7 +29,6 @@ data class DatosSecundaria(
     val direcciones: List<String>,
     val puerto: Int,
     val permisos: List<String> = emptyList(),
-    val modo: String = ModoSincronizacion.AUTOMATICA.name,
     val ultimaSincronizacion: Long? = null,
     val licencia: LicenciaDto? = null,
     /** Hash del último catálogo aplicado (la principal no lo reenvía si no cambió). */
@@ -45,17 +43,7 @@ data class DatosSecundaria(
     val cierreSolicitado: Boolean = false,
     /** 0.21.0 (C6): el dueño rechazó la solicitud (aviso en Inicio hasta que el empleado lo cierre). */
     val avisoRechazo: Boolean = false,
-    /** 0.26.0 (§4): la principal (0.26+) asigna el fondo de cada turno; false = principal 0.25: el empleado lo escribe. */
-    val principalAsignaFondo: Boolean = false,
-    /** 0.26.0: fondo asignado para el próximo turno (centavos) y su identificador; null = sin asignar. */
-    val fondoCent: Long? = null,
-    val fondoToken: Long? = null,
-    /** 0.26.0: identificador del fondo ya usado al abrir el turno; se envía hasta que la principal deja de ofrecerlo. */
-    val fondoUsado: Long? = null,
-    /** 0.26.0: el empleado pulsó «Pedir fondo»; se envía en cada sincronización hasta que llegue el fondo. */
-    val pideFondo: Boolean = false,
 ) {
-    val modoSincronizacion: ModoSincronizacion get() = ModoSincronizacion.entries.firstOrNull { it.name == modo } ?: ModoSincronizacion.AUTOMATICA
     val permisosEmpleado: Set<PermisoEmpleado> get() = PermisoEmpleado.deNombres(permisos)
     val licenciaPrincipal: LicenciaPrincipal? get() = licencia?.aDominio()
 

@@ -126,15 +126,7 @@ data class Sincronizar(
     val cambiosAplicados: List<String> = emptyList(),
     /** 0.25.0: versionCode instalado en la secundaria (para ofrecerle el APK que tenga la principal). null = 0.24 o anterior. */
     val versionCode: Int? = null,
-    /** 0.26.0 (§4): el empleado pide el fondo para abrir turno (se repite hasta que el dueño lo asigne). */
-    val pideFondo: Boolean = false,
-    /** 0.26.0: identificador ([FondoAsignado.token]) del fondo con el que esta app abrió su turno (la principal lo gasta). */
-    val fondoUsado: Long? = null,
 ) : Mensaje
-
-/** 0.26.0 (§4): fondo de caja que el dueño asignó para el próximo turno de la secundaria. [token] = cuándo se asignó. */
-@Serializable
-data class FondoAsignado(val cent: Long, val token: Long)
 
 @Serializable @SerialName("sync_ok")
 data class SincronizarOk(
@@ -150,12 +142,6 @@ data class SincronizarOk(
     val cambiosVentas: List<CambioVenta> = emptyList(),
     /** 0.25.0: APK más nuevo que la principal ya descargó y verificó (se pide por bloques con [PedirApk]). */
     val apk: VersionApk? = null,
-    /**
-     * 0.26.0 (§4): true = esta principal asigna el fondo de los turnos de la secundaria (una principal 0.25 no lo envía:
-     * la secundaria escribe su fondo como antes). [fondo] = el asignado y aún sin usar (null = ninguno).
-     */
-    val asignaFondos: Boolean = false,
-    val fondo: FondoAsignado? = null,
     val conteoAprobado: cu.shalev.data.dto.ConteoCierreDto? = null,
     val conteoTurnoUuid: String? = null,
 ) : Mensaje
@@ -187,6 +173,21 @@ data class PedirApk(val id: Long, val sha256: String, val desde: Long) : Mensaje
 /** 0.25.0: bloque del APK en Base64 (vacío + [error] si ya no está o cambió). */
 @Serializable @SerialName("apk_bloque")
 data class BloqueApk(val id: Long, val desde: Long, val datos: String = "", val total: Long = 0, val error: String? = null) : Mensaje
+
+/** 0.32.0: secundaria → principal: siguiente bloque de una foto del catálogo (mismo mecanismo que el APK). */
+@Serializable @SerialName("foto_pedir")
+data class PedirFoto(val id: Long, val nombre: String, val desde: Long) : Mensaje
+
+/** 0.32.0: bloque de la foto en Base64 (vacío + [error] si ya no está o cambió). [sha256] = hash del archivo completo. */
+@Serializable @SerialName("foto_bloque")
+data class BloqueFoto(
+    val id: Long,
+    val desde: Long,
+    val datos: String = "",
+    val total: Long = 0,
+    val sha256: String? = null,
+    val error: String? = null,
+) : Mensaje
 
 /** Secundaria → principal: acción que cambia el catálogo (solo con conexión y con permiso). */
 @Serializable @SerialName("cmd")
@@ -260,10 +261,24 @@ data class Instantanea(
     /** Solo tarjetas y teléfonos de cobro (para el QR de Transfermóvil); el nombre y el carné del dueño NO viajan. */
     val perfil: PerfilDto? = null,
     val preferencias: PreferenciasDto? = null,
+    /** 0.32.0: fotos del catálogo. Los bytes NO van aquí: viajan aparte, por bloques ([PedirFoto]). */
+    val fotos: List<FotoCatalogoDto> = emptyList(),
 )
 
 @Serializable
 data class EmpleadoInfo(val nombre: String, val permisos: List<String>)
+
+/**
+ * 0.32.0: una foto del catálogo. [entidad] = "producto" o "servicio"; [nombre] = el archivo en el álbum de fotos
+ * (un UUID .jpg). Los bytes viajan por bloques ([PedirFoto]); la secundaria los guarda con el mismo nombre.
+ */
+@Serializable
+data class FotoCatalogoDto(
+    val entidad: String,
+    val id: Long,
+    val nombre: String,
+    val bytes: Long,
+)
 
 /**
  * [clase] = nombre de LicenciaPrincipal.Clase; [tipo] = nombre de TipoLicencia; [venceEn] epoch ms (null = perpetua).

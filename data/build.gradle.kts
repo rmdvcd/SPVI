@@ -61,7 +61,6 @@ dependencies {
     implementation(libs.fastexcel)
     // Escáner: única red de la app (bases públicas de productos) y fotos re-codificadas.
     implementation(libs.okhttp)
-    implementation(libs.androidx.exifinterface)
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

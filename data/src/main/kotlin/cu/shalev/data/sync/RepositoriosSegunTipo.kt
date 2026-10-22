@@ -148,7 +148,7 @@ class VentaRepositorySegunTipo @Inject constructor(
         val d = g.secundaria() ?: return local.registrar(venta, elaborados)
         val p = if (venta.esServicio) PermisoEmpleado.VENDER_SERVICIOS else PermisoEmpleado.VENDER_PRODUCTOS
         if (p !in d.permisosEmpleado) return AppResult.Err(AppError.SinPermiso)
-        return local.registrar(venta, elaborados).also { if (it is AppResult.Ok) g.cliente.disparar() }
+        return local.registrar(venta, elaborados)
     }
 
     /** 0.25.0 (§6bis): anular y modificar solo en la app principal. */
@@ -167,18 +167,17 @@ class TurnoRepositorySegunTipo @Inject constructor(
     private val g: GuardiaSync,
 ) : TurnoRepository by local {
     override suspend fun abrir(ahora: Instant, usuario: String, fondo: cu.shalev.core.money.Cup?): AppResult<Turno> =
-        local.abrir(ahora, usuario, fondo).also { if (it is AppResult.Ok) g.cliente.disparar() }
+        local.abrir(ahora, usuario, fondo)
 
     override suspend fun cerrar(ahora: Instant, usuario: String, contado: cu.shalev.core.money.Cup?): AppResult<Turno> =
-        (if (g.secundaria() != null) local.cerrarSinAjustar(ahora, usuario, contado) else local.cerrar(ahora, usuario, contado))
-            .also { if (it is AppResult.Ok) g.cliente.disparar() }
+        if (g.secundaria() != null) local.cerrarSinAjustar(ahora, usuario, contado) else local.cerrar(ahora, usuario, contado)
 
     override suspend fun registrarCaja(
         tipo: cu.shalev.domain.model.TipoMovimientoCaja, importe: cu.shalev.core.money.Cup, motivo: String, hechoPor: String, ahora: Instant,
-    ): AppResult<Long> = local.registrarCaja(tipo, importe, motivo, hechoPor, ahora).also { if (it is AppResult.Ok) g.cliente.disparar() }
+    ): AppResult<Long> = local.registrarCaja(tipo, importe, motivo, hechoPor, ahora)
 
     override suspend fun declararContado(contado: cu.shalev.core.money.Cup): AppResult<Unit> =
-        local.declararContado(contado).also { if (it is AppResult.Ok) g.cliente.disparar() }
+        local.declararContado(contado)
 }
 
 /** Exportar/compartir tablas y PDF: en una secundaria solo con el permiso EXPORTAR. */

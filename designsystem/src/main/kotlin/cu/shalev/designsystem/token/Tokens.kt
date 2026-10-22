@@ -23,7 +23,6 @@ object ShalevSpacing {
     val xs = 8.dp
     val md = 16.dp
     val lg = 24.dp
-    val xl = 32.dp
 }
 
 object ShalevRadius {
@@ -72,6 +71,10 @@ object ShalevSize {
     val qr = 240.dp
     /** 0.31.0 (P5): diámetro de la barra de progreso circular («Actualizar»). */
     val progresoCircular = 72.dp
+    /** 0.32.0: casilla de verificación de Shalev (la de Material 3 mide 28 dp). */
+    val casilla = 24.dp
+    /** 0.32.0: lado del cuadro visible de la casilla. */
+    val casillaCuadro = 16.dp
     /** Altura máxima de la lista corta de fijados/seleccionados (Inventario, Servicios, Precios). */
     val listaCortaMax = 240.dp
     /** Campo de cantidad (hasta 5 cifras, con letra grande). */

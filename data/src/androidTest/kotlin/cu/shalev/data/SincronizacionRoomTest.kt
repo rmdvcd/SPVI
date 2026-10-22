@@ -70,7 +70,8 @@ class SincronizacionRoomTest {
 
     private val dbP = bd()
     private val prefsP = RespaldoRoomTest.PrefsEnMemoria()
-    private val almP = AlmacenSync(dbP, prefsP, clock)
+    private val fotosP = cu.shalev.data.foto.FotosLocal(ApplicationProvider.getApplicationContext(), clock)
+    private val almP = AlmacenSync(dbP, prefsP, clock, fotosP)
     private val productosP = ProductoRepositoryImpl(dbP, clock)
     private val insumosP = InsumoRepositoryImpl(dbP, clock)
     private val turnosP = TurnoRepositoryImpl(dbP)
@@ -78,7 +79,8 @@ class SincronizacionRoomTest {
 
     private val dbS = bd()
     private val prefsS = RespaldoRoomTest.PrefsEnMemoria()
-    private val almS = AlmacenSync(dbS, prefsS, clock)
+    private val fotosS = cu.shalev.data.foto.FotosLocal(ApplicationProvider.getApplicationContext(), clock)
+    private val almS = AlmacenSync(dbS, prefsS, clock, fotosS)
     private val productosS = ProductoRepositoryImpl(dbS, clock)
     private val turnosS = TurnoRepositoryImpl(dbS)
     private val ventasS = VentaRepositoryImpl(dbS)
@@ -147,7 +149,7 @@ class SincronizacionRoomTest {
         ok(almS.aplicarEnSecundaria(Recibidos(), instantanea(luis)))
         val enS = productosS.obtener(p)!!
         assertEquals(10L, enS.cantidad)
-        assertNull(enS.fotoUri)                                              // las fotos no viajan
+        assertNull(enS.fotoUri)                                              // la foto aún no está en el álbum de esta app
         assertEquals(Modulo.normalizar(setOf(Modulo.VENTAS)), prefsS.preferencias.first().modulos)
 
         // La secundaria vende 3 en su turno.
@@ -231,6 +233,32 @@ class SincronizacionRoomTest {
         assertTrue(productosS.observarTodos().first().none { it.id == p })   // borrado en la principal → fuera de la lista
         assertEquals(listOf(pan), productosS.observarTodos().first().map { it.id })
         assertEquals(AlmacenSync.hash(instantanea(luis)), AlmacenSync.hash(instantanea(luis))) // misma huella si nada cambia
+    }
+
+    @Test fun laFotoDelCatalogoLlegaALaSecundariaYNoSePierdeAlReaplicarElCatalogo() = runBlocking {
+        // La principal tiene la foto en su álbum; la instantánea la anuncia (por nombre, no por su ruta).
+        val fotos = cu.shalev.data.foto.FotosLocal(ApplicationProvider.getApplicationContext(), clock)
+        val nombre = "foto-producto-${System.nanoTime()}.jpg"
+        fotos.guardar(nombre, "bytes-de-la-foto".toByteArray())
+        val uri = fotos.uriLocal(nombre)!!
+        val p = ok(productosP.crear(Producto(categoria = "Bebidas", nombre = "Refresco con foto",
+            precioCosto = Cup.ofPesos(60), precioVenta = Cup.ofPesos(100), cantidad = 10, creadoEn = ahora, fotoUri = uri), null))
+        val luis = empleado("Luis")
+
+        val inst = instantanea(luis)
+        assertEquals(listOf("producto"), inst.fotos.map { it.entidad })
+        assertEquals(nombre, inst.fotos.single().nombre)
+        assertEquals(p, inst.fotos.single().id)
+        assertEquals(16L, inst.fotos.single().bytes) // "bytes-de-la-foto" son 16 bytes
+
+        // La secundaria enlaza la foto a SU propio archivo (el de este teléfono), no a la ruta de la principal.
+        ok(almS.aplicarEnSecundaria(Recibidos(), inst))
+        assertEquals(uri, productosS.obtener(p)!!.fotoUri)
+
+        // Y al reaplicar el catálogo (cambia el hash) la foto NO se pierde: el archivo sigue en el álbum.
+        ok(productosP.ajustarStock(p, 1, "compra"))
+        ok(almS.aplicarEnSecundaria(Recibidos(), instantanea(luis)))
+        assertEquals(uri, productosS.obtener(p)!!.fotoUri)
     }
 
     @Test fun ventaSinExistenciasEnLaPrincipalQuedaNegativaYConAviso() = runBlocking {

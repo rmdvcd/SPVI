@@ -1,5 +1,6 @@
 package cu.shalev.app.onboarding
 
+import cu.shalev.designsystem.component.ShalevCheckbox
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.ui.unit.Density
@@ -22,7 +23,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.RadioButton
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.ui.semantics.contentDescription
@@ -485,7 +485,7 @@ private fun OpcionTour(titulo: String, detalle: String, icon: ImageVector, marca
     ShalevListItem(
         title = titulo, subtitle = detalle, subtitleMaxLines = 3, indicatorColor = null, selected = marcado,
         leading = {
-            if (radio) RadioButton(selected = marcado, onClick = null) else Checkbox(checked = marcado, onCheckedChange = null)
+            if (radio) RadioButton(selected = marcado, onClick = null) else ShalevCheckbox(checked = marcado, onCheckedChange = null)
         },
         trailing = { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
         onClick = onClick,

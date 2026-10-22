@@ -22,16 +22,4 @@ class SolicitudesCierreViewModel @Inject constructor(principal: PrincipalReposit
         .map { l -> l.count { it.solicitaCierre } }
         .catch { emit(0) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
-
-    /** 0.26.0 (P73 §4): nombres de los empleados que piden el fondo para abrir turno («Luis pide abrir turno»). */
-    val aperturas: StateFlow<List<String>> = principal.observarEmpleados()
-        .map { l -> l.filter { it.pideApertura }.map { it.nombre } }
-        .catch { emit(emptyList()) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-
-    /** 0.26.0: secundarias con una app anterior a la 0.26.0 (escriben su propio fondo): «Actualiza la app de X». */
-    val desactualizadas: StateFlow<List<String>> = principal.observarEmpleados()
-        .map { l -> l.filter { it.appDesactualizada }.map { it.nombre } }
-        .catch { emit(emptyList()) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 }

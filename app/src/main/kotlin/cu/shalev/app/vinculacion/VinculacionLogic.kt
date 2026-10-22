@@ -32,6 +32,8 @@ object VinculacionLogic {
     const val VINCULADA = "Vinculada correctamente"
     const val SINCRONIZADA = "Sincronizado"
     const val GUARDADO = "Cambios guardados"
+    /** 0.32.0: la principal avisó de que cambió el catálogo. */
+    const val CAMBIOS_PENDIENTES = "El dueño cambió el catálogo. Sincroniza para recibirlo."
 
     // 0.20.0 (H4): cobro por transferencia de cada empleado.
     const val COBRO = "Cobro por transferencia"
@@ -56,28 +58,16 @@ object VinculacionLogic {
         "Su app lo cerrará al conectarse, nunca durante una venta. Las ventas del turno se quedan registradas."
     const val SIN_TURNO = "Ese turno ya está cerrado."
 
-    // 0.26.0 (P73 §4): el fondo de cada turno de una secundaria lo asigna el dueño.
-    const val FONDO_PROXIMO = "Fondo del próximo turno"
-    const val ASIGNAR_FONDO = "Asignar fondo"
-    const val ASIGNAR_FONDO_TEXTO = "Efectivo con el que empezará su próximo turno (puede ser 0). Sin él, su app no puede abrir turno."
-    const val SIN_FONDO = "Sin asignar · su app no puede abrir turno"
-    const val PIDE_APERTURA = "Pide abrir turno · asígnale el fondo"
-    const val APP_DESACTUALIZADA = "Su app necesita actualizarse para recibir el fondo que le asignas"
-    fun fondoAsignado(c: cu.shalev.core.money.Cup) = "${cu.shalev.core.money.Money.format(c)} · se usa al abrir el turno"
-    fun fondoEnviado(nombre: String, conectada: Boolean) =
-        if (conectada) "Fondo asignado: la app de $nombre ya puede abrir turno"
-        else "Fondo asignado: le llegará a $nombre cuando su app se conecte"
+    // 0.32.0: el fondo de cada turno lo escribe quien abre el turno (también en una secundaria).
 
-    /** 0.26.0: estado del fondo en la ficha. null = no aplica (turno abierto o sin vincular). */
-    fun fondoEmpleado(e: Empleado): String? {
-        val f = e.fondoAsignado
-        return when {
-            !e.vinculado || e.turnoAbiertoDesde != null -> null
-            e.appDesactualizada -> APP_DESACTUALIZADA
-            f != null -> fondoAsignado(f)
-            e.pideApertura -> PIDE_APERTURA
-            else -> SIN_FONDO
+    /** 0.32.0: avance de la sincronización de una app conectada. */
+    fun progreso(p: cu.shalev.domain.model.ProgresoSync): String {
+        val fase = when (p.fase) {
+            cu.shalev.domain.model.FaseSync.RECIBIENDO -> "Recibiendo"
+            cu.shalev.domain.model.FaseSync.ENVIANDO -> "Enviando"
+            cu.shalev.domain.model.FaseSync.APLICANDO -> "Guardando"
         }
+        return if (p.conTotal) "$fase · ${(p.fraccion * 100).toInt()} %" else fase
     }
 
     fun subtituloAjustes(tipo: TipoApp, secundarias: Int, negocio: String): String = when (tipo) {
@@ -112,7 +102,7 @@ object VinculacionLogic {
 
     /** Subtítulo de la fila: el turno (si hay) y la conexión. */
     fun subtituloEmpleado(e: Empleado, conectada: Boolean, ahora: Instant): String =
-        listOfNotNull(turnoEmpleado(e, conectada), PIDE_APERTURA.takeIf { e.pideApertura }, estadoEmpleado(e, conectada, ahora)).joinToString("\n")
+        listOfNotNull(turnoEmpleado(e, conectada), estadoEmpleado(e, conectada, ahora)).joinToString("\n")
 
     /** 0.21.0 (C4): el máximo lo da la licencia. */
     fun tituloLista(n: Int, limite: Int) = "Secundarias ($n de $limite)"

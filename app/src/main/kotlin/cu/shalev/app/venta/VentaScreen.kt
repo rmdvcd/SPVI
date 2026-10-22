@@ -1,7 +1,7 @@
 package cu.shalev.app.venta
 
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Checkbox
+import cu.shalev.designsystem.component.ShalevCheckbox
 import cu.shalev.domain.model.nombreCompleto
 import cu.shalev.designsystem.component.FiltroEntrada
 import cu.shalev.designsystem.component.BannerTone
@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -180,7 +181,6 @@ fun VentaScreen(
         sugerido = caja.sugerido, trabajando = state.abriendo,
         onConfirmar = { f -> pedirFondo = false; pedirPermisoAviso(); viewModel.abrirTurno(f) },
         onDismiss = { pedirFondo = false },
-        fondo = caja.fondo, onPedirFondo = { pedirFondo = false; cajaVm.pedirFondo() },
     )
     VentaContent(
         tipo = tipo,
@@ -223,6 +223,9 @@ fun VentaContent(
         topBar = { ShalevTopBar(title = titulo, onBack = acciones.onAtras) },
         snackbarHost = { ShalevSnackbarHost(snackbar) },
         bottomBar = { if (state.permiso is Permiso.Permitido) BarraAcciones(state, acciones) },
+        // 0.32.0 (A11): con el teclado abierto (paso de datos del cliente) la barra de acciones sube con él.
+        // Sin esto, el botón de confirmar queda debajo del teclado (edge-to-edge no redimensiona la ventana).
+        modifier = Modifier.imePadding(),
     ) { padding ->
         Column(Modifier.fillMaxSize().shalevContentWidth().padding(padding)) {
             if (state.trabajando) ShalevLinearProgress(Modifier.fillMaxWidth())
@@ -524,7 +527,7 @@ private fun PasoCliente(state: VentaUiState, acciones: AccionesVenta, capturaSms
         item(key = "cliente_fijo") {
             ShalevListItem(
                 title = TextosVenta.CLIENTE_FIJO, subtitle = TextosVenta.CLIENTE_FIJO_AYUDA, subtitleMaxLines = 3, indicatorColor = null,
-                leading = { Checkbox(checked = f.fijo, onCheckedChange = null) },
+                leading = { ShalevCheckbox(checked = f.fijo, onCheckedChange = null) },
                 onClick = { acciones.onClienteFijo(!f.fijo) },
                 modifier = Modifier.testTag(VentaTags.CLIENTE_FIJO),
             )
@@ -599,8 +602,10 @@ private fun BarraAcciones(state: VentaUiState, acciones: AccionesVenta) {
     ShalevBarraAcciones {
         when (state.paso) {
             PasoVenta.CARRITO -> ShalevPrimaryButton(
+                // 0.32.0 (A12): el icono dice la acción (continuar), no el método de pago: el de «Efectivo» a 24dp
+                // se confundía con una cámara. El método elegido ya se ve en los chips de arriba.
                 "Continuar", onClick = acciones.onContinuar, enabled = state.puedeContinuar, loading = state.trabajando,
-                icon = if (state.metodo == MetodoPago.EFECTIVO) ShalevIcons.Efectivo else ShalevIcons.Transferencia,
+                icon = ShalevIcons.Siguiente,
                 modifier = Modifier.testTag(VentaTags.CONTINUAR),
             )
             PasoVenta.COMPROBANTE -> {

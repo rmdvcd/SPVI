@@ -299,14 +299,6 @@ class PrincipalRepoFake : cu.shalev.domain.repository.PrincipalRepository {
     val rechazados = mutableListOf<Long>()
     override suspend fun aprobarCierre(empleadoId: Long): AppResult<Unit> { aprobados += empleadoId; return AppResult.Ok(Unit) }
     override suspend fun rechazarCierre(empleadoId: Long): AppResult<Unit> { rechazados += empleadoId; return AppResult.Ok(Unit) }
-    val fondos = mutableListOf<Pair<Long, Cup>>()
-    override suspend fun asignarFondo(empleadoId: Long, fondo: Cup): AppResult<Unit> {
-        fondos += empleadoId to fondo
-        empleados.value = empleados.value.map { if (it.id == empleadoId) it.copy(fondoAsignado = fondo, aperturaSolicitadaEn = null) else it }
-        return AppResult.Ok(Unit)
-    }
-    var sugerido: Cup? = null
-    override suspend fun fondoSugerido(empleadoId: Long): Cup? = sugerido
 }
 
 class SecundariaRepoFake : cu.shalev.domain.repository.SecundariaRepository {
@@ -323,11 +315,8 @@ class SecundariaRepoFake : cu.shalev.domain.repository.SecundariaRepository {
         flow.value = flow.value.copy(cierreSolicitado = true); return AppResult.Ok(Unit)
     }
     override suspend fun sincronizarAhora(): AppResult<Unit> = AppResult.Err(AppError.SinPrincipal())
-    override suspend fun cambiarModo(modo: cu.shalev.domain.model.ModoSincronizacion) = Unit
     override suspend fun desvincular(): AppResult<Unit> = AppResult.Ok(Unit)
     override suspend fun descartarAvisoCierre() { flow.value = flow.value.copy(turnoCerradoPorPrincipal = false, cierreRechazado = false) }
-    var fondoPedido = 0
-    override suspend fun pedirFondo(): AppResult<Unit> { fondoPedido++; flow.value = flow.value.copy(fondoPedido = true); return AppResult.Ok(Unit) }
 }
 
 /** 0.25.0: estado propio de la app en memoria (recordatorio de respaldo, versiones, licencia recuperable). */

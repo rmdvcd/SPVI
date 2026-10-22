@@ -27,7 +27,6 @@ class ExportacionTest {
 
     private class Exportador : ExportadorDocumentos {
         val llamadas = mutableListOf<Pair<List<TablaExport>, FormatoExport>>()
-        override val formatos = setOf(FormatoExport.PDF, FormatoExport.XLSX)
         override suspend fun exportar(tablas: List<TablaExport>, formato: FormatoExport, destino: OutputStream): AppResult<Unit> {
             llamadas += tablas to formato
             destino.write(formato.extension.toByteArray())

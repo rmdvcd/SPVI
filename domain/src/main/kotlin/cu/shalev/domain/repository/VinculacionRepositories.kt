@@ -6,7 +6,6 @@ import cu.shalev.domain.model.Empleado
 import cu.shalev.domain.model.EstadoPrincipal
 import cu.shalev.domain.model.EstadoSecundaria
 import cu.shalev.domain.model.LicenciaPrincipal
-import cu.shalev.domain.model.ModoSincronizacion
 import cu.shalev.domain.model.PermisoEmpleado
 import cu.shalev.domain.model.PermisosApp
 import cu.shalev.domain.model.TipoApp
@@ -45,13 +44,6 @@ interface PrincipalRepository {
     suspend fun aprobarCierre(empleadoId: Long): AppResult<Unit>
     /** 0.21.0 (C6): rechaza la solicitud; se le avisa en la próxima sincronización y su turno sigue abierto. */
     suspend fun rechazarCierre(empleadoId: Long): AppResult<Unit>
-    /**
-     * 0.26.0 (P73 §4): fondo de caja del PRÓXIMO turno de esa secundaria (puede ser 0). Sin él, su app no abre turno.
-     * Resuelve su petición «Pedir fondo»; se le envía al momento si está conectada o al conectar. Se gasta al abrir.
-     */
-    suspend fun asignarFondo(empleadoId: Long, fondo: cu.shalev.core.money.Cup): AppResult<Unit>
-    /** 0.26.0: fondo que se propone al asignar: lo contado al cerrar el último turno de esa secundaria (o su fondo). */
-    suspend fun fondoSugerido(empleadoId: Long): cu.shalev.core.money.Cup?
     /** Quita la secundaria: deja de sincronizar y, al conectarse, borra sus datos. Sus ventas ya recibidas se quedan. */
     suspend fun quitarEmpleado(empleadoId: Long): AppResult<Unit>
 }
@@ -70,14 +62,8 @@ interface SecundariaRepository {
      * conexión, espera) y el empleado sigue vendiendo hasta que el dueño lo apruebe.
      */
     suspend fun solicitarCierre(contado: cu.shalev.core.money.Cup): AppResult<Unit>
-    /**
-     * 0.26.0 (P73 §4): pide al dueño el fondo para abrir turno. Se envía en la próxima sincronización (sin conexión,
-     * espera) y se repite hasta que llegue.
-     */
-    suspend fun pedirFondo(): AppResult<Unit>
     /** Envía lo pendiente y trae el catálogo. Error SinPrincipal si no hay conexión. */
     suspend fun sincronizarAhora(): AppResult<Unit>
-    suspend fun cambiarModo(modo: ModoSincronizacion)
     /** Borra los datos de este teléfono y vuelve a PRINCIPAL. Lo no enviado se pierde (la UI avisa antes). */
     suspend fun desvincular(): AppResult<Unit>
     /** 0.20.0 (H5): el empleado leyó el aviso «Tu turno lo cerró el encargado» (0.21.0: o «no aprobó el cierre»). */
@@ -95,16 +81,6 @@ interface SecundariaRepository {
  */
 interface PuertaTurno {
     suspend fun antesDeAbrir(): AppResult<Unit>
-
-    /**
-     * 0.26.0 (P73 §4): fondo con el que DEBE abrirse el turno (el que asignó el dueño a esta secundaria). Ok(null) = lo
-     * escribe quien abre (la principal, o una secundaria cuya principal es 0.25). Err Validacion("fondo", REQUERIDO) =
-     * la secundaria aún no tiene fondo asignado. Se consulta después de [antesDeAbrir] (que trae lo último).
-     */
-    suspend fun fondoObligado(): AppResult<cu.shalev.core.money.Cup?> = AppResult.Ok(null)
-
-    /** 0.26.0: el turno se abrió con el fondo obligado: se gasta (el próximo turno necesita otro). */
-    suspend fun fondoUsado() {}
 
     companion object {
         val SIEMPRE: PuertaTurno = object : PuertaTurno {

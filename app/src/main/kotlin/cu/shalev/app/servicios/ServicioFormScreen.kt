@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,7 +30,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,17 +41,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cu.shalev.app.common.HojaAgregarInsumo
 import cu.shalev.app.common.rememberSalidaProtegida
 import cu.shalev.core.money.Money
 import cu.shalev.designsystem.component.FiltroEntrada
 import cu.shalev.designsystem.component.CardTone
 import cu.shalev.designsystem.component.ShalevBarraAcciones
-import cu.shalev.designsystem.component.ShalevBottomSheet
 import cu.shalev.designsystem.component.ShalevButtonRow
 import cu.shalev.designsystem.component.ShalevCard
 import cu.shalev.designsystem.component.ShalevEmptyState
 import cu.shalev.designsystem.component.ShalevIconAction
-import cu.shalev.designsystem.component.ShalevListItem
 import cu.shalev.designsystem.component.ShalevLoading
 import cu.shalev.designsystem.component.ShalevPrimaryButton
 import cu.shalev.designsystem.component.ShalevSecondaryButton
@@ -64,7 +61,6 @@ import cu.shalev.designsystem.component.ShalevTopBar
 import cu.shalev.designsystem.component.shalevContentWidth
 import cu.shalev.designsystem.icon.ShalevIcons
 import cu.shalev.designsystem.ilustracion.ShalevIlustracion
-import cu.shalev.designsystem.token.ShalevSize
 import cu.shalev.designsystem.token.ShalevSpacing
 import cu.shalev.domain.model.Insumo
 
@@ -151,7 +147,10 @@ fun ServicioFormContent(state: ServicioFormUiState, acciones: AccionesServicioFo
             else -> Formulario(state, acciones, Modifier.padding(padding).consumeWindowInsets(padding))
         }
     }
-    if (state.hojaInsumos) HojaInsumos(state, acciones)
+    if (state.hojaInsumos) HojaAgregarInsumo(
+        state.insumos, state.insumosDisponibles,
+        onCerrar = { acciones.onMostrarInsumos(false) }, onAgregar = acciones.onAgregarInsumo,
+    )
 }
 
 @Composable
@@ -253,24 +252,6 @@ private fun Insumos(state: ServicioFormUiState, a: AccionesServicioForm) {
         }
         ShalevButtonRow {
             ShalevSecondaryButton("Agregar insumo", onClick = { a.onMostrarInsumos(true) }, icon = ShalevIcons.AgregarALista, modifier = Modifier.testTag(ServicioFormTags.AGREGAR_INSUMO))
-        }
-    }
-}
-
-@Composable
-private fun HojaInsumos(state: ServicioFormUiState, a: AccionesServicioForm) {
-    var buscar by rememberSaveable { mutableStateOf("") }
-    ShalevBottomSheet(onDismiss = { a.onMostrarInsumos(false) }, title = "Agregar insumo") {
-        val lista = state.insumosDisponibles.filter { buscar.isBlank() || it.nombre.contains(buscar.trim(), ignoreCase = true) }
-        if (state.insumos.isEmpty()) {
-            ShalevEmptyState(
-                title = "Aún no tienes insumos", detail = "Créalos en Inventario → Agregar → Insumo.", ilustracion = ShalevIlustracion.Elaboracion,
-                modifier = Modifier.heightIn(max = ShalevSize.contentMaxWidth),
-            )
-        } else {
-            ShalevTextField(filtro = FiltroEntrada.BUSQUEDA, value = buscar, onValueChange = { buscar = it }, label = "Buscar insumo", leadingIcon = ShalevIcons.Buscar, modifier = Modifier.fillMaxWidth())
-            if (lista.isEmpty()) ShalevSecondaryText("Ningún insumo coincide.", textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-            lista.forEach { i -> ShalevListItem(title = i.nombre, indicatorColor = null, onClick = { a.onAgregarInsumo(i) }) }
         }
     }
 }

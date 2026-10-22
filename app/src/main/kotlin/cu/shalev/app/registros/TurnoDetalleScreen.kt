@@ -111,7 +111,7 @@ fun TurnoDetalleScreen(onBack: () -> Unit, viewModel: TurnoDetalleViewModel = hi
         viewModel.eventos.collect { e ->
             when (e) {
                 is EventoRegistros.CompartirArchivo ->
-                    if (!Compartir.archivos(context, listOf(e.archivo), e.mime, e.asunto)) snackbar.showSnackbar(TextosRegistros.ERROR_COMPARTIR)
+                    if (!Compartir.archivos(context, listOf(e.archivo), e.mime, e.asunto)) snackbar.showSnackbar(Compartir.SIN_APLICACION)
                 is EventoRegistros.GuardarComo -> (if (e.mime == FormatoExport.XLSX.mime) guardarXlsx else guardarPdf).launch(e.nombre)
                 is EventoRegistros.Mensaje -> snackbar.showSnackbar(e.texto)
             }

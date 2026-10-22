@@ -39,8 +39,6 @@ data class CajaUiState(
     val trabajando: Boolean = false,
     /** Recordatorio mensual de respaldo (solo principal). */
     val avisoRespaldo: RecordatorioRespaldo.Aviso? = null,
-    /** 0.26.0 (P73 §4): en una secundaria, el fondo lo asigna el encargado. */
-    val fondo: FondoApertura = FondoApertura.Libre,
 )
 
 /**
@@ -55,7 +53,6 @@ class CajaViewModel @Inject constructor(
     private val estadoApp: EstadoAppRepository,
     tipoApp: TipoAppRepository,
     private val clock: Clock,
-    private val secundaria: cu.shalev.domain.repository.SecundariaRepository,
 ) : ViewModel() {
 
     private val local = MutableStateFlow(CajaUiState())
@@ -67,9 +64,8 @@ class CajaViewModel @Inject constructor(
         turnos.observarArqueoActivo().catch { emit(null) },
         estadoApp.estado.catch { emit(cu.shalev.domain.model.EstadoApp()) },
         tipoApp.tipo,
-        secundaria.estado,
-    ) { l, a, e, t, s ->
-        l.copy(arqueo = a, avisoRespaldo = RecordatorioRespaldo.aviso(clock.now(), e, t == TipoApp.PRINCIPAL), fondo = FondoApertura.de(s))
+    ) { l, a, e, t ->
+        l.copy(arqueo = a, avisoRespaldo = RecordatorioRespaldo.aviso(clock.now(), e, t == TipoApp.PRINCIPAL))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CajaUiState())
 
     init {
@@ -87,20 +83,6 @@ class CajaViewModel @Inject constructor(
         viewModelScope.launch {
             val s = try { fondoSugerido() } catch (e: CancellationException) { throw e } catch (e: Exception) { null }
             local.update { it.copy(sugerido = s) }
-        }
-    }
-
-    /** 0.26.0 (P73 §4): «Pedir fondo» en la secundaria (se envía al sincronizar; sin conexión, espera). */
-    fun pedirFondo() {
-        viewModelScope.launch {
-            val r = try { secundaria.pedirFondo() } catch (e: CancellationException) { throw e } catch (e: Exception) { AppResult.Err(AppError.Desconocido()) }
-            mensajes.trySend(
-                when {
-                    r is AppResult.Ok -> TextosCaja.FONDO_PEDIDO
-                    r is AppResult.Err && r.error == AppError.TurnoYaAbierto -> "Ya hay un turno abierto."
-                    else -> "No se pudo pedir el fondo. Inténtalo de nuevo."
-                },
-            )
         }
     }
 

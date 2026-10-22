@@ -24,8 +24,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -249,7 +249,9 @@ private fun ShalevVentana(
             // La ventana del diálogo ocupa toda la pantalla: tocar fuera de la tarjeta cierra (la tarjeta consume sus toques).
             Box(
                 Modifier.fillMaxSize().background(cs.scrim.copy(alpha = ALFA_VELO))
-                    .pointerInput(Unit) { detectTapGestures { cerrar() } }.imePadding().padding(ShalevSpacing.md),
+                    // 0.32.0 (A13): la ventana respeta barras del sistema, recorte (notch) y teclado. Antes solo
+                    // apartaba el teclado: en horizontal la hoja podía quedar bajo la barra de estado o el notch.
+                    .pointerInput(Unit) { detectTapGestures { cerrar() } }.safeDrawingPadding().padding(ShalevSpacing.md),
                 contentAlignment = Alignment.Center,
             ) {
                 Surface(

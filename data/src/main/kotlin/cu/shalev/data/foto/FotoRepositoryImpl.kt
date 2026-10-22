@@ -5,7 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.net.Uri
-import androidx.exifinterface.media.ExifInterface
+import android.media.ExifInterface
 import cu.shalev.core.result.AppError
 import cu.shalev.core.result.AppResult
 import cu.shalev.core.time.Clock
@@ -43,6 +43,22 @@ class AlmacenFotos(dir: File, private val clock: Clock) {
 
     fun eliminar(uri: String): Boolean = archivoDe(uri)?.delete() == true
 
+    /**
+     * 0.32.0: archivo con ese nombre dentro de la carpeta de fotos (el que llega de la principal por la red local).
+     * null si el nombre no es válido o el archivo no está: nunca se sale de la carpeta.
+     */
+    fun archivoPorNombre(nombre: String): File? =
+        if (!NOMBRE_OK.matches(nombre)) null else File(dir, nombre).takeIf { it.isFile }
+    /** 0.32.0: guarda los bytes de una foto con el nombre que le dio la principal. null si el nombre no vale. */
+    fun guardarBytes(nombre: String, datos: ByteArray): File? {
+        if (!NOMBRE_OK.matches(nombre)) return null
+        dir.mkdirs()
+        val f = File(dir, nombre)
+        f.outputStream().use { it.write(datos) }
+        return f
+    }
+
+
     /** Borra las no usadas con más de [GRACIA_MS] (un formulario abierto no pierde su foto). */
     fun limpiar(enUso: Set<String>): Int {
         val limite = clock.now().toEpochMilli() - GRACIA_MS
@@ -50,7 +66,12 @@ class AlmacenFotos(dir: File, private val clock: Clock) {
         return dir.listFiles().orEmpty().count { f -> f.isFile && f !in usados && f.lastModified() < limite && f.delete() }
     }
 
-    companion object { const val GRACIA_MS = 24 * 60 * 60 * 1000L }
+    companion object {
+        const val GRACIA_MS = 24 * 60 * 60 * 1000L
+
+        /** 0.32.0: solo nombres propios (UUID .jpg): nada de rutas ni de subcarpetas. */
+        val NOMBRE_OK = Regex("[A-Za-z0-9_-]{1,64}\\.jpg")
+    }
 }
 
 /** Cálculos de tamaño (puros). */
@@ -85,8 +106,7 @@ object Imagenes {
 /**
  * Fotos de productos en `filesDir/fotos` (privado, dentro del sandbox de la app). Toda imagen se decodifica
  * y se RE-CODIFICA a JPEG ≤ 1024 px: se descartan metadatos (EXIF con GPS, etc.) y cualquier contenido que no
- * sea imagen. Solo fotos propias (cámara/galería) y, en depuración, las imágenes que trae el seed dentro de la
- * app (`assets/seed/fotos`, ver [importarIncluida]): nunca se descarga nada de internet.
+ * sea imagen. Solo fotos propias (cámara/galería): nunca se descarga nada de internet.
  */
 @Singleton
 class FotoRepositoryImpl @Inject constructor(
@@ -107,19 +127,6 @@ class FotoRepositoryImpl @Inject constructor(
             throw e
         } catch (e: Exception) {
             AppResult.Err(AppError.Almacenamiento)
-        }
-    }
-
-    override suspend fun importarIncluida(nombre: String): AppResult<String> = withContext(io) {
-        try {
-            val bytes = context.assets.open("seed/fotos/$nombre.jpg").use {
-                Imagenes.leerLimitado(it, Imagenes.MAX_BYTES_IMPORTAR)
-            } ?: return@withContext AppResult.Err(AppError.FormatoInvalido("imagen"))
-            guardar(bytes)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            AppResult.Err(AppError.NoEncontrado)
         }
     }
 

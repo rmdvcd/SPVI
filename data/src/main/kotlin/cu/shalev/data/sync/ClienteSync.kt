@@ -7,7 +7,8 @@ import cu.shalev.core.result.AppResult
 import cu.shalev.core.time.Clock
 import cu.shalev.domain.model.CodigoVinculacion
 import cu.shalev.domain.model.EstadoConexion
-import cu.shalev.domain.model.ModoSincronizacion
+import cu.shalev.domain.model.FaseSync
+import cu.shalev.domain.model.ProgresoSync
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.IOException
@@ -22,18 +23,18 @@ import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.selects.onTimeout
-import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -41,19 +42,21 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * P37: cliente de la app SECUNDARIA.
- *  - Automática: mantiene la conexión, envía cada venta al momento y sincroniza cuando la principal avisa de cambios
- *    (o cada [LATIDO_MS] como mínimo). Sin conexión reintenta con espera creciente (5 s → 60 s).
- *  - Manual: solo conecta al pedirlo (botón, abrir turno o una acción que necesita a la principal) y luego cierra.
+ *
+ * 0.32.0: ya no hay sincronización automática. La app sincroniza cuando el empleado lo pide («Sincronizar ahora»),
+ * al abrir un turno (obligatorio: no se empieza un turno con el catálogo viejo) y cuando la principal avisa de que
+ * cambió el catálogo (aviso «hay cambios pendientes»). La sesión con la principal se mantiene abierta mientras el
+ * teléfono esté en la red: así el dueño ve si su app está conectada o no.
  */
-@OptIn(ExperimentalCoroutinesApi::class) // select { onTimeout }
 @Singleton
-class ClienteSync @Inject constructor(
-    private val almacen: AlmacenSync,
+class ClienteSync @Inject constructor(    private val almacen: AlmacenSync,
     private val config: ConfigSync,
     private val red: RedLocal,
     private val clock: Clock,
     /** 0.25.0: recepción del APK que reparte la principal. */
     private val apkLocal: ApkLocal,
+    /** 0.32.0: fotos del catálogo (la principal las reparte; aquí se guardan). */
+    private val fotosLocal: cu.shalev.data.foto.FotosLocal,
     private val info: cu.shalev.domain.model.InfoApp,
     /** 0.31.0 (mitigación 7): `deviceId` de este teléfono, para que la principal le firme su sub-token. */
     private val deviceIds: cu.shalev.data.licencia.DeviceIdProvider,
@@ -71,79 +74,80 @@ class ClienteSync @Inject constructor(
     private val _conexion = MutableStateFlow<EstadoConexion>(EstadoConexion.Desconectada)
     val conexion: StateFlow<EstadoConexion> = _conexion.asStateFlow()
 
+    /** 0.32.0: avance de la sincronización en curso (null = no hay ninguna). */
+    private val _progreso = MutableStateFlow<ProgresoSync?>(null)
+    val progreso: StateFlow<ProgresoSync?> = _progreso.asStateFlow()
+
+    /** 0.32.0: la principal avisó de que cambió el catálogo: hay que sincronizar para recibirlo. */
+    private val _cambiosPendientes = MutableStateFlow(false)
+    val cambiosPendientes: StateFlow<Boolean> = _cambiosPendientes.asStateFlow()
+
+    /** 0.32.0: aviso de que esta app terminó de sincronizar. */
+    private val _sincronizada = MutableSharedFlow<Unit>(extraBufferCapacity = 4)
+    val sincronizada: SharedFlow<Unit> = _sincronizada.asSharedFlow()
+
     /** El dueño quitó esta app (rechazo autenticado o mensaje en sesión). Lo atiende el repositorio: borra y vuelve a PRINCIPAL. */
     var alSerQuitada: (suspend () -> Unit)? = null
 
     private val conectando = Mutex()
     private val ronda = Mutex()
-    private val disparos = Channel<Unit>(Channel.CONFLATED)
     /**
      * Sesión vigente. 0.21.7 (P-e, punto 1): quien ve un error cierra SOLO la sesión que usó (compare-and-set, ver
      * [cerrarSesion]); antes cerraba la que hubiera en ese momento, que podía ser una nueva y sana de otra corrutina.
      */
     private val actual = AtomicReference<SesionCliente?>(null)
-    private var automatico: Job? = null
 
-    // ---------------------------------------------------------------- modo automático
-
-    @Synchronized
-    fun iniciarAutomatico() {
-        if (automatico?.isActive == true) return
-        automatico = scope.launch {
+    /**
+     * 0.32.0: si se cae la conexión, se reintenta: la app del empleado debe verse «conectada» en la principal
+     * mientras esté en la red. Espera creciente de 5 s a 60 s (como el antiguo modo automático). Al desvincular,
+     * ya no hay datos de vinculación y el reintento termina.
+     */
+    private fun reconectar() {
+        scope.launch {
             var espera = ESPERA_MIN_MS
-            while (true) {
-                when (sincronizar()) {
-                    is AppResult.Ok -> {
-                        espera = ESPERA_MIN_MS
-                        select<Unit> {
-                            disparos.onReceive { }
-                            onTimeout(LATIDO_MS) { }
-                        }
-                    }
-                    is AppResult.Err -> {
-                        val d = config.secundariaActual() ?: break
-                        if (d.modoSincronizacion != ModoSincronizacion.AUTOMATICA) break
-                        select<Unit> {
-                            disparos.onReceive { }
-                            onTimeout(espera) { }
-                        }
-                        espera = (espera * 2).coerceAtMost(ESPERA_MAX_MS)
-                    }
-                }
+            while (isActive) {
+                delay(espera)
+                val d = config.secundariaActual() ?: return@launch
+                if (sesionAbierta(d) != null) return@launch
+                espera = (espera * 2).coerceAtMost(ESPERA_MAX_MS)
             }
         }
     }
 
-    @Synchronized
-    fun detenerAutomatico() {
-        automatico?.cancel()
-        automatico = null
-        cerrarSesion()
-    }
-
-    /** Hay algo nuevo que enviar (venta, turno): en modo automático se envía ya. */
-    fun disparar() { disparos.trySend(Unit) }
-
     // ---------------------------------------------------------------- operaciones
 
+    /**
+     * 0.32.0: abre la sesión con la principal y la **mantiene abierta** (el ping la refresca): el dueño ve si la
+     * app del empleado está conectada o no, y por eso los sonidos de conectar/desconectar tienen sentido.
+     * No sincroniza nada: solo mantiene el enlace.
+     */
+    suspend fun conectar() {
+        val d = config.secundariaActual() ?: return
+        sesionAbierta(d)
+    }
+
     /** Una ronda completa: envía lo pendiente, recibe lo guardado y, si cambió, el catálogo. */
-    suspend fun sincronizar(): AppResult<Unit> = ronda.withLock {
-        val d = config.secundariaActual() ?: return@withLock AppResult.Err(AppError.NoEncontrado)
+    suspend fun sincronizar(): AppResult<Unit> = ronda.withLock {        val d = config.secundariaActual() ?: return@withLock AppResult.Err(AppError.NoEncontrado)
         val s = sesionAbierta(d) ?: return@withLock AppResult.Err(AppError.SinPrincipal(almacen.pendientes()))
         try {
             val lote = almacen.lotePendiente()
             val confirmar = cambiosAplicados
-            val r = s.pedir { id ->
-                Sincronizar(
-                    id, lote, d.hash, telefono = d.telefono, solicitaCierre = d.cierreSolicitado,
-                    cambiosAplicados = confirmar, versionCode = info.versionCode,
-                    pideFondo = d.pideFondo, fondoUsado = d.fondoUsado,
-                )
-            } as? SincronizarOk ?: throw ProtocoloException("respuesta inesperada")
+            val r = s.pedir(
+                { id ->
+                    Sincronizar(
+                        id, lote, d.hash, telefono = d.telefono, solicitaCierre = d.cierreSolicitado,
+                        cambiosAplicados = confirmar, versionCode = info.versionCode,
+                    )
+                },
+                { hecho, total -> if (total >= FRAME_GRANDE) _progreso.value = ProgresoSync(hecho, total, FaseSync.ENVIANDO) },
+            ) as? SincronizarOk ?: throw ProtocoloException("respuesta inesperada")
+            _progreso.value = ProgresoSync(0, 0, FaseSync.APLICANDO)
             when (val a = almacen.aplicarEnSecundaria(r.recibidos, r.instantanea)) {
                 is AppResult.Err -> return@withLock a
                 is AppResult.Ok -> Unit
             }
+            // 0.32.0: las fotos del catálogo que aún no tiene (los bytes van por bloques, como el APK).
+            r.instantanea?.fotos?.let { fotos -> descargarFotos(s, fotos) }
             // 0.25.0: ventas anuladas/corregidas en la principal; se confirman en la próxima ronda (que se pide ya).
             val hechos = if (r.cambiosVentas.isEmpty()) emptyList()
             else (almacen.aplicarCambios(r.cambiosVentas) as? AppResult.Ok)?.value.orEmpty()
@@ -162,7 +166,7 @@ class ClienteSync @Inject constructor(
                     // 0.21.0 (C6): aprobada (llega cerrarTurno) o rechazada: la solicitud ya está resuelta.
                     cierreSolicitado = x.cierreSolicitado && !r.cerrarTurno && !r.cierreRechazado,
                     avisoRechazo = x.avisoRechazo || (r.cierreRechazado && x.cierreSolicitado),
-                ).conFondo(r)
+                )
                 if (inst == null) base else base.copy(
                     hash = r.hash, nombreNegocio = inst.nombreNegocio, nombreEmpleado = inst.empleado.nombre,
                     permisos = inst.empleado.permisos,
@@ -170,14 +174,56 @@ class ClienteSync @Inject constructor(
                     licencia = inst.licencia?.let(permisos::verificar),
                 )
             }
-            if (hechos.isNotEmpty() && d.modoSincronizacion == ModoSincronizacion.AUTOMATICA) disparar()
-            if (d.modoSincronizacion == ModoSincronizacion.MANUAL && hechos.isEmpty()) cerrarSesion(s)
+            _progreso.value = null
+            _cambiosPendientes.value = false
+            _sincronizada.tryEmit(Unit)
             AppResult.Ok(Unit)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             cerrarSesion(s)
             AppResult.Err(AppError.SinPrincipal(almacen.pendientes()))
+        } finally {
+            _progreso.value = null
+        }
+    }
+
+    /**
+     * 0.32.0: descarga las fotos del catálogo que aún no están en este teléfono (los bytes van por bloques, como el
+     * APK) y las guarda con el mismo nombre, para que la próxima vez no se descarguen otra vez.
+     */
+    private suspend fun descargarFotos(s: SesionCliente, fotos: List<FotoCatalogoDto>) {
+        if (fotos.isEmpty()) return
+        val faltan = fotos.filter { !fotosLocal.existe(it.nombre) }
+        val total = faltan.sumOf { it.bytes }
+        var hecho = 0L
+        for (f in faltan) {
+            val destino = java.io.ByteArrayOutputStream()
+            var desde = 0L
+            var hash: String? = null
+            while (desde < f.bytes) {
+                val b = s.pedir({ id -> PedirFoto(id, f.nombre, desde) }) as? BloqueFoto
+                    ?: throw ProtocoloException("respuesta inesperada")
+                if (b.error != null || b.desde != desde) throw ProtocoloException("foto no disponible")
+                val datos = java.util.Base64.getDecoder().decode(b.datos)
+                if (datos.isEmpty()) throw ProtocoloException("bloque vacío")
+                destino.write(datos)
+                desde += datos.size
+                hash = b.sha256 ?: hash
+                hecho += datos.size
+                _progreso.value = ProgresoSync(hecho, total, FaseSync.RECIBIENDO)
+            }
+            val bytes = destino.toByteArray()
+            if (hash != null && !fotosLocal.sha256De(bytes).equals(hash, ignoreCase = true)) {
+                throw ProtocoloException("sha256")
+            }
+            fotosLocal.guardar(f.nombre, bytes) ?: throw ProtocoloException("no se pudo guardar la foto")
+        }
+        // Se enlazan **todas** las fotos del catálogo, no solo las descargadas ahora: al aplicarse el catálogo se
+        // borran las rutas (las fotos son archivos de este teléfono) y hay que volver a apuntarlas.
+        for (f in fotos) {
+            val uri = fotosLocal.uriLocal(f.nombre) ?: continue
+            almacen.asignarFoto(f.entidad, f.id, uri)
         }
     }
 
@@ -199,7 +245,7 @@ class ClienteSync @Inject constructor(
                 f.seek(hecho)
                 while (hecho < v.bytes) {
                     val s = sesionAbierta(d) ?: return@withContext AppResult.Err(AppError.SinPrincipal(0))
-                    val b = s.pedir { id -> PedirApk(id, v.sha256, hecho) } as? BloqueApk ?: throw ProtocoloException("respuesta inesperada")
+                    val b = s.pedir({ id -> PedirApk(id, v.sha256, hecho) }) as? BloqueApk ?: throw ProtocoloException("respuesta inesperada")
                     if (b.error != null || b.desde != hecho) {
                         destino.delete(); marca.delete(); _apkPrincipal.value = null
                         return@withContext AppResult.Err(AppError.NoEncontrado)
@@ -288,7 +334,7 @@ class ClienteSync @Inject constructor(
         while (true) {
             val s = sesionAbierta(d) ?: return null
             try {
-                return s.pedir { id -> Comando(id, accion, clave.takeIf { s.comandosUnicos }) } as? ResultadoComando
+                return s.pedir({ id -> Comando(id, accion, clave.takeIf { s.comandosUnicos }) }) as? ResultadoComando
                     ?: throw ProtocoloException("respuesta inesperada")
             } catch (e: CancellationException) {
                 throw e
@@ -405,12 +451,15 @@ class ClienteSync @Inject constructor(
             lector = scope.launch {
                 try {
                     while (true) {
-                        when (val m = canal.recibir()) {
+                        when (val m = canal.recibir { hecho, total ->
+                                if (total >= FRAME_GRANDE) _progreso.value = ProgresoSync(hecho, total, FaseSync.RECIBIENDO)
+                            }) {
                             is SincronizarOk -> esperando.remove(m.id)?.complete(m)
                             is ResultadoComando -> esperando.remove(m.id)?.complete(m)
                             is Pong -> esperando.remove(m.id)?.complete(m)
                             is BloqueApk -> esperando.remove(m.id)?.complete(m)
-                            Aviso -> disparar()
+                            is BloqueFoto -> esperando.remove(m.id)?.complete(m)
+                            Aviso -> _cambiosPendientes.value = true
                             Quitada -> { alSerQuitada?.invoke(); break }
                             else -> Unit
                         }
@@ -423,24 +472,24 @@ class ClienteSync @Inject constructor(
                     cerrar()
                     if (actual.compareAndSet(this@SesionCliente, null)) {
                         _conexion.value = EstadoConexion.SinConexion(TEXTO_SIN_CONEXION)
-                        disparar() // en automático, reintenta
+                        reconectar()
                     }
                 }
             }
             latido = scope.launch {
                 while (viva) {
                     delay(LATIDO_MS)
-                    try { pedir { Ping(it) } } catch (e: CancellationException) { throw e } catch (e: Exception) { /* la lectura detecta la caída */ }
+                    try { pedir({ id -> Ping(id) }) } catch (e: CancellationException) { throw e } catch (e: Exception) { /* la lectura detecta la caída */ }
                 }
             }
         }
 
-        suspend fun pedir(crear: (Long) -> Mensaje): Mensaje {
+        suspend fun pedir(crear: (Long) -> Mensaje, progreso: ((Long, Long) -> Unit)? = null): Mensaje {
             val id = ids.getAndIncrement()
             val espera = CompletableDeferred<Mensaje>()
             esperando[id] = espera
             try {
-                escritura.withLock { withContext(Dispatchers.IO) { canal.enviar(crear(id)) } }
+                escritura.withLock { withContext(Dispatchers.IO) { canal.enviar(crear(id), progreso) } }
                 // 0.21.6: sin respuesta es un fallo de E/S, no una cancelación. Con withTimeout salía una
                 // TimeoutCancellationException que `sincronizar` relanzaba como cancelación: la sesión quedaba abierta
                 // y el bucle automático terminaba sin reintentar.
@@ -466,8 +515,11 @@ class ClienteSync @Inject constructor(
         /** 0.21.7 (P-e): reenvíos de un comando sin respuesta (solo con una principal que recuerda los comandos). */
         const val REENVIOS_COMANDO = 1
         const val LATIDO_MS = 30_000L
+        /** 0.32.0: espera del reintento de conexión (crece hasta [ESPERA_MAX_MS]). */
         const val ESPERA_MIN_MS = 5_000L
         const val ESPERA_MAX_MS = 60_000L
+        /** 0.32.0: a partir de este tamaño el avance se muestra en la barra (debajo no hay nada que ver). */
+        const val FRAME_GRANDE = 1024L * 1024L
 
         const val TEXTO_SIN_CONEXION = "No se encuentra la app principal en esta red"
         const val TEXTO_CODIGO_INVALIDO = "Este código no es válido. Pide al dueño que genere uno nuevo."
@@ -483,18 +535,4 @@ class ClienteSync @Inject constructor(
     }
 }
 
-/**
- * 0.26.0 (P73 §4): aplica el fondo que envía la principal. Un fondo cuyo identificador ya se usó al abrir un turno no
- * vuelve a ofrecerse (la principal aún no recibió el aviso); el identificador usado se olvida cuando la principal deja
- * de enviarlo. Si llega un fondo, la petición «Pedir fondo» queda resuelta.
- */
-internal fun DatosSecundaria.conFondo(r: SincronizarOk): DatosSecundaria {
-    val f = r.fondo
-    val nuevo = f?.takeIf { it.token != fondoUsado }
-    return copy(
-        principalAsignaFondo = r.asignaFondos,
-        fondoCent = nuevo?.cent, fondoToken = nuevo?.token,
-        fondoUsado = fondoUsado?.takeIf { f != null && f.token == it },
-        pideFondo = pideFondo && nuevo == null && r.asignaFondos,
-    )
-}
+

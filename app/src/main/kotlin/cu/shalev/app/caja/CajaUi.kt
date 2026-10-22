@@ -48,12 +48,6 @@ object TextosCaja {
     const val FONDO_TEXTO = "Escribe el efectivo con el que empieza la caja (puede ser 0)."
     const val FONDO_SUGERIDO = "Propuesto: lo contado al cerrar el turno anterior."
     /** 0.26.0 (P73 §4): en una secundaria, el fondo lo asigna el encargado. */
-    const val FONDO_ASIGNADO_TEXTO = "El encargado asignó el fondo de caja de este turno."
-    const val FONDO_PEDIR_TEXTO = "Pide al encargado el fondo de caja. Sin él no se puede abrir el turno."
-    const val FONDO_PEDIDO_TEXTO = "Fondo pedido. Llegará al sincronizar."
-    const val PEDIR_FONDO = "Pedir fondo"
-    const val FONDO_PEDIDO = "Fondo pedido al encargado."
-    const val FONDO_FALTA = "Pide al encargado el fondo de caja para abrir el turno."
     const val CONTADO = "Efectivo contado (CUP)"
     const val CUADRA_BOTON = "Cuadra (contado = esperado)"
     const val MOVIMIENTO_TITULO = "Entrada / salida de efectivo"
@@ -89,26 +83,8 @@ object TextosCaja {
     fun linea(m: MovimientoCaja): String = "${tipo(m.tipo)} ${Money.format(m.importe)} · ${m.motivo}"
 }
 
-/**
- * 0.26.0 (P73 §4): cómo se fija el fondo al abrir. [Libre] = lo escribe quien abre (la principal, o una secundaria con
- * una principal 0.25). [Asignado] = el que asignó el encargado (solo lectura). [SinAsignar] = hay que pedirlo.
- */
-sealed interface FondoApertura {
-    data object Libre : FondoApertura
-    data class Asignado(val fondo: Cup) : FondoApertura
-    data class SinAsignar(val pedido: Boolean) : FondoApertura
-
-    companion object {
-        fun de(s: cu.shalev.domain.model.EstadoSecundaria): FondoApertura {
-            if (!s.vinculada || !s.principalAsignaFondo) return Libre
-            return s.fondoAsignado?.let(::Asignado) ?: SinAsignar(s.fondoPedido)
-        }
-    }
-}
-
 object CajaTags {
     const val FONDO = "caja_fondo"
-    const val FONDO_ASIGNADO = "caja_fondo_asignado"
     const val CONTADO = "caja_contado"
     const val CUADRA = "caja_cuadra"
     const val IMPORTE = "caja_importe"
@@ -149,6 +125,8 @@ fun colorArqueo(e: EstadoArqueo?): Color =
 /**
  * 0.25.0 (§5.2): diálogo único de apertura (Inicio y «Abrir turno» al vender). El fondo es obligatorio (puede ser 0);
  * se propone [sugerido] (lo contado al cerrar el turno anterior de esta app).
+ *
+ * 0.32.0: el fondo lo escribe siempre quien abre el turno, también en una app secundaria.
  */
 @Composable
 fun DialogoFondo(
@@ -156,33 +134,7 @@ fun DialogoFondo(
     trabajando: Boolean,
     onConfirmar: (Cup) -> Unit,
     onDismiss: () -> Unit,
-    fondo: FondoApertura = FondoApertura.Libre,
-    onPedirFondo: () -> Unit = {},
 ) {
-    when (fondo) {
-        FondoApertura.Libre -> Unit
-        is FondoApertura.Asignado -> {
-            ShalevDialog(
-                title = TextosCaja.FONDO_TITULO, text = TextosCaja.FONDO_ASIGNADO_TEXTO, onDismiss = onDismiss,
-                onConfirm = { onConfirmar(fondo.fondo) }, confirmDescription = "Abrir turno",
-                confirmEnabled = !trabajando, confirmLoading = trabajando, confirmTag = CajaTags.CONFIRMAR,
-            ) {
-                Fila(TextosCaja.FONDO, Money.format(fondo.fondo), modifier = Modifier.testTag(CajaTags.FONDO_ASIGNADO))
-            }
-            return
-        }
-        is FondoApertura.SinAsignar -> {
-            ShalevDialog(
-                title = TextosCaja.FONDO_TITULO,
-                text = if (fondo.pedido) TextosCaja.FONDO_PEDIDO_TEXTO else TextosCaja.FONDO_PEDIR_TEXTO,
-                onDismiss = onDismiss,
-                onConfirm = if (fondo.pedido) null else onPedirFondo,
-                confirmDescription = TextosCaja.PEDIR_FONDO, confirmIcon = ShalevIcons.Enviar, confirmTag = CajaTags.CONFIRMAR,
-                dismissDescription = "Cerrar",
-            )
-            return
-        }
-    }
     var texto by rememberSaveable(sugerido) { androidx.compose.runtime.mutableStateOf(CajaForm.textoInicial(sugerido)) }
     val valor = CajaForm.importe(texto)
     ShalevDialog(

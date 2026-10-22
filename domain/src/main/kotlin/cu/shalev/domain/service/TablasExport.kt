@@ -187,14 +187,14 @@ object TablasExport {
      */
     fun filasConteo(c: cu.shalev.domain.model.ConteoCierre): List<List<String>> = c.inventario.map { l ->
         fun formato(n: Long): String = if (l.entidad == TipoEntidad.INSUMO) Cantidad.format(Cantidad(n)) else n.toString()
-        listOf(l.nombre, l.unidad, formato(l.esperado), formato(l.contado), formato(l.diferencia))
+        listOf(l.categoria, l.nombre, l.unidad, formato(l.esperado), formato(l.contado), formato(l.diferencia))
     }
 
     fun tablasConteo(c: cu.shalev.domain.model.ConteoCierre): List<TablaExport> = listOf(
         TablaExport("Conteo de efectivo", listOf("Denominación", "Billetes", "Subtotal"),
             c.billetes.toSortedMap().map { (d, n) -> listOf("$d CUP", n.toString(), Money.format(Cup(d.toLong() * 100 * n))) } +
                 listOf(listOf("Otro efectivo", "", Money.format(c.otroEfectivo)), listOf("Total", "", Money.format(c.efectivo)))),
-        TablaExport("Conciliación de inventario", listOf("Nombre", "Unidad", "Esperado", "Contado", "Diferencia"), filasConteo(c),
+        TablaExport("Conciliación de inventario", listOf("Categoría", "Nombre", "Unidad", "Esperado", "Contado", "Diferencia"), filasConteo(c),
             pie = listOfNotNull(c.motivo.takeIf { it.isNotBlank() }, c.aprobadoPor?.let { "Aprobado por $it" } ?: "Pendiente de aprobación")),
     )
 

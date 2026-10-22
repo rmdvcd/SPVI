@@ -33,7 +33,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import cu.shalev.app.ajustes.AjustesScreen
 import cu.shalev.app.ayuda.AyudaScreen
-import cu.shalev.app.catalogo.CatalogoScreen
 import cu.shalev.app.common.EntradaViewModel
 import cu.shalev.app.insumos.InsumoFormScreen
 import cu.shalev.app.servicios.ServicioFormScreen
@@ -312,7 +311,6 @@ fun MainScaffold(snapshot: Licencia) {
             composable<Route.Respaldo> { RespaldoScreen(onBack = { nav.popBackStack() }) }
             composable<Route.Ayuda> { AyudaScreen(onBack = { nav.popBackStack() }) }
             composable<Route.Soporte> { SoporteScreen(onBack = { nav.popBackStack() }) }
-            composable<Route.Catalogo> { CatalogoScreen(onBack = { nav.popBackStack() }) }
         }
     }
     }

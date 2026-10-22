@@ -92,18 +92,10 @@ data class Empleado(
     /** 0.25.0: arqueo del turno abierto según lo recibido (con el contado si el empleado ya lo declaró). No se guarda. */
     val arqueoTurno: Arqueo? = null,
     val conteoCierre: ConteoCierre? = null,
-    /** 0.26.0 (P73 §4): fondo de caja asignado por el dueño para el próximo turno de esta app (null = sin asignar). */
-    val fondoAsignado: Cup? = null,
-    /** 0.26.0: el empleado pidió el fondo para abrir turno. */
-    val aperturaSolicitadaEn: Instant? = null,
     /** 0.26.0: versionCode de su app (null = aún no lo envió: 0.24 o anterior). */
     val versionCode: Int? = null,
 ) {
     val vinculado: Boolean get() = vinculadoEn != null
-    /** 0.26.0: «X pide abrir turno»: petición pendiente de Asignar fondo. */
-    val pideApertura: Boolean get() = aperturaSolicitadaEn != null && fondoAsignado == null && turnoAbiertoDesde == null
-    /** 0.26.0: su app es anterior a la 0.26.0 y escribe su propio fondo: «Actualiza la app de X». */
-    val appDesactualizada: Boolean get() = vinculado && ultimaSincronizacion != null && (versionCode ?: 0) < Vinculacion.VERSION_FONDO_ASIGNADO
     val cierrePedido: Boolean get() = cierreSolicitadoEn != null && turnoAbiertoDesde != null
     /** 0.21.0 (C6): solicitud del empleado pendiente de Aprobar/Rechazar (solo con su turno abierto). */
     val solicitaCierre: Boolean get() = cierrePedidoPorEmpleadoEn != null && cierreSolicitadoEn == null && turnoAbiertoDesde != null
@@ -130,11 +122,6 @@ data class CodigoVinculacion(
     override fun hashCode(): Int = 31 * (31 * negocioId.hashCode() + empleadoId.hashCode()) + token.contentHashCode()
 
     override fun toString(): String = "CodigoVinculacion(empleado=$empleadoId, vence=$venceEn)" // sin el token
-}
-
-enum class ModoSincronizacion(val etiqueta: String, val detalle: String) {
-    AUTOMATICA("Automática", "Al momento, mientras haya conexión con la app principal"),
-    MANUAL("Manual", "Solo cuando toques «Sincronizar ahora» (y siempre antes de abrir un turno)"),
 }
 
 /**
@@ -199,6 +186,20 @@ sealed interface EstadoConexion {
     data class SinConexion(val motivo: String) : EstadoConexion
 }
 
+/** Avance de una sincronización, en bytes. [fase] = en qué parte va. */
+data class ProgresoSync(
+    val actual: Long,
+    val total: Long,
+    val fase: FaseSync = FaseSync.APLICANDO,
+) {
+    /** 0..1. Sin total conocido (0) no se puede pintar una barra. */
+    val fraccion: Float get() = if (total <= 0L) 0f else (actual.toDouble() / total).coerceIn(0.0, 1.0).toFloat()
+    val conTotal: Boolean get() = total > 0L
+}
+
+/** En qué parte de la sincronización está el avance. */
+enum class FaseSync { RECIBIENDO, ENVIANDO, APLICANDO }
+
 /** Lo que muestra la pantalla de vinculación en una app secundaria. */
 data class EstadoSecundaria(
     /** 0.21.0: true solo en una app SECUNDARIA vinculada (el valor por defecto describe a la principal). */
@@ -206,7 +207,6 @@ data class EstadoSecundaria(
     val nombreNegocio: String = "",
     val nombreEmpleado: String = "",
     val permisos: Set<PermisoEmpleado> = emptySet(),
-    val modo: ModoSincronizacion = ModoSincronizacion.AUTOMATICA,
     val conexion: EstadoConexion = EstadoConexion.Desconectada,
     val ultimaSincronizacion: Instant? = null,
     /** Turnos y ventas de esta app que la principal aún no ha recibido. */
@@ -224,12 +224,10 @@ data class EstadoSecundaria(
     val telefono: String? = null,
     /** 0.25.0: la principal tiene un APK más nuevo para esta app (se descarga por la red local). */
     val apk: ApkEnPrincipal? = null,
-    /** 0.26.0 (P73 §4): true = la principal asigna el fondo de cada turno (una principal 0.25 no: se escribe aquí). */
-    val principalAsignaFondo: Boolean = false,
-    /** 0.26.0: fondo asignado por el dueño para el próximo turno (null = sin asignar). */
-    val fondoAsignado: Cup? = null,
-    /** 0.26.0: se pidió el fondo al dueño y aún no llegó. */
-    val fondoPedido: Boolean = false,
+    /** 0.32.0: la principal avisó de que cambió el catálogo: hay que sincronizar para recibirlo. */
+    val cambiosPendientes: Boolean = false,
+    /** 0.32.0: avance de la sincronización en curso (null = no hay ninguna). */
+    val progreso: ProgresoSync? = null,
 )
 
 /** Lo que muestra la pantalla de vinculación en la principal. */
@@ -240,6 +238,8 @@ data class EstadoPrincipal(
     val puerto: Int = 0,
     /** Ids de las secundarias conectadas ahora mismo. */
     val conectadas: Set<Long> = emptySet(),
+    /** 0.32.0: avance de la sincronización de cada app conectada (id de empleado → avance). */
+    val progresos: Map<Long, ProgresoSync> = emptyMap(),
 )
 
 object Vinculacion {
@@ -251,8 +251,6 @@ object Vinculacion {
     fun puedeVincularseComoSecundaria(tipo: TipoApp, eligioSecundaria: Boolean, empleados: Int): Boolean =
         tipo == TipoApp.PRINCIPAL && eligioSecundaria && empleados == 0
 
-    /** 0.26.0 (P73 §4): primer versionCode de secundaria que abre turno con el fondo asignado por el dueño. */
-    const val VERSION_FONDO_ASIGNADO = 48
     /**
      * 0.21.0 (C4, P46): cuántas apps secundarias cubre la licencia lo decide la propia licencia
      * ([cu.shalev.licencia.secundariasPermitidas]: la prueba y las licencias sin el campo, 5; como máximo 10).

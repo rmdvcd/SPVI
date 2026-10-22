@@ -79,8 +79,6 @@ class EntornoIntegracion(licencia: LicenseState = LicenseState.Trial(5)) {
     val turnos = TurnoRepositoryImpl(db)
     val ventas = VentaRepositoryImpl(db)
     val precios = PreciosRepositoryImpl(db)
-    /** Fotos reales: el seed copia las imágenes incluidas en la app (assets) al almacén del dispositivo. */
-    val fotos = cu.shalev.data.foto.FotoRepositoryImpl(ApplicationProvider.getApplicationContext(), Dispatchers.IO, clock)
 
     val perfil = PerfilRepo(
         Perfil(

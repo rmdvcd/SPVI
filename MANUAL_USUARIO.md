@@ -56,13 +56,23 @@ Inicio se abre siempre por arriba: no recuerda por dónde ibas la última vez.
 ## Cerrar turno: efectivo e inventario
 
 1. En Inicio toca cerrar el turno. Cuenta los **billetes por denominación**: 1, 3, 5, 10, 20, 50, 100, 200, 500, 1000, **5000 y 20000 CUP**. Escribe cuántos tienes de cada uno; un campo vacío equivale a cero. Añade las monedas u otro efectivo aparte. Shalev suma el contado y muestra si sobra o falta respecto al esperado. Con los billetes a la vista hay que contar **al menos uno**; si prefieres escribir solo el total (o cero), pulsa **Omitir el conteo de billetes** en la esquina inferior derecha y desde ahí puedes volver a contar con **Contar billetes por denominación**.
-2. Continúa al **conteo de inventario**. Cuenta todos los productos físicos y los insumos; escribe **0** cuando no quede nada. Los productos usan unidades enteras y los insumos admiten hasta tres decimales (punto o coma). Los elaborados no se cuentan como stock: se cuentan sus insumos. Si no vas a contar el inventario ahora, pulsa **Omitir el conteo de inventario** (esquina inferior derecha): el turno se cierra **sin ajustar existencias** y el conteo queda anotado con el motivo «Conteo de inventario omitido».
+2. Continúa al **conteo de inventario**. Ahora solo se cuenta **lo que cambió durante el turno** (los artículos que moviste): lo demás se da por bueno. Los artículos van separados por **pestañas de categoría** (Alimentos, Bebidas, Insumos…), así que vas contando por donde te toca. Escribe **0** cuando no quede nada. Los productos usan unidades enteras y los insumos admiten hasta tres decimales (punto o coma). Los elaborados no se cuentan como stock: se cuentan sus insumos. Si en el turno no cambió nada, no hay nada que contar. Si no vas a contar el inventario ahora, pulsa **Omitir el conteo de inventario** (esquina inferior derecha): el turno se cierra **sin ajustar existencias** y el conteo queda anotado con el motivo «Conteo de inventario omitido».
 3. Revisa esperado, contado y diferencia. Si hay diferencias, explica el **motivo** (3–160 caracteres) y confirma. En la principal, se registran los ajustes y se cierra el turno juntos; si falla una comprobación, no se aplican ajustes parciales.
 4. En una **app de empleado**, confirmar **solo envía el conteo**. El encargado lo revisa en **Apps vinculadas → empleado** y aprueba o rechaza. Solo la principal modifica el inventario del negocio. Incluso si el encargado pidió el cierre, un conteo nuevo de inventario requiere su aprobación.
 
-Si el inventario cambió mientras contabas o antes de aprobar (por otra venta o ajuste), no se sobrescribe: vuelve a cargar y contar. El encargado puede rechazar la solicitud para pedir un nuevo conteo. Registros → Turnos → Caja muestra el desglose y la conciliación; también van en el PDF/Excel del turno y en el respaldo.
+Si el inventario cambió mientras contabas, no se sobrescribe: vuelve a cargar y contar. En la principal, si un artículo se movió después de que el empleado contara, la diferencia se aplica sobre el valor actual (no se rechaza el conteo). El encargado puede rechazar la solicitud para pedir un nuevo conteo. Registros → Turnos → Caja muestra el desglose y la conciliación; también van en el PDF/Excel del turno y en el respaldo.
 
 **Compatibilidad:** para usar este flujo, actualiza la principal y las apps de empleados. Una principal antigua no puede aprobar el nuevo conteo; no se debe combinar con secundarias que ya lo requieran. Estos cambios están en desarrollo, pendientes de verificación en dispositivos.
+
+## Apps vinculadas (empleados)
+
+- **La sincronización es manual.** Ya no hay sincronización automática: el empleado toca **Sincronizar ahora** en «Apps vinculadas» cuando quiere enviar lo que ha vendido o traer el catálogo. Dos cosas siguen siendo automáticas: al **abrir turno** se sincroniza (no se empieza un turno con el catálogo viejo) y al **pedir el cierre** se envía la solicitud. Lo que queda pendiente de enviar se ve en «N pendientes de enviar».
+- **La conexión se mantiene abierta.** La app del empleado se queda conectada a la principal mientras esté en la misma red (y se reconecta sola si se cae), así el encargado ve si está o no.
+- **Aviso de cambios.** Si el encargado cambia el catálogo, la app del empleado lo dice («Sincroniza para recibirlo»).
+- **El fondo de caja lo escribe quien abre el turno**, también en la app de un empleado: el encargado ya no lo asigna ni lo pide.
+- **Barra de avance.** Mientras se sincroniza, hay una barra de avance en la notificación y, en la principal, una barra por cada app conectada en «Apps vinculadas».
+- **Sonidos.** La principal avisa con sonido cuando la app de un empleado **se conecta**, **se desconecta** y **termina de sincronizar**; la app del empleado avisa cuando **termina su sincronización**. Los sonidos se pueden cambiar en los ajustes de notificaciones de Android (canales «App conectada», «App desconectada» y «Sincronización terminada»).
+- **Fotos.** La app del empleado recibe las **fotos de los productos y servicios** del catálogo; las descarga la primera vez y las guarda en el teléfono.
 
 ## Buscar y consultar transferencias
 
@@ -85,3 +95,4 @@ La ficha individual de producto se comparte como imagen o tarjeta promocional, n
 Expande la notificación para consultar el estado del turno, los turnos abiertos en el negocio y la
 sincronización local. Con turno propio abierto también muestra su duración.
 Tocarla vuelve a la aplicación. No muestra importes, clientes ni números de tarjeta.
+Mientras una app vinculada sincroniza hay otra notificación con la **barra de avance**.

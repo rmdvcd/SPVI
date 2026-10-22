@@ -15,7 +15,6 @@ import cu.shalev.domain.model.Empleado
 import cu.shalev.domain.model.EstadoPrincipal
 import cu.shalev.domain.model.EstadoSecundaria
 import cu.shalev.domain.model.LicenciaPrincipal
-import cu.shalev.domain.model.ModoSincronizacion
 import cu.shalev.domain.model.PermisoEmpleado
 import cu.shalev.domain.model.PermisosApp
 import cu.shalev.domain.model.TipoApp
@@ -60,8 +59,6 @@ private fun EmpleadoEntity.toDomain() = Empleado(
     telefono = telefono,
     // 0 = rechazo pendiente de avisar: para la principal ya no es una solicitud.
     cierrePedidoPorEmpleadoEn = cierrePedidoPorEmpleadoEn?.takeIf { it > 0 }?.let(Instant::ofEpochMilli),
-    fondoAsignado = fondoAsignadoCent?.let { cu.shalev.core.money.Cup(it) },
-    aperturaSolicitadaEn = aperturaSolicitadaEn?.let(Instant::ofEpochMilli),
     versionCode = versionCode,
 )
 
@@ -212,16 +209,6 @@ class PrincipalRepositoryImpl @Inject constructor(
         return AppResult.Ok(Unit)
     }
 
-    override suspend fun asignarFondo(empleadoId: Long, fondo: cu.shalev.core.money.Cup): AppResult<Unit> {
-        if (fondo.isNegative) return AppResult.Err(AppError.Validacion("fondo", AppError.Regla.RANGO))
-        if (sync.asignarFondo(empleadoId, fondo.centavos, clock.now().toEpochMilli()) == 0) return AppResult.Err(AppError.NoEncontrado)
-        servidor.avisar()
-        return AppResult.Ok(Unit)
-    }
-
-    override suspend fun fondoSugerido(empleadoId: Long): cu.shalev.core.money.Cup? =
-        db.turnoDao().ultimoCerradoDeEmpleado(empleadoId)?.let { t -> (t.contadoCent ?: t.fondoCent)?.let { cu.shalev.core.money.Cup(it) } }
-
     override suspend fun quitarEmpleado(empleadoId: Long): AppResult<Unit> {
         val e = sync.empleado(empleadoId) ?: return AppResult.Err(AppError.NoEncontrado)
         // Se conserva la clave: así, al volver a conectar, esa app recibe un «quitada» firmado y borra sus datos.
@@ -270,17 +257,19 @@ class SecundariaRepositoryImpl @Inject constructor(
     override val estado: StateFlow<EstadoSecundaria> =
         config.secundaria.flatMapLatest { d ->
             if (d == null) flowOf(EstadoSecundaria())
-            else combine(cliente.conexion, db.syncDao().observarPendientes(), cliente.apkPrincipal) { c, p, apk ->
+            else combine(
+                cliente.conexion, db.syncDao().observarPendientes(), cliente.apkPrincipal,
+                cliente.progreso, cliente.cambiosPendientes,
+            ) { c, p, apk, prog, cambios ->
                 EstadoSecundaria(
                     vinculada = true,
                     nombreNegocio = d.nombreNegocio, nombreEmpleado = d.nombreEmpleado, permisos = d.permisosEmpleado,
-                    modo = d.modoSincronizacion, conexion = c, ultimaSincronizacion = d.ultimaSincronizacion?.let(Instant::ofEpochMilli),
+                    conexion = c, ultimaSincronizacion = d.ultimaSincronizacion?.let(Instant::ofEpochMilli),
                     pendientes = p, licencia = d.licenciaPrincipal,
                     cierrePendiente = d.cierrePendiente, turnoCerradoPorPrincipal = d.avisoCierre,
                     cierreSolicitado = d.cierreSolicitado, cierreRechazado = d.avisoRechazo, telefono = d.telefono,
                     apk = apk?.let { cu.shalev.domain.model.ApkEnPrincipal(it.nombre, it.code, it.bytes) },
-                    principalAsignaFondo = d.principalAsignaFondo, fondoAsignado = d.fondoCent?.let { cu.shalev.core.money.Cup(it) },
-                    fondoPedido = d.pideFondo,
+                    cambiosPendientes = cambios, progreso = prog,
                 )
             }
         }.stateIn(scope, SharingStarted.Eagerly, EstadoSecundaria())
@@ -304,32 +293,17 @@ class SecundariaRepositoryImpl @Inject constructor(
         config.hacerSecundaria(datos)
         preferencias.completarOnboarding()
         val primera = cliente.sincronizar()
-        if (datos.modoSincronizacion == ModoSincronizacion.AUTOMATICA) cliente.iniciarAutomatico()
-        // Si la primera descarga falla, la app ya está vinculada: lo reintenta sola (o con «Sincronizar ahora»).
+        // Si la primera descarga falla, la app ya está vinculada: lo reintenta el usuario («Sincronizar ahora»).
         return if (primera is AppResult.Err && primera.error !is AppError.SinPrincipal) primera else AppResult.Ok(Unit)
     }
 
     override suspend fun sincronizarAhora(): AppResult<Unit> = cliente.sincronizar()
-
-    override suspend fun cambiarModo(modo: ModoSincronizacion) {
-        config.editarSecundaria { it.copy(modo = modo.name) }
-        if (modo == ModoSincronizacion.AUTOMATICA) cliente.iniciarAutomatico() else cliente.detenerAutomatico()
-    }
 
     override suspend fun desvincular(): AppResult<Unit> = olvidar()
 
     override suspend fun descartarAvisoCierre() = config.editarSecundaria { it.copy(avisoCierre = false, avisoRechazo = false) }
 
     override suspend fun descargarApk(progreso: (Long, Long) -> Unit): AppResult<java.io.File> = cliente.descargarApk(progreso)
-
-    override suspend fun pedirFondo(): AppResult<Unit> {
-        if (db.turnoDao().activo() != null) return AppResult.Err(AppError.TurnoYaAbierto)
-        config.editarSecundaria { it.copy(pideFondo = it.fondoCent == null) }
-        cliente.disparar()
-        // Sin conexión no es un error: la petición espera y se envía en la próxima sincronización.
-        if (config.secundariaActual()?.modoSincronizacion == ModoSincronizacion.MANUAL) cliente.sincronizar()
-        return AppResult.Ok(Unit)
-    }
 
     override suspend fun solicitarCierre(contado: cu.shalev.core.money.Cup): AppResult<Unit> {
         if (db.turnoDao().activo() == null) return AppResult.Err(AppError.TurnoCerrado)
@@ -339,14 +313,13 @@ class SecundariaRepositoryImpl @Inject constructor(
             is AppResult.Ok -> Unit
         }
         config.editarSecundaria { it.copy(cierreSolicitado = true, avisoRechazo = false) }
-        cliente.disparar()
         // Sin conexión no es un error: la solicitud espera y se envía en la próxima sincronización.
-        if (config.secundariaActual()?.modoSincronizacion == ModoSincronizacion.MANUAL) cliente.sincronizar()
+        cliente.sincronizar()
         return AppResult.Ok(Unit)
     }
 
     private suspend fun olvidar(): AppResult<Unit> {
-        cliente.detenerAutomatico()
+        cliente.cerrarSesion()
         val r = mantenimiento.borrarTodo()
         config.hacerPrincipal()
         return r
@@ -363,20 +336,6 @@ class PuertaTurnoImpl @Inject constructor(
 ) : PuertaTurno {
     override suspend fun antesDeAbrir(): AppResult<Unit> =
         if (config.tipo.first() == TipoApp.PRINCIPAL) AppResult.Ok(Unit) else cliente.sincronizar()
-
-    /** 0.26.0 (P73 §4): con una principal 0.26+, la secundaria abre solo con el fondo que le asignó el dueño. */
-    override suspend fun fondoObligado(): AppResult<cu.shalev.core.money.Cup?> {
-        if (config.tipo.first() == TipoApp.PRINCIPAL) return AppResult.Ok(null)
-        val d = config.secundariaActual() ?: return AppResult.Ok(null)
-        if (!d.principalAsignaFondo) return AppResult.Ok(null)
-        val f = d.fondoCent ?: return AppResult.Err(AppError.Validacion("fondo", AppError.Regla.REQUERIDO))
-        return AppResult.Ok(cu.shalev.core.money.Cup(f))
-    }
-
-    override suspend fun fondoUsado() {
-        config.editarSecundaria { it.copy(fondoUsado = it.fondoToken ?: it.fondoUsado, fondoCent = null, fondoToken = null, pideFondo = false) }
-        cliente.disparar()
-    }
 }
 
 // ======================================================================================== arranque
@@ -414,15 +373,18 @@ class ArranqueSync @Inject constructor(
     fun iniciar() {
         cierre.iniciar()
         scope.launch {
-            combine(config.tipo, config.secundaria, db.syncDao().observarEmpleados()) { t, d, e -> Triple(t, d?.modoSincronizacion, e.isNotEmpty()) }
+            combine(config.tipo, db.syncDao().observarEmpleados()) { t, e -> t to e.isNotEmpty() }
                 .distinctUntilChanged()
-                .collect { (tipo, modo, hayEmpleados) ->
+                .collect { (tipo, hayEmpleados) ->
                     if (tipo == TipoApp.PRINCIPAL) {
-                        cliente.detenerAutomatico()
                         if (hayEmpleados) servidor.iniciar() else servidor.detener()
                     } else {
+                        // En una secundaria no hay nada automático: el servidor de la principal es el que escucha.
                         servidor.detener()
-                        if (modo == ModoSincronizacion.AUTOMATICA) cliente.iniciarAutomatico() else cliente.detenerAutomatico()
+                        // 0.32.0: la secundaria mantiene la conexión con la principal abierta (el ping la refresca),
+                        // para que el dueño vea si su app está conectada. Va en su propia corrutina: buscar la
+                        // principal puede tardar unos segundos.
+                        scope.launch { cliente.conectar() }
                     }
                 }
         }

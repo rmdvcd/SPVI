@@ -44,6 +44,8 @@ class AlmacenSync @Inject constructor(
     private val db: ShalevDatabase,
     private val preferencias: PreferenciasRepository,
     private val clock: Clock,
+    /** 0.32.0: fotos del catálogo (la principal las reparte; la secundaria las guarda). */
+    private val fotos: cu.shalev.data.foto.FotosLocal,
 ) {
     private val sync get() = db.syncDao()
 
@@ -80,7 +82,28 @@ class AlmacenSync @Inject constructor(
             // tarjeta y el teléfono con los que cobra ESTE empleado.
             perfil = perfil.paraEmpleado(empleado.tarjetaId, empleado.telefonoId, empleado.telefono).toDto().copy(nombre = "", apellidos = "", ci = ""),
             preferencias = preferencias.preferencias.first().toDto(),
+            // 0.32.0: las fotos del catálogo. Los bytes no van aquí: la secundaria los pide por bloques.
+            fotos = fotosDe(
+                db.productoDao().todos().filterNot { it.eliminado }.map { Triple("producto", it.id, it.fotoUri) } +
+                    db.servicioDao().todos().filterNot { it.eliminado }.map { Triple("servicio", it.id, it.fotoUri) },
+            ),
         )
+    }
+
+    /**
+     * 0.32.0: fotos del catálogo que la principal tiene y puede repartir. Solo las que están en el álbum de esta
+     * app (una ruta manipulada se ignora).
+     */
+    private fun fotosDe(items: List<Triple<String, Long, String?>>): List<FotoCatalogoDto> = items.mapNotNull { (tipo, id, uri) ->
+        val nombre = uri?.let { fotos.nombreDe(it) } ?: return@mapNotNull null
+        val bytes = fotos.tamano(nombre) ?: return@mapNotNull null
+        FotoCatalogoDto(tipo, id, nombre, bytes)
+    }
+
+    /** 0.32.0: la ruta propia de la foto [uri] si el archivo está en el álbum de esta app (null si no). */
+    private fun fotoLocal(uri: String?): String? {
+        val nombre = uri?.let { fotos.nombreDe(it) } ?: return null
+        return fotos.uriLocal(nombre)
     }
 
     /** Aplica el lote de una secundaria. Devuelve lo que quedó guardado (la secundaria solo marca eso como enviado). */
@@ -264,6 +287,12 @@ class AlmacenSync @Inject constructor(
 
     suspend fun pendientes(): Int = sync.pendientes()
 
+    /** 0.32.0: la secundaria guarda la foto que se descargó y la apunta a su propio archivo. */
+    suspend fun asignarFoto(entidad: String, id: Long, uri: String) = db.tx {
+        if (entidad == "servicio") db.servicioDao().actualizarFoto(id, uri)
+        else db.productoDao().actualizarFoto(id, uri)
+    }
+
     /** Marca lo recibido y, si llegó catálogo nuevo, lo pone en lugar del local. */
     suspend fun aplicarEnSecundaria(r: Recibidos, inst: Instantanea?): AppResult<Unit> {
         val res = db.tx {
@@ -286,12 +315,14 @@ class AlmacenSync @Inject constructor(
         m.borrarRecetas(); m.borrarServicioInsumos(); m.borrarPreajusteProductos(); m.borrarPreajustes()
         m.borrarServicios(); m.borrarProductos(); m.borrarInsumos(); m.borrarTarjetas(); m.borrarTelefonos(); m.borrarPerfil()
 
-        // Las fotos son archivos del teléfono principal: aquí no existen.
-        db.productoDao().insertarTodos(inst.productos.map { it.toDomain().toEntity().copy(fotoUri = null) })
+        // 0.32.0: la foto es un archivo de ESTE teléfono. La instantánea trae la ruta del principal (aquí no
+        // significa nada): si el archivo ya está en el álbum, se conserva la ruta propia; si no, queda vacía y la
+        // descarga de la foto la rellena (ver [ClienteSync.descargarFotos]).
+        db.productoDao().insertarTodos(inst.productos.map { p -> p.toDomain().toEntity().copy(fotoUri = fotoLocal(p.fotoUri)) })
         db.insumoDao().insertarTodos(inst.insumos.map { it.toDomain().toEntity() })
         db.recetaDao().insertarTodas(inst.recetas.flatMap { it.toDomain().toEntities() })
         val servicios = inst.servicios.map { it.toDomain() }
-        db.servicioDao().insertarTodos(servicios.map { it.first.toEntity().copy(fotoUri = null) })
+        db.servicioDao().insertarTodos(servicios.map { s -> s.first.toEntity().copy(fotoUri = fotoLocal(s.first.fotoUri)) })
         db.servicioDao().insertarInsumos(servicios.flatMap { (s, l) -> l.map { ServicioInsumoEntity(s.id, it.insumoId, it.cantidad.milesimas) } })
 
         val perfil = (inst.perfil ?: PerfilDto("", "", "")).toDomain()

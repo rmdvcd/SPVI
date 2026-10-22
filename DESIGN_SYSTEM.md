@@ -11,7 +11,6 @@ designsystem/src/main/kotlin/cu/shalev/designsystem/
 ├── icon/ShalevIcons.kt      ← iconos semánticos rellenos (+ WhatsApp vectorial)
 ├── component/             ← Buttons, TextFields, Surfaces, Indicators, Overlays, Navigation, Charts,
 │                             Tabs, Stepper, Banner, Haptics (P18)
-└── preview/ShalevCatalog.kt ← catálogo vivo (Previews claro/oscuro + pantalla debug en Ajustes)
 ```
 
 ## 1. Tema
@@ -119,7 +118,6 @@ La escala es más pequeña que la de M3 por defecto: la interfaz es densa y de t
 | `ShalevSpacing.xs` | 8dp | Separación interna (icono–texto, entre chips) |
 | `ShalevSpacing.md` | 16dp | Padding de pantalla y de card, separación entre bloques |
 | `ShalevSpacing.lg` | 24dp | Pantallas completas (bloqueo, onboarding) |
-| `ShalevSpacing.xl` | 32dp | Solo para separaciones excepcionales |
 
 No hay valores intermedios (4, 12, 20…).
 
@@ -174,9 +172,10 @@ No hay valores intermedios (4, 12, 20…).
 | `ShalevBadge` / contador de alertas | Contador numérico, y contador de alerta de Inicio con su tono (local a la pantalla: `ShalevCard`+`Text`). **0.27.0 (T14):** en Inicio las alertas van centradas (icono, contador y texto) y repartidas por filas con una regla pura: 1, 2, 3 → una fila; 4 → 2 + 2; 5 → 3 + 2; 6 → 3 + 3; mismo ancho y alto dentro de la fila, fila incompleta centrada. **0.31.0:** en los filtros, el contador va en la descripción del botón y el badge no se anuncia aparte. |
 | Medalla del Top 3 | **0.27.0 (T3):** número del puesto (1, 2, 3) dentro de un círculo oro, plata o bronce (`MEDALLA_ORO/PLATA/BRONCE`, iguales en claro y oscuro) con el número en el tono oscuro de su familia (≥ 4.5:1, `ContrastTest`). Peso de dato. TalkBack: «Primer/Segundo/Tercer puesto». Vive en Inicio (un solo uso). |
 | `ShalevChip` | FilterChip con `supportingLabel` (por ejemplo, el precio). |
+| `ShalevCheckbox` | **0.32.0:** casilla propia, **más pequeña** que la de Material 3 (28 dp de lado / 18 dp de cuadro → aquí 24 dp / 16 dp: `ShalevSize.casilla` y `ShalevSize.casillaCuadro`). Cuadro redondeado (`ShalevRadius.sm / 2`), borde de 2 dp en `onSurfaceVariant` y relleno `primary` con la ✓ de Material. Sin `onCheckedChange` no es pulsable (la fila entera responde). Sustituye a `Checkbox` de Material en toda la app. **Pendiente (auditoría 0.32.0):** cuando la casilla es la que responde, el área táctil es la de 24 dp (el dueño deja el cambio a 48 dp para otro lote). |
 | `ShalevSnackbarHost` | Snackbar sobre `inverseSurface`, con vibración breve al aparecer. |
-| `ShalevDialog` | **Centrado**; **0.27.0 (T1):** sin logo, título centrado arriba del todo; Cancelar y Confirmar (iconos) **centrados con 16dp entre ellos**; la confirmación va rellena (Von Restorff). Con `destructive` se pinta en el color de error. **P24:** `confirmEnabled`, `confirmLoading` (spinner), `confirmTag` y `confirmIcon` evitan meter botones extra dentro del diálogo. |
-| `ShalevBottomSheet` | **P24: ya no es una hoja inferior sino una ventana centrada** (92 % del ancho, máx. 560dp; alto máx. 90 %), con contenido desplazable y **pie fijo** centrado. Tocar fuera cierra. Con `sinGuardar = true`, tocar fuera o atrás preguntan «¿Salir sin guardar?». Se mantiene el nombre para no tocar las llamadas. |
+| `ShalevDialog` | **Centrado**; **0.27.0 (T1):** sin logo, título centrado arriba del todo; Cancelar y Confirmar (iconos) **centrados con 16dp entre ellos**; la confirmación va rellena (Von Restorff). Con `destructive` se pinta en el color de error. **P24:** `confirmEnabled`, `confirmLoading` (spinner), `confirmTag` y `confirmIcon` evitan meter botones extra dentro del diálogo. **0.32.0 (A13):** la ventana respeta las barras del sistema, el recorte (notch) y el teclado (`safeDrawingPadding`), también en horizontal. |
+| `ShalevBottomSheet` | **P24: ya no es una hoja inferior sino una ventana centrada** (92 % del ancho, máx. 560dp; alto máx. 90 %), con contenido desplazable y **pie fijo** centrado. Tocar fuera cierra. Con `sinGuardar = true`, tocar fuera o atrás preguntan «¿Salir sin guardar?». Se mantiene el nombre para no tocar las llamadas. **0.32.0 (A13):** misma área segura que el diálogo (barras, recorte y teclado). |
 | `ShalevComboBox` | **P24:** lista desplegable de solo lectura para elegir UNA opción (Período en Inicio). **P25:** aspecto de tarjeta tonal (radio 16dp, icono en círculo `primaryContainer`, etiqueta + valor en negrita, flecha que gira); menú con radio 16dp y la opción elegida resaltada con ✓. |
 | `ShalevTextoAjustable` | **P24:** texto que no se parte ni se corta: si no cabe, reduce la letra hasta 11sp; solo por debajo aparece «…». Importes de filas y celdas de Inicio. |
 | `ShalevIlustracionImagen` + `ShalevIlustracion` | **P24:** 9 ilustraciones vectoriales (Error, SinResultados, Inventario, Elaboracion, Carrito, Registros, Precios, SinTurno, NoExiste) de **unDraw** (paquete npm `undraw-svg` 2.0.0, MIT), dentro del APK. El acento toma el `primary` del tema; en oscuro los grises se invierten. Decorativas (TalkBack no las lee). |
@@ -199,6 +198,7 @@ No hay valores intermedios (4, 12, 20…).
 
 - **0.27.0:** `Pdf` y `Excel` (tabla, sin logotipos de marca) en todas las hojas de exportar (`iconoFormato`); `Huella`/`Bloqueo` (acceso con clave), `Desarrollador`, `Identidad`, `Telefono`, `Especialidad` (Soporte), `Camara`/`Galeria` (foto) y `ClientesFijos`.
 - Todos los iconos son **rellenos** (trazados propios de Material Symbols, Apache 2.0, desde el Prompt 17) y se exponen con nombres de negocio (`ShalevIcons.Inventario`, `ShalevIcons.Venta`, …). Las pantallas nunca importan `Icons.*` directamente.
+- **0.32.0: «Apps vinculadas» se dibuja con un móvil** (`ShalevIcons.Movil`, el mismo del recorrido inicial de la app secundaria): en Ajustes, en la Ayuda y en **cada app vinculada** de la lista de la principal.
 - **Estado seleccionado = resaltado invertido.** Vale para la barra inferior, `ShalevIconAction(selected = true)` y la selección WhatsApp/SMS.
 - **WhatsApp:** es un vector propio con los arcos SVG expandidos, verificado contra el SVG de origen.
 
@@ -236,10 +236,6 @@ ShalevCard(title = "Existencias") {
     }
 }
 ```
-
-Para ver el catálogo completo hay dos opciones:
-- Abrir `ShalevCatalog.kt` en Android Studio (Previews claro y oscuro).
-- En un build debug, ir a **Ajustes → Design system**.
 
 ## Prompt 24 — botones solo icono, ventanas centradas y leyes de UX — 0.15.0
 

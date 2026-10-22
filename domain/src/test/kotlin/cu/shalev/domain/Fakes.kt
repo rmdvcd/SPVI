@@ -283,17 +283,9 @@ class FakeFotos : cu.shalev.domain.repository.FotoRepository {
     val eliminadas = mutableListOf<String>()
     var enUsoAlLimpiar: Set<String>? = null
     var fallar = false
-    /** Imágenes incluidas en la app pedidas por el seed, en orden. */
-    val incluidas = mutableListOf<String>()
-    var fallarIncluidas = false
     override suspend fun importar(origen: String): AppResult<String> {
         if (fallar) return AppResult.Err(AppError.Almacenamiento)
         importadas += origen; return AppResult.Ok("file:///fotos/i${importadas.size}.jpg")
-    }
-    override suspend fun importarIncluida(nombre: String): AppResult<String> {
-        incluidas += nombre
-        if (fallarIncluidas) return AppResult.Err(AppError.NoEncontrado)
-        return AppResult.Ok("file:///incluidas/$nombre.jpg")
     }
     override suspend fun eliminar(uri: String) { eliminadas += uri }
     override suspend fun limpiarHuerfanas(enUso: Set<String>) { enUsoAlLimpiar = enUso }

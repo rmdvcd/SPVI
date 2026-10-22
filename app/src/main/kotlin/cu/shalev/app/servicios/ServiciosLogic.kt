@@ -28,7 +28,6 @@ object TextosServicios {
     const val ELIMINADO = "Servicio eliminado."
     const val ERROR_ELIMINAR = "No se pudo eliminar. Inténtalo de nuevo."
     const val ERROR_EXPORTAR = "No se pudo generar el archivo. Inténtalo de nuevo."
-    const val ERROR_COMPARTIR = "No hay ninguna app para compartir en este teléfono."
     const val GUARDADO_EN_DISPOSITIVO = "Archivo guardado."
     const val FICHA_NO_DISPONIBLE = "Este servicio ya no existe."
     const val SIN_INSUMOS_FICHA = "No gasta insumos."

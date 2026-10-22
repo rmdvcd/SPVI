@@ -169,8 +169,6 @@ class AccionesInicio(
     val onActualizar: () -> Unit = {},
     val onDescartarActualizacion: () -> Unit = {},
     val onCancelarDescarga: () -> Unit = {},
-    /** 0.26.0 (P73 §4): secundaria sin fondo asignado. */
-    val onPedirFondo: () -> Unit = {},
 )
 
 @Composable
@@ -210,8 +208,6 @@ fun InicioScreen(
     // 0.21.0 (C6): en la principal, empleados que piden cerrar su turno (aviso que abre Apps vinculadas).
     val solicitudesVm: SolicitudesCierreViewModel = hiltViewModel()
     val solicitudes by solicitudesVm.pendientes.collectAsStateWithLifecycle()
-    val aperturas by solicitudesVm.aperturas.collectAsStateWithLifecycle()
-    val desactualizadas by solicitudesVm.desactualizadas.collectAsStateWithLifecycle()
     // 0.25.0 (§4, §5): caja y recordatorio de respaldo en un ViewModel aparte.
     val conteoVm: cu.shalev.app.caja.CierreConteoViewModel = hiltViewModel()
     val cajaVm: cu.shalev.app.caja.CajaViewModel = hiltViewModel()
@@ -248,12 +244,9 @@ fun InicioScreen(
             onActualizar = actVm::actualizar,
             onDescartarActualizacion = actVm::descartar,
             onCancelarDescarga = actVm::cancelar,
-            onPedirFondo = { cajaVm.pedirFondo(); viewModel.cerrarDialogo() },
         ),
         actualizacion = actualizacion,
         solicitudesCierre = solicitudes,
-        aperturas = aperturas,
-        desactualizadas = desactualizadas,
         caja = caja,
         snackbar = snackbar,
         conteoVm = conteoVm,
@@ -270,9 +263,6 @@ fun InicioContent(
     solicitudesCierre: Int = 0,
     caja: cu.shalev.app.caja.CajaUiState = cu.shalev.app.caja.CajaUiState(),
     actualizacion: cu.shalev.app.actualizacion.EstadoActualizacion = cu.shalev.app.actualizacion.EstadoActualizacion(),
-    /** 0.26.0 (P73 §4): en la principal, empleados que piden el fondo y apps 0.25.x por actualizar. */
-    aperturas: List<String> = emptyList(),
-    desactualizadas: List<String> = emptyList(),
     /** Solo para capturas: abre todos los acordeones (en la app empiezan siempre cerrados). */
     acordeonesAbiertos: Boolean = false,
     conteoVm: cu.shalev.app.caja.CierreConteoViewModel? = null,
@@ -372,26 +362,6 @@ fun InicioContent(
                     )
                 }
             }
-            if (aperturas.isNotEmpty() && !permisos.esSecundaria) {
-                item(key = "aperturas") {
-                    ShalevStatusBanner(
-                        text = TextosInicio.aperturas(aperturas),
-                        tone = BannerTone.Aviso,
-                        onClick = { acciones.onNavigate(Route.Vinculacion) },
-                        modifier = Modifier.testTag(InicioTags.APERTURAS).then(shalevAnimateItem()),
-                    )
-                }
-            }
-            if (desactualizadas.isNotEmpty() && !permisos.esSecundaria) {
-                item(key = "desactualizadas") {
-                    ShalevStatusBanner(
-                        text = TextosInicio.desactualizadas(desactualizadas),
-                        tone = BannerTone.Info,
-                        onClick = { acciones.onNavigate(Route.Vinculacion) },
-                        modifier = Modifier.testTag(InicioTags.DESACTUALIZADAS).then(shalevAnimateItem()),
-                    )
-                }
-            }
             // 0.25.0 (§4): recordatorio mensual de respaldo (solo principal); al tocarlo se abre Respaldo.
             caja.avisoRespaldo?.let { a ->
                 item(key = "respaldo") {
@@ -468,7 +438,6 @@ fun InicioContent(
         DialogoInicio.AbrirTurno -> cu.shalev.app.caja.DialogoFondo(
             sugerido = caja.sugerido, trabajando = state.cambiandoTurno,
             onConfirmar = acciones.onAbrirTurno, onDismiss = acciones.onCerrarDialogo,
-            fondo = caja.fondo, onPedirFondo = acciones.onPedirFondo,
         )
         DialogoInicio.CerrarTurno -> cu.shalev.app.caja.DialogoCierreCompleto(
             viewModel = conteoVm,

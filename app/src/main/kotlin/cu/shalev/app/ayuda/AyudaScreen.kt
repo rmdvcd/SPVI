@@ -58,7 +58,7 @@ private fun iconoTema(titulo: String): ImageVector = when (titulo) {
     "Servicios" -> ShalevIcons.Servicios
     "Guardar una copia" -> ShalevIcons.Respaldo
     "Licencia" -> ShalevIcons.Licencia
-    "Apps vinculadas" -> ShalevIcons.Vinculacion
+    "Apps vinculadas" -> ShalevIcons.Movil
     else -> ShalevIcons.Soporte
 }
 
@@ -68,7 +68,7 @@ private fun iconoSeccion(c: CategoriaAyuda): ImageVector = when (c) {
     CategoriaAyuda.VENDER -> ShalevIcons.Venta
     CategoriaAyuda.INVENTARIO -> ShalevIcons.Inventario
     CategoriaAyuda.DATOS -> ShalevIcons.Respaldo
-    CategoriaAyuda.EMPLEADOS -> ShalevIcons.Vinculacion
+    CategoriaAyuda.EMPLEADOS -> ShalevIcons.Movil
     CategoriaAyuda.AYUDA -> ShalevIcons.Soporte
 }
 

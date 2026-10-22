@@ -85,6 +85,9 @@ object NombresArchivo {
 
 /** Intents de Compartir (selector del sistema: WhatsApp, Telegram, Bluetooth, Drive…). */
 object Compartir {
+    /** El teléfono no tiene ninguna app que reciba el archivo (Inventario, Servicios y Registros usan el mismo texto). */
+    const val SIN_APLICACION = "No hay ninguna app para compartir en este teléfono."
+
     private fun autoridad(context: Context) = "${context.packageName}.archivos"
 
     fun archivos(context: Context, archivos: List<File>, mime: String, asunto: String): Boolean {

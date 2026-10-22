@@ -4,7 +4,7 @@ App Android nativa para pequeños negocios: vender en turnos, controlar inventar
 
 | | |
 |---|---|
-| Versión | **0.30.0** (`versionCode 51`) |
+| Versión | **0.32.0** (`versionCode 52`) |
 | Paquete | `cu.shalev.app` (debug: `cu.shalev.app.debug`) |
 | minSdk / targetSdk / compileSdk | 26 / 35 / 35 |
 | Base de datos | Room **v13** en desarrollo (migración 12→13; exportación del esquema pendiente de compilación), cifrada con SQLCipher (respaldo `RespaldoDto` v4; archivo `.shalev` v4) |
@@ -28,13 +28,13 @@ App Android nativa para pequeños negocios: vender en turnos, controlar inventar
 
 Los documentos de trabajo que estaban fuera del proyecto (`DECISIONES_LICENCIA_Shalev.md`, `PRUEBA_COMPATIBILIDAD_GL.md`, `ARQUITECTURA_Shalev.md`, planes y auditorías de los Prompts 17 y 18, entregas `ENTREGA_*`) se retiraron en la 0.18.0. Lo vigente está en `LICENSE_CLIENT.md` (contrato GL y decisiones de licencia), `SECURITY.md`, `docs/HISTORIAL_DESARROLLO.md` y el propio código.
 
-## Alcance actual y cambios recientes — 15 de octubre de 2026
+## Alcance actual y cambios recientes — 21 de octubre de 2026
 
 Este repositorio mantiene la aplicación **Android nativa**. La app Flutter/iOS y la aplicación web de escritorio se retiraron; también se eliminaron sus proyectos, pruebas y pipelines propios. La sincronización por red local entre teléfonos Android sigue siendo parte de la app.
 
 La rama contiene mejoras recientes en Inicio, Inventario, Registros, Actualizar y Licencia. El detalle para usuarios está en [MANUAL_USUARIO.md](MANUAL_USUARIO.md), los cambios técnicos en [docs/HISTORIAL_DESARROLLO.md](docs/HISTORIAL_DESARROLLO.md) y el estado medido de las pruebas en [docs/VERIFICACION.md](docs/VERIFICACION.md).
 
-La versión declarada por el código sigue siendo **0.30.0 (`versionCode 51`)**; los cambios en curso no se consideran un release hasta actualizar esa versión y completar su verificación.
+La versión publicada es la **0.32.0 (`versionCode 52`)**: la primera versión pública de Shalev. El detalle de lo que trae está en la sección «Novedades de la 0.32.0» y en [docs/HISTORIAL_DESARROLLO.md](docs/HISTORIAL_DESARROLLO.md).
 
 ## Descripción
 
@@ -80,7 +80,7 @@ Versiones principales (`gradle/libs.versions.toml`): Kotlin 2.0.21, AGP 8.7.3, C
 ## Compilación
 
 ```bash
-./gradlew assembleDebug           # APK debug (cu.shalev.app.debug), incluye Ajustes → Design system
+./gradlew assembleDebug           # APK debug (cu.shalev.app.debug)
 ./gradlew assembleRelease         # APK release: R8 activo (ofusca y elimina android.util.Log); firmado si hay keystore
 ./gradlew bundleRelease           # AAB release (solo para Google Play)
 ./gradlew shalevRelease             # shalevCheck + AAB + APK de release (ver RELEASE.md)
@@ -149,8 +149,13 @@ Shalev es **cliente** del contrato v1 de GL, sin cambiarlo. Detalle completo en 
 | Clave maestra | `GLMK-PERM-MAXS-9999`: perpetuidad y 10 secundarias **solo** en builds de depuración |
 | Apps secundarias | La principal firma el permiso de cada ranura y dispositivo (sub-token); la secundaria lo comprueba antes de dar la licencia por buena |
 
-## Mejoras Android en curso (la versión declarada sigue en 0.30.0)
+## Novedades de la 0.32.0
 
+- **Sincronización manual, con barra de avance y sonidos:** ya no hay sincronización automática: el empleado toca «Sincronizar ahora» (y se sincroniza al abrir turno y al pedir el cierre). La app secundaria **mantiene la conexión abierta** con la principal, así el dueño ve si está conectada. Mientras sincroniza hay una **barra de avance horizontal** en la notificación y, en la principal, una barra por cada app vinculada. Tres avisos con **sonido propio**: la app de un empleado se conectó, se desconectó y terminó de sincronizar (la app del empleado oye «sincronización terminada»). Los audios están en `app/src/main/res/raw` y se pueden sustituir.
+- **El fondo de caja lo escribe quien abre el turno**, también en la app de un empleado: el encargado ya no lo asigna ni lo pide (se invierte la regla de 0.26.0).
+- **Las fotos de productos y servicios llegan a la app del empleado**: viajan por la red local en bloques (como el APK), se guardan en su teléfono con el mismo nombre y se comprueban con su SHA-256.
+- **El conteo de inventario es parcial y va por categoría:** solo se cuenta **lo que cambió durante el turno**, separado en pestañas por categoría. En la principal, la diferencia se aplica sobre el valor actual (no se rechaza el conteo si el artículo se movió después).
+- **Se retiran «Design system» y «Generar datos de prueba»** del menú de Ajustes (y el generador del APK de release).
 - **Cierre de turno:** conteo opcional por denominaciones CUP (1, 3, 5, 10, 20, 50, 100, 200, 500, 1000, **5000 y 20000**), monedas/otro efectivo y comparación con el esperado. Después se cuentan productos físicos e insumos (hasta tres decimales), se revisan diferencias y se exige motivo si hay ajustes. Los elaborados se controlan mediante sus insumos. El conteo queda en el turno, el respaldo y sus PDF/Excel. Cada secundaria envía su declaración; solo la principal autoriza y ajusta. Si las existencias cambiaron, se debe repetir el conteo, no sobrescribir stock nuevo. Para este flujo deben actualizarse tanto la principal como las secundarias. **Pendiente de compilación y prueba en dos dispositivos**; ver `docs/VERIFICACION.md`.
 
 - **Pago electrónico:** los logos de BPA, BANDEC y BANMET se muestran con esquinas redondeadas y el mismo tamaño (96 × 48 dp). El logo se elige por los 4 primeros dígitos de la tarjeta; es una estimación (ver [docs/LOGOS_BANCOS.md](docs/LOGOS_BANCOS.md): `9225`/`9235` los comparten varios bancos y `9226` tiene fuentes contradictorias).
@@ -234,7 +239,7 @@ Para GL: [docs/GL_PROMPT_0.25.md](docs/GL_PROMPT_0.25.md) (recuperación automá
 
 ## Apps Principal y Secundaria (0.19.0)
 
-Una app **principal** (dueño: base de datos general y licencia) y hasta **5 secundarias** (empleados), vinculadas con un QR cifrado y sincronizadas por la **red local** (wifi del local o zona wifi del teléfono principal), al momento o cuando el empleado decida. Ajustes → Apps vinculadas. Detalle técnico y de seguridad: [docs/VINCULACION.md](docs/VINCULACION.md).
+Una app **principal** (dueño: base de datos general y licencia) y hasta **5 secundarias** (empleados), vinculadas con un QR cifrado y sincronizadas por la **red local** (wifi del local o zona wifi del teléfono principal) **a mano** (el empleado toca «Sincronizar ahora»; además se sincroniza al abrir turno y al pedir el cierre). La app secundaria **mantiene la conexión abierta** mientras esté en la red, con una barra de avance por app en «Apps vinculadas» y avisos con sonido cuando una app se conecta, se desconecta o termina de sincronizar. Las **fotos** de productos y servicios viajan también a la secundaria. Ajustes → Apps vinculadas. Detalle técnico y de seguridad: [docs/VINCULACION.md](docs/VINCULACION.md).
 
 ## Esquema de base de datos
 

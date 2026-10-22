@@ -12,7 +12,6 @@ import cu.shalev.domain.model.CodigoVinculacion
 import cu.shalev.domain.model.Empleado
 import cu.shalev.domain.model.EstadoPrincipal
 import cu.shalev.domain.model.EstadoSecundaria
-import cu.shalev.domain.model.ModoSincronizacion
 import cu.shalev.domain.model.PermisoEmpleado
 import cu.shalev.domain.model.TipoApp
 import cu.shalev.domain.repository.PrincipalRepository
@@ -43,9 +42,6 @@ data class FormEmpleado(
     val telefonoId: Long? = null,
 )
 
-/** 0.26.0 (P73 §4): diálogo «Asignar fondo». [sugerido] = lo contado al cerrar su último turno. */
-data class AsignacionFondo(val empleado: Empleado, val sugerido: cu.shalev.core.money.Cup?)
-
 /** QR listo para mostrar. [contenido] = texto del QR (lleva una clave de un solo uso: nunca se registra). */
 data class QrVinculacion(val nombreEmpleado: String, val contenido: String, val codigo: CodigoVinculacion)
 
@@ -72,7 +68,6 @@ data class VinculacionUi(
     /** 0.21.0 (C2): teléfono que escribe el empleado al pasar a secundaria. */
     val telefonoSecundaria: String = "",
     val errorTelefono: String? = null,
-    val asignarFondo: AsignacionFondo? = null,
     /** 0.27.0 (T9): en el recorrido inicial se eligió «Secundaria» (si no, esta app es principal para siempre). */
     val eligioSecundaria: Boolean = false,
 ) {
@@ -94,7 +89,6 @@ private data class Local(
     val cerrarTurno: Empleado? = null,
     val telefonoSecundaria: String = "",
     val errorTelefono: String? = null,
-    val asignarFondo: AsignacionFondo? = null,
 )
 
 @HiltViewModel
@@ -138,7 +132,6 @@ class VinculacionViewModel @Inject constructor(
             telefonoSecundaria = l.telefonoSecundaria, errorTelefono = l.errorTelefono,
             form = l.form, qr = l.qr, quitar = l.quitar, confirmarSecundaria = l.confirmarSecundaria,
             confirmarDesvincular = l.confirmarDesvincular, trabajando = l.trabajando, cerrarTurno = l.cerrarTurno,
-            asignarFondo = l.asignarFondo,
             tarjetas = pf.tarjetas, telefonos = pf.telefonos, tarjetaPredeterminada = pf.tarjetaPago, telefonoPredeterminado = pf.telefonoPago,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), VinculacionUi())
@@ -246,29 +239,6 @@ class VinculacionViewModel @Inject constructor(
         }
     }
 
-    // ---------------------------------------------------------------- 0.26.0 (P73 §4): fondo de caja
-
-    fun asignarFondo() {
-        val e = state.value.empleadoForm ?: return
-        viewModelScope.launch {
-            val s = runCatching { principal.fondoSugerido(e.id) }.getOrNull()
-            local.update { it.copy(form = null, asignarFondo = AsignacionFondo(e, e.fondoAsignado ?: s)) }
-        }
-    }
-
-    fun cancelarFondo() = local.update { it.copy(asignarFondo = null) }
-
-    fun confirmarFondo(fondo: cu.shalev.core.money.Cup) {
-        val a = local.value.asignarFondo ?: return
-        local.update { it.copy(asignarFondo = null) }
-        trabajar {
-            when (val r = principal.asignarFondo(a.empleado.id, fondo)) {
-                is AppResult.Ok -> mensajesCh.trySend(VinculacionLogic.fondoEnviado(a.empleado.nombre, a.empleado.id in state.value.principal.conectadas))
-                is AppResult.Err -> mensajesCh.trySend(VinculacionLogic.error(r.error))
-            }
-        }
-    }
-
     // ---------------------------------------------------------------- pasar a secundaria
 
     fun pedirSecundaria() {
@@ -310,8 +280,6 @@ class VinculacionViewModel @Inject constructor(
             is AppResult.Err -> mensajesCh.trySend(VinculacionLogic.error(r.error))
         }
     }
-
-    fun modo(m: ModoSincronizacion) { viewModelScope.launch { secundaria.cambiarModo(m) } }
 
     fun pedirDesvincular() = local.update { it.copy(confirmarDesvincular = true) }
     fun cancelarDesvincular() = local.update { it.copy(confirmarDesvincular = false) }

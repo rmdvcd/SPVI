@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -44,6 +43,7 @@ import cu.shalev.app.common.SecureWindow
 import cu.shalev.app.inicio.formatoTelefono
 import cu.shalev.designsystem.component.FiltroEntrada
 import cu.shalev.designsystem.component.ShalevBottomSheet
+import cu.shalev.designsystem.component.ShalevCheckbox
 import cu.shalev.designsystem.component.ShalevDialog
 import cu.shalev.designsystem.component.ShalevFab
 import cu.shalev.designsystem.component.ShalevIconAction
@@ -206,7 +206,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.lista(
             indicatorColor = null, // La casilla indica el elemento elegido.
             leading = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
+                    ShalevCheckbox(
                         checked = enUso,
                         modifier = Modifier.semantics { contentDescription = "Usar ${item.texto}" },
                         onCheckedChange = { acciones.onElegir(tipo, item.id) },

@@ -32,7 +32,6 @@ object TextosInventario {
     const val ELIMINADO = "Producto eliminado."
     const val ERROR_ELIMINAR = "No se pudo eliminar. Inténtalo de nuevo."
     const val ERROR_EXPORTAR = "No se pudo generar el archivo. Inténtalo de nuevo."
-    const val ERROR_COMPARTIR = "No hay ninguna app para compartir en este teléfono."
     const val GUARDADO_EN_DISPOSITIVO = "Archivo guardado."
     const val FICHA_NO_DISPONIBLE = "Ya no existe."
     const val EN_USO = "No se puede eliminar: lo usa una receta o un servicio."
