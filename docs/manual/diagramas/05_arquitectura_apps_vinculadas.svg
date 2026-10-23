@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="470" viewBox="0 0 880 470">
+  <rect width="880" height="470" rx="18" fill="#F5F7FA" stroke="#CFD7E3" stroke-width="1.5"/>
+  <rect x="0" y="0" width="880" height="62" rx="18" fill="#2B4FA3"/>
+  <rect x="0" y="44" width="880" height="18" fill="#2B4FA3"/>
+  <text x="26" y="29" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="bold" fill="#FFFFFF">Trabajo en equipo: App Principal y Apps Secundarias</text>
+  <text x="26" y="49" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" fill="#DCE6FF">Sincronización segura por la red local del negocio sin depender de internet</text>
+  <rect x="26.0" y="93.0" width="266.0" height="286.0" rx="14.0" fill="#E2E7F0"/>
+  <rect x="24.0" y="90.0" width="266.0" height="286.0" rx="14.0" fill="#FFFFFF" stroke="#2B4FA3" stroke-width="2.3"/>
+  <rect x="24" y="90" width="266" height="52" rx="14" fill="#2B4FA3"/>
+  <rect x="24" y="126" width="266" height="16" fill="#2B4FA3"/>
+  <circle cx="54.0" cy="116.0" r="17.0" fill="#FFFFFF"/>
+  <g transform="translate(44.64, 106.64) scale(0.780)"><path d="m 21.9 8.89 -1.05 -4.37 c -.22 -.9 -1 -1.52 -1.91 -1.52 H 5.05 c -.9 0 -1.69 .63 -1.9 1.52 L 2.1 8.89 c -.24 1.02 -.02 2.06 .62 2.88 .08 .11 .19 .19 .28 .29 V 19 c 0 1.1 .9 2 2 2 h 14 c 1.1 0 2 -.9 2 -2 v -6.94 c .09 -.09 .2 -.18 .28 -.28 .64 -.82 .87 -1.87 .62 -2.89 z m -2.99 -3.9 1.05 4.37 c .1 .42 .01 .84 -.25 1.17 -.14 .18 -.44 .47 -.94 .47 -.61 0 -1.14 -.49 -1.21 -1.14 L 16.98 5 l 1.93 -.01 z M 13 5 h 1.96 l .54 4.52 c .05 .39 -.07 .78 -.33 1.07 -.22 .26 -.54 .41 -.95 .41 -.67 0 -1.22 -.59 -1.22 -1.31 V 5 z M 8.49 9.52 9.04 5 H 11 v 4.69 c 0 .72 -.55 1.31 -1.29 1.31 -.34 0 -.65 -.15 -.89 -.41 a 1.42 1.42 0 0 1 -.33 -1.07 z m -4.45 -.16 L 5.05 5 h 1.97 l -.58 4.86 c -.08 .65 -.6 1.14 -1.21 1.14 -.49 0 -.8 -.29 -.93 -.47 -.27 -.32 -.36 -.75 -.26 -1.17 z M 5 19 v -6.03 c .08 .01 .15 .03 .23 .03 .87 0 1.66 -.36 2.24 -.95 .6 .6 1.4 .95 2.31 .95 .87 0 1.65 -.36 2.23 -.93 .59 .57 1.39 .93 2.29 .93 .84 0 1.64 -.35 2.24 -.95 .58 .59 1.37 .95 2.24 .95 .08 0 .15 -.02 .23 -.03 V 19 H 5 z" fill="#2B4FA3"/></g>
+  <text x="80" y="113" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="bold" fill="#FFFFFF">App Principal (Dueño)</text>
+  <text x="80" y="130" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.8" fill="#DCE6FF">1 teléfono por negocio</text>
+  <text x="38" y="166.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.1" fill="#1A1C1E">• Guarda toda la base de datos</text>
+  <text x="38" y="188.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.1" fill="#1A1C1E">• Tiene la licencia activa</text>
+  <text x="38" y="210.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.1" fill="#1A1C1E">• Crea catálogo, precios y fotos</text>
+  <text x="38" y="232.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.1" fill="#1A1C1E">• Genera el código QR por empleado</text>
+  <text x="38" y="254.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.1" fill="#1A1C1E">• Elige qué permisos tiene cada uno</text>
+  <text x="38" y="276.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.1" fill="#1A1C1E">• Elige a qué tarjeta cobra cada uno</text>
+  <text x="38" y="298.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.1" fill="#1A1C1E">• Ve quién está «Conectada ahora»</text>
+  <text x="38" y="320.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.1" fill="#1A1C1E">• Aprueba o rechaza cierres de turno</text>
+  <text x="38" y="342.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.1" fill="#1A1C1E">• Reparte actualizaciones por Wi-Fi</text>
+  <rect x="330.0" y="131.0" width="224.0" height="210.0" rx="14.0" fill="#E2E7F0"/>
+  <rect x="328.0" y="128.0" width="224.0" height="210.0" rx="14.0" fill="#E2F2F6" stroke="#2F6F80" stroke-width="2.0"/>
+  <circle cx="440.0" cy="166.0" r="24.0" fill="#2F6F80"/>
+  <g transform="translate(428.00, 154.00) scale(1.000)"><path d="m1 9 2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8 3 3 3-3a4.237 4.237 0 0 0-6 0zm-4-4 2 2a7.074 7.074 0 0 1 10 0l2-2C15.14 9.14 8.87 9.14 5 13z" fill="#FFFFFF"/></g>
+  <text x="440" y="208" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="bold" fill="#2F6F80" text-anchor="middle">Red Wi-Fi Local</text>
+  <text x="440" y="226" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="bold" fill="#1A1C1E" text-anchor="middle">¡Sin gastar datos ni internet!</text>
+  <text x="440" y="250" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.8" fill="#1A1C1E" text-anchor="middle">Wi-Fi del local o Zona Wi-Fi</text>
+  <text x="440" y="266" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.8" fill="#1A1C1E" text-anchor="middle">del teléfono principal</text>
+  <rect x="344.0" y="282.0" width="192.0" height="24.0" rx="12.0" fill="#FFFFFF"/>
+  <text x="440.0" y="297.7" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.3" font-weight="bold" fill="#2F6F80" text-anchor="middle">Conexión cifrada de extremo</text>
+  <rect x="344.0" y="310.0" width="192.0" height="24.0" rx="12.0" fill="#FFFFFF"/>
+  <text x="440.0" y="325.7" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.3" font-weight="bold" fill="#2B4FA3" text-anchor="middle">Avisos con sonido y progreso</text>
+  <line x1="301.0" y1="233.0" x2="317.0" y2="233.0" stroke="#2F6F80" stroke-width="2.2"/>
+  <polygon points="292.0,233.0 302.0,227.5 302.0,238.5" fill="#2F6F80"/>
+  <polygon points="326.0,233.0 316.0,227.5 316.0,238.5" fill="#2F6F80"/>
+  <line x1="563.0" y1="175.0" x2="579.0" y2="175.0" stroke="#2F6F80" stroke-width="2.2"/>
+  <polygon points="554.0,175.0 564.0,169.5 564.0,180.5" fill="#2F6F80"/>
+  <polygon points="588.0,175.0 578.0,169.5 578.0,180.5" fill="#2F6F80"/>
+  <line x1="563.0" y1="295.0" x2="579.0" y2="295.0" stroke="#2F6F80" stroke-width="2.2"/>
+  <polygon points="554.0,295.0 564.0,289.5 564.0,300.5" fill="#2F6F80"/>
+  <polygon points="588.0,295.0 578.0,289.5 578.0,300.5" fill="#2F6F80"/>
+  <rect x="592.0" y="93.0" width="266.0" height="136.0" rx="14.0" fill="#E2E7F0"/>
+  <rect x="590.0" y="90.0" width="266.0" height="136.0" rx="14.0" fill="#FFFFFF" stroke="#B4541A" stroke-width="2.0"/>
+  <circle cx="620.0" cy="120.0" r="17.0" fill="#B4541A"/>
+  <g transform="translate(610.64, 110.64) scale(0.780)"><path d="M 16 1 H 8 C 6.34 1 5 2.34 5 4 v 16 c 0 1.66 1.34 3 3 3 h 8 c 1.66 0 3 -1.34 3 -3 V 4 c 0 -1.66 -1.34 -3 -3 -3 z m -2 20 h -4 v -1 h 4 v 1 z m 3.25 -3 H 6.75 V 4 h 10.5 v 14 z" fill="#FFFFFF"/></g>
+  <text x="646" y="117" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="bold" fill="#B4541A">Secundaria · Empleado 1</text>
+  <text x="646" y="134" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.6" fill="#5F6368">Recibe catálogo + fotos</text>
+  <text x="604" y="160" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.9" fill="#1A1C1E">• Abre su turno y escribe su fondo</text>
+  <text x="604" y="179" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.9" fill="#1A1C1E">• Su QR lleva su propio móvil (SMS)</text>
+  <text x="604" y="198" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.9" fill="#1A1C1E">• Sigue vendiendo aunque caiga Wi-Fi</text>
+  <text x="604" y="216" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.9" font-weight="bold" fill="#B4541A">• Toca «Sincronizar ahora» al enviar</text>
+  <rect x="592.0" y="243.0" width="266.0" height="136.0" rx="14.0" fill="#E2E7F0"/>
+  <rect x="590.0" y="240.0" width="266.0" height="136.0" rx="14.0" fill="#FFFFFF" stroke="#0B7A5E" stroke-width="2.0"/>
+  <circle cx="620.0" cy="270.0" r="17.0" fill="#0B7A5E"/>
+  <g transform="translate(610.64, 260.64) scale(0.780)"><path d="M4 6h18V4H4c-1.1 0-2 .9-2 2v11H0v3h14v-3H4V6zm19 2h-6c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h6c.55 0 1-.45 1-1V9c0-.55-.45-1-1-1zm-1 9h-4v-7h4v7z" fill="#FFFFFF"/></g>
+  <text x="646" y="267" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="bold" fill="#0B7A5E">Hasta 10 Secundarias</text>
+  <text x="646" y="284" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.6" fill="#5F6368">5 incluidas en la prueba gratis</text>
+  <text x="604" y="310" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.9" fill="#1A1C1E">• Sincroniza sola al abrir su turno</text>
+  <text x="604" y="329" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.9" fill="#1A1C1E">• Sincroniza sola al pedir el cierre</text>
+  <text x="604" y="348" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.9" fill="#1A1C1E">• Avisa si el dueño cambió catálogo</text>
+  <text x="604" y="366" font-family="DejaVu Sans, Arial, sans-serif" font-size="10.9" fill="#1A1C1E">• Permisos ajustables al instante</text>
+  <rect x="24.0" y="394.0" width="832.0" height="54.0" rx="14.0" fill="#E6EDFA" stroke="#2B4FA3" stroke-width="1.3"/>
+  <text x="440" y="416" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.3" font-weight="bold" fill="#2B4FA3" text-anchor="middle">Cobro inteligente por transferencia en empleados:</text>
+  <text x="440" y="435" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" fill="#1A1C1E" text-anchor="middle">El dinero entra directo a la tarjeta elegida por el dueño, pero el SMS de confirmación le llega al teléfono del empleado.</text>
+</svg>
