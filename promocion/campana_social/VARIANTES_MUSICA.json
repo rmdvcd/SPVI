@@ -1,0 +1,122 @@
+[
+  {
+    "cancion": "Smokestack Lightning",
+    "artista": "Howlin’ Wolf",
+    "url": "https://youtu.be/VMUt8KdDtTY",
+    "fuente": "promocion/audio/Smokestack Lightning (1080p_25fps_H264-128kbit_AAC).mp3",
+    "sha256_fuente": "ff68931a517e9ac121df7d48c557edadc63894f7aa872c82f20faab56a022cfa",
+    "inicio_audio_segundos": 15.105669,
+    "fin_audio_segundos": 45.105669,
+    "duracion_original_segundos": 186.172971,
+    "cortes_fotogramas": [
+      0,
+      100,
+      195,
+      287,
+      377,
+      476,
+      575,
+      720
+    ],
+    "cortes_segundos": [
+      0.0,
+      4.166667,
+      8.125,
+      11.958333,
+      15.708333,
+      19.833333,
+      23.958333,
+      30.0
+    ],
+    "segundos_con_modo_claro": 18.0,
+    "criterio": "Ventana continua con mayor energía RMS y flujo espectral positivo, sin introducción/cola; entrada en ataque cercano y cambios de escena en ataques a ±0,30 s del guion. No identifica letras ni certifica un estribillo.",
+    "puntuacion_energia": 0.158281,
+    "normalizacion": {
+      "objetivo_LUFS": -16,
+      "limite_dBTP": -2,
+      "entrada_medida": {
+        "input_i": "-16.05",
+        "input_tp": "-1.55",
+        "input_lra": "8.60",
+        "input_thresh": "-26.11",
+        "output_i": "-17.39",
+        "output_tp": "-3.90",
+        "output_lra": "5.10",
+        "output_thresh": "-27.41",
+        "normalization_type": "dynamic",
+        "target_offset": "1.39"
+      },
+      "fundido_entrada_s": 0.08,
+      "fundido_salida_s": 0.9
+    },
+    "archivo": "reel_smokestack_lightning_1080x1920.mp4",
+    "validacion": {
+      "decodificacion_completa_audio_video": true,
+      "fotogramas": 720,
+      "duracion_s": 30.0,
+      "maximo_audio_decodificado_dBFS": -2.5,
+      "bytes": 6589219,
+      "sha256": "55d934f21a47c02cc4d2e6d61d8bd6eeb1a574c26476ab3c30501cd81acdf5eb"
+    }
+  },
+  {
+    "cancion": "Meth Lab Zoso Sticker",
+    "artista": "7Horse",
+    "url": "https://youtu.be/B45gd2AwOHw",
+    "fuente": "promocion/audio/7Horse - Meth Lab Zoso Sticker [Wolf of Wall Street] (w⁄lyrics) (720p_6fps_H264-128kbit_AAC).mp3",
+    "sha256_fuente": "837f658a5955c367df19b787985f36af934ee41ca3e6b7009a8dfde0ecb447c4",
+    "inicio_audio_segundos": 113.043084,
+    "fin_audio_segundos": 143.043084,
+    "duracion_original_segundos": 227.067937,
+    "cortes_fotogramas": [
+      0,
+      100,
+      190,
+      288,
+      379,
+      487,
+      583,
+      720
+    ],
+    "cortes_segundos": [
+      0.0,
+      4.166667,
+      7.916667,
+      12.0,
+      15.791667,
+      20.291667,
+      24.291667,
+      30.0
+    ],
+    "segundos_con_modo_claro": 17.708,
+    "criterio": "Ventana continua con mayor energía RMS y flujo espectral positivo, sin introducción/cola; entrada en ataque cercano y cambios de escena en ataques a ±0,30 s del guion. No identifica letras ni certifica un estribillo.",
+    "puntuacion_energia": 0.527316,
+    "normalizacion": {
+      "objetivo_LUFS": -16,
+      "limite_dBTP": -2,
+      "entrada_medida": {
+        "input_i": "-5.64",
+        "input_tp": "1.19",
+        "input_lra": "1.10",
+        "input_thresh": "-15.64",
+        "output_i": "-15.88",
+        "output_tp": "-8.80",
+        "output_lra": "0.40",
+        "output_thresh": "-25.88",
+        "normalization_type": "dynamic",
+        "target_offset": "-0.12"
+      },
+      "fundido_entrada_s": 0.08,
+      "fundido_salida_s": 0.9
+    },
+    "archivo": "reel_meth_lab_zoso_sticker_1080x1920.mp4",
+    "validacion": {
+      "decodificacion_completa_audio_video": true,
+      "fotogramas": 720,
+      "duracion_s": 30.0,
+      "maximo_audio_decodificado_dBFS": -9.2,
+      "bytes": 6561622,
+      "sha256": "0151c2d04aa292ca52f652d70bc2eebad2d537ed98adfe1b7ffc942abed68a87"
+    }
+  }
+]
