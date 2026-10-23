@@ -1,5 +1,16 @@
 # Material de promoción
 
+## Campaña con predominio claro · 23 de octubre de 2026
+
+Nueva entrega en [`campana_social/`](campana_social/README.md): supercollage vertical,
+collage 4:5, versiones JPG para WhatsApp, reel de 30 segundos, escenas reutilizables y
+textos descriptivos. Usa las mismas capturas reales conservadas aquí, prioriza el modo
+claro e incluye gráficos y registros en oscuro. El reel es un montaje animado, no una
+nueva grabación del teléfono. Véanse las notas sobre derechos de las miniaturas antes
+de publicar.
+
+## Material anterior
+
 Collages con capturas reales de la app en el teléfono `4bc9f8f3`, con los datos de demostración
 del sembrador de depuración (18 meses de ventas, 54 artículos de inventario, 20 servicios y
 8 apps secundarias).
