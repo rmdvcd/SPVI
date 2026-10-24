@@ -1,0 +1,175 @@
+1
+00:00:00,120 --> 00:00:04,058
+Shalev es el punto de venta e inventario para pequeños negocios
+
+2
+00:00:04,058 --> 00:00:06,682
+que funciona cien por ciento sin internet.
+
+3
+00:00:06,682 --> 00:00:11,245
+Vende, controla caja, conoce ganancias y protege tus datos desde Android.
+
+4
+00:00:11,245 --> 00:00:13,870
+Empieza con siete días de prueba gratuita.
+
+5
+00:00:14,220 --> 00:00:17,339
+En Inicio tienes alertas de stock y caducidad,
+
+6
+00:00:17,339 --> 00:00:21,542
+gráficos de ventas, ganancia neta, métodos de pago y rankings.
+
+7
+00:00:21,542 --> 00:00:24,932
+Abre el turno, indica el fondo de caja y confirma.
+
+8
+00:00:24,932 --> 00:00:26,831
+Registra entradas y salidas;
+
+9
+00:00:26,831 --> 00:00:31,170
+al cerrar, arquea efectivo e inventario para cuadrar la jornada.
+
+10
+00:00:31,520 --> 00:00:36,676
+En Inventario agrega artículos con foto, categoría, costo, precio y cantidad.
+
+11
+00:00:36,676 --> 00:00:39,824
+Busca, filtra y evita faltantes con sus avisos.
+
+12
+00:00:39,824 --> 00:00:42,302
+Crea insumos y elaborados con receta:
+
+13
+00:00:42,302 --> 00:00:46,387
+Shalev calcula el costo, indica para cuántas unidades alcanza
+
+14
+00:00:46,387 --> 00:00:50,070
+y descuenta cada ingrediente automáticamente al vender.
+
+15
+00:00:50,420 --> 00:00:54,369
+En Servicios registra cortes, reparaciones o cualquier trabajo,
+
+16
+00:00:54,369 --> 00:00:58,318
+con importe e insumos opcionales para conocer la ganancia real.
+
+17
+00:00:58,318 --> 00:01:01,514
+Las reglas de Precios aplican descuentos o recargos
+
+18
+00:01:01,514 --> 00:01:06,090
+según el pago o el importe mínimo, sin cambiar los productos uno por uno.
+
+19
+00:01:06,440 --> 00:01:11,399
+Para vender, toca el carrito, elige productos o servicios y ajusta cantidades.
+
+20
+00:01:11,399 --> 00:01:14,387
+Selecciona Efectivo o Transferencia y confirma.
+
+21
+00:01:14,387 --> 00:01:19,473
+Con Transfermóvil, el cliente escanea el código QR y escribe el importe visible.
+
+22
+00:01:19,473 --> 00:01:22,334
+Registra sus datos y el número de transacción
+
+23
+00:01:22,334 --> 00:01:24,242
+pegando o compartiendo el SMS;
+
+24
+00:01:24,242 --> 00:01:27,230
+también hay captura opcional de notificaciones.
+
+25
+00:01:27,580 --> 00:01:33,682
+Registros reúne ventas, servicios, transferencias, movimientos, clientes y turnos.
+
+26
+00:01:33,682 --> 00:01:36,584
+Filtra, audita y, con el turno abierto,
+
+27
+00:01:36,584 --> 00:01:39,411
+modifica o anula dejando trazabilidad.
+
+28
+00:01:39,411 --> 00:01:45,290
+Exporta PDF o Excel y crea listas de precios, imágenes y tarjetas promocionales
+
+29
+00:01:45,290 --> 00:01:49,010
+para compartir, sin mostrar costos ni existencias.
+
+30
+00:01:49,360 --> 00:01:54,738
+Vincula hasta diez teléfonos de empleados por código QR y wifi local, sin gastar datos.
+
+31
+00:01:54,738 --> 00:01:57,459
+El dueño asigna permisos y tarjeta de cobro.
+
+32
+00:01:57,459 --> 00:02:01,539
+Cada empleado puede seguir vendiendo si se interrumpe la conexión,
+
+33
+00:02:01,539 --> 00:02:05,990
+sincroniza sus operaciones y envía el cierre para revisión y aprobación.
+
+34
+00:02:06,340 --> 00:02:10,171
+Los datos quedan en tu teléfono, sin anuncios ni rastreo.
+
+35
+00:02:10,171 --> 00:02:12,792
+Activa acceso con huella, rostro o PIN.
+
+36
+00:02:12,792 --> 00:02:17,362
+En Ajustes, Respaldo, exporta un archivo punto shalev con contraseña
+
+37
+00:02:17,362 --> 00:02:19,782
+para restaurar al cambiar de equipo.
+
+38
+00:02:19,782 --> 00:02:24,890
+Importar reemplaza los datos actuales; las fotos no se incluyen en la copia.
+
+39
+00:02:25,240 --> 00:02:29,646
+El resultado: menos errores, inventario al día, caja cuadrada,
+
+40
+00:02:29,646 --> 00:02:33,271
+cobros verificables y decisiones con cifras reales.
+
+41
+00:02:33,271 --> 00:02:39,099
+Disfruta temas claro y oscuro, letra adaptable, ayuda integrada y soporte directo,
+
+42
+00:02:39,099 --> 00:02:43,150
+con licencia y actualizaciones gestionadas desde Ajustes.
+
+43
+00:02:43,500 --> 00:02:47,524
+Shalev: vende mejor, controla más y haz crecer tu negocio.
+
+44
+00:02:47,524 --> 00:02:52,450
+Descárgalo para Android y empieza hoy tu prueba gratuita de siete días.
