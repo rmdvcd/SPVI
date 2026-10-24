@@ -13,9 +13,10 @@ keystore.properties
 # Contexto para OpenCode (17 MB): no se sube al repositorio
 Shalev_*_capturas_y_exportaciones.pdf
 
-# Entornos y cachés locales para las herramientas Python
+# Entornos y cachés locales para las herramientas Python y multimedia
 __pycache__/
 .venv/
+.cache/
 
 # Caché local de Kotlin
 .kotlin/
